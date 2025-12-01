@@ -1,0 +1,81 @@
+{# MoJ Multi-select: checkbox | Material | Description | Comment | Passed test | Assessed as | Rationale #}
+<table class="govuk-table" data-module="moj-multi-select" data-id-prefix="materials-">
+  <thead class="govuk-table__head govuk-body-s">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header" scope="col" id="materials-select-all"></th>
+      <th class="govuk-table__header" scope="col">Material</th>
+      <th class="govuk-table__header" scope="col">Description</th>
+      <th class="govuk-table__header" scope="col">Comments</th>
+      <th class="govuk-table__header" scope="col">Passed test</th>
+      <th class="govuk-table__header" scope="col">Assessed as</th>
+      <th class="govuk-table__header" scope="col">Rationale</th>
+    </tr>
+  </thead>
+
+  <tbody class="govuk-table__body govuk-body-s">
+    {% set rows = [
+        {
+          id: '01',
+          material: 'Exh SP/2',
+          description: 'DA History for Ella Quagmire. This is a compilation of all the domestic abuse reports which the victim has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 17 pages and is redacted as per redaction guidelines.',
+          comment: 'None',
+          passed: 'Yes',
+          tag: 'Disclosable',
+          rationale: 'May undermine the prosecution case or assist the defence'
+        },
+        {
+          id: '02',
+          material: 'Exh SP/3',
+          description: 'DA History for Elton Berkley. This is a compilation of all the domestic abuse reports which the defendant has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 4 pages and is redacted as per redaction guidelines.',
+          comment: 'Not relevant to the proposed charges',
+          passed: 'No',
+          tag: 'Clearly not disclosable',
+          rationale: 'Does not undermine the prosecution case or assist the defence'
+        },
+        {
+          id: '03',
+          material: 'Exh SP/4',
+          description: 'PNB entry made by PC 9999 Parsons from GMP issues Pocket Notebook. This entry was made on 07/03/2025 at 1921 hours and details the house-to-house enquiries conducted. This also includes information of the victims first account and the arrest of the defendant. This document consists of a total of 2 pages.',
+          comment: 'Redactions applied.',
+          passed: 'Yes',
+          tag: 'To be assessed',
+          rationale: 'None given'
+        },
+        {
+          id: '04',
+          material: 'Exh SP/5',
+          description: 'Photograph of clothing found in situ at scene of offence taken by PC 9999 Parsons.',
+          comment: 'Victim has not identified this clothing',
+          passed: 'Not considered',
+          tag: 'To be assessed',
+          rationale: 'None given'
+        }
+      ]
+    %}
+
+
+    {% for r in rows %}
+      <tr class="govuk-table__row govuk-body-s">
+        <td class="govuk-table__cell">
+          <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
+            <input type="checkbox" class="govuk-checkboxes__input" id="materials-{{ r.id }}" name="selectedMaterials" value="{{ r.id }}">
+            <label class="govuk-label govuk-checkboxes__label" for="materials-{{ r.id }}">
+              <span class="govuk-visually-hidden">Select {{ r.material }}</span>
+            </label>
+          </div>
+        </td>
+
+        <td class="govuk-table__cell">{{ r.material }}</td>
+        <td class="govuk-table__cell">{{ r.description }}</td>
+        <td class="govuk-table__cell">{{ r.comment }}</td>
+        <td class="govuk-table__cell">{{ r.passed }}</td>
+        <td class="govuk-table__cell">
+          <strong class="govuk-tag govuk-!-font-size-16">
+            {{ r.tag }}
+          </strong>
+        </td>
+        <td class="govuk-table__cell">{{ r.rationale }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

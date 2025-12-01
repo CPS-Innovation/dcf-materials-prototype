@@ -1,0 +1,58 @@
+{% extends "layouts/main.html" %}
+
+{% set pageName = failureReason.reason %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/reports/" + case.id + "/dga-outcomes/" + failureReason.id + "/dga-add-details"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+  <span class="govuk-caption-l">{{ case.reference }}</span>
+  <h1 class="govuk-heading-l">How was this decision made?</h1>
+
+  <div class="govuk-inset-text">
+    <h3 class="govuk-heading-s">Failure reason</h3>
+        {{ failureReason.reason }}
+  </div>
+
+  <form method="post">
+    {{ govukCheckboxes({
+      name: "methods",
+      fieldset: {
+      },
+      hint: {
+        text: "Select all that apply"
+      },
+      items: [
+        {
+          value: "Email",
+          text: "Email",
+          checked: selectedMethods and "Email" in selectedMethods
+        },
+        {
+          value: "Meeting",
+          text: "Meeting",
+          checked: selectedMethods and "Meeting" in selectedMethods
+        },
+        {
+          value: "Phone call",
+          text: "Phone call",
+          checked: selectedMethods and "Phone call" in selectedMethods
+        }
+      ]
+    }) }}
+
+    {{ govukButton({
+      text: "Continue"
+    }) }}
+  </form>
+  </div>
+    </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{{ xGovukSecondaryNavigation({
+  classes: 'govuk-!-margin-bottom-6 app-secondary-navigation',
+  visuallyHiddenTitle: "Secondary menu",
+  items: [{
+    text: "Overview",
+    href: "/cases/:caseId" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'overview'
+  }, {
+    text: "Directions",
+    href: "/cases/:caseId/directions" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'directions'
+  }, {
+    text: "Tasks",
+    href: "/cases/:caseId/tasks" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'tasks'
+  }, {
+    text: "Defendants",
+    href: "/cases/:caseId/defendants" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'defendants'
+  }, {
+    href: "/cases/:caseId/material" | replace(':caseId', _case.id),
+    text: "Material",
+    current: secondaryNavId == 'documents'
+  }, {
+    href: "/cases/:caseId/disclosure" | replace(':caseId', _case.id),
+    text: "Disclosure",
+    current: secondaryNavId == 'disclosure'
+  },{
+    text: "DGA",
+    href: "/cases/:caseId/dga" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'dga'
+  } if _case.dga and 1==2,
+  {
+    text: "Notes",
+    href: "/cases/:caseId/notes" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'notes'
+  }, {
+    text: "Activity",
+    href: "/cases/:caseId/activity" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'activity'
+  }]
+})}}

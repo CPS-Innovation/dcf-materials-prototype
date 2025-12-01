@@ -1,0 +1,28 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'material' %}
+{% set pageName = 'Disclosure certificate' %}
+
+{% block beforeContent %}
+  {{ govukBreadcrumbs({
+    items: [
+      { text: _case.reference, href: "/cases/" ~ _case.id },
+      { text: "Material", href: "/cases/:caseId/material" | replace(':caseId', _case.id) },
+      { text: "Disclosure",   href: "/cases/" ~ _case.id ~ "/disclosure" },
+      { text: pageName }
+    ]
+  }) }}
+  
+  {# {{ govukBackLink({
+    text: 'Back',
+    href: 'javascript:history.back()'
+  }) }} #}
+{% endblock %}
+
+{% block content %}
+  <h1 class="govuk-heading-l">{{ pageName }}</h1>
+    <div class="govuk-button-group">
+      <a class="govuk-link" href="/cases/{{_case.id}}/disclosure/schedule">Schedule</a>
+    </div>
+  <p class="govuk-body">Stub page for the disclosure certificate.</p>
+{% endblock %}

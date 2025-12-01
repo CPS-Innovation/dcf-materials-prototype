@@ -1,0 +1,142 @@
+{# -------------------------------------------------------------------------
+  notes-modal.njk
+  --------------------------------------------------------------------------
+  Expected params:
+    - materialId           : string (e.g. "MAT-02001")
+    - materialTitle        : string (e.g. "MCLOVE MG3")
+    - notes                : array of { author, date, text }
+    - notesAction          : form POST URL (optional)
+    - noteCharacterLimit   : number (default 500)
+  ------------------------------------------------------------------------ #}
+
+{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
+{% from "govuk/components/button/macro.njk"   import govukButton %}
+
+{% set noteCharacterLimit = noteCharacterLimit or 500 %}
+
+<div class="dcf-notes-modal" id="dcf-notes-modal" hidden>
+  {# Optional overlay to dim the page / capture clicks #}
+  <div class="dcf-notes-modal__overlay" data-action="close-notes"></div>
+
+  {# Tray panel – styled to be 100vh and max-width: 25% in CSS #}
+  <aside
+    class="dcf-notes-modal__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dcf-notes-modal-title"
+    aria-describedby="dcf-notes-modal-description"
+  >
+
+    {# Header with document title + close button #}
+    <header class="dcf-notes-modal__header">
+      <h3 class="govuk-heading-s" id="dcf-notes-modal-title">
+        Notes{% if materialTitle %} – {{ materialTitle }}{% endif %}
+      </h3>
+
+      <button
+        type="button"
+        class="dcf-notes-modal__close"
+        data-action="close-notes"
+      >
+        <span class="govuk-visually-hidden">Close notes</span>
+        ✕
+      </button>
+    </header>
+
+    <div class="dcf-notes-modal__body">
+
+      {# ---------------------------------------------------------------
+         Add new note
+         ------------------------------------------------------------ #}
+      <section aria-labelledby="dcf-notes-add-title">
+        <h3 class="govuk-heading-s" id="dcf-notes-add-title">
+          Add a note to the document
+        </h3>
+
+        <p class="govuk-body" id="dcf-notes-modal-description">
+          Notes will be saved against this document for all users who can
+          access the case.
+        </p>
+
+        <form
+          method="post"
+          action="{{ notesAction if notesAction is defined }}"
+          class="dcf-notes-modal__form"
+          data-material-id="{{ materialId }}"
+        >
+          {# Hidden fields for material / case IDs as needed #}
+          {% if materialId %}
+            <input type="hidden" name="materialId" value="{{ materialId }}">
+          {% endif %}
+
+          {{ govukTextarea({
+            id: "dcf-note-text",
+            name: "noteText",
+            label: {
+              text: "Add a note to the document",
+              classes: "govuk-label--s"
+            },
+            attributes: {
+              "data-maxlength": noteCharacterLimit
+            }
+          }) }}
+
+          <p
+            class="govuk-hint dcf-notes-modal__char-count"
+            id="dcf-note-char-count"
+            data-maxlength="{{ noteCharacterLimit }}"
+          >
+            You have {{ noteCharacterLimit }} characters remaining
+          </p>
+
+          <div class="govuk-button-group dcf-notes-modal__actions">
+            {{ govukButton({
+              text: "Accept and save",
+              type: "submit"
+            }) }}
+
+            <a
+              href="#"
+              class="govuk-link"
+              data-action="close-notes"
+            >
+              Cancel
+            </a>
+          </div>
+        </form>
+      </section>
+
+  {# ---------------------------------------------------------------
+   Existing notes (simple list, no timeline)
+   ------------------------------------------------------------ #}
+      <section
+        class="dcf-notes-modal__notes"
+        aria-label="Notes on this document"
+      >
+        {# Empty state (shown until the first note is added) #}
+        <p
+          class="govuk-body"
+          data-notes-empty
+        >
+          No notes have been added for this document yet.
+        </p>
+
+        {# Container where notes will be rendered/inserted #}
+        <div class="dcf-notes-modal__notes-list" data-notes-list>
+          {# Optional: if you ever pass notes in from the server, you can render them here #}
+          {% if notes and notes | length %}
+            {% for note in notes %}
+              <article class="dcf-note">
+                <h4 class="govuk-heading-s">{{ note.author }}</h4>
+                <p class="govuk-body">{{ note.date }}</p>
+                <p class="govuk-body">{{ note.text }}</p>
+              </article>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </section>
+
+
+    </div>
+  </aside>
+</div>

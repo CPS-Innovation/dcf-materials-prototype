@@ -1,0 +1,148 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'directions' %}
+{% set pageName = direction.description %}
+
+{% block beforeContent %}
+  {{ govukBreadcrumbs({
+    items: [
+      {
+        text: _case.reference,
+        href: "/cases/:caseId" | replace(':caseId', _case.id)
+      },
+      {
+        text: "Directions",
+        href: "/cases/:caseId/directions" | replace(':caseId', _case.id)
+      }
+    ]
+  }) }}
+{% endblock beforeContent %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+
+    <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% set directionDescriptionDisplay %}
+        {% if direction.description.length > 100 %}
+          {{ direction.description | truncate(100) }}
+        {% else %}
+          {{ direction.description }}
+        {% endif %}
+      {% endset %}
+
+      <h1 class="govuk-heading-l">
+        {{ directionDescriptionDisplay | trim }}
+        {% if direction.status %}
+          {{ govukTag({ text: direction.status, classes: direction.status | directionStatusTagClass }) }}
+        {% endif %}
+      </h1>
+
+      <div class="govuk-button-group">
+        <a href="/cases/{{_case.id}}/directions/{{direction.id}}/complete" class="govuk-button">Complete direction</a>
+        {{ govukButton({
+          text: "Defer",
+          classes: 'govuk-button--secondary'
+        }) }}
+      </div>
+
+      {% set defendantsValue %}
+        {% if direction.defendant %}
+          {{direction.defendant.firstName}} {{direction.defendant.lastName}}
+        {% endif %}
+      {% endset %}
+
+      {% set dueDateValue %}
+        {{ direction.dueDate | isoDateString | govukDateTime }}
+        <span>({{ direction.dueDate | daysUntil }})</span>
+      {% endset %}
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: {
+              text: 'Details'
+            },
+            value: {
+              text: direction.description
+            }
+          } if direction.description.length > 100,
+          {
+            key: {
+              text: 'Defendant'
+            },
+            value: {
+              html: defendantsValue
+            }
+          },
+          {
+            key: {
+              text: 'Assignee'
+            },
+            value: {
+              text: direction.assignee
+            }
+          },
+          {
+            key: {
+              text: 'Due date'
+            },
+            value: {
+              html: dueDateValue
+            }
+          },
+          {
+            key: {
+              text: 'Custody time limit'
+            },
+            value: {
+              html: (_case.soonestCTL | isoDateString | govukDateTime) + ' (' + (_case.soonestCTL | daysUntil) + ')'
+            }
+          } if _case.hasCTL,
+          {
+            key: {
+              html: 'Unit'
+            },
+            value: {
+              html: direction.case.unit.name
+            }
+          }
+        ]
+      })}}
+
+      {% if _case.hearings and _case.hearings.length > 0 %}
+        <h2 class="govuk-heading-m">Hearing</h2>
+
+        {{ govukSummaryList({
+          rows: [
+            {
+              key: {
+                text: 'Date and time'
+              },
+              value: {
+                html: _case.hearings[0].startDate | isoDateString | govukDateTime
+              }
+            },
+            {
+              key: {
+                text: 'Type'
+              },
+              value: {
+                text: _case.hearings[0].type
+              }
+            },
+            {
+              key: {
+                text: 'Venue'
+              },
+              value: {
+                text: _case.hearings[0].venue
+              }
+            }
+          ]
+        })}}
+      {% endif %}
+
+    </div>
+  </div>
+{% endblock %}

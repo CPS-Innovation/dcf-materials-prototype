@@ -1,0 +1,39 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'outline' %}
+{% set pageName = document.name %}
+
+{% block beforeContent %}
+  {# {% include "_includes/case/identity-bar.njk" %} #}
+  {{ govukBreadcrumbs({
+    items: [
+      {
+        text: _case.reference,
+        href: "/cases/:caseId" | replace(':caseId', _case.id)
+      },
+      {
+        text: "Material",
+        href: "/cases/:caseId/material" | replace(':caseId', _case.id)
+      }
+    ]
+  }) }} 
+{% endblock beforeContent %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+      
+      <h1 class="govuk-heading-l">{{document.name}}</h1>
+
+      <iframe
+        src="/public/files/MCLOVEMG3.pdf"
+        width="100%"
+        style="border:none; height:calc(100vh - 200px);"
+      ></iframe>
+      
+      <a href="/public/files/MCLOVEMG3.pdf">MCLOVEMG3.pdf</a>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'witnesses' %}
+{% set pageName = "Witnesses (:total)" | replace(':total', _case.witnesses.length) %}
+
+{% block beforeContent %}
+  {% include "_includes/case/identity-bar.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+  {% include "_includes/case/material/navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">{{pageName}}</h1>
+      
+      {% if _case.witnesses.length %}
+        <div class="app-list">
+          {% for witness in _case.witnesses %}
+            <div class="app-list__item">
+              <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+                <a href="/cases/{{_case.id}}/witnesses/{{witness.id}}" class="govuk-link--no-visited-state">{{witness.firstName}} {{witness.lastName}}</a>
+              </h2>
+
+              {{ govukSummaryList({
+                classes: 'govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text',
+                rows: [
+                  {
+                    key: {
+                      html: 'Date of birth'
+                    },
+                    value: {
+                      html: witness.dateOfBirth | isoDateString | govukDate
+                    }
+                  },
+                  {
+                    key: {
+                      html: 'Key witness'
+                    },
+                    value: {
+                      html: "Yes" if witness.keyWitness == true else "No"
+                    }
+                  },
+                  {
+                    key: {
+                      html: 'Warned by police'
+                    },
+                    value: {
+                      html: "Yes" if witness.warned == true else "No"
+                    }
+                  },
+                  {
+                    key: {
+                      html: 'Previous transgressions'
+                    },
+                    value: {
+                      html: witness.previousTransgressions or 'None'
+                    }
+                  }
+                ]
+              })}}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p>There are no witnesses.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

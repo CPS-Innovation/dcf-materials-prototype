@@ -1,0 +1,17 @@
+{% extends "layouts/main.html" %}
+
+{% block pageTitle %}Search results – {{ serviceName or "Prototype" }}{% endblock %}
+
+{% block content %}
+  <span class="govuk-caption-m">Materials search</span>
+  <h1 class="govuk-heading-l">Results for “{{ q }}”</h1>
+
+  {# We already built a summary-list fragment server-side for consistency #}
+  <div class="govuk-!-margin-top-3">
+    {{ prebuilt | safe }}
+  </div>
+
+  <p class="govuk-body govuk-!-margin-top-6">
+    <a class="govuk-link" href="javascript:history.back()">Back</a>
+  </p>
+{% endblock %}

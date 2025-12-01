@@ -1,0 +1,17 @@
+{{ xGovukSecondaryNavigation({
+  classes: 'govuk-!-margin-bottom-6 app-case-navigation',
+  visuallyHiddenTitle: "Secondary menu",
+  items: [{
+    text: "Details",
+    href: "/cases/:caseId/details" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'details'
+  }, {
+    text: "Materials",
+    href: "/cases/:caseId/materials" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'materials'
+  }, {
+    text: "Reviews",
+    href: "/cases/:caseId/reviews" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'reviews'
+  }]
+})}}

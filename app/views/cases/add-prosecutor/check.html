@@ -1,0 +1,49 @@
+{% extends "layouts/main.html" %}
+
+{% set navId = 'cases' %}
+{% set pageName = "Check details and assign prosecutor" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: 'Back',
+    href: 'javascript:history.back()'
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+
+      <span class="govuk-caption-l">{{_case.reference}}</span>
+      <h1 class="govuk-heading-l">{{pageName}}</h1>
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: {
+              text: "Prosecutor"
+            },
+            value: {
+              html: prosecutor.firstName + ' ' + prosecutor.lastName
+            },
+            actions: {
+              items: [
+                {
+                  href: "/cases/:caseId/add-prosecutor" | replace(':caseId', _case.id),
+                  text: "Change",
+                  visuallyHiddenText: "Prosecutor"
+                }
+              ]
+            }
+          }
+        ]
+      }) }}
+
+      <form method="post">
+        {{ govukButton({
+          text: "Assign prosecutor"
+        }) }}
+      </form>
+    </div>
+  </div>
+{% endblock %}

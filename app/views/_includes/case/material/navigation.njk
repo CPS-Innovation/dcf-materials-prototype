@@ -1,0 +1,25 @@
+{{ xGovukSecondaryNavigation({
+  classes: 'govuk-!-margin-bottom-6 app-case-navigation',
+  visuallyHiddenTitle: "Secondary menu",
+  items: [{
+    text: "Overview",
+    href: "/cases/:caseId" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'overview'
+  }, {
+    text: "Details",
+    href: "/cases/:caseId/details" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'details'
+  }, {
+    text: "Communications",
+    href: "/cases/:caseId/communications" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'communications'
+  }, {
+    text: "Reviews",
+    href: "/cases/:caseId/reviews" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'reviews'
+  }, {
+    text: "Action plans",
+    href: "/cases/:caseId/action-plans" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'actionPlans'
+  }]
+})}}

@@ -1,0 +1,63 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'defendants' %}
+{% set fullName = ((defendant.firstName | default('')) ~ ' ' ~ (defendant.lastName | default(''))) | trim %}
+{% set pageName = fullName or 'Defendant' %}
+
+{% block beforeContent %}
+  {# {{ govukBreadcrumbs({
+    items: [
+      {
+        text: _case.reference,
+        href: "/cases/" ~ _case.id
+      },
+      {
+        text: "Defendants",
+        href: "/cases/" ~ _case.id ~ "/defendants"
+      },
+      {
+        text: pageName
+      }
+    ]
+  }) }} #}
+
+  {{ govukBackLink({
+    text: 'Back',
+    href: 'javascript:history.back()'
+  }) }}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: { text: "First name" },
+            value: { text: defendant.firstName | default("—") },
+            actions: {
+              items: [
+                { href: "#", text: "Change", visuallyHiddenText: "first name" }
+              ]
+            }
+          },
+          {
+            key: { text: "Last name" },
+            value: { text: defendant.lastName  | default("—") },
+            actions: {
+              items: [
+                { href: "#", text: "Change", visuallyHiddenText: "last name" }
+              ]
+            }
+          }
+        ]
+      }) }}
+
+      {# Optional: add more rows here if you later extend the Defendant model (e.g., DOB, email) #}
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,130 @@
+/* materials-viewer-tabs.scss
+   Styles for the dynamic document tab between .dcf-viewer__toolbar and .dcf-viewer__meta.
+   Square corners, flush to the blue meta bar, centred close glyph.
+*/
+
+/* Container: flush (no margins/padding) and aligned to the bottom */
+#dcf-viewer-tabs.dcf-viewer__tabs,
+.dcf-viewer__tabs.dcf-viewer__tabs--flush {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  margin: 0 !important;
+  padding: 0;
+
+  /* NEW */
+  flex-wrap: wrap;    /* wrap to new lines */
+  width: 100%;
+  min-width: 0;       /* let children shrink */
+  align-items: stretch;
+}
+
+
+/* Ensure the meta block sits tight under the tabs */
+#dcf-viewer-tabs + .dcf-viewer__meta {
+  margin-top: 0 !important;
+}
+
+/* The tab: square corners; remove bottom border so underline can meet the panel */
+.dcf-doc-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.375rem;
+  background: #ffffff;
+  border: 1px solid #1d70b8;
+  border-bottom: 0;
+  border-radius: 0 !important;
+  font-weight: 500;
+  line-height: 2.25;
+  color: #0b0c0c;
+  cursor: pointer;
+  text-decoration: none;
+  margin: 0;
+  /* NEW */
+  box-sizing: border-box;
+  flex: 0 1 260px;   /* basis ~260px, can shrink; wraps when no space */
+  min-width: 0;
+  max-width: fit-content;
+}
+
+
+.dcf-doc-tab:hover { background: #ebf2fd; }
+.dcf-doc-tab:focus {
+  outline: 3px solid #fd0;       /* GOV.UK yellow focus */
+  outline-offset: 1px;
+}
+
+/* Active tab uses the same pale blue as hover */
+.dcf-doc-tab.is-active {
+  background: #ebf2fd;       /* pale blue */
+  color: #0b0c0c;            /* keep GOV.UK body text colour */
+  border-color: #1d70b8;     /* GOV.UK blue border */
+}
+
+/* keep it pale blue even when hovered */
+.dcf-doc-tab.is-active:hover {
+  background: #ebf2fd;
+}
+
+/* (optional) show a blue bar only on the active tab */
+.dcf-doc-tab.is-active .dcf-doc-tab__bar {
+  background: #1d70b8;       /* or #3B64AC to match your meta bar */
+  height: 4px;
+}
+
+.dcf-doc-tab__label {
+  white-space: nowrap;
+  max-width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* NEW */
+  min-width: 0;      /* needed for ellipsis inside flex */
+}
+
+
+/* Close glyph: perfectly centred, circular */
+.dcf-doc-tab__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #1d70b8;     /* mid grey circle */
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.95rem;       /* a touch smaller for optical balance */
+  line-height: 2;           /* avoid baseline drift */
+  user-select: none;
+  padding: 0;
+}
+
+/* Blue underline indicating active doc; sits flush with the panel below */
+.dcf-doc-tab__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;            /* pull it down so it “kisses” the meta bar */
+  height: 6px;
+  background: none;     /* GOV.UK blue */
+  border-radius: 0;
+  pointer-events: none;
+  content: "";
+}
+
+/* Only display underline when active */
+.dcf-doc-tab:not(.is-active) .dcf-doc-tab__bar {
+  display: none;
+}
+
+/* Optional: hide the tabs container when needed */
+.dcf-viewer__tabs--hidden { display: none; }
+
+
+
+@media (max-width: 640px) {
+  .dcf-doc-tab { flex-basis: 180px; }
+}

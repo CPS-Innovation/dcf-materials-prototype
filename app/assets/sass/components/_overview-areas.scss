@@ -1,0 +1,67 @@
+.case-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* Progress / stages */
+.case-header {
+  background: #f3f2f1;
+  padding: 1rem;
+  border: 1px solid #b1b4b6;
+  text-align: center;
+  min-height: 72px;
+}
+
+/* ===== Mobile first (stacked) ===== */
+.case-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.contacts-box,
+.tasks-box,
+.monitoring-box {
+  background: #f3f2f1;
+  border: 1px solid #b1b4b6;
+  padding: 1rem;
+}
+
+.contacts-box   { min-height: 320px; }
+.tasks-box      { min-height: 180px; }
+.monitoring-box { min-height: 220px; }
+
+/* ===== Tablet and up (>= 40.0625em ~ 641px) ===== */
+@media (min-width: 40.0625em) {
+  .case-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: auto;
+    min-height: 60vh;
+  }
+
+  .contacts-box {
+    grid-row: span 2;
+    min-height: 440px;
+  }
+  .tasks-box      { min-height: 200px; }
+  .monitoring-box { min-height: 240px; }
+}
+
+/* ===== Desktop and up (>= 48.0625em ~ 769px) ===== */
+@media (min-width: 48.0625em) {
+  .case-grid {
+    min-height: 70vh;
+    gap: 1.75rem;
+  }
+
+  .contacts-box   { min-height: 500px; }
+  .tasks-box      { min-height: 220px; }
+  .monitoring-box { min-height: 280px; }
+}
+
+/* ===== Widescreen (>= 64.0625em ~ 1025px) — optional polish ===== */
+@media (min-width: 64.0625em) {
+  .case-grid { gap: 2rem; }
+}

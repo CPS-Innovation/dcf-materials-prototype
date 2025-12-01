@@ -1,0 +1,86 @@
+{% extends "layouts/main.html" %}
+
+{% set pageName = case.reference %}
+
+{% block beforeContent %}
+  {{ govukBreadcrumbs({
+    items: [
+      {
+        text: "All reports",
+        href: "/#"
+      },
+      {
+        text: "Cases with non-compliant DGAs",
+        href: "/reports"
+      }
+    ]
+  }) }}
+{% endblock %}
+
+{% block content %}
+    {% if successHeading %}
+        {{ govukNotificationBanner({
+          type: "success",
+          html: "<h3 class=\"govuk-notification-banner__heading\">" + successHeading + "</h3>"
+        }) }}
+      {% endif %}
+
+      
+<div class="govuk-width-container">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+
+  <span class="govuk-caption-l">{{ case.reference }}</span>
+  <h1 class="govuk-heading-l">Record outcomes</h1>
+
+  {% if case.dga.failureReasons.length %}
+    <div class="app-list">
+      {% for reason in case.dga.failureReasons %}
+        <div class="app-list__item">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div style="flex: 1; min-width: 0;">
+              <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+                {{ reason.reason }}
+              </h2>
+              {% if reason.outcome %}
+                <p class="govuk-body-s govuk-!-margin-bottom-0" style="color: #505a5f;">
+                  {{ reason.outcome }}
+                </p>
+              {% endif %}
+            </div>
+            <div style="text-align: right; white-space: nowrap; margin-left: 16px;">
+              {% if reason.outcome %}
+                {{ govukTag({
+                  text: "Completed",
+                  classes: "govuk-tag--grey"
+                }) }}
+              {% else %}
+                {{ govukTag({
+                  text: "Not started",
+                  classes: "govuk-tag--red"
+                }) }}
+              {% endif %}
+              <p class="govuk-body" style="margin-top: 8px; margin-bottom: 0;">
+                {% if reason.outcome %}
+                  <a href="/reports/{{ case.id }}/dga-outcomes/{{ reason.id }}/dga-select-outcome" class="govuk-link--no-visited-state">Change outcome</a>
+                {% else %}
+                  <a href="/reports/{{ case.id }}/dga-outcomes/{{ reason.id }}/dga-select-outcome" class="govuk-link--no-visited-state">Record outcome</a>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <a href="/reports" class="govuk-button govuk-button--secondary govuk-!-margin-top-4" data-module="govuk-button">
+      Back to full report
+    </a>
+  {% else %}
+    <p class="govuk-body">No failure reasons found for this case.</p>
+  {% endif %}
+  </div>
+  </div>
+  </div>
+
+{% endblock %}

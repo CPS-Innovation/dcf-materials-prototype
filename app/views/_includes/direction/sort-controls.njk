@@ -1,0 +1,22 @@
+<div class="app-sort">
+  <p>
+    <b class="govuk-!-margin-right-1">Sort by:</b>
+    {% if data.directionSort == 'Due date' or not data.directionSort %}
+      <span class="">Due date</span>
+    {% else %}
+      <a  href="?directionSort=Due date">Due date</a>
+    {% endif %}
+    <span class="govuk-!-margin-left-1 govuk-!-margin-right-1">|</span>
+    {% if data.directionSort == 'Custody time limit' %}
+      <span>Custody time limit</span>
+    {% else %}
+      <a href="?directionSort=Custody time limit">Custody time limit</a>
+    {% endif %}
+    <span class="govuk-!-margin-left-1 govuk-!-margin-right-1">|</span>
+    {% if data.directionSort == 'Hearing date' %}
+      <span>Hearing date</span>
+    {% else %}
+      <a href="?directionSort=Hearing date">Hearing date</a>
+    {% endif %}
+  </p>
+</div>

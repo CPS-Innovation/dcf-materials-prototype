@@ -1,0 +1,200 @@
+/* materials-accordion-card.scss */
+
+/* Palette */
+$dcf-card-bg:      #eaf2fc;
+$dcf-card-border:  #c8d8f1;
+$dcf-card-stripe:  #3B64AC;
+$dcf-title-blue:   #1d70b8;
+$dcf-muted:        #505a5f;
+
+.dcf-material-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  > li + li { margin-top: 8px; }
+}
+
+.dcf-material-card {
+  // remove rounding
+  border-radius: 0;
+  position: relative;
+
+  // DEFAULT: white card, subtle border
+  background: #ffffff;
+  border: 1px solid $dcf-card-border;
+
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  font-size: 16px;
+  line-height: 1.45;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 6px;
+    background: $dcf-card-stripe;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  // Hover only lightens the white a touch (non-selected state)
+  &:hover {
+    background: mix(#ffffff, $dcf-card-bg, 85%);
+    border-color: darken($dcf-card-border, 5%);
+  }
+}
+
+// Visually selected material card – matches the active tab background
+.dcf-material-card--active {
+  background: $dcf-card-bg;
+  border-color: $dcf-card-border;
+}
+
+// Keep hover from fighting with the active colour
+.dcf-material-card--active:hover {
+  background: $dcf-card-bg;
+}
+
+
+
+.dcf-material-card__main { min-width: 0; }
+
+/* Badge container: holds one or more status chips */
+.dcf-material-card__badge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 6px;
+  /* The background / colour now comes from the inner tags, not the container */
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+}
+
+
+.dcf-status-tag { margin-right: .5rem; vertical-align: text-bottom; }
+
+/* Base styles for status tags (works with both .dcf-tag and legacy .dcf-status-tag) */
+.dcf-tag,
+.dcf-status-tag {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 0;
+}
+
+/* "New" – strong blue */
+.dcf-tag--new,
+.dcf-status-tag--new {
+  background: $dcf-title-blue; // #1d70b8
+  color: #ffffff;
+}
+
+/* "Read" – done / completed */
+.dcf-tag--read,
+.dcf-status-tag--read {
+  background: #28a197; // GOV.UK green-ish
+  color: #ffffff;
+}
+
+/* "Unread" – neutral / lower emphasis */
+.dcf-tag--unread,
+.dcf-status-tag--unread {
+  background: #ffdd00;  // GOV.UK light grey-ish
+  color: #0b0c0c;
+}
+
+/* Keep old margin behaviour if anything still uses .dcf-status-tag directly */
+.dcf-status-tag {
+  margin-right: .5rem;
+  vertical-align: text-bottom;
+}
+
+
+.dcf-material-card__title {
+  margin: 0 0 3px;
+  font-size: 19px;
+
+  a {
+    color: $dcf-title-blue;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover { text-decoration-thickness: 2px; }
+  }
+}
+
+
+
+.dcf-material-card__meta {
+  margin: 0;
+  font-size: 14px;
+  color: $dcf-muted;
+}
+
+.dcf-material-card__comment {
+  align-self: start;
+  position: relative;
+  margin-left: 8px;
+  width: 22px; height: 22px;
+
+  svg, img { width: 22px; height: 22px; display: block; }
+
+  &.is-unread::after {
+    content: "";
+    position: absolute;
+    right: -2px; top: -2px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #1d70b8;
+    box-shadow: 0 0 0 2px #fff;
+  }
+}
+
+/* ---- Card & list tightening (append to end of _materials-accordion-card.scss) ---- */
+
+
+/* Gap between cards */
+.dcf-materials-panel .dcf-material-list > li {
+  margin: 12px 0;      /* was likely larger */
+}
+
+/* Card body padding kept compact */
+.dcf-materials-panel .dcf-material-card {
+  margin: 0;           /* li controls spacing between cards */
+  padding: 10px 10px 10px 20px;      /* trim inner padding */
+  border-radius: 0px;  /* optional, keep if you had it */
+}
+
+/* Badge and text spacing inside card */
+.dcf-materials-panel .dcf-material-card__badge {
+  display: inline-block;
+  margin: 0 0 4px 0;
+}
+
+.dcf-materials-panel .dcf-material-card__title {
+  margin: 0 0 2px 0;   /* kill heading bottom margin */
+  line-height: 1.2;
+}
+
+.dcf-materials-panel .dcf-material-card__meta {
+  margin: 0;           /* kill paragraph margin */
+}
+
+/* If you render a comment bubble container, keep it tight too */
+.dcf-materials-panel .dcf-material-card__comment {
+  margin: 0;
+}
+
+
+@media (max-width: 360px) {
+  .dcf-material-card { padding: 10px 12px; grid-template-columns: 1fr 20px; }
+}

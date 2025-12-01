@@ -1,0 +1,51 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set pageName = 'How we calculated complexity :level' | replace(':level', _case.complexity | lower) %}
+
+{% block beforeContent %}
+  {{ govukBreadcrumbs({
+    items: [
+      {
+        text: "Cases",
+        href: "/cases"
+      },
+      {
+        text: _case.reference,
+        href: "/cases/:caseId" | replace(':caseId', _case.id)
+      },
+      {
+        text: pageName
+      }
+    ]
+  }) }}
+{% endblock %}
+
+{% block content %}
+ {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">{{pageName}}</h1>
+      
+      <p>We assigned the complexity as {{_case.complexity | lower}} because it has:</p>
+
+      <ul class="govuk-list govuk-list--bullet">
+        <li>
+          4 defendants
+        </li>
+        <li>
+          5 victims
+        </li>
+        <li>
+          100 documents
+        </li>
+        <li>
+          Etc
+        </li>
+      </ul>
+
+      <p>You can <a href="/cases/{{_case.id}}/edit-complexity">change the complexity level</a>.</p>
+
+    </div>
+  </div>
+{% endblock %}

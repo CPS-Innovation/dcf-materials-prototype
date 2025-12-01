@@ -1,0 +1,108 @@
+{# Police disclosure ////////////////////////////////////////// #}
+
+{% set policeDisclosureHtml %}
+
+{{ govukSummaryList({
+  
+  rows: [
+    {
+      key: {
+        html: 'Certifier name',
+        classes: 'govuk-grid-column-one-third'
+      },
+      value: {
+        html: '<a href="#" class="govuk-link">Sgt Sally Ascombe-Down (OIC)</a>',
+        classes: 'govuk-grid-column-two-thirds'
+      }
+    },
+    {
+      key: {
+        html: 'When certified',
+        classes: 'govuk-grid-column-one-third'
+      },
+      value: {
+        html: "23/03/2025",
+        classes: 'govuk-grid-column-two-thirds'
+      }
+    },
+    {
+      key: {
+        html: 'Status',
+        classes: 'govuk-grid-column-one-third'
+      },
+      value: {
+        html: 'Valid',
+        classes: 'govuk-grid-column-two-thirds'
+      }
+    },{
+      key: {
+        html: 'Comments',
+        classes: 'govuk-grid-column-one-third'
+      },
+      value: {
+        html: 'I certify that, to the best of my knowledge and belief, no information has been withheld which would assist the accused in the preparation of the defence in accordance with R. v Director of Public Prosecutions ex parte Lee [1999] 2 CR. App. R. 304 which includes, but is not limited to, information that might assist the defence in making an application for bail. 
+
+        To the best of my knowledge and belief, all material that is or may be relevant has been retained and made available to me. It has been inspected, viewed or listened to and revealed to the prosecutor in accordance with the Criminal Procedure and Investigations Act 1996 as amended, Code of Practice and the Attorney General’s Guidelines.
+
+        I also certify that all material subject to rebuttable presumption under the CPIA code of practice has been recorded and provided (as required). I have reviewed all the relevant material, that has been retained and made available to me and there is nothing to the best of my knowledge and belief that might reasonably be considered capable of undermining the prosecution case against the accused or assisting the case for the accused. 
+        ',
+        classes: 'govuk-grid-column-two-thirds'
+      }
+    }
+  ]
+})}}
+
+
+
+
+{% endset -%}
+
+
+
+{# Disclosure assessment ////////////////////////////////////////// #}
+
+{% set disclosureAssessmentHtml %}
+
+
+
+
+{% endset -%}
+
+
+
+{# Disclosure schedule ////////////////////////////////////////// #}
+
+{% set disclosureScheduleHtml %}
+
+
+
+
+{% endset -%}
+
+
+{# Tabs component ////////////////////////////////////////// #}
+{{ govukTabs({
+  items: [
+    {
+      label: "Police disclosure certificate",
+      id: "police-disclosure-certificate",
+      panel: {
+        html: policeDisclosureHtml
+      }
+    },
+    {
+      label: "Disclosure assessment",
+      id: "disclosure-assessment",
+      panel: {
+        html: disclosureAssessmentHtml
+      }
+    },
+    {
+      label: "Disclosure schedule",
+      id: "disclosure-schedule",
+      panel: {
+        html: disclosureScheduleHtml
+      }
+    }
+  ]
+}) }}

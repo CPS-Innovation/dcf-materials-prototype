@@ -1,0 +1,95 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+
+
+{% set defendantsValue %}
+  {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+  {% if _case.defendants.length > 1 %}
+    and {{_case.defendants.length - 1}} more
+  {% endif %}
+{% endset %}
+
+{# {% set pageName = 'Details' %} #}
+{% set pageName = defendantsValue %}
+  
+{% block beforeContent %}
+  {# {% include "_includes/case/identity-bar.njk" %} #}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/case/dcf-navigation.njk" %}
+  {% include "_includes/success-banner.njk" %}
+  
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+      <span class="govuk-caption-m">{{_case.reference}}</span>
+      <h1 class="govuk-heading-m">{{defendantsValue}}</h1>
+    </div>
+  
+
+    <div class="govuk-grid-column-full">
+      {% include "_includes/case/details/main-tabs.njk" %}
+
+    </div>
+  </div>
+{% endblock %}
+
+{% block pageScripts %}
+<script>
+/* ---- Side navigation: hash-scoped toggling (#factual-summary / #cip / #certifications) ---- */
+(function () {
+  var SECTION_HASHES = ['#factual-summary', '#cip', '#certifications'];
+  var DEFAULT_HASH   = '#factual-summary';
+
+  function resolveHash() {
+    var h = window.location.hash || '';
+    return (SECTION_HASHES.indexOf(h) !== -1) ? h : DEFAULT_HASH;
+  }
+
+  function renderSideNav() {
+    var hash = resolveHash();
+
+    // Toggle panels
+    document.querySelectorAll('.js-case-section').forEach(function (p) {
+      p.hidden = ('#' + p.id) !== hash;
+    });
+
+    // Update side-nav state
+    document.querySelectorAll('.moj-side-navigation a[href^="#"]').forEach(function (a) {
+      var on = a.getAttribute('href') === hash;
+      if (on) {
+        a.setAttribute('aria-current', 'location');
+        a.parentElement.classList.add('moj-side-navigation__item--active');
+      } else {
+        a.removeAttribute('aria-current');
+        a.parentElement.classList.remove('moj-side-navigation__item--active');
+      }
+    });
+  }
+
+  // Clicks on side-nav: push hash and render (no page jump)
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('.moj-side-navigation a[href^="#"]');
+    if (!link) return;
+    e.preventDefault();
+    var target = link.getAttribute('href');
+    if (target && target !== window.location.hash) {
+      history.pushState(null, '', target);
+    }
+    renderSideNav();
+  });
+
+  window.addEventListener('popstate', renderSideNav);
+  window.addEventListener('hashchange', renderSideNav);
+  document.addEventListener('DOMContentLoaded', renderSideNav);
+})();
+</script>
+{% endblock %}
+
+
+
+

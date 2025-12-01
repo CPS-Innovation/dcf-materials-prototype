@@ -1,0 +1,46 @@
+{% extends "layouts/main.html" %}
+
+{% set navId = 'cases' %}
+{% set pageName = "DGA outcome" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: 'Back',
+    href: 'javascript:history.back()'
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+      <span class="govuk-caption-l">{{_case.reference}}</span>
+      <form method="post">
+        {{ govukRadios({
+          name: "recordDGA[outcome]",
+          fieldset: {
+            legend: {
+              text: pageName,
+              isPageHeading: true,
+              classes: "govuk-fieldset__legend--l"
+            }
+          },
+          value: data.recordDGA.outcome,
+          items: [{
+            text: 'Not disputed',
+            value: 'NOT_DISPUTED'
+          }, {
+            text: 'Disputed successfully',
+            value: 'DISPUTED_SUCCESSFULLY'
+          }, {
+            text: 'Disputed unsuccessfully',
+            value: 'DISPUTED_UNSUCCESSFULLY'
+          }]
+        }) }}
+
+        {{ govukButton({
+          text: "Continue"
+        }) }}
+      </form>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,27 @@
+<div class="app-sort">
+  <p>
+    <b class="govuk-!-margin-right-1">Sort by:</b>
+
+    {% if data.reportsSort == 'Case reference' %}
+      <span>Case reference</span>
+    {% else %}
+      <a href="?reportsSort=Case reference">Case reference</a>
+    {% endif %}
+
+    <span class="govuk-!-margin-left-1 govuk-!-margin-right-1">|</span>
+
+    {% if data.reportsSort == 'Report status' %}
+      <span>Report status</span>
+    {% else %}
+      <a href="?reportsSort=Report status">Report status</a>
+    {% endif %}
+
+    <span class="govuk-!-margin-left-1 govuk-!-margin-right-1">|</span>
+
+    {% if data.reportsSort == 'Unit' %}
+      <span>Unit</span>
+    {% else %}
+      <a href="?reportsSort=Unit">Unit</a>
+    {% endif %}
+  </p>
+</div>

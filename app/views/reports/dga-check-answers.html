@@ -1,0 +1,102 @@
+{% extends "layouts/main.html" %}
+
+{% set pageName = failureReason.reason %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/reports/" + case.id + "/dga-outcomes/" + failureReason.id + "/dga-select-outcome"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+
+  <span class="govuk-caption-l">{{ case.reference }}</span>
+  <h1 class="govuk-heading-l">Check details and record outcome</h1>
+
+    <div class="govuk-inset-text">
+    <h3 class="govuk-heading-s">Failure reason</h3>
+        {{ failureReason.reason }}
+  </div>
+
+  <h2 class="govuk-heading-m"></h2>
+
+  {% set methodsText %}
+    {% if methods and methods.length > 0 %}
+      {{ methods.join(', ') }}
+    {% else %}
+      -
+    {% endif %}
+  {% endset %}
+
+  {% set detailsText %}
+    {% if details %}
+      {{ details }}
+    {% else %}
+      -
+    {% endif %}
+  {% endset %}
+
+  {% set summaryRows = [
+    {
+      key: { text: "Outcome" },
+      value: { text: outcome },
+      actions: {
+        items: [
+          {
+            href: "/reports/" + case.id + "/dga-outcomes/" + failureReason.id + "/dga-select-outcome",
+            text: "Change",
+            visuallyHiddenText: "outcome"
+          }
+        ]
+      }
+    }
+  ] %}
+
+  {% if outcome != "Not disputed" %}
+    {% set summaryRows = (summaryRows.push({
+      key: { text: "Details" },
+      value: { text: detailsText },
+      actions: {
+        items: [
+          {
+            href: "/reports/" + case.id + "/dga-outcomes/" + failureReason.id + "/dga-add-details",
+            text: "Change",
+            visuallyHiddenText: "details"
+          }
+        ]
+      }
+    }), summaryRows) %}
+
+    {% set summaryRows = (summaryRows.push({
+      key: { text: "Methods" },
+      value: { text: methodsText },
+      actions: {
+        items: [
+          {
+            href: "/reports/" + case.id + "/dga-outcomes/" + failureReason.id + "/dga-select-methods",
+            text: "Change",
+            visuallyHiddenText: "methods"
+          }
+        ]
+      }
+    }), summaryRows) %}
+  {% endif %}
+
+  {{ govukSummaryList({
+    rows: summaryRows
+  }) }}
+
+  <form method="post">
+    {{ govukButton({
+      text: "Record outcome"
+    }) }}
+  </form>
+
+  </div>
+  </div>
+  </div>
+{% endblock %}

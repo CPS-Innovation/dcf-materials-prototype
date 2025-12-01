@@ -1,0 +1,70 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'material' %}
+{% set pageName = 'Disclosure' %}
+
+{% block beforeContent %}
+  
+  {{ govukBreadcrumbs({
+    items: [
+      {
+        text: _case.reference,
+        href: "/cases/:caseId" | replace(':caseId', _case.id)
+      },
+      {
+        text: "Material",
+        href: "/cases/:caseId/material" | replace(':caseId', _case.id)
+      },
+      {
+        html: "Disclosure"
+      }
+    ]
+  }) }} 
+{% endblock beforeContent %}
+
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+  {# {% include "_includes/case/header.njk" %} #}
+  {# {% include "_includes/case/material/navigation.njk" %} #}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+      <h1 class="govuk-heading-l">{{pageName}}</h1>
+
+      <div class="govuk-button-group">
+       
+      </div>
+
+      <div class="govuk-button-group">
+         {{ mojButtonMenu({
+            button: {
+              text: "Assess material"
+            },
+            items: [
+              {
+                text: "Assess as disclosable"
+              },
+              {
+                text: "Assess as disclosable by inspection"
+              },
+              {
+                text: "Assess as clearly not disclosable"
+              },
+              {
+                text: "Assess as notdisclosable"
+              }
+            ]
+          }) }}
+
+        <a class="govuk-link" href="/cases/{{_case.id}}/disclosure/certificate">Certificate</a>
+        <a class="govuk-link" href="/cases/{{_case.id}}/disclosure/schedule">Schedule</a>
+      </div>
+
+     
+
+      {% include "_includes/case/disclosure/disclosure-table.njk" %}
+      
+    </div>
+  </div>
+{% endblock %}

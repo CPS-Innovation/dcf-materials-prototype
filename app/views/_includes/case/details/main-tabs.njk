@@ -1,0 +1,35 @@
+{# _includes/case/details/main-tabs.njk #}
+{% set overviewHtml %}
+  {# Some skeleton structure to mimic overview page #}
+  <div class="case-layout">
+    <div class="case-header">Progress bar area (Charge → Sentence)</div>
+
+    <div class="case-grid">
+      <div class="contacts-box">Contacts</div>
+      <div class="tasks-box">Tasks</div>
+      <div class="monitoring-box">Monitoring codes</div>
+    </div>
+  </div>
+{% endset %}
+
+
+
+{% set caseOutlineHtml %}
+  <h3 class="govuk-heading-m">Case outline</h3>
+  {% include "_includes/case/details/outline-panels.njk" %}
+{% endset -%}
+
+{% set defendantsHtml %}<h3 class="govuk-heading-m">Defendants</h3>{% endset -%}
+{% set witnessesHtml  %}<h3 class="govuk-heading-m">Witnesses</h3>{% endset -%}
+{% set contactsHtml %}<h3 class="govuk-heading-m">Contacts</h3>{% endset -%}
+
+{{ govukTabs({
+  id: "case-tabs",
+  items: [
+    { label: "Overview", id: "overview", panel: { html: overviewHtml } },
+    { label: "Outline", id: "case-outline", panel: { html: caseOutlineHtml } },
+    { label: "Defendants",   id: "defendants",   panel: { html: defendantsHtml } },
+    { label: "Witnesses",    id: "witnesses",    panel: { html: witnessesHtml } },
+    { label: "Contacts",   id: "contacts",   panel: { html: contactsHtml } }
+  ]
+}) }}

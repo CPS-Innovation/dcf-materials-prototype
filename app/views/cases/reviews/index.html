@@ -1,0 +1,37 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'reviews' %}
+
+
+{% set defendantsValue %}
+  {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+  {% if _case.defendants.length > 1 %}
+    and {{_case.defendants.length - 1}} more
+  {% endif %}
+{% endset %}
+
+{% set pageName = defendantsValue %}
+  
+{# {% block beforeContent %}
+  {% include "_includes/case/identity-bar.njk" %}
+{% endblock %} #}
+
+{% block content %}
+  {% include "_includes/case/dcf-navigation.njk" %}
+  {% include "_includes/success-banner.njk" %}
+  
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+      <span class="govuk-caption-m">{{_case.reference}}</span>
+      <h1 class="govuk-heading-m">{{pageName}}</h1>
+    </div>
+  
+
+    <div class="govuk-grid-column-full">
+      {% include "_includes/case/reviews/main-tabs.njk" %}
+
+    </div>
+  </div>
+{% endblock %}
+

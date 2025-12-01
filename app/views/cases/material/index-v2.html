@@ -1,0 +1,120 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'material' %}
+{% set pageName = 'Material' %}
+{# {% set pageName = "Material (:total)" | replace(':total', _case.materials.length) %} #}
+
+{% block beforeContent %}
+  {% include "_includes/case/identity-bar.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+  {# {% include "_includes/case/header.njk" %} #}
+  {% include "_includes/case/material/navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+      <h1 class="govuk-heading-l">{{pageName}}</h1>
+
+     <p class="govuk-body govuk-!-margin-bottom-6">
+      <a href="/cases/{{_case.id}}/disclosure" class="govuk-link">View disclosure list</a>
+     </p>
+
+     {{ _case.defendants | log }}
+
+      <div class="app-filter-layout">
+        <div class="app-filter-layout__filter">
+          {# {% include "_includes/document/filter-panel.njk" %} #}
+        </div>
+        <div class="app-filter-layout__content">
+
+          <div class="app-action-bar">
+            <div class="app-action-bar__filter"></div>
+          </div>
+
+          {% include "_includes/document/search-form.njk" %}
+          {% include "_includes/case/material/sort-controls.njk" %}
+
+          {% if documents.length %}
+            <div class="app-list">
+
+              {% for f in assetFileLinks %}
+
+              <div class="app-list__item">
+                  <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+                    <a href="{{ f.href }}" class="govuk-link govuk-link--no-visited-state">{{ f.name }}</a>
+                  </h2>
+
+                  
+                  {% set relatedDefendants %}
+                    {% set hasOthers = _case.defendants and _case.defendants.length > 1 %}
+                    {% if hasOthers %}
+                      {% for defendant in _case.defendants %}
+                        {% if not loop.first %}
+                          <a href="/cases/{{ _case.id }}/defendants/{{ defendant.id }}" class="govuk-link--no-visited-state">
+                            {{ defendant.firstName }} {{ defendant.lastName }}
+                          </a>{% if not loop.last %}, {% endif %}
+                        {% endif %}
+                      {% endfor %}
+                    {% else %}
+                      <span class="govuk-hint govuk-!-display-inline">No co-defendants</span>
+                    {% endif %}
+                  {% endset %}
+
+                  
+                  {{ govukSummaryList({
+                    classes: 'govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text',
+                    rows: [
+                      {
+                        key: {
+                          html: 'Type'
+                        },
+                        value: {
+                          html: document.type
+                        }
+                      },
+                      {
+                        key: {
+                          html: 'Description'
+                        },
+                        value: {
+                          html: document.description
+                        }
+                      },
+                      {
+                        key: {
+                          html: 'Date added'
+                        },
+                        value: {
+                          html: document.dateAdded
+                        }
+                      },{
+                        key: {
+                          html: 'Police classification'
+                        },
+                        value: {
+                          html: document.policeClassification
+                        }
+                      },{
+                        key: {
+                          html: 'Related defendant(s)'
+                        },
+                        value: {
+                          html: relatedDefendants
+                        }
+                      }
+                    ]
+                  })}}
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p>There are no documents.</p>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

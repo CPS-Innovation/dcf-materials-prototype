@@ -1,0 +1,24 @@
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'dga' %}
+{% set pageName = 'DGA' %}
+
+{% block beforeContent %}
+  {% include "_includes/case-identity-bar.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+  {% include "_includes/case/navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">{{pageName}}</h1>
+      
+      {{ govukButton({
+        text: "Add outcome"
+      }) }}
+
+    </div>
+  </div>
+{% endblock %}

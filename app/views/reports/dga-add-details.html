@@ -1,0 +1,41 @@
+{% extends "layouts/main.html" %}
+
+{% set pageName = failureReason.reason %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/reports/" + case.id + "/dga-outcomes/" + failureReason.id + "/dga-select-outcome"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<div class="govuk-width-container">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+  <span class="govuk-caption-l">{{ case.reference }}</span>
+  <h1 class="govuk-heading-l">Add an explanation for this decision</h1>
+
+
+  <div class="govuk-inset-text">
+    <h3 class="govuk-heading-s">Failure reason</h3>
+        {{ failureReason.reason }}
+  </div>
+
+  <form method="post">
+    {{ govukCharacterCount({
+      name: "details",
+      id: "details",
+      maxlength: 200,
+      value: details
+    }) }}
+
+    {{ govukButton({
+      text: "Continue"
+    }) }}
+  </form>
+
+  </div>
+  </div>
+  </div>
+{% endblock %}

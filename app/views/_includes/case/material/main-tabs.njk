@@ -1,0 +1,24 @@
+{# _includes/case/details/main-tabs.njk #}
+
+{# If you actually want *all* materials regardless of type: #}
+{% set totalCount = (data.caseMaterials.Material or []) | length %}
+
+
+{% set reviewAndRedactMaterialsHtml %}
+  {% include "_includes/case/material/material-panel.njk" %}
+{% endset -%}
+{% set viewMaterialsLabel = "Review and redact (" ~ totalCount ~ ")" %}
+
+{% set disclosureHtml %}<h3 class="govuk-heading-m">Disclosure</h3>{% endset -%}
+{% set communicationsHtml %}<h3 class="govuk-heading-m">Communications</h3>{% endset -%}
+
+
+
+{{ govukTabs({
+  id: "case-tabs",
+  items: [
+    { label: viewMaterialsLabel, id: "view-materials", panel: { html: reviewAndRedactMaterialsHtml } },
+    { label: "Disclosure", id: "disclosure", panel: { html: disclosureHtml } },
+    { label: "Communications", id: "communications", panel: { html: communicationsHtml } }
+  ]
+}) }}

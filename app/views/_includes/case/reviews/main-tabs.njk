@@ -1,0 +1,13 @@
+
+{% set reviewOneHtml %}<h3 class="govuk-heading-m">Review One</h3>{% endset -%}
+{% set reviewTwoHtml  %}<h3 class="govuk-heading-m">Review Two</h3>{% endset -%}
+{% set reviewThreeHtml %}<h3 class="govuk-heading-m">Review Three</h3>{% endset -%}
+
+{{ govukTabs({
+  id: "case-tabs",
+  items: [
+    { label: "Review One",   id: "review-one",   panel: { html: reviewOneHtml } },
+    { label: "Review Two",    id: "review-two",    panel: { html: reviewTwoHtml } },
+    { label: "Review Three",   id: "review-three",   panel: { html: reviewThreeHtml } }
+  ]
+}) }}

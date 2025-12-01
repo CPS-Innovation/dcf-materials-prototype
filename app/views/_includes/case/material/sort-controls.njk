@@ -1,0 +1,22 @@
+<div class="app-sort">
+  <p>
+    <b class="govuk-!-margin-right-1">Sort by:</b>
+    {% if data.taskSort == 'Statements' %}
+      <span class="">Statements</span>
+    {% else %}
+      <a  href="?taskSort=Statements">Statements</a>
+    {% endif %}
+    <span class="govuk-!-margin-left-1 govuk-!-margin-right-1">|</span>
+    {% if data.taskSort == 'Exhibits' %}
+      <span>Exhibits</span>
+    {% else %}
+      <a href="?taskSort=Exhibits">Exhibits</a>
+    {% endif %}
+    <span class="govuk-!-margin-left-1 govuk-!-margin-right-1">|</span>
+    {% if data.taskSort == 'MG forms' %}
+      <span>MG forms</span>
+    {% else %}
+      <a href="?taskSort=MG forms">MG forms</a>
+    {% endif %}
+  </p>
+</div>

@@ -1,0 +1,22 @@
+<div class="app-search-form">
+  <form>
+    {{ govukInput({
+      id: "reportSearch[keywords]",
+      name: "reportSearch[keywords]",
+      label: {
+        text: "Search by case reference",
+        classes: "govuk-label--s app-search-form__label"
+      },
+      value: data.reportSearch.keywords
+    }) }}
+
+    {{ govukButton({
+      text: "Search",
+      classes: "app-search-form__button"
+    }) }}
+  </form>
+
+  {% if data.reportSearch.keywords %}
+    <p class="govuk-!-margin-top-2 govuk-!-margin-bottom-0"><a class="govuk-link--no-visited-state" href="/reports/clear-search">Clear search</a></p>
+  {% endif %}
+</div>
