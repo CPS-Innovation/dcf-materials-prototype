@@ -40,10 +40,10 @@
     <div class="dcf-material-card__main">
 
       {# --- status badge (show only when status is exactly "New") --- #}
-      {% set _status = m.materialStatus  %}
-        {% if _status and (_status | lower) == 'new' %}
-          <span class="dcf-material-card__badge">New</span>
-        {% endif %}
+      {% set _status = m.materialStatus %}
+      {% if _status and (_status | lower) == 'new' %}
+        <span class="dcf-material-card__badge">New</span>
+      {% endif %}
         
       <h3 class="dcf-material-card__title govuk-!-margin-bottom-1">
         {% if m.myFileUrl %}
@@ -79,7 +79,6 @@
               PeriodTo: m.PeriodTo
             },
 
-
             RelatedMaterials: cm.RelatedMaterials,
             DigitalRepresentation: cm.DigitalRepresentation,
             PoliceMaterial: cm.PoliceMaterial,
@@ -90,27 +89,32 @@
           {{ linkText }}
         {% endif %}
       </h3>
-        {% if m.date %}
-          <p class="dcf-material-card__meta govuk-!-margin-bottom-0">
-            Date: {{ m.date }}
-          </p>
-        {% endif %}
 
-        <p class="dcf-material-card__meta dcf-material-card__note-link govuk-!-margin-bottom-0">
+      {% if m.date %}
+        <p class="dcf-material-card__meta dcf-material-card__meta--with-note govuk-!-margin-bottom-0">
+          <span class="dcf-material-card__date">
+            Date: {{ m.date }}
+          </span>
+
           <a href="#" class="govuk-link dcf-note-link" data-action="open-notes">
             <span class="dcf-note-link__icon" aria-hidden="true">
               <img
                 src="/public/files/speech-bubble-svgrepo-com.svg"
                 alt=""
-                width="20"
-                height="20">
+                width="18"
+                height="18">
+
+              {# Unread indicator overlayed on the icon #}
+              <span class="dcf-material-card__comment is-unread"></span>
             </span>
+
             <span class="dcf-note-link__text">Add a note</span>
           </a>
-        </p>
 
-        </div>
-      <div class="dcf-material-card__comment is-unread govuk-!-margin-bottom-0"></div>
+        </p>
+      {% endif %}
+
+    </div>
   </article>
 {% endmacro %}
 

@@ -25,11 +25,10 @@ $dcf-muted:        #505a5f;
   border: 1px solid $dcf-card-border;
 
   padding: 12px 16px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 12px;
+  display: block;       // single column layout
   font-size: 16px;
   line-height: 1.45;
+  max-width: 100%;
 
   &::before {
     content: "";
@@ -41,7 +40,6 @@ $dcf-muted:        #505a5f;
     border-bottom-left-radius: 0;
   }
 
-  // Hover only lightens the white a touch (non-selected state)
   &:hover {
     background: mix(#ffffff, $dcf-card-bg, 85%);
     border-color: darken($dcf-card-border, 5%);
@@ -59,9 +57,13 @@ $dcf-muted:        #505a5f;
   background: $dcf-card-bg;
 }
 
-
-
-.dcf-material-card__main { min-width: 0; }
+/* Main content column (badge, title, meta rows) */
+.dcf-material-card__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;   // children (including meta row) can stretch full width
+}
 
 /* Badge container: holds one or more status chips */
 .dcf-material-card__badge {
@@ -69,14 +71,12 @@ $dcf-muted:        #505a5f;
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
-  margin-bottom: 6px;
-  /* The background / colour now comes from the inner tags, not the container */
+  margin-bottom: 6px;  // was 6px, keep or bump slightly if you like
   padding: 0;
   border-radius: 0;
   background: transparent;
   color: inherit;
 }
-
 
 .dcf-status-tag { margin-right: .5rem; vertical-align: text-bottom; }
 
@@ -108,7 +108,7 @@ $dcf-muted:        #505a5f;
 /* "Unread" – neutral / lower emphasis */
 .dcf-tag--unread,
 .dcf-status-tag--unread {
-  background: #ffdd00;  // GOV.UK light grey-ish
+  background: #ffdd00;
   color: #0b0c0c;
 }
 
@@ -118,9 +118,8 @@ $dcf-muted:        #505a5f;
   vertical-align: text-bottom;
 }
 
-
 .dcf-material-card__title {
-  margin: 0 0 3px;
+  margin: 0 0 6px;     // was 0 0 3px – gives more space under the title
   font-size: 19px;
 
   a {
@@ -132,56 +131,73 @@ $dcf-muted:        #505a5f;
   }
 }
 
-
-
 .dcf-material-card__meta {
   margin: 0;
   font-size: 14px;
   color: $dcf-muted;
 }
 
+/* Date left, Add a note (icon + text) right */
+.dcf-material-card__meta.dcf-material-card__meta--with-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: 2px;     // small breathing space above the date row
+}
+
+/* Note link (icon + text) */
+.dcf-note-link {
+  display: inline-flex;
+  align-items: center;
+  /* remove position: relative here */
+}
+
+
 .dcf-note-link__icon {
   display: inline-flex;
   align-items: center;
   margin-right: 4px;
+  position: relative;        // NEW: make icon the positioning context
 }
 
 .dcf-note-link__icon img {
   display: block;
+  color: #1d70b8;
 }
 
+/* Unread dot overlayed on the icon */
 .dcf-material-card__comment {
-  align-self: start;
-  position: relative;
-  margin-left: 8px;
-  width: 22px; height: 22px;
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+}
 
-  svg, img { width: 22px; height: 22px; display: block; }
-
-  &.is-unread::after {
-    content: "";
-    position: absolute;
-    right: -2px; top: -2px;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: #1d70b8;
-    box-shadow: 0 0 0 2px #fff;
-  }
+.dcf-material-card__comment.is-unread::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #1d70b8;
+  box-shadow: 0 0 0 2px #fff;
 }
 
 /* ---- Card & list tightening (append to end of _materials-accordion-card.scss) ---- */
 
-
 /* Gap between cards */
 .dcf-materials-panel .dcf-material-list > li {
-  margin: 12px 0;      /* was likely larger */
+  margin: 12px 0;
 }
 
 /* Card body padding kept compact */
 .dcf-materials-panel .dcf-material-card {
-  margin: 0;           /* li controls spacing between cards */
-  padding: 10px 10px 10px 20px;      /* trim inner padding */
-  border-radius: 0px;  /* optional, keep if you had it */
+  margin: 0;                       /* li controls spacing between cards */
+  padding: 10px 10px 10px 20px;    /* trim inner padding */
+  border-radius: 0px;
 }
 
 /* Badge and text spacing inside card */
@@ -199,12 +215,8 @@ $dcf-muted:        #505a5f;
   margin: 0;           /* kill paragraph margin */
 }
 
-/* If you render a comment bubble container, keep it tight too */
-.dcf-materials-panel .dcf-material-card__comment {
-  margin: 0;
-}
-
-
 @media (max-width: 360px) {
-  .dcf-material-card { padding: 10px 12px; grid-template-columns: 1fr 20px; }
+  .dcf-material-card {
+    padding: 10px 12px;
+  }
 }
