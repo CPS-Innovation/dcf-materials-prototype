@@ -140,6 +140,16 @@ $dcf-muted:        #505a5f;
   color: $dcf-muted;
 }
 
+.dcf-note-link__icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.dcf-note-link__icon img {
+  display: block;
+}
+
 .dcf-material-card__comment {
   align-self: start;
   position: relative;

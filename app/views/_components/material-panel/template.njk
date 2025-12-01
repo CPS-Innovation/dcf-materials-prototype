@@ -90,9 +90,27 @@
           {{ linkText }}
         {% endif %}
       </h3>
-      {% if m.date %}<p class="dcf-material-card__meta govuk-!-margin-bottom-0">Date: {{ m.date }}</p>{% endif %}
-    </div>
-    <div class="dcf-material-card__comment is-unread govuk-!-margin-bottom-0"></div>
+        {% if m.date %}
+          <p class="dcf-material-card__meta govuk-!-margin-bottom-0">
+            Date: {{ m.date }}
+          </p>
+        {% endif %}
+
+        <p class="dcf-material-card__meta dcf-material-card__note-link govuk-!-margin-bottom-0">
+          <a href="#" class="govuk-link dcf-note-link" data-action="open-notes">
+            <span class="dcf-note-link__icon" aria-hidden="true">
+              <img
+                src="/public/files/speech-bubble-svgrepo-com.svg"
+                alt=""
+                width="20"
+                height="20">
+            </span>
+            <span class="dcf-note-link__text">Add a note</span>
+          </a>
+        </p>
+
+        </div>
+      <div class="dcf-material-card__comment is-unread govuk-!-margin-bottom-0"></div>
   </article>
 {% endmacro %}
 

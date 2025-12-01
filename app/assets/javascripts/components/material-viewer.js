@@ -125,6 +125,15 @@
     closeNotesModal()
   })
 
+  // Global handler for anything with data-action="open-notes"
+  document.addEventListener('click', function (e) {
+    var trigger = e.target && e.target.closest('[data-action="open-notes"]')
+    if (!trigger) return
+    e.preventDefault()
+    openNotesModal(trigger)
+  })
+
+
   // Close the notes tray with Esc when it's open.
   document.addEventListener('keydown', function (e) {
     if (!isNotesOpen()) return
@@ -748,9 +757,6 @@
       '<div class="dcf-viewer__meta-bar">' +
         '<div class="dcf-meta-actions">' +
           '<div class="dcf-meta-right">' +
-            // NOTE: this is what opens the side-tray modal
-            '<a href="#" class="govuk-link" data-action="open-notes">Add a note</a>' +
-            '<span class="dcf-meta-sep" aria-hidden="true"> | </span>' +
             '<a href="#" class="govuk-link js-meta-toggle dcf-meta-toggle" ' +
               'data-action="toggle-meta" ' +
               'aria-expanded="false" ' +
@@ -762,6 +768,7 @@
           '</div>' +
         '</div>' +
       '</div>'
+
 
     var inlineActions =
       '<div class="dcf-meta-inline-actions">' +
@@ -1002,11 +1009,6 @@
       return
     }
 
-    // --- NEW: open notes side-tray from meta bar ---
-    if (action === 'open-notes') {
-      openNotesModal(a)
-      return
-    }
 
     // Show/hide the meta details panel (robust to id drift)
     if (action === 'toggle-meta') {
