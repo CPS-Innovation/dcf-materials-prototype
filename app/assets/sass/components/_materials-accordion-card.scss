@@ -63,6 +63,8 @@ $dcf-muted:        #505a5f;
   display: flex;
   flex-direction: column;
   align-items: stretch;   // children (including meta row) can stretch full width
+  row-gap: 5px;           // space between badge, title, and date/note row
+  // if you want a bit more, try 6px or 8px instead of 4px
 }
 
 /* Badge container: holds one or more status chips */
@@ -206,10 +208,7 @@ $dcf-muted:        #505a5f;
   margin: 0 0 4px 0;
 }
 
-.dcf-materials-panel .dcf-material-card__title {
-  margin: 0 0 2px 0;   /* kill heading bottom margin */
-  line-height: 1.2;
-}
+
 
 .dcf-materials-panel .dcf-material-card__meta {
   margin: 0;           /* kill paragraph margin */
