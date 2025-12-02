@@ -1,0 +1,84 @@
+{# _includes/case/details/tasks-panel.njk #}
+
+{# Allow the route to pass in tasks; fall back to placeholder data #}
+{% set tasks = tasks or [
+  {
+    name: "Retrieve core details",
+    dueDate: "24 Jan 2024",
+    role: "Role",
+    hasWarning: true
+  },
+  {
+    name: "Request upgrade file",
+    dueDate: "06 Feb 2024",
+    role: "Role",
+    hasWarning: false
+  }
+] %}
+
+<div class="govuk-summary-card">
+  <div class="govuk-summary-card__title-wrapper">
+    <h2 class="govuk-summary-card__title">
+      Tasks
+    </h2>
+    <ul class="govuk-summary-card__actions">
+      <li class="govuk-summary-card__action">
+        <a class="govuk-link" href="#">
+          Task list
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="govuk-summary-card__content">
+    {% if tasks | length %}
+      <table class="govuk-table case-tasks-table">
+        <thead class="govuk-table__head">
+          <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">
+              Task
+            </th>
+            <th scope="col" class="govuk-table__header">
+              Due date
+            </th>
+            <th scope="col" class="govuk-table__header">
+              Role
+            </th>
+            <th scope="col" class="govuk-table__header govuk-table__header--numeric govuk-visually-hidden">
+              Go to task
+            </th>
+          </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+          {% for task in tasks %}
+            <tr class="govuk-table__row">
+              <td class="govuk-table__cell case-task-name">
+                {{ task.name }}
+              </td>
+              <td class="govuk-table__cell case-task-due">
+                {{ task.dueDate }}
+                {% if task.hasWarning %}
+                  <span class="case-task-warning-icon" aria-hidden="true"></span>
+                  <span class="govuk-visually-hidden">Due soon</span>
+                {% endif %}
+              </td>
+              <td class="govuk-table__cell case-task-role">
+                {{ task.role }}
+              </td>
+              <td class="govuk-table__cell govuk-table__cell--numeric case-task-arrow">
+                <a href="#" class="case-task-arrow-link">
+                  <span aria-hidden="true">›</span>
+                  <span class="govuk-visually-hidden">View {{ task.name }}</span>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="govuk-body-s govuk-!-margin-bottom-0">
+        There are no tasks for this case.
+      </p>
+    {% endif %}
+  </div>
+</div>
