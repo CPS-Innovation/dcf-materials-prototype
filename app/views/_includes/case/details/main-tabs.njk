@@ -1,18 +1,31 @@
 {# _includes/case/details/main-tabs.njk #}
-{% set overviewHtml %}
-  {# Some skeleton structure to mimic overview page #}
-  <div class="case-layout">
-    <div class="case-header">Progress bar area (Charge → Sentence)</div>
 
+{# ---------- Overview tab ---------- #}
+{% set overviewHtml %}
+  <div class="case-layout">
+
+    {# Progress / stages #}
+    {% include "_includes/case/details/progress-panel.njk" %}
+
+    {# 3-column area #}
     <div class="case-grid">
-      <div class="contacts-box">Contacts</div>
-      <div class="tasks-box">Tasks</div>
-      <div class="monitoring-box">Monitoring codes</div>
+      <div class="contacts-box">
+        {% include "_includes/case/details/contacts-panel.njk" %}
+      </div>
+
+      <div class="tasks-box">
+        {% include "_includes/case/details/tasks-panel.njk" %}
+      </div>
+
+      <div class="monitoring-box">
+        {% include "_includes/case/details/monitoring-panel.njk" %}
+      </div>
     </div>
   </div>
 {% endset %}
 
 
+{# ---------- Other tabs ---------- #}
 
 {% set caseOutlineHtml %}
   <h3 class="govuk-heading-m">Case outline</h3>
@@ -21,15 +34,22 @@
 
 {% set defendantsHtml %}<h3 class="govuk-heading-m">Defendants</h3>{% endset -%}
 {% set witnessesHtml  %}<h3 class="govuk-heading-m">Witnesses</h3>{% endset -%}
-{% set contactsHtml %}<h3 class="govuk-heading-m">Contacts</h3>{% endset -%}
+
+{# Re-use the same contacts panel as Overview, but full width #}
+{% set contactsHtml %}
+  <div class="contacts-box contacts-box--tab">
+    {% include "_includes/case/details/contacts-panel.njk" %}
+  </div>
+{% endset -%}
+
 
 {{ govukTabs({
   id: "case-tabs",
   items: [
-    { label: "Overview", id: "overview", panel: { html: overviewHtml } },
-    { label: "Outline", id: "case-outline", panel: { html: caseOutlineHtml } },
-    { label: "Defendants",   id: "defendants",   panel: { html: defendantsHtml } },
-    { label: "Witnesses",    id: "witnesses",    panel: { html: witnessesHtml } },
-    { label: "Contacts",   id: "contacts",   panel: { html: contactsHtml } }
+    { label: "Overview",   id: "overview",      panel: { html: overviewHtml } },
+    { label: "Outline",    id: "case-outline",  panel: { html: caseOutlineHtml } },
+    { label: "Defendants", id: "defendants",    panel: { html: defendantsHtml } },
+    { label: "Witnesses",  id: "witnesses",     panel: { html: witnessesHtml } },
+    { label: "Contacts",   id: "contacts",      panel: { html: contactsHtml } }
   ]
 }) }}

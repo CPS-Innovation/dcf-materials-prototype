@@ -1,0 +1,82 @@
+{# _includes/case/details/contacts-panel.njk #}
+
+{# Allow the route to pass in contacts; fall back to placeholder data #}
+{% set contacts = contacts or [
+  {
+    name: "Firstname Surname",
+    role: "Job title",
+    email: "firstname.surname@cps.gov.uk",
+    phone: "+44 (0) 7123 456 789"
+  },
+  {
+    name: "Firstname Surname",
+    role: "Job title",
+    email: "firstname.surname@cps.gov.uk",
+    phone: "+44 (0) 7123 456 789"
+  },
+  {
+    name: "Firstname Surname",
+    role: "Job title",
+    email: "firstname.surname@cps.gov.uk",
+    phone: "+44 (0) 7123 456 789"
+  },
+  {
+    name: "Firstname Surname",
+    role: "Job title",
+    email: "firstname.surname@cps.gov.uk",
+    phone: "+44 (0) 7123 456 789"
+  }
+] %}
+
+<div class="govuk-summary-card">
+  <div class="govuk-summary-card__title-wrapper">
+    <h2 class="govuk-summary-card__title">
+      Contacts
+    </h2>
+    {# Actions list is optional – omit for now, easy to add later if needed #}
+  </div>
+
+  <div class="govuk-summary-card__content">
+    {% if contacts | length %}
+      <dl class="govuk-summary-list case-contacts-summary-list">
+        {% for contact in contacts %}
+          <div class="govuk-summary-list__row case-contact-row">
+            <dt class="govuk-summary-list__key">
+              <span class="case-contact-name govuk-!-font-weight-bold">
+                {{ contact.name }}
+              </span>
+              <span class="case-contact-role govuk-body-s">
+                {{ contact.role }}
+              </span>
+            </dt>
+
+            <dd class="govuk-summary-list__value">
+              <span class="case-contact-email govuk-body-s">
+                <a class="govuk-link" href="mailto:{{ contact.email }}">
+                  {{ contact.email }}
+                </a>
+                <button
+                  type="button"
+                  class="case-contact-copy govuk-link"
+                  data-copy="{{ contact.email }}"
+                >
+                  <span aria-hidden="true">📋</span>
+                  <span class="govuk-visually-hidden">
+                    Copy email address for {{ contact.name }}
+                  </span>
+                </button>
+              </span>
+              <span class="case-contact-phone govuk-body-s">
+                {{ contact.phone }}
+              </span>
+            </dd>
+          </div>
+        {% endfor %}
+      </dl>
+    {% else %}
+      <p class="govuk-body-s govuk-!-margin-bottom-0">
+        No contacts have been added for this case yet.
+      </p>
+    {% endif %}
+  </div>
+</div>
