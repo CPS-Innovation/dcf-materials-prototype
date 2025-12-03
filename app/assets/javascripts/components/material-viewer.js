@@ -772,7 +772,7 @@
 
     var inlineActions =
       '<div class="dcf-meta-inline-actions">' +
-        '<a href="#" class="govuk-button govuk-button--primary dcf-meta-secondary" data-action="reclassify">Request reclassification</a>' +
+        '<a href="#" class="govuk-button govuk-button--primary dcf-meta-secondary" data-action="reclassify">Assess as unused</a>' +
       '</div>'
 
     return '' +
