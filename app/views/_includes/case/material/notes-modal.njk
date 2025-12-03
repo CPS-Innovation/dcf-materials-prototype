@@ -9,8 +9,11 @@
     - noteCharacterLimit   : number (default 500)
   ------------------------------------------------------------------------ #}
 
-{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
-{% from "govuk/components/button/macro.njk"   import govukButton %}
+{# {% from "govuk/components/textarea/macro.njk" import govukTextarea %}
+{% from "govuk/components/button/macro.njk"   import govukButton %} #}
+{% from "govuk/components/details/macro.njk"    import govukDetails %}
+{% from "govuk/components/radios/macro.njk"     import govukRadios %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 
 {% set noteCharacterLimit = noteCharacterLimit or 500 %}
 
@@ -49,8 +52,8 @@
          Add new note
          ------------------------------------------------------------ #}
       <section aria-labelledby="dcf-notes-add-title">
-        <h3 class="govuk-heading-s" id="dcf-notes-add-title">
-          Add a note to the document
+        <h3 class="govuk-heading-m" id="dcf-notes-add-title">
+          Add a note
         </h3>
 
         <p class="govuk-body" id="dcf-notes-modal-description">
@@ -74,7 +77,7 @@
             name: "noteText",
             label: {
               text: "Add a note to the document",
-              classes: "govuk-label--s"
+              classes: "govuk-label--s govuk-visually-hidden"
             },
             attributes: {
               "data-maxlength": noteCharacterLimit
@@ -89,9 +92,79 @@
             You have {{ noteCharacterLimit }} characters remaining
           </p>
 
+          {# -----------------------------------------------------------
+             GDS Details: document tags (radios + checkboxes)
+             -------------------------------------------------------- #}
+          {% set noteTagsHtml %}
+            {{ govukRadios({
+              classes: "govuk-radios--small",
+              idPrefix: "evidential-status",
+              name: "evidentialStatus",
+              fieldset: {
+                legend: {
+                  text: "Evidential status",
+                  classes: "govuk-fieldset__legend--s"
+                }
+              },
+              items: [
+                {
+                  value: "evidence",
+                  text: "Evidence"
+                },
+                {
+                  value: "unused-disclosable",
+                  text: "Unused - Disclosable"
+                },
+                {
+                  value: "unused-disclosable-by-inspection",
+                  text: "Unused - Disclosable by inspection"
+                },
+                {
+                  value: "unused-not-disclosable",
+                  text: "Unused - Not disclosable"
+                },
+                {
+                  value: "unused-clearly-not-disclosable",
+                  text: "Unused - Clearly not disclosable"
+                }
+              ]
+            }) }}
+
+            {{ govukCheckboxes({
+               classes: "govuk-checkboxes--small",
+              idPrefix: "note-reasons",
+              name: "noteReasons",
+              fieldset: {
+                legend: {
+                  text: "Select a reason (optional)",
+                  classes: "govuk-fieldset__legend--s"
+                }
+              },
+              items: [
+                {
+                  value: "not-gdpr-safe",
+                  text: "Not GDPR safe"
+                },
+                {
+                  value: "links-dont-work",
+                  text: "Links don't work"
+                },
+                {
+                  value: "sensitive-material",
+                  text: "Sensitive material"
+                }
+              ]
+            }) }}
+          {% endset %}
+
+          {{ govukDetails({
+            summaryText: "Add document tags",
+            html: noteTagsHtml | safe
+          }) }}
+
           <div class="govuk-button-group dcf-notes-modal__actions">
             {{ govukButton({
-              text: "Accept and save",
+              text: "Save note",
               type: "submit"
             }) }}
 
@@ -106,9 +179,9 @@
         </form>
       </section>
 
-  {# ---------------------------------------------------------------
-   Existing notes (simple list, no timeline)
-   ------------------------------------------------------------ #}
+      {# ---------------------------------------------------------------
+         Existing notes (simple list, no timeline)
+         ------------------------------------------------------------ #}
       <section
         class="dcf-notes-modal__notes"
         aria-label="Notes on this document"
@@ -135,7 +208,6 @@
           {% endif %}
         </div>
       </section>
-
 
     </div>
   </aside>
