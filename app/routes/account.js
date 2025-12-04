@@ -44,7 +44,7 @@ module.exports = router => {
         }
       })
     }
-    res.redirect('/overview')
+    res.redirect('/tasks')
   })
 
   router.get('/account/sign-out', (req, res) => {

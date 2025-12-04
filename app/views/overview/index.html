@@ -10,23 +10,15 @@
       <h1 class="govuk-heading-l">
         {{ pageName }}
       </h1>
-     
-
-      {% if urgentTaskCount > 0 or ctlTaskCount > 0 or stlTaskCount > 0 or paceTaskCount > 0 %}
-        <div class="app-overview-cards govuk-!-margin-bottom-9">
-          {% if stlTaskCount > 0 %}
-            <a href="/tasks/shortcut/stl" class="app-overview-card app-overview-card--purple">
-              <span class="app-overview-card__count">DCF Materials</span>
-              <span class="app-overview-card__status">
-                Go to task list
-              </span>
+      
+        <div class="govuk-!-margin-bottom-9">
+          <p class="govuk-body">
+            <a href="/cases/{{ _case.id }}/tasks" class="govuk-link--no-visited-state">
+              Go to task list
             </a>
-          {% endif %}
-
+          </p>
         </div>
-      {% endif %}
-
-
+      
     </div>
   </div>
 {% endblock %}

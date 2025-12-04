@@ -1,24 +1,27 @@
-/* Task filters under tabs */
+/* ------------------------------------------------------------------
+   Task list filter selects (under tabs)
+   ------------------------------------------------------------------ */
+
 .app-task-filters {
-  margin-bottom: 16px;
+  margin-bottom: 20px; /* spacing before task list */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px 0px; /* row gap, column gap */
 }
 
-/* Make each select fill its quarter nicely */
-.app-task-filters .govuk-grid-column-one-quarter {
-  padding-right: 16px;          /* little gap between columns */
-}
-
-.app-task-filters .govuk-grid-column-one-quarter:last-child {
-  padding-right: 0;
-}
-
-/* Remove extra bottom space on form groups */
+/* Ensure GOV.UK form groups inside the quarter columns fit nicely */
 .app-task-filters .govuk-form-group {
   margin-bottom: 0;
+  width: 100%;
 }
 
-/* Make the dropdowns fill the column width */
+/* Make the dropdowns full width */
 .app-task-filters .govuk-select {
   width: 100%;
   max-width: 100%;
+}
+
+/* Optional: tighten labels slightly */
+.app-task-filters .govuk-label {
+  margin-bottom: 4px;
 }

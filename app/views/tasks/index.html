@@ -1,19 +1,15 @@
+{# views/tasks/index.njk #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
-
 {% set navId = 'tasks' %}
 {% set pageName = "Tasks (:total)" | replace(':total', totalTasks | formatNumber) %}
 
 {% block content %}
-    <h1 class="govuk-heading-l">
-      {{ pageName }}
-    </h1>
+  <h1 class="govuk-heading-l">
+    {{ pageName }}
+  </h1>
 
-    {% include "_includes/task/main-tabs.njk" %}
-
-    {% include "_includes/pagination.njk" %}
-
+  {% include "_includes/task/main-tabs.njk" %}
+  {% include "_includes/pagination.njk" %}
 {% endblock %}
-
-

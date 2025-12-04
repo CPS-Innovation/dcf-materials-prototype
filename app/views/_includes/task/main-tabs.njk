@@ -3,6 +3,7 @@
 {# -----------------------------
    Tasks tab content
    ----------------------------- #}
+
 {% set tasksHtml %}
 
   {# Filters row under the tabs #}
@@ -86,12 +87,7 @@
             {% endif %}
           {% endset %}
 
-          <h3 class="govuk-heading-s govuk-!-margin-bottom-1">
-            <div>
-              <a href="/cases/{{task.case.id}}/tasks/{{task.id}}" class="govuk-link--no-visited-state">
-                {{ taskNameDisplay | trim }}
-              </a>
-            </div>
+      
 
             <div class="app-list__tag">
               {# {{ govukTag({ text: task.severity, classes: task.severity | severityTagClass })}} #}
@@ -130,7 +126,7 @@
             rows: [
               {
                 key: { text: 'Case reference number' },
-                value: { text: task.case.reference }
+                value: { html: task.case.reference }
               },
               {
                 key: { text: 'Defendant' },
