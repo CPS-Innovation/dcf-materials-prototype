@@ -1,7 +1,7 @@
 {% extends "layouts/main.html" %}
 
 {% set navId = 'home' %}
-{% set pageName = "Home" %}
+{% set pageName = "Prototype" %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -10,152 +10,15 @@
       <h1 class="govuk-heading-l">
         {{ pageName }}
       </h1>
-
-      {% if unassignedCaseCount > 0 %}
-        <h2 class="govuk-heading-m">Cases</h2>
-        <div class="app-overview-cards govuk-!-margin-bottom-9">
-          <a href="/cases/shortcut/unassigned" class="app-overview-card app-overview-card--green">
-            <span class="app-overview-card__count">{{unassignedCaseCount}}</span>
-            <span class="app-overview-card__status">
-              {% if unassignedCaseCount == 1 %}
-                case does not
-              {% else %}
-                cases do not
-              {% endif %}
-              have a prosecutor assigned
-            </span>
-          </a>
+      
+        <div class="govuk-!-margin-bottom-9">
+          <p class="govuk-body">
+            <a href="/cases/{{ _case.id }}/tasks" class="govuk-link--no-visited-state">
+              Go to task list
+            </a>
+          </p>
         </div>
-      {% endif %}
-
-      {% if overdueDirectionCount > 0 or dueTodayDirectionCount > 0 or dueTomorrowDirectionCount > 0 %}
-        <h2 class="govuk-heading-m">Directions</h2>
-        <div class="app-overview-cards govuk-!-margin-bottom-9">
-          {% if overdueDirectionCount > 0 %}
-            <a href="/directions/shortcut/overdue" class="app-overview-card app-overview-card--red">
-              <span class="app-overview-card__count">{{overdueDirectionCount}}</span>
-              <span class="app-overview-card__status">
-                {% if overdueDirectionCount == 1 %}
-                  direction
-                {% else %}
-                  directions
-                {% endif %}
-                assigned to prosecution are overdue
-              </span>
-            </a>
-          {% endif %}
-
-          {% if dueTodayDirectionCount > 0 %}
-            <a href="/directions/shortcut/due-today" class="app-overview-card app-overview-card--orange">
-              <span class="app-overview-card__count">{{dueTodayDirectionCount}}</span>
-              <span class="app-overview-card__status">
-                {% if dueTodayDirectionCount == 1 %}
-                  direction
-                {% else %}
-                  directions
-                {% endif %}
-                assigned to prosecution are due today 
-              </span>
-            </a>
-          {% endif %}
-
-          {% if dueTomorrowDirectionCount > 0 %}
-            <a href="/directions/shortcut/due-tomorrow" class="app-overview-card app-overview-card--yellow">
-              <span class="app-overview-card__count">{{dueTomorrowDirectionCount}}</span>
-              <span class="app-overview-card__status">
-                {% if dueTomorrowDirectionCount == 1 %}
-                  direction
-                {% else %}
-                  directions
-                {% endif %}
-                assigned to prosecution due tomorrow
-              </span>
-            </a>
-          {% endif %}
-        </div>
-      {% endif %}
-
-      {% if urgentTaskCount > 0 or ctlTaskCount > 0 or stlTaskCount > 0 or paceTaskCount > 0 %}
-        <h2 class="govuk-heading-m">Tasks</h2>
-
-        <div class="app-overview-cards govuk-!-margin-bottom-9">
-          {% if urgentTaskCount > 0 %}
-            <a href="/tasks/shortcut/urgent" class="app-overview-card app-overview-card--red">
-              <span class="app-overview-card__count">{{urgentTaskCount}}</span>
-              <span class="app-overview-card__status">
-                urgent
-                {% if urgentTaskCount == 1 %}
-                  task
-                {% else %}
-                  tasks
-                {% endif %}
-              </span>
-            </a>
-          {% endif %}
-
-          {% if ctlTaskCount > 0 %}
-            <a href="/tasks/shortcut/ctl" class="app-overview-card app-overview-card--blue">
-              <span class="app-overview-card__count">{{ctlTaskCount}}</span>
-              <span class="app-overview-card__status">
-                {% if ctlTaskCount == 1 %}
-                  task
-                {% else %}
-                  tasks
-                {% endif %}
-                with custody time limit
-              </span>
-            </a>
-          {% endif %}
-
-          {% if stlTaskCount > 0 %}
-            <a href="/tasks/shortcut/stl" class="app-overview-card app-overview-card--purple">
-              <span class="app-overview-card__count">{{stlTaskCount}}</span>
-              <span class="app-overview-card__status">
-                {% if stlTaskCount == 1 %}
-                  task
-                {% else %}
-                  tasks
-                {% endif %}
-                with statutory time limit
-              </span>
-            </a>
-          {% endif %}
-
-          {% if paceTaskCount > 0 %}
-            <a href="/tasks/shortcut/pace" class="app-overview-card app-overview-card--turquoise">
-              <span class="app-overview-card__count">{{paceTaskCount}}</span>
-              <span class="app-overview-card__status">
-                {% if paceTaskCount == 1 %}
-                  task
-                {% else %}
-                  tasks
-                {% endif %}
-                with PACE time limit
-              </span>
-            </a>
-          {% endif %}
-        </div>
-      {% endif %}
-
-
-      {% if incompleteProfileCount > 0 %}
-        <h2 class="govuk-heading-m">Prosecutors</h2>
-        <div class="app-overview-cards govuk-!-margin-bottom-9">
-          <a href="/prosecutors" class="app-overview-card app-overview-card--blue">
-            <span class="app-overview-card__count">{{incompleteProfileCount}}</span>
-            <span class="app-overview-card__status">
-              incomplete
-              prosecutor
-              {% if incompleteProfileCount == 1 %}
-                profile
-              {% else %}
-                profiles
-              {% endif %}
-            </span>
-          </a>
-        </div>
-      {% endif %}
-
+      
     </div>
   </div>
 {% endblock %}

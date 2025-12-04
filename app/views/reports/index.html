@@ -1,5 +1,6 @@
 {% extends "layouts/main.html" %}
 
+{% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'reports' %}
 {% set pageName = "Cases with non-compliant DGAs (:total)" | replace(':total', totalReports | formatNumber) %}
 

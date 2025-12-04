@@ -1,0 +1,51 @@
+{% extends "layouts/main.html" %}
+{% set hideNav = true %}
+{% set pageName = "Prototype" %}
+
+{% block content %}
+  <form action="/account/sign-in" method="post" novalidate>
+    {{ govukRadios({
+      name: "signIn[emailAddress]",
+      fieldset: {
+        legend: {
+          text: "User",
+          classes: "govuk-fieldset__legend--l"
+        }
+      },
+      items: [
+        {
+          value: "rachael@cps.gov.uk",
+          html: "<b>Rachael Harvey (Paralegal officer)</b>",
+          hint: {
+            html: "<ul class='govuk-list govuk-list--bullet govuk-!-margin-bottom-0'><li>Wessex Crown Court</li><li>Wessex RASSO</li></ul>"
+          }
+        },
+        {
+          value: "simon@cps.gov.uk",
+          html: "<b>Simon Whatley (Prosecutor)</b>",
+          hint: {
+            html: "<ul class='govuk-list govuk-list--bullet govuk-!-margin-bottom-0'><li>North Yorkshire Magistrates Court</li><li>South Yorkshire Magistrates Court</li><li>West Yorkshire Magistrates Court</li><li>Humberside Magistrates Court</li></ul>"
+          }
+        },
+        {
+          value: "tony@cps.gov.uk",
+          html: "<b>Tony Stark (Casework assistant)</b>",
+          hint: {
+            html: "<ul class='govuk-list govuk-list--bullet govuk-!-margin-bottom-0'><li>Dorset Magistrates Court</li><li>Hampshire Magistrates Court</li><li>Wessex Crown Court</li><li>Wessex RASSO</li><li>Wessex CCU</li><li>Wessex Fraud</li><li>Wiltshire Magistrates Court</li></ul>"
+          }
+        },
+        {
+          value: "reporting.admin@cps.gov.uk",
+          html: "<b>Veronica Mars (Reporting admin)</b>",
+          hint: {
+            html: "<ul class='govuk-list govuk-list--bullet govuk-!-margin-bottom-0'><li>North Yorkshire Crown Court</li><li>North Yorkshire Magistrates Court</li><li>South Yorkshire Crown Court</li><li>South Yorkshire Magistrates Court</li><li>West Yorkshire Crown Court</li><li>West Yorkshire Magistrates Court</li><li>Yorkshire and Humberside CCU</li><li>Yorkshire and Humberside RASSO</li><li>Humberside South Yorkshire RASSO</li><li>Humberside Crown Court</li><li>Humberside Magistrates Court</li></ul>"
+          }
+        }
+      ]
+    }) }}
+
+    {{ govukButton({
+      text: "Sign in"
+    }) }}
+  </form>
+{% endblock %}
