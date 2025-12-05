@@ -251,9 +251,9 @@
   position: absolute;
   left: 12px;
   right: 12px;
-  bottom: 8px;
+  bottom: 6px;
   height: 2px;
-  background: #ffffff;
+  background: #000000;
 }
 
 /* Each milestone */
@@ -279,7 +279,7 @@
 .case-progress__dot {
   position: absolute;
   left: 50%;
-  bottom: 3px;
+  bottom: -16px;
   transform: translateX(-50%);
   width: 12px;
   height: 12px;

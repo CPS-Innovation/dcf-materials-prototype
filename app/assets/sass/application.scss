@@ -41,12 +41,28 @@
 @import "components/overview-areas";
 
 /* Default: pages without this class use GOV.UK default width */
+/* Mobile padding */
 .dcf-materials-wide .govuk-width-container {
   margin-right: auto;
   margin-left: auto;
-  max-width: 1400px;
+  padding-right: 15px;
+  padding-left: 15px;
 }
 
+/* Tablet+ padding */
+@media (min-width: 40.0625em) {
+  .dcf-materials-wide .govuk-width-container {
+    padding-right: 30px;
+    padding-left: 30px;
+  }
+}
+
+/* Desktop+ width */
+@media (min-width: 1020px) {
+  .dcf-materials-wide .govuk-width-container {
+    max-width: 1400px;
+  }
+}
 
 
 
