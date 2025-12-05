@@ -5,6 +5,19 @@
 {% set navId = 'tasks' %}
 {% set pageName = "Tasks (:total)" | replace(':total', totalTasks | formatNumber) %}
 
+{% block beforeContent %}
+  {% set html %}
+    <p class="govuk-notification-banner__heading">
+      This is only a representation of the task list as an entry point for case details & materials.
+    </p>
+  {% endset %}
+
+  {{ govukNotificationBanner({
+    html: html,
+    classes: "govuk-!-margin-top-7 govuk-!-margin-bottom-0"
+  }) }}
+{% endblock %}
+
 {% block content %}
   <h1 class="govuk-heading-l">
     {{ pageName }}
