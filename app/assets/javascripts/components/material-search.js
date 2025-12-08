@@ -175,27 +175,35 @@
     updateNavUI()
   }
 
-  // When user clicks a search result, we:
-  //  - record which hit index was clicked
-  //  - mark that the viewer journey is "from search"
-  //  - let material-viewer.js actually open the document
-  document.addEventListener('click', function (e) {
-    var link = e.target && e.target.closest('.dcf-search-hit a, .dcf-material-card a.js-material-link')
-    if (!link) return
-    if (viewer.dataset.mode !== 'search') return
+    // When user clicks a search result, we:
+    //  - record which hit index was clicked
+    //  - mark that the viewer journey is "from search"
+    //  - open the hit inside the viewer (so no "old" behaviour)
+    document.addEventListener('click', function (e) {
+      var link = e.target && e.target.closest('.dcf-search-hit a, .dcf-material-card a.js-material-link')
+      if (!link) return
+      if (viewer.dataset.mode !== 'search') return
 
-    buildHitsFromViewer()
+      buildHitsFromViewer()
 
-    var href = link.getAttribute('data-file-url') || link.getAttribute('href') || ''
-    searchIndex = searchItems.findIndex(function (hit) { return hit && hit.href === href })
-    if (searchIndex < 0) searchIndex = 0
+      var href = link.getAttribute('data-file-url') || link.getAttribute('href') || ''
+      searchIndex = searchItems.findIndex(function (hit) { return hit && hit.href === href })
+      if (searchIndex < 0) searchIndex = 0
 
-    viewer.dataset.fromSearch = 'true'
+      viewer.dataset.fromSearch = 'true'
 
-    // After material-viewer.js has opened the viewer shell, we can
-    // render the Prev / Next nav row.
-    setTimeout(updateNavUI, 20)
-  }, true)
+      // NEW: if this click came from a search hit, always route via the
+      // search navigation helper (so it opens in the viewer, not a new tab)
+      if (link.closest('.dcf-search-hit')) {
+        e.preventDefault()
+        openSearchResultAt(searchIndex)
+      }
+
+      // After material-viewer.js has opened the viewer shell, we can
+      // render the Prev / Next nav row.
+      setTimeout(updateNavUI, 20)
+    }, true)
+
 
   // ------------------------------------------------------------
   // NAVIGATION CONTROLS HANDLER (Prev / Next / Back to search)

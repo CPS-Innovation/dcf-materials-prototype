@@ -63,13 +63,11 @@
 
         var text = (textarea.value || '').trim()
         if (!text) return
-        if (!text) return
 
         var list = notesModal.querySelector('[data-notes-list]')
         var emptyMsg = notesModal.querySelector('[data-notes-empty]')
         if (!list) return
 
-        if (emptyMsg) emptyMsg.hidden = true
         if (emptyMsg) emptyMsg.hidden = true
 
         var noteEl = document.createElement('article')
@@ -78,11 +76,9 @@
         var nameEl = document.createElement('h4')
         nameEl.className = 'govuk-heading-s'
         nameEl.textContent = '[User_name]'
-        nameEl.textContent = '[User_name]'
 
         var dateEl = document.createElement('p')
         dateEl.className = 'govuk-body'
-        dateEl.textContent = '[govukDateTime]'
         dateEl.textContent = '[govukDateTime]'
 
         var textEl = document.createElement('p')
@@ -158,16 +154,6 @@
     return '/public/' + u
   }
 
-  function toPublic (u) {
-    if (!u) return ''
-    if (/^https?:\/\//i.test(u)) return u
-    if (u.startsWith('/public/')) return u
-    if (u.startsWith('/assets/')) return '/public' + u.slice('/assets'.length)
-    if (u.startsWith('/files/')) return '/public' + u
-    if (u.startsWith('/')) return '/public' + u
-    return '/public/' + u
-  }
-
   function buildPdfViewerUrl (rawUrl) {
     var fileUrl = toPublic(rawUrl || '')
     return '/public/pdfjs/web/viewer.html?file=' + encodeURIComponent(fileUrl)
@@ -185,32 +171,23 @@
     if (tabs) return tabs
 
     viewer.innerHTML = [
-    '<div class="dcf-viewer__toolbar govuk-!-margin-bottom-4 govuk-body">',
+      '<div class="dcf-viewer__toolbar govuk-!-margin-bottom-4 govuk-body">',
+        // LEFT group
+        '<a href="#" class="govuk-link" data-action="close-viewer">Close documents</a>',
+        '<span aria-hidden="true" class="govuk-!-margin-horizontal-2">&nbsp; | &nbsp;</span>',
+        '<a href="#" class="govuk-link" data-action="toggle-full" aria-pressed="false">View document full width</a>',
 
-      // LEFT group – stays as-is
-      '<a href="#" class="govuk-link" data-action="close-viewer">Close documents</a>',
-      '<span aria-hidden="true" class="govuk-!-margin-horizontal-2">&nbsp; | &nbsp;</span>',
-      '<a href="#" class="govuk-link" data-action="toggle-full" aria-pressed="false">View document full width</a>',
+        // RIGHT group
+        '<span class="dcf-viewer__toolbar-right">',
+          '<a href="#" class="govuk-link" data-action="back-to-search" hidden>Back to search results</a>',
+          '<span aria-hidden="true" class="govuk-!-margin-horizontal-2" data-role="back-to-search-sep" hidden>&nbsp; | &nbsp;</span>',
+          '<span class="dcf-viewer__navcluster" data-role="search-nav"></span>',
+        '</span>',
+      '</div>',
 
-      // RIGHT group – new wrapper, contents moved
-      '<span class="dcf-viewer__toolbar-right">',
+      '<div id="dcf-viewer-tabs" class="dcf-viewer__tabs dcf-viewer__tabs--flush"></div>',
+      '<div class="dcf-viewer__meta" data-meta-root></div>',
 
-        // No separator between left and right groups any more
-        '<a href="#" class="govuk-link" data-action="back-to-search" hidden>Back to search results</a>',
-        // Pipe *between* "Back to search results" and the nav cluster
-        '<span aria-hidden="true" class="govuk-!-margin-horizontal-2" data-role="back-to-search-sep" hidden>&nbsp; | &nbsp;</span>',
-        '<span class="dcf-viewer__navcluster" data-role="search-nav"></span>',
-
-      '</span>',
-
-    '</div>',
-
-    '<div id="dcf-viewer-tabs" class="dcf-viewer__tabs dcf-viewer__tabs--flush"></div>',
-    '<div class="dcf-viewer__meta" data-meta-root></div>',
-
-    '<div class="dcf-viewer__ops-bar" data-ops-root>',
-      '... unchanged ...',
-    '</div>',
       '<div class="dcf-viewer__ops-bar" data-ops-root>',
         '<div class="dcf-ops-actions">',
           '<a href="#" class="govuk-button govuk-button--inverse dcf-ops-iconbtn" data-action="ops-icon">',
@@ -240,8 +217,8 @@
         '</div>',
       '</div>',
 
-    '<iframe class="dcf-viewer__frame" src="" title="Preview" loading="lazy" referrerpolicy="no-referrer"></iframe>'
-  ].join('')
+      '<iframe class="dcf-viewer__frame" src="" title="Preview" loading="lazy" referrerpolicy="no-referrer"></iframe>'
+    ].join('')
 
     viewer.hidden = false
     viewer.setAttribute('tabindex', '-1')
@@ -288,7 +265,6 @@
       var cardForTab = document.querySelector('.dcf-material-card[data-item-id="' + CSS.escape(itemId) + '"]')
       viewer._currentCard = cardForTab || null
       if (cardForTab) {
-        setActiveCard(cardForTab)
         setActiveCard(cardForTab)
       } else {
         setActiveCard(null)
@@ -337,7 +313,6 @@
       existing.setAttribute('data-title', title || existing.getAttribute('data-title') || 'Document')
     }
 
-
     setActiveTab(existing)
     var iframe = viewer.querySelector('.dcf-viewer__frame')
     if (iframe) iframe.setAttribute('src', buildPdfViewerUrl(url))
@@ -369,13 +344,6 @@
     return (
       '<h3 class="govuk-heading-s govuk-!-margin-top-3 govuk-!-margin-bottom-1">' + esc(title) + '</h3>' +
       '<dl class="govuk-summary-list govuk-!-margin-bottom-2">' + rows + '</dl>'
-    )
-  }
-
-  function sectionHTMLNoHeading (rows) {
-    if (!rows) return ''
-    return (
-      '<dl class="govuk-summary-list govuk-!-margin-top-3 govuk-!-margin-bottom-2">' + rows + '</dl>'
     )
   }
 
@@ -435,7 +403,6 @@
 
     var status = (card.dataset.materialStatus || 'Unread').toLowerCase()
     var isNew = card.dataset.isNew !== 'false'
-    var isNew = card.dataset.isNew !== 'false'
     var hasViewedClosed = card.dataset.hasViewedAndClosed === 'true'
 
     var tags = []
@@ -480,7 +447,6 @@
         if (storedIsNew !== null) isNew = (storedIsNew === 'true')
         if (storedClosed === 'true') hasViewedClosed = true
       }
-    } catch (e) {}
     } catch (e) {}
 
     card.dataset.materialStatus = status
@@ -542,7 +508,6 @@
         data.materialStatus = status
       }
       try { tag.textContent = JSON.stringify(data) } catch (e) {}
-      try { tag.textContent = JSON.stringify(data) } catch (e) {}
     }
 
     var badge = card.querySelector('.dcf-material-card__badge')
@@ -562,7 +527,6 @@
       card.getAttribute('data-item-id')
 
     if (itemId && window.caseMaterials && Array.isArray(window.caseMaterials.Material)) {
-      var m = window.caseMaterials.Material.find(function (x) { return (x.ItemId || x.itemId) === itemId })
       var m = window.caseMaterials.Material.find(function (x) { return (x.ItemId || x.itemId) === itemId })
       if (m) {
         if ('materialStatus' in m) m.materialStatus = status
@@ -595,9 +559,7 @@
 
   // --------------------------------------
   // Material actions (inline MoJ menu in meta)
-  // Material actions (inline MoJ menu in meta)
   // --------------------------------------
-
 
   var MATERIAL_ACTIONS = [
     { id: 'assess-unused',               label: 'Assess as unused' },
@@ -617,7 +579,6 @@
       return (
         '<li class="moj-button-menu__item" role="none">' +
           '<a href="#" role="menuitem" class="moj-button-menu__link" data-action="' + esc(a.id) + '">' +
-          '<a href="#" role="menuitem" class="moj-button-menu__link" data-action="' + esc(a.id) + '">' +
             esc(a.label) +
           '</a>' +
         '</li>'
@@ -627,7 +588,6 @@
     return (
       '<div class="dcf-meta-inline-actions">' +
         '<div class="moj-button-menu" data-module="moj-button-menu">' +
-          '<button type="button" class="govuk-button govuk-button--secondary moj-button-menu__toggle" aria-haspopup="true" aria-expanded="false">' +
           '<button type="button" class="govuk-button govuk-button--secondary moj-button-menu__toggle" aria-haspopup="true" aria-expanded="false">' +
             'Material actions <span class="moj-button-menu__icon" aria-hidden="true">▾</span>' +
           '</button>' +
@@ -644,7 +604,6 @@
   // --------------------------------------
   // Meta panel builder
   // --------------------------------------
-
 
   function buildMetaPanel (meta, bodyId) {
     var mat = (meta && meta.Material) || {}
@@ -676,7 +635,6 @@
       )
     }
 
-    function sectionHTMLNoHeadingLocal (rows) {
     function sectionHTMLNoHeadingLocal (rows) {
       if (!rows) return ''
       return (
@@ -781,6 +739,7 @@
         metaBar +
         '<div id="' + esc(bodyId) + '" class="dcf-viewer__meta-body" hidden>' +
           inlineActions +
+          // Keeping your existing behaviour: materialRows appears twice
           sectionHTMLNoHeadingLocal(materialRows) +
           sectionHTMLNoHeadingLocal(materialRows) +
           sectionHTMLLocal('Related materials',      relatedRows)  +
@@ -794,7 +753,6 @@
   // --------------------------------------
   // Preview builder (pdf.js + chrome)
   // --------------------------------------
-
 
   function openMaterialPreview (link, opts) {
     opts = opts || {}
@@ -837,7 +795,6 @@
     if (backSep) backSep.hidden = !canShowBackToSearch
 
     console.log('Opening', { url: url, title: title, itemId: meta && meta.ItemId })
-    console.log('Opening', { url: url, title: title, itemId: meta && meta.ItemId })
 
     viewer.hidden = false
     try { viewer.focus({ preventScroll: true }) } catch (e) {}
@@ -876,43 +833,11 @@
   }
 
   // --------------------------------------
-  // Helper for search navigation (Prev / Next)
-  // --------------------------------------
-
-  window.__dcfOpenMaterialFromSearch = function (hit) {
-    if (!hit || !hit.href) return
-
-    var card = document.createElement('article')
-    card.className = 'dcf-material-card'
-    if (hit.itemId) card.setAttribute('data-item-id', hit.itemId)
-
-    var script = document.createElement('script')
-    script.type = 'application/json'
-    script.className = 'js-material-data'
-    try {
-      script.textContent = JSON.stringify(hit.meta || {})
-    } catch (e) {
-      script.textContent = '{}'
-    }
-
-    var link = document.createElement('a')
-    link.className = 'govuk-link dcf-viewer-link'
-    link.setAttribute('href', hit.href)
-    link.setAttribute('data-file-url', hit.href)
-    if (hit.title) link.setAttribute('data-title', hit.title)
-
-    card.appendChild(link)
-    card.appendChild(script)
-
-    openMaterialPreview(link, { fromSearch: true })
-  }
-
-  // --------------------------------------
   // Intercepts: open previews from cards/links
   // --------------------------------------
 
+  // Cards with explicit js-material-link (main materials list)
   document.addEventListener('click', function (e) {
-    var link = e.target && e.target.closest('a.js-material-link[data-file-url]')
     var link = e.target && e.target.closest('a.js-material-link[data-file-url]')
     if (!link) return
     if (!viewer) return
@@ -925,34 +850,27 @@
       viewer._currentCard = card
       markCardVisited(card)
       setActiveCard(card)
-      setActiveCard(card)
     }
 
     openMaterialPreview(link, { fromSearch: false })
   }, true)
 
   // NB: bubble-phase so material-search.js (capture) can update searchIndex first
-  // NB: bubble-phase so material-search.js (capture) can update searchIndex first
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest('a.dcf-viewer-link')
     if (!a) return
-    if (a.getAttribute('target') === '_blank') return
     if (a.getAttribute('target') === '_blank') return
 
     e.preventDefault()
 
     var fromSearch = (viewer.dataset.mode === 'search') || (viewer.dataset.fromSearch === 'true')
 
-    var fromSearch = (viewer.dataset.mode === 'search') || (viewer.dataset.fromSearch === 'true')
-
     openMaterialPreview(a, { fromSearch: fromSearch })
-  }, false)
   }, false)
 
   // --------------------------------------
   // Viewer toolbar + meta actions
   // --------------------------------------
-
 
   viewer.addEventListener('click', function (e) {
     if (e.target && e.target.closest('.dcf-doc-tab__close')) {
@@ -971,7 +889,6 @@
       if (id && _tabStore.metaById[id]) delete _tabStore.metaById[id]
       btn.parentNode && btn.parentNode.removeChild(btn)
 
-
       var anyTab = viewer.querySelector('#dcf-viewer-tabs .dcf-doc-tab')
       if (!anyTab) {
         var close = viewer.querySelector('[data-action="close-viewer"]')
@@ -988,16 +905,13 @@
     }
 
     var tabBtn = e.target && e.target.closest('#dcf-viewer-tabs .dcf-doc-tab')
-    var tabBtn = e.target && e.target.closest('#dcf-viewer-tabs .dcf-doc-tab')
     if (tabBtn && !e.target.closest('.dcf-doc-tab__close')) {
       e.preventDefault()
-      var id = tabBtn.getAttribute('data-tab-id')
-      if (id) switchToTabById(id)
-      if (id) switchToTabById(id)
+      var id2 = tabBtn.getAttribute('data-tab-id')
+      if (id2) switchToTabById(id2)
       return
     }
 
-    var a = e.target && e.target.closest('[data-action]')
     var a = e.target && e.target.closest('[data-action]')
     if (!a) return
     e.preventDefault()
@@ -1052,10 +966,10 @@
         var s = document.getElementById('search-status')
         if (s) {
           s.hidden = false
-          var link = s.querySelector('a[data-action="back-to-documents"]')
-          var sep = s.querySelector('[data-role="back-to-documents-sep"]')
-          if (link) link.hidden = false
-          if (sep) sep.hidden = false
+          var linkBack = s.querySelector('a[data-action="back-to-documents"]')
+          var sepBack = s.querySelector('[data-role="back-to-documents-sep"]')
+          if (linkBack) linkBack.hidden = false
+          if (sepBack) sepBack.hidden = false
         }
       }
       return
@@ -1065,15 +979,14 @@
       var metaWrap = a.closest('.dcf-viewer__meta')
       var body =
         (function () {
-          var id = a.getAttribute('aria-controls') || a.getAttribute('data-controls')
-          if (!metaWrap || !id) return null
-          try { return metaWrap.querySelector('#' + CSS.escape(id)) } catch (e) { return null }
+          var id3 = a.getAttribute('aria-controls') || a.getAttribute('data-controls')
+          if (!metaWrap || !id3) return null
+          try { return metaWrap.querySelector('#' + CSS.escape(id3)) } catch (e) { return null }
         })() ||
         (metaWrap && metaWrap.querySelector('.dcf-viewer__meta-body'))
 
       if (!body) return
 
-      var willHide = !body.hidden
       var willHide = !body.hidden
       body.hidden = willHide
       a.setAttribute('aria-expanded', String(!willHide))
@@ -1096,7 +1009,6 @@
 
       if (card) {
         setMaterialStatus(card, 'Read')
-        updateOpsMenuForStatus(null, 'Read')
         updateOpsMenuForStatus(null, 'Read')
       } else {
         console.warn('mark-read: could not resolve current card')
@@ -1186,7 +1098,6 @@
   // "Go back to documents" (search → previous document)
   // --------------------------------------
 
-
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest('a[data-action="back-to-documents"]')
     if (!a) return
@@ -1222,9 +1133,7 @@
   // Ops menu (MoJ button menu) open/close
   // --------------------------------------
 
-
   viewer.addEventListener('click', function (e) {
-    var toggle = e.target && e.target.closest('.moj-button-menu__toggle')
     var toggle = e.target && e.target.closest('.moj-button-menu__toggle')
     if (!toggle) return
     e.preventDefault()
@@ -1249,9 +1158,7 @@
 
   // --------------------------------------
   // Initial status badges
-  // Initial status badges
   // --------------------------------------
-
 
   ;(function initialiseMaterialStatuses () {
     var cards = document.querySelectorAll('.dcf-material-card')
@@ -1262,7 +1169,6 @@
   // --------------------------------------
   // Meta link behaviour
   // --------------------------------------
-
 
   viewer.addEventListener('click', function (e) {
     var a = e.target && e.target.closest('a.js-doc-link')
