@@ -561,21 +561,136 @@
   // Material actions (inline MoJ menu in meta)
   // --------------------------------------
 
-  var MATERIAL_ACTIONS = [
-    { id: 'assess-unused',               label: 'Assess as unused' },
-    { id: 'assess-disclosable',         label: 'Assess as disclosable' },
-    { id: 'assess-disclosable-inspect', label: 'Assess as disclosable by inspection' },
-    { id: 'assess-not-disclosable',     label: 'Assess as not disclosable' },
-    { id: 'assess-clearly-not',         label: 'Assess as clearly not disclosable' },
-    { id: 'assess-evidence',            label: 'Assess as evidence' },
-    { id: 'dispute-sensitivity',        label: 'Dispute sensitivity' },
-    { id: 'request-updated-description',label: 'Request updated description' },
-    { id: 'request-material',           label: 'Request material' },
-    { id: 'generate-cps-docs',          label: 'Generate CPS documents' }
-  ]
+  // Lookup of all possible actions (no generate-cps-docs)
+  var MATERIAL_ACTIONS_LOOKUP = {
+    'assess-unused': {
+      id: 'assess-unused',
+      label: 'Assess as unused'
+    },
+    'assess-disclosable': {
+      id: 'assess-disclosable',
+      label: 'Assess as disclosable'
+    },
+    'assess-disclosable-inspect': {
+      id: 'assess-disclosable-inspect',
+      label: 'Assess as disclosable by inspection'
+    },
+    'assess-not-disclosable': {
+      id: 'assess-not-disclosable',
+      label: 'Assess as not disclosable'
+    },
+    'assess-clearly-not': {
+      id: 'assess-clearly-not',
+      label: 'Assess as clearly not disclosable'
+    },
+    'assess-evidence': {
+      id: 'assess-evidence',
+      label: 'Assess as evidence'
+    },
+    'dispute-sensitivity': {
+      id: 'dispute-sensitivity',
+      label: 'Dispute sensitivity'
+    },
+    'request-updated-description': {
+      id: 'request-updated-description',
+      label: 'Request updated description'
+    },
+    'request-material': {
+      id: 'request-material',
+      label: 'Request material'
+    }
+  }
+
+  // Action sets for different material types
+  var MATERIAL_ACTION_SETS = {
+    // If Material.Type == 'Statement' or 'Exhibit'
+    statementOrExhibit: [
+      'assess-unused'
+    ],
+
+    // If Material.Type == 'Unused non-sensitive' or 'Sensitive'
+    unusedOrSensitive: [
+      'assess-disclosable',
+      'assess-disclosable-inspect',
+      'assess-not-disclosable',
+      'assess-clearly-not',
+      'assess-evidence',
+      'dispute-sensitivity',
+      'request-updated-description',
+      'request-material'
+    ]
+  }
+
+  // Try to derive the type for the current material
+  function getMaterialTypeFromMeta (meta) {
+    var candidate = null
+
+    // 1) Try direct properties on the meta object (if it's already a single material)
+    if (meta) {
+      if (meta.Type || meta.MaterialType) {
+        candidate = meta.Type || meta.MaterialType
+      } else if (meta.Material && (meta.Material.Type || meta.Material.MaterialType)) {
+        // Or if meta has a nested .Material object
+        candidate = meta.Material.Type || meta.Material.MaterialType
+      }
+    }
+
+    // 2) If we still don't know the type, try resolving by ItemId against window.caseMaterials.Material[]
+    if (!candidate && window.caseMaterials && Array.isArray(window.caseMaterials.Material)) {
+      // Work out an ItemId from meta OR the current card/tab
+      var itemId =
+        (meta && (meta.ItemId || meta.itemId)) ||
+        (meta && meta.Material && (meta.Material.ItemId || meta.Material.itemId)) ||
+        (viewer && viewer._currentCard && viewer._currentCard.getAttribute('data-item-id')) ||
+        null
+
+      if (itemId) {
+        var found = window.caseMaterials.Material.find(function (m) {
+          return (m.ItemId || m.itemId) === itemId
+        })
+        if (found) {
+          // This is your canonical path: caseMaterials.Material[].Type / .MaterialType
+          candidate = found.Type || found.MaterialType || candidate
+        }
+      }
+    }
+
+    return candidate ? String(candidate) : ''
+  }
+
+
+  function getActionsForMaterial (meta) {
+    var rawType = getMaterialTypeFromMeta(meta)
+    var type = rawType ? rawType.toLowerCase().trim() : ''
+    var setIds
+
+    if (!type) {
+      // If we cannot resolve a type, fall back to all actions
+      setIds = Object.keys(MATERIAL_ACTIONS_LOOKUP)
+    } else if (type === 'statement' || type === 'exhibit') {
+      setIds = MATERIAL_ACTION_SETS.statementOrExhibit
+    } else if (type === 'unused non-sensitive' || type === 'sensitive') {
+      setIds = MATERIAL_ACTION_SETS.unusedOrSensitive
+    } else {
+      // Unknown type but non-empty string – also show all actions
+      setIds = Object.keys(MATERIAL_ACTIONS_LOOKUP)
+    }
+
+    return setIds
+      .map(function (id) { return MATERIAL_ACTIONS_LOOKUP[id] })
+      .filter(Boolean)
+  }
+
 
   function buildInlineActionsMenu (meta) {
-    var itemsHTML = MATERIAL_ACTIONS.map(function (a) {
+    var actions = getActionsForMaterial(meta)
+
+    // No actions? Don't render the menu at all.
+    if (!actions || !actions.length) {
+      return ''
+    }
+
+    var itemsHTML = actions.map(function (a) {
       return (
         '<li class="moj-button-menu__item" role="none">' +
           '<a href="#" role="menuitem" class="moj-button-menu__link" data-action="' + esc(a.id) + '">' +
@@ -1062,8 +1177,7 @@
       'assess-evidence',
       'dispute-sensitivity',
       'request-updated-description',
-      'request-material',
-      'generate-cps-docs'
+      'request-material'
     ].indexOf(action) !== -1) {
 
       var currentCard =
