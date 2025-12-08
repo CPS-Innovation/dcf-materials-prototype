@@ -5,38 +5,39 @@
   var viewer = document.getElementById('material-viewer')
   if (!form || !input || !viewer) return
 
-  // Search status UI (safe if missing)
+  // ------------------------------------------------------------
+  // SEARCH STATUS UI
+  // ------------------------------------------------------------
+
   var status    = document.getElementById('search-status')
   var zeroWrap  = status && status.querySelector('[data-zero]')
   var someWrap  = status && status.querySelector('[data-some]')
   var countEl   = status && status.querySelector('[data-search-count]')
   var termEls   = [].slice.call(document.querySelectorAll('[data-search-term]'))
-
-  // Inline "Back to documents" link + separator (from the template)
   var backToDocsLink = status && status.querySelector('a[data-action="back-to-documents"]')
   var backToDocsSep  = status && status.querySelector('[data-role="back-to-documents-sep"]')
 
-  // Optional: caseId via hidden input or body data attribute
+  function navCluster () {
+    return viewer.querySelector('[data-role="search-nav"]')
+  }
+
+  // Optional caseId
   var caseId =
     (form.querySelector('input[name="caseId"]') && form.querySelector('input[name="caseId"]').value) ||
     (document.body && document.body.getAttribute('data-case-id')) ||
     ''
 
-  // Render into the viewer in either "message" or "search results" mode
   function setViewer (html, options) {
     options = options || {}
-    var mode = options.mode || 'message' // "message" | "results"
+    var mode = options.mode || 'message'
 
     if (mode === 'results') {
-      // Store last search so the viewer can restore it later
       viewer._lastSearchHTML  = html
       viewer._lastSearchQuery = options.query || ''
       viewer.dataset.hasSearch = 'true'
       viewer.dataset.mode = 'search'
-
       viewer.innerHTML = html
     } else {
-      // Plain message (e.g. "Searching…" or error)
       viewer.dataset.mode = 'message'
       viewer.innerHTML = html
     }
@@ -45,24 +46,18 @@
     try { viewer.focus() } catch (e) {}
   }
 
-  // --- helpers to determine result count -------------------------------------
   function num (val) {
     var n = Number(val)
     return isNaN(n) ? 0 : n
   }
 
   function countRenderedResults () {
-    // Prefer an explicit data-results-count if the fragment provides it
     var container = viewer.querySelector('[data-results-count]')
-    if (container) {
-      return num(container.getAttribute('data-results-count'))
-    }
-    // Fallback: count rendered hits/cards
+    if (container) return num(container.getAttribute('data-results-count'))
     return viewer.querySelectorAll('.dcf-search-hit, .dcf-material-card').length
   }
 
   function ensureStatus () {
-    // If it still exists, refresh refs and return
     if (status && status.isConnected) {
       zeroWrap = status.querySelector('[data-zero]')
       someWrap = status.querySelector('[data-some]')
@@ -72,48 +67,7 @@
       backToDocsSep  = status.querySelector('[data-role="back-to-documents-sep"]')
       return status
     }
-
-    // Try to re-find (maybe re-rendered elsewhere)
     status = document.getElementById('search-status')
-    if (!status) {
-      // Rebuild the structure from your template and insert before viewer
-      status = document.createElement('div')
-      status.id = 'search-status'
-      status.className = 'govuk-!-margin-bottom-3'
-      status.setAttribute('aria-live', 'polite')
-      status.hidden = true
-      status.innerHTML = [
-        '<div data-zero>',
-          '<div class="dcf-search-meta govuk-!-margin-bottom-0">',
-            'No results for “<span data-search-term></span>”.',
-          '</div>',
-        '</div>',
-        '<div data-some hidden>',
-          '<p class="dcf-search-meta">',
-            '<strong><span data-search-count>0</span></strong>',
-            ' results for “<span data-search-term></span>”',
-            '<span data-role="back-to-documents-sep" hidden> | </span>',
-            '<a href="#" class="govuk-link" data-action="back-to-documents" hidden>Back to documents</a>',
-          '</p>',
-          // Sort controls (fallback markup, matches template)
-          '<div class="dcf-search-order govuk-!-margin-top-1 govuk-!-margin-bottom-2" aria-label="Search result sort options">',
-            '<span class="dcf-search-order__label">Sort by:</span>',
-            '<a href="#" class="govuk-link dcf-search-order__link" data-sort-key="date" aria-pressed="true">Date added</a>',
-            '<span aria-hidden="true" class="dcf-search-order__separator">&nbsp;|&nbsp;</span>',
-            '<a href="#" class="govuk-link dcf-search-order__link" data-sort-key="results" aria-pressed="false">Results per document</a>',
-          '</div>',
-        '</div>'
-      ].join('')
-      viewer.parentNode.insertBefore(status, viewer)
-    }
-
-    zeroWrap = status.querySelector('[data-zero]')
-    someWrap = status.querySelector('[data-some]')
-    countEl  = status.querySelector('[data-search-count]')
-    termEls  = [].slice.call(status.querySelectorAll('[data-search-term]'))
-    backToDocsLink = status.querySelector('a[data-action="back-to-documents"]')
-    backToDocsSep  = status.querySelector('[data-role="back-to-documents-sep"]')
-
     return status
   }
 
@@ -121,13 +75,9 @@
     ensureStatus()
     if (!status) return
 
-    // Always show the status block after a submit response arrives
     status.hidden = false
-
-    // Update the query term everywhere
     termEls.forEach(function (el) { el.textContent = q || '' })
 
-    // On every fresh search, keep "Back to documents" hidden.
     if (backToDocsLink) backToDocsLink.hidden = true
     if (backToDocsSep)  backToDocsSep.hidden  = true
 
@@ -141,180 +91,237 @@
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Sorting utilities for "Sort by" controls
-  // ---------------------------------------------------------------------------
+  // ------------------------------------------------------------
+  // SEARCH NAVIGATION SUPPORT (Back / Prev / Next)
+  // ------------------------------------------------------------
 
-  // Parse a date string into a timestamp so we can sort by it
-  function parseMaterialDate (str) {
-    if (!str) return null
+  // We keep a *data* model of the hits, not DOM nodes, so navigation
+  // still works after the viewer replaces the search HTML.
+  var searchIndex = -1
+  var searchItems = []   // [{ href, title, meta, itemId }]
 
-    // Handle DD/MM/YYYY explicitly
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
-      var parts = str.split('/') // [dd, mm, yyyy]
-      return new Date(
-        parseInt(parts[2], 10),
-        parseInt(parts[1], 10) - 1,
-        parseInt(parts[0], 10)
-      ).getTime()
+  // Build structured hits from whatever is currently rendered in the viewer
+  function buildHitsFromViewer () {
+    var hits = Array.prototype.slice.call(
+      viewer.querySelectorAll('.dcf-search-hit')
+    ).map(function (hit) {
+      var link = hit.querySelector('a.dcf-viewer-link') || hit.querySelector('a')
+      var script = hit.querySelector('script.js-material-data')
+      var meta = {}
+      if (script) {
+        try { meta = JSON.parse(script.textContent) } catch (e) { meta = {} }
+      }
+      var href = link && (link.getAttribute('data-file-url') || link.getAttribute('href')) || ''
+      var title = link ? (link.getAttribute('data-title') || link.textContent.trim()) : ''
+      var itemId = hit.getAttribute('data-item-id') || ''
+      return { href: href, title: title, meta: meta, itemId: itemId }
+    })
+
+    viewer._searchHits = hits
+    searchItems = hits
+  }
+
+  function buildSearchList () {
+    searchItems = viewer._searchHits || []
+  }
+
+  function updateNavUI () {
+    var cluster = navCluster()
+    if (!cluster) return
+
+    var fromSearch = viewer.dataset.fromSearch === 'true'
+    var inDocument = viewer.dataset.mode === 'document'
+
+    if (!fromSearch || !inDocument || searchItems.length <= 1) {
+      cluster.innerHTML = ''
+      return
     }
 
-    // Fallback – let the browser try
+    var html = []
+
+    if (searchIndex > 0) {
+      html.push(
+        '<a href="#" class="govuk-link" data-action="nav-prev">&lt; Previous</a>'
+      )
+    }
+
+    if (searchIndex < searchItems.length - 1) {
+      if (html.length) {
+        html.push('<span class="sep">&nbsp;|&nbsp;</span>')
+      }
+      html.push(
+        '<a href="#" class="govuk-link" data-action="nav-next">Next &gt;</a>'
+      )
+    }
+
+    cluster.innerHTML = html.join('')
+  }
+
+  function openSearchResultAt (idx) {
+    if (idx < 0 || idx >= searchItems.length) return
+    searchIndex = idx
+
+    var hit = searchItems[idx]
+    if (!hit) return
+
+    // Ask the viewer script to open this hit inside the viewer.
+    if (window.__dcfOpenMaterialFromSearch) {
+      window.__dcfOpenMaterialFromSearch(hit)
+    } else if (hit.href) {
+      // Fallback: worst case, navigate directly
+      window.location = hit.href
+    }
+
+    updateNavUI()
+  }
+
+  // When user clicks a search result, we:
+  //  - record which hit index was clicked
+  //  - mark that the viewer journey is "from search"
+  //  - let material-viewer.js actually open the document
+  document.addEventListener('click', function (e) {
+    var link = e.target && e.target.closest('.dcf-search-hit a, .dcf-material-card a.js-material-link')
+    if (!link) return
+    if (viewer.dataset.mode !== 'search') return
+
+    buildHitsFromViewer()
+
+    var href = link.getAttribute('data-file-url') || link.getAttribute('href') || ''
+    searchIndex = searchItems.findIndex(function (hit) { return hit && hit.href === href })
+    if (searchIndex < 0) searchIndex = 0
+
+    viewer.dataset.fromSearch = 'true'
+
+    // After material-viewer.js has opened the viewer shell, we can
+    // render the Prev / Next nav row.
+    setTimeout(updateNavUI, 20)
+  }, true)
+
+  // ------------------------------------------------------------
+  // NAVIGATION CONTROLS HANDLER (Prev / Next / Back to search)
+  // ------------------------------------------------------------
+
+  viewer.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest('[data-action]')
+    if (!a) return
+
+    var action = a.getAttribute('data-action')
+
+    if (action === 'nav-back-search') {
+      // Legacy – we now use the viewer toolbar's [data-action="back-to-search"]
+      var back = viewer.querySelector('[data-action="back-to-search"]')
+      if (back) back.click()
+      return
+    }
+
+    if (action === 'nav-prev') {
+      e.preventDefault()
+      buildSearchList()
+      openSearchResultAt(searchIndex - 1)
+      return
+    }
+
+    if (action === 'nav-next') {
+      e.preventDefault()
+      buildSearchList()
+      openSearchResultAt(searchIndex + 1)
+      return
+    }
+  })
+
+  // ------------------------------------------------------------
+  // SORTING
+  // ------------------------------------------------------------
+
+  function parseMaterialDate (str) {
+    if (!str) return null
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+      var p = str.split('/')
+      return new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0])).getTime()
+    }
     var d = new Date(str)
     return isNaN(d.getTime()) ? null : d.getTime()
   }
 
-  // Read the date for a hit/card: prefer data attribute, then JSON, then text
   function getCardDate (card) {
     if (!card) return null
-
-    // 1) Prefer data-material-date on the card itself
     var raw = card.getAttribute('data-material-date')
     if (raw) return parseMaterialDate(raw)
-
-    // 2) Or on a descendant (e.g. inner article/card)
-    var dateNode = card.querySelector('[data-material-date]')
-    if (dateNode && dateNode !== card) {
-      var raw2 = dateNode.getAttribute('data-material-date')
-      if (raw2) return parseMaterialDate(raw2)
-    }
-
-    // 3) Fallback: from embedded JSON (if present)
-    var tag = card.querySelector('script.js-material-data[type="application/json"]')
-    if (tag) {
+    var script = card.querySelector('script.js-material-data[type="application/json"]')
+    if (script) {
       try {
-        var json = JSON.parse(tag.textContent || '{}')
-
-        // NEW: support both top-level date and nested Material.date
-        if (json) {
-          if (json.date) {
-            return parseMaterialDate(json.date)
-          }
-          if (json.Material && json.Material.date) {
-            return parseMaterialDate(json.Material.date)
-          }
-        }
-      } catch (e) {
-        // ignore parse errors
-      }
+        var data = JSON.parse(script.textContent)
+        if (data.date) return parseMaterialDate(data.date)
+      } catch (e) {}
     }
-
-    // 4) Last resort: try to scrape "Date: ..." from text
-    var text = card.textContent || ''
-    var match = text.match(/Date:\s*(\d{2}\/\d{2}\/\d{4}|\d{4}-\d{2}-\d{2})/)
-    if (match && match[1]) {
-      return parseMaterialDate(match[1])
-    }
-
     return null
   }
 
-  // Sort the visible search results in place
-  function sortSearchResults (byKey) {
-    // Try inside the viewer first, then anywhere on the page
+  function sortSearchResults (by) {
     var container =
       viewer.querySelector('.dcf-search-results') ||
       document.querySelector('.dcf-search-results')
-
     if (!container) return
 
-    // Treat each hit wrapper as the sortable unit
     var cards = Array.prototype.slice.call(
       container.querySelectorAll('.dcf-search-hit, .dcf-material-card')
     )
     if (!cards.length) return
 
-    if (byKey === 'date') {
+    if (by === 'date') {
       cards.sort(function (a, b) {
         var da = getCardDate(a)
         var db = getCardDate(b)
-
-        // Newest first; missing dates go last
         if (da === null && db === null) return 0
         if (da === null) return 1
         if (db === null) return -1
         return db - da
       })
-
-      cards.forEach(function (card) {
-        container.appendChild(card)
-      })
-    }
-
-    if (byKey === 'results') {
-      // For now, "Results per document" is a no-op on ordering.
-      // You can later plug in logic to sort by per-document hit count.
-      return
+      cards.forEach(function (c) { container.appendChild(c) })
     }
   }
 
-  // Toggle aria-pressed state on the sort links
-  function updateSortControls (clickedLink) {
-    var wrap = clickedLink.closest('.dcf-search-order')
-    if (!wrap) return
-
-    var links = wrap.querySelectorAll('.dcf-search-order__link')
-    Array.prototype.forEach.call(links, function (lnk) {
-      lnk.setAttribute('aria-pressed', lnk === clickedLink ? 'true' : 'false')
-    })
-  }
-
-  // Global click handler: listen for clicks on sort controls
-  document.addEventListener('click', function (event) {
-    var link = event.target.closest('.dcf-search-order__link[data-sort-key]')
+  document.addEventListener('click', function (e) {
+    var link = e.target && e.target.closest('.dcf-search-order__link[data-sort-key]')
     if (!link) return
-
-    event.preventDefault()
-
+    e.preventDefault()
     var key = link.getAttribute('data-sort-key')
-    if (!key) return
-
-    updateSortControls(link)
     sortSearchResults(key)
   })
 
-  // ---------------------------------------------------------------------------
-  // Submit handler: AJAX search
-  // ---------------------------------------------------------------------------
+  // ------------------------------------------------------------
+  // AJAX SEARCH SUBMIT
+  // ------------------------------------------------------------
 
   form.addEventListener('submit', function (e) {
-    if (!window.fetch) return // degrade gracefully
+    if (!window.fetch) return
     e.preventDefault()
 
     var q = (input.value || '').trim()
     var url = new URL(form.action, window.location.origin)
     if (q) url.searchParams.set('q', q)
     if (caseId) url.searchParams.set('caseId', caseId)
-
-    // Ask server for a fragment (your route can branch on this if you like)
     url.searchParams.set('fragment', '1')
 
-    // Show "Searching…" as a message (not stored as results)
-    setViewer(
-      '<p class="govuk-hint govuk-!-margin-bottom-0">Searching…</p>',
-      { mode: 'message' }
-    )
-
+    setViewer('<p class="govuk-hint">Searching…</p>', { mode: 'message' })
     ensureStatus()
-    if (status) status.hidden = true // hide status while loading
+    if (status) status.hidden = true
 
     fetch(url.toString(), { headers: { 'X-Requested-With': 'fetch' } })
       .then(function (r) { return r.text() })
       .then(function (html) {
-        // Render and remember the search results
         setViewer(html, { mode: 'results', query: q })
 
-        // Decide zero vs >0 **after** results render
+        // Capture structured hits for this search
+        buildHitsFromViewer()
+        searchIndex = -1
+
         var count = countRenderedResults()
         updateStatusUI(count, q)
       })
       .catch(function () {
-        setViewer(
-          '<div class="govuk-inset-text govuk-!-margin-bottom-0">Search failed. Try again.</div>',
-          { mode: 'message' }
-        )
+        setViewer('<div class="govuk-inset-text">Search failed.</div>', { mode: 'message' })
         updateStatusUI(0, q)
-    })  
-  }, false)
+      })
+  })
 })()
-// End of file: app/assets/javascripts/components/material-search.js

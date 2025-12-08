@@ -1,3 +1,4 @@
+// public/javascripts/components/material-viewer.js
 (() => {
   // Grab the viewer shell and the layout wrapper (used to toggle full-width mode).
   // Bail early if the page doesn't have the viewer.
@@ -9,7 +10,6 @@
   // Notes modal (side tray)
   // --------------------------------------
 
-  // Cache the modal once; it lives in the page template, not inside the viewer.
   var notesModal = document.getElementById('dcf-notes-modal')
   var lastNotesTrigger = null
 
@@ -17,7 +17,6 @@
     return !!(notesModal && !notesModal.hidden)
   }
 
-  // Opens the notes tray and moves focus into it.
   function openNotesModal (triggerEl) {
     if (!notesModal) return
 
@@ -26,7 +25,6 @@
     notesModal.hidden = false
     notesModal.classList.add('is-open')
 
-    // Try to reflect the currently-active document title in the heading.
     try {
       var heading = notesModal.querySelector('#dcf-notes-modal-title')
       var activeTab = viewer.querySelector('.dcf-doc-tab.is-active')
@@ -37,14 +35,12 @@
       }
     } catch (e) {}
 
-    // Focus the textarea if present.
     var textarea = notesModal.querySelector('#dcf-note-text')
     if (textarea) {
       try { textarea.focus() } catch (e) {}
     }
   }
 
-  // Closes the notes tray and returns focus to the thing that opened it.
   function closeNotesModal () {
     if (!notesModal || notesModal.hidden) return
 
@@ -56,41 +52,34 @@
     }
   }
 
-  // When the notes form is submitted, append a new note into the list.
   if (notesModal) {
     var notesForm = notesModal.querySelector('.dcf-notes-modal__form')
     if (notesForm) {
       notesForm.addEventListener('submit', function (e) {
-        // For now we keep this entirely client-side
         e.preventDefault()
 
         var textarea = notesModal.querySelector('#dcf-note-text')
         if (!textarea) return
 
         var text = (textarea.value || '').trim()
-        if (!text) return // nothing to add
+        if (!text) return
 
         var list = notesModal.querySelector('[data-notes-list]')
         var emptyMsg = notesModal.querySelector('[data-notes-empty]')
-
         if (!list) return
 
-        // Hide the "No notes..." message once we have at least one note
-        if (emptyMsg) {
-          emptyMsg.hidden = true
-        }
+        if (emptyMsg) emptyMsg.hidden = true
 
-        // Build the note block using your placeholder values
         var noteEl = document.createElement('article')
         noteEl.className = 'dcf-note'
 
         var nameEl = document.createElement('h4')
         nameEl.className = 'govuk-heading-s'
-        nameEl.textContent = '[User_name]' // placeholder for now
+        nameEl.textContent = '[User_name]'
 
         var dateEl = document.createElement('p')
         dateEl.className = 'govuk-body'
-        dateEl.textContent = '[govukDateTime]' // placeholder – hook up govukDateTime server-side later
+        dateEl.textContent = '[govukDateTime]'
 
         var textEl = document.createElement('p')
         textEl.className = 'govuk-body'
@@ -100,10 +89,8 @@
         noteEl.appendChild(dateEl)
         noteEl.appendChild(textEl)
 
-        // Add newest note at the top
         list.prepend(noteEl)
 
-        // Clear the textarea + (optionally) reset char count
         textarea.value = ''
 
         var counter = notesModal.querySelector('#dcf-note-char-count')
@@ -117,7 +104,6 @@
     }
   }
 
-  // Global handler for anything with data-action="close-notes"
   document.addEventListener('click', function (e) {
     var closeEl = e.target && e.target.closest('[data-action="close-notes"]')
     if (!closeEl) return
@@ -125,7 +111,6 @@
     closeNotesModal()
   })
 
-  // Global handler for anything with data-action="open-notes"
   document.addEventListener('click', function (e) {
     var trigger = e.target && e.target.closest('[data-action="open-notes"]')
     if (!trigger) return
@@ -133,7 +118,6 @@
     openNotesModal(trigger)
   })
 
-  // Close the notes tray with Esc when it's open.
   document.addEventListener('keydown', function (e) {
     if (!isNotesOpen()) return
     if (e.key === 'Escape' || e.key === 'Esc') {
@@ -146,8 +130,6 @@
   // Helpers
   // --------------------------------------
 
-  // Given a clicked link inside a material card, find and
-  // read the embedded JSON describing that material
   function getMaterialJSONFromLink (link) {
     var card = link.closest('.dcf-material-card')
     if (!card) return null
@@ -156,11 +138,20 @@
     try { return JSON.parse(tag.textContent) } catch (e) { return null }
   }
 
-  // Tiny HTML escaper to keep injected strings safe
   function esc (s) {
     return (s == null ? '' : String(s))
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+  }
+
+  function toPublic (u) {
+    if (!u) return ''
+    if (/^https?:\/\//i.test(u)) return u
+    if (u.startsWith('/public/')) return u
+    if (u.startsWith('/assets/')) return '/public' + u.slice('/assets'.length)
+    if (u.startsWith('/files/')) return '/public' + u
+    if (u.startsWith('/')) return '/public' + u
+    return '/public/' + u
   }
 
   function buildPdfViewerUrl (rawUrl) {
@@ -168,7 +159,6 @@
     return '/public/pdfjs/web/viewer.html?file=' + encodeURIComponent(fileUrl)
   }
 
-  // --- Tab state for multi-document viewing ---
   var _tabStore = { metaById: Object.create(null) }
 
   function stableId (meta, url) {
@@ -185,15 +175,14 @@
         '<a href="#" class="govuk-link" data-action="close-viewer">Close documents</a>',
         '<span aria-hidden="true" class="govuk-!-margin-horizontal-2">&nbsp;|&nbsp;</span>',
         '<a href="#" class="govuk-link" data-action="toggle-full" aria-pressed="false">View full width</a>',
-        // Only shown when document was opened from search
         '<span aria-hidden="true" class="govuk-!-margin-horizontal-2" data-role="back-to-search-sep" hidden>&nbsp;|&nbsp;</span>',
         '<a href="#" class="govuk-link" data-action="back-to-search" hidden>Back to search results</a>',
+        '<span class="dcf-viewer__navcluster" data-role="search-nav"></span>',
       '</div>',
 
       '<div id="dcf-viewer-tabs" class="dcf-viewer__tabs dcf-viewer__tabs--flush"></div>',
       '<div class="dcf-viewer__meta" data-meta-root></div>',
 
-      // ops-bar
       '<div class="dcf-viewer__ops-bar" data-ops-root>',
         '<div class="dcf-ops-actions">',
           '<a href="#" class="govuk-button govuk-button--inverse dcf-ops-iconbtn" data-action="ops-icon">',
@@ -213,7 +202,6 @@
                 '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Turn on potential redactions</a></li>',
                 '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Rotate pages</a></li>',
                 '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Discard pages</a></li>',
-                // status actions
                 '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link" data-action="mark-read">Mark as read</a></li>',
                 '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link" data-action="mark-unread">Mark as unread</a></li>',
                 '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Rename</a></li>',
@@ -244,16 +232,13 @@
   }
 
   function renderMeta (meta) {
-    // Build a new meta panel and swap it into [data-meta-root]
     var rawId = (meta && (meta.ItemId || (meta.Material && meta.Material.Reference))) || Date.now()
     var bodyId = 'meta-' + String(rawId).replace(/[^a-zA-Z0-9_-]/g, '-')
     var html = buildMetaPanel(meta || {}, bodyId)
     var root = viewer.querySelector('[data-meta-root]')
     if (root) {
-      // Replace the whole wrapper to keep toggle JS happy
       root.outerHTML = html
     }
-    // Update the toggle’s aria-controls to point at the current body id
     var toggle = viewer.querySelector('[data-action="toggle-meta"]')
     if (toggle) toggle.setAttribute('aria-controls', bodyId)
   }
@@ -270,13 +255,12 @@
 
     setActiveTab(tab)
 
-    // point _currentCard to the card for this tab (so status/menu + card highlight reflect correctly)
     var itemId = tab.getAttribute('data-item-id')
     if (itemId) {
       var cardForTab = document.querySelector('.dcf-material-card[data-item-id="' + CSS.escape(itemId) + '"]')
       viewer._currentCard = cardForTab || null
       if (cardForTab) {
-        setActiveCard(cardForTab)   // keep left-hand card in sync with active tab
+        setActiveCard(cardForTab)
       } else {
         setActiveCard(null)
       }
@@ -285,10 +269,8 @@
       setActiveCard(null)
     }
 
-    // update meta
     renderMeta(meta)
 
-    // keep ops menu in sync
     var menuEl = viewer.querySelector('.moj-button-menu')
     var status = (viewer._currentCard && viewer._currentCard.dataset.materialStatus) || null
     updateOpsMenuForStatus(menuEl, status)
@@ -321,12 +303,11 @@
       _tabStore.metaById[id] = meta || {}
       existing = btn
     } else {
-      // ensure latest meta stored (e.g., status changed)
       _tabStore.metaById[id] = meta || _tabStore.metaById[id] || {}
       existing.setAttribute('data-url', url || existing.getAttribute('data-url') || '')
       existing.setAttribute('data-title', title || existing.getAttribute('data-title') || 'Document')
     }
-    // Activate and render
+
     setActiveTab(existing)
     var iframe = viewer.querySelector('.dcf-viewer__frame')
     if (iframe) iframe.setAttribute('src', buildPdfViewerUrl(url))
@@ -334,27 +315,11 @@
     renderMeta(meta)
   }
 
-  // Just hides the search status instead of removing it
   function removeSearchStatus () {
     var s = document.getElementById('search-status')
     if (s) s.hidden = true
   }
 
-  // Build the single visible “Document” tab in the viewer (flush styling)
-  function buildDocTabs (title) {
-    var safe = esc(title || 'Document')
-    return (
-      '<div id="dcf-viewer-tabs" class="dcf-viewer__tabs dcf-viewer__tabs--flush">' +
-        '<button type="button" class="dcf-doc-tab is-active" aria-selected="true" title="' + safe + '">' +
-          '<span class="dcf-doc-tab__label">' + safe + '</span>' +
-          '<span class="dcf-doc-tab__close" aria-label="Close tab" role="button">×</span>' +
-          '<span class="dcf-doc-tab__bar" aria-hidden="true"></span>' +
-        '</button>' +
-      '</div>'
-    )
-  }
-
-  // Render GOV.UK summary list rows from mapping
   function rowsHTML (obj, mapping) {
     return mapping.map(function (m) {
       var v = (m.get ? m.get(obj) : obj && obj[m.key])
@@ -369,7 +334,6 @@
     }).join('')
   }
 
-  // Wrap rows in a titled GOV.UK summary list section
   function sectionHTML (title, rows) {
     if (!rows) return ''
     return (
@@ -378,10 +342,14 @@
     )
   }
 
-  // Mark one card as “active” (visually selected) and clear any previous.
-  // Accepts either a link inside the card OR the card element itself.
+  function sectionHTMLNoHeading (rows) {
+    if (!rows) return ''
+    return (
+      '<dl class="govuk-summary-list govuk-!-margin-top-3 govuk-!-margin-bottom-2">' + rows + '</dl>'
+    )
+  }
+
   function setActiveCard (targetEl) {
-    // Clear any existing active card
     document
       .querySelectorAll('.dcf-material-card--active')
       .forEach(function (el) { el.classList.remove('dcf-material-card--active') })
@@ -390,12 +358,10 @@
 
     var card = null
 
-    // If we were given a descendant (e.g. a link), walk up to the card
     if (typeof targetEl.closest === 'function') {
       card = targetEl.closest('.dcf-material-card')
     }
 
-    // Or if we were given the card directly
     if (!card && targetEl.classList && targetEl.classList.contains('dcf-material-card')) {
       card = targetEl
     }
@@ -405,22 +371,10 @@
     }
   }
 
-  // Normalise file URLs so pdf.js can load them from /public
-  function toPublic (u) {
-    if (!u) return ''
-    if (/^https?:\/\//i.test(u)) return u       // external absolute URL
-    if (u.startsWith('/public/')) return u
-    if (u.startsWith('/assets/')) return '/public' + u.slice('/assets'.length)
-    if (u.startsWith('/files/')) return '/public' + u
-    if (u.startsWith('/')) return '/public' + u
-    return '/public/' + u
-  }
-
   // --------------------------------------
   // Status helpers: New / Read / Unread
   // --------------------------------------
 
-  // (kept for possible future use; no longer drives initial state)
   function getCardStatusFromJSON (card) {
     var tag = card.querySelector('script.js-material-data[type="application/json"]')
     if (!tag) return null
@@ -437,42 +391,27 @@
     return null
   }
 
-  // Render status tags based on three bits of state:
-  //   - materialStatus: "Read" or "Unread"
-  //   - isNew:          true/false (all start true; becomes false once Read)
-  //   - hasViewedAndClosed: true/false (set when user closes preview/tab)
-  //
-  // Rules:
-  //   - New + not yet closed        → "New"
-  //   - New + closed (not read)     → "New" + "Unread"
-  //   - Not new + Unread            → "Unread"
-  //   - Read                        → "Read"
   function renderStatusTags (card) {
     if (!card) return
     var badge = card.querySelector('.dcf-material-card__badge')
     if (!badge) return
 
     var status = (card.dataset.materialStatus || 'Unread').toLowerCase()
-    var isNew = card.dataset.isNew !== 'false' // default true
+    var isNew = card.dataset.isNew !== 'false'
     var hasViewedClosed = card.dataset.hasViewedAndClosed === 'true'
 
     var tags = []
 
     if (status === 'read') {
-      // Once read, New disappears completely
       tags.push('<strong class="govuk-tag dcf-tag dcf-tag--read">Read</strong>')
     } else {
-      // Unread branch
       if (isNew) {
-        // Still considered "New"
         tags.push('<strong class="govuk-tag dcf-tag dcf-tag--new">New</strong>')
 
-        // Only show Unread once user has closed the preview/tab at least once
         if (hasViewedClosed) {
           tags.push('<strong class="govuk-tag dcf-tag dcf-tag--unread">Unread</strong>')
         }
       } else {
-        // Not new anymore, just unread
         tags.push('<strong class="govuk-tag dcf-tag dcf-tag--unread">Unread</strong>')
       }
     }
@@ -484,10 +423,6 @@
     }
   }
 
-  // Initialise a card's status + flags:
-  //   - status: "Read" or "Unread" (default Unread)
-  //   - isNew:  all materials start life as New (true) until they are Read
-  //   - hasViewedAndClosed: true once user has opened AND closed the preview/tab
   function initCardStatus (card) {
     if (!card) return
 
@@ -507,9 +442,7 @@
         if (storedIsNew !== null) isNew = (storedIsNew === 'true')
         if (storedClosed === 'true') hasViewedClosed = true
       }
-    } catch (e) {
-      // storage issues → fall back to defaults
-    }
+    } catch (e) {}
 
     card.dataset.materialStatus = status
     card.dataset.isNew = String(isNew)
@@ -523,8 +456,6 @@
     renderStatusTags(card)
   }
 
-  // Track that the user has visited/opened this material.
-  // DOES NOT affect visual tags – only closing preview/tab does that.
   function markCardVisited (card) {
     if (!card) return
     if (card.dataset.hasVisited === 'true') return
@@ -539,8 +470,6 @@
     } catch (e) {}
   }
 
-  // When the user closes the preview (or closes a tab) and the item
-  // is still Unread, record that it has been viewed-and-closed at least once.
   function markCardClosed (card) {
     if (!card) return
     if (card.dataset.hasViewedAndClosed === 'true') return
@@ -558,17 +487,14 @@
     renderStatusTags(card)
   }
 
-  // ---- helper: set material status on the card, its embedded JSON, and any global model ----
   function setMaterialStatus (card, status) {
     if (!card) return
 
-    // Update the embedded JSON blob in the card (<script.js-material-data type="application/json">…</script>)
     var tag = card.querySelector('script.js-material-data[type="application/json"]')
     var data = null
     try { data = tag ? JSON.parse(tag.textContent) : null } catch (e) { data = null }
 
     if (data) {
-      // normalise common shapes: either top-level materialStatus or nested under Material
       if ('materialStatus' in data) {
         data.materialStatus = status
       } else if (data.Material && typeof data.Material === 'object') {
@@ -576,40 +502,34 @@
       } else {
         data.materialStatus = status
       }
-      try { tag.textContent = JSON.stringify(data) } catch (e) { /* ignore */ }
+      try { tag.textContent = JSON.stringify(data) } catch (e) {}
     }
 
-    // Update visible badge on the card (we keep rawStatus for fallback text-only rendering)
     var badge = card.querySelector('.dcf-material-card__badge')
     if (badge) {
       badge.dataset.rawStatus = status
     }
 
-    // Store on the element for quick reads
     card.dataset.materialStatus = status
 
-    // If it becomes Read, it's no longer "New"
     var statusLower = String(status).toLowerCase()
     if (statusLower === 'read') {
       card.dataset.isNew = 'false'
     }
 
-    // If you hydrate a global model, update that too (so lists/summaries stay in sync)
     var itemId =
       (data && (data.ItemId || (data.Material && data.Material.ItemId) || data.itemId)) ||
       card.getAttribute('data-item-id')
 
     if (itemId && window.caseMaterials && Array.isArray(window.caseMaterials.Material)) {
-      var m = window.caseMaterials.Material.find(x => (x.ItemId || x.itemId) === itemId)
+      var m = window.caseMaterials.Material.find(function (x) { return (x.ItemId || x.itemId) === itemId })
       if (m) {
-        // support either top-level or nested Material object shapes
         if ('materialStatus' in m) m.materialStatus = status
         else if (m.Material && typeof m.Material === 'object') m.Material.materialStatus = status
         else m.materialStatus = status
       }
     }
 
-    // Optional: lightweight persistence across reloads for prototype use
     try {
       var caseId2 = (window.caseMaterials && window.caseMaterials.caseId) || card.getAttribute('data-case-id')
       if (itemId && caseId2) {
@@ -620,7 +540,6 @@
       }
     } catch (e) {}
 
-    // Re-render tags with the new state
     renderStatusTags(card)
   }
 
@@ -628,17 +547,15 @@
     if (!menuEl) return
     var readItem = menuEl.querySelector('[data-action="mark-read"]')
     var unreadItem = menuEl.querySelector('[data-action="mark-unread"]')
-
-    // If it's Read → show "Mark as unread", hide "Mark as read"
-    // Otherwise (New/Unread/anything else) → show "Mark as read"
     var isRead = String(status).toLowerCase() === 'read'
     if (readItem) readItem.closest('li').hidden = isRead
     if (unreadItem) unreadItem.closest('li').hidden = !isRead
   }
 
   // --------------------------------------
-  // Material actions (MoJ inline menu in meta)
+  // Material actions (inline MoJ menu in meta)
   // --------------------------------------
+
   var MATERIAL_ACTIONS = [
     { id: 'assess-unused',               label: 'Assess as unused' },
     { id: 'assess-disclosable',         label: 'Assess as disclosable' },
@@ -652,17 +569,11 @@
     { id: 'generate-cps-docs',          label: 'Generate CPS documents' }
   ]
 
-  // Build the MoJ button menu HTML for the meta-inline-actions area
   function buildInlineActionsMenu (meta) {
-    // Future: inspect meta.Material / classification and filter MATERIAL_ACTIONS here
     var itemsHTML = MATERIAL_ACTIONS.map(function (a) {
       return (
         '<li class="moj-button-menu__item" role="none">' +
-          '<a href="#"' +
-            ' role="menuitem"' +
-            ' class="moj-button-menu__link"' +
-            ' data-action="' + esc(a.id) + '"' +
-          '>' +
+          '<a href="#" role="menuitem" class="moj-button-menu__link" data-action="' + esc(a.id) + '">' +
             esc(a.label) +
           '</a>' +
         '</li>'
@@ -672,9 +583,7 @@
     return (
       '<div class="dcf-meta-inline-actions">' +
         '<div class="moj-button-menu" data-module="moj-button-menu">' +
-          '<button type="button"' +
-            ' class="govuk-button govuk-button--secondary moj-button-menu__toggle"' +
-            ' aria-haspopup="true" aria-expanded="false">' +
+          '<button type="button" class="govuk-button govuk-button--secondary moj-button-menu__toggle" aria-haspopup="true" aria-expanded="false">' +
             'Material actions <span class="moj-button-menu__icon" aria-hidden="true">▾</span>' +
           '</button>' +
           '<div class="moj-button-menu__wrapper" hidden>' +
@@ -687,12 +596,10 @@
     )
   }
 
-
   // --------------------------------------
   // Meta panel builder
   // --------------------------------------
-  // Creates the “details” panel next to the PDF (material, related, digital, police, CPS)
-  // Accepts the parsed material JSON and a stable id to hook up show/hide behaviour
+
   function buildMetaPanel (meta, bodyId) {
     var mat = (meta && meta.Material) || {}
     var rel = (meta && meta.RelatedMaterials) || {}
@@ -723,7 +630,7 @@
       )
     }
 
-    function sectionHTMLNoHeading (rows) {
+    function sectionHTMLNoHeadingLocal (rows) {
       if (!rows) return ''
       return (
         '<dl class="govuk-summary-list govuk-!-margin-top-3 govuk-!-margin-bottom-2">' + rows + '</dl>'
@@ -827,7 +734,7 @@
         metaBar +
         '<div id="' + esc(bodyId) + '" class="dcf-viewer__meta-body" hidden>' +
           inlineActions +
-          sectionHTMLNoHeading(materialRows) +
+          sectionHTMLNoHeadingLocal(materialRows) +
           sectionHTMLLocal('Related materials',      relatedRows)  +
           sectionHTMLLocal('Digital representation', digitalRows)  +
           sectionHTMLLocal('Police material',        policeRows)   +
@@ -839,15 +746,13 @@
   // --------------------------------------
   // Preview builder (pdf.js + chrome)
   // --------------------------------------
-  // Accepts an optional { fromSearch } flag
+
   function openMaterialPreview (link, opts) {
     opts = opts || {}
     var fromSearch = !!opts.fromSearch
 
-    // Clear / hide any search status banner when opening a doc
     removeSearchStatus()
 
-    // Pull JSON + core attributes from the clicked link
     var meta = getMaterialJSONFromLink(link) || {}
     var url = link.getAttribute('data-file-url') || link.getAttribute('href')
 
@@ -857,53 +762,75 @@
 
     var title = link.getAttribute('data-title') || (link.textContent || '').trim() || 'Selected file'
 
-    // Remember the originating material card so ops menu actions can update it
     var card = link.closest('.dcf-material-card')
     if (card) {
       viewer._currentCard = card
-      // Just record that it has been visited (does NOT affect New/Unread tags)
       markCardVisited(card)
-      // And visually mark this card as the active one
       setActiveCard(card)
     }
 
-    // We're now in "document" mode, and we remember whether this came from search
     viewer.dataset.mode = 'document'
     viewer.dataset.fromSearch = fromSearch ? 'true' : 'false'
 
-    // Ensure viewer chrome exists
     if (!viewer.querySelector('#dcf-viewer-tabs')) ensureShell()
 
-    // Update ops menu initialised state (MoJ menu relies on DOM present)
     var menu = viewer.querySelector('.moj-button-menu')
     if (menu && window.MOJFrontend && MOJFrontend.ButtonMenu) {
       try { new MOJFrontend.ButtonMenu({ container: menu }).init() } catch (e) {}
     }
 
-    // Add or activate tab for this document
     addOrActivateTab(meta, url, title)
 
-    // Show/hide "Go back to search results" depending on origin + stored search
     var backLink = viewer.querySelector('[data-action="back-to-search"]')
     var backSep = viewer.querySelector('[data-role="back-to-search-sep"]')
     var canShowBackToSearch = (viewer.dataset.fromSearch === 'true') && !!viewer._lastSearchHTML
     if (backLink) backLink.hidden = !canShowBackToSearch
     if (backSep) backSep.hidden = !canShowBackToSearch
 
-    console.log('Opening', { url, title, itemId: meta && meta.ItemId })
+    console.log('Opening', { url: url, title: title, itemId: meta && meta.ItemId })
 
-    // Focus viewer for keyboard users
     viewer.hidden = false
     try { viewer.focus({ preventScroll: true }) } catch (e) {}
+  }
+
+  // --------------------------------------
+  // Helper for search navigation (Prev / Next)
+  // --------------------------------------
+
+  window.__dcfOpenMaterialFromSearch = function (hit) {
+    if (!hit || !hit.href) return
+
+    var card = document.createElement('article')
+    card.className = 'dcf-material-card'
+    if (hit.itemId) card.setAttribute('data-item-id', hit.itemId)
+
+    var script = document.createElement('script')
+    script.type = 'application/json'
+    script.className = 'js-material-data'
+    try {
+      script.textContent = JSON.stringify(hit.meta || {})
+    } catch (e) {
+      script.textContent = '{}'
+    }
+
+    var link = document.createElement('a')
+    link.className = 'govuk-link dcf-viewer-link'
+    link.setAttribute('href', hit.href)
+    link.setAttribute('data-file-url', hit.href)
+    if (hit.title) link.setAttribute('data-title', hit.title)
+
+    card.appendChild(link)
+    card.appendChild(script)
+
+    openMaterialPreview(link, { fromSearch: true })
   }
 
   // --------------------------------------
   // Intercepts: open previews from cards/links
   // --------------------------------------
 
-  // Capture clicks on any .js-material-link[data-file-url] and render in the viewer
   document.addEventListener('click', function (e) {
-    var link = e.target.closest('a.js-material-link[data-file-url]')
+    var link = e.target && e.target.closest('a.js-material-link[data-file-url]')
     if (!link) return
     if (!viewer) return
 
@@ -914,32 +841,30 @@
     if (card) {
       viewer._currentCard = card
       markCardVisited(card)
-      setActiveCard(card) // highlight this card when opened from the list
+      setActiveCard(card)
     }
 
-    // Cards on the left are "normal documents" (not from search)
     openMaterialPreview(link, { fromSearch: false })
   }, true)
 
-  // Allow opening materials from elsewhere (e.g. injected search results) via .dcf-viewer-link
+  // NB: bubble-phase so material-search.js (capture) can update searchIndex first
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest('a.dcf-viewer-link')
     if (!a) return
-    if (a.getAttribute('target') === '_blank') return   // respect explicit new-tab links
+    if (a.getAttribute('target') === '_blank') return
 
     e.preventDefault()
-    e.stopPropagation()
 
-    // If the viewer is currently in search mode, this doc is "from search"
-    var fromSearch = (viewer.dataset.mode === 'search')
+    var fromSearch = (viewer.dataset.mode === 'search') || (viewer.dataset.fromSearch === 'true')
+
     openMaterialPreview(a, { fromSearch: fromSearch })
-  }, true)
+  }, false)
 
   // --------------------------------------
   // Viewer toolbar + meta actions
   // --------------------------------------
+
   viewer.addEventListener('click', function (e) {
-    // Close just the clicked tab (not the whole viewer)
     if (e.target && e.target.closest('.dcf-doc-tab__close')) {
       e.preventDefault()
       var btn = e.target.closest('.dcf-doc-tab')
@@ -947,7 +872,6 @@
       var wasActive = btn.classList.contains('is-active')
       var id = btn.getAttribute('data-tab-id')
 
-      // Mark underlying card as viewed-and-closed
       var itemIdForClose = btn.getAttribute('data-item-id')
       if (itemIdForClose) {
         var cardForClose = document.querySelector('.dcf-material-card[data-item-id="' + CSS.escape(itemIdForClose) + '"]')
@@ -956,14 +880,13 @@
 
       if (id && _tabStore.metaById[id]) delete _tabStore.metaById[id]
       btn.parentNode && btn.parentNode.removeChild(btn)
-      // If no tabs remain, close the viewer
+
       var anyTab = viewer.querySelector('#dcf-viewer-tabs .dcf-doc-tab')
       if (!anyTab) {
         var close = viewer.querySelector('[data-action="close-viewer"]')
         if (close) close.click()
         return
       }
-      // If we removed the active tab, switch to the last tab
       if (wasActive) {
         var last = Array.prototype.slice.call(viewer.querySelectorAll('#dcf-viewer-tabs .dcf-doc-tab')).pop()
         if (last) {
@@ -973,27 +896,21 @@
       return
     }
 
-    // Activate a tab when its button is clicked (excluding the close icon)
-    var tabBtn = e.target.closest('#dcf-viewer-tabs .dcf-doc-tab')
+    var tabBtn = e.target && e.target.closest('#dcf-viewer-tabs .dcf-doc-tab')
     if (tabBtn && !e.target.closest('.dcf-doc-tab__close')) {
       e.preventDefault()
       var id = tabBtn.getAttribute('data-tab-id')
-      if (id) {
-        switchToTabById(id)
-      }
+      if (id) switchToTabById(id)
       return
     }
 
-    // Handle any element with a [data-action] attribute (anchors or buttons)
-    var a = e.target.closest('[data-action]')
+    var a = e.target && e.target.closest('[data-action]')
     if (!a) return
     e.preventDefault()
 
     var action = a.getAttribute('data-action')
 
-    // Close the whole viewer and reset layout
     if (action === 'close-viewer') {
-      // Mark whatever card is currently active as viewed-and-closed
       if (viewer._currentCard) {
         markCardClosed(viewer._currentCard)
       }
@@ -1007,7 +924,6 @@
       viewer.dataset.mode = 'empty'
       viewer.dataset.fromSearch = 'false'
 
-      // Reset the split/full layout
       if (layout) layout.classList.remove('is-full')
 
       document
@@ -1017,7 +933,6 @@
       return
     }
 
-    // Toggle the surrounding layout between split view and full-width
     if (action === 'toggle-full') {
       if (!layout) return
 
@@ -1030,21 +945,16 @@
       return
     }
 
-    // Toolbar "Go back to search results" – restore last search into viewer
     if (action === 'back-to-search') {
-      // Only do anything if we have stored search HTML (set by material-search.js)
       if (viewer._lastSearchHTML) {
-        // remember the current document view so we can come back to it
         viewer._lastDocumentHTML = viewer.innerHTML
 
         viewer.dataset.mode = 'search'
         viewer.dataset.fromSearch = 'false'
 
-        // Restore the search results fragment exactly as it was
         viewer.innerHTML = viewer._lastSearchHTML
         viewer.hidden = false
 
-        // Re-show the search status banner and reveal "Back to documents"
         var s = document.getElementById('search-status')
         if (s) {
           s.hidden = false
@@ -1057,7 +967,6 @@
       return
     }
 
-    // Show/hide the meta details panel (robust to id drift)
     if (action === 'toggle-meta') {
       var metaWrap = a.closest('.dcf-viewer__meta')
       var body =
@@ -1070,25 +979,20 @@
 
       if (!body) return
 
-      // Toggle using the DOM state and keep the control’s text/aria in sync
-      var willHide = !body.hidden // visible -> hide; hidden -> show
+      var willHide = !body.hidden
       body.hidden = willHide
       a.setAttribute('aria-expanded', String(!willHide))
 
-      // Update only the inner text span (avoid nuking the caret span)
       var textSpan = a.querySelector('.dcf-meta-linktext')
       if (textSpan) textSpan.textContent = willHide ? 'Show details' : 'Hide details'
 
-      // Flip the caret glyph
       var caret = a.querySelector('.dcf-caret')
       if (caret) caret.textContent = willHide ? '▸' : '▾'
 
       return
     }
 
-    // “Mark as read” from the Document actions menu (ops bar)
     if (action === 'mark-read') {
-      // find the card that opened the viewer (preferred), or fall back to the active card
       var card =
         (viewer && viewer._currentCard) ||
         viewer.querySelector('.dcf-material-card--active') ||
@@ -1097,12 +1001,11 @@
 
       if (card) {
         setMaterialStatus(card, 'Read')
-        updateOpsMenuForStatus(null, 'Read') // first call is harmless (menu resolved below)
+        updateOpsMenuForStatus(null, 'Read')
       } else {
         console.warn('mark-read: could not resolve current card')
       }
 
-      // close the MoJ menu politely and return focus to the toggle
       var menu2 = a.closest('.moj-button-menu')
       if (menu2) {
         var wrapper = menu2.querySelector('.moj-button-menu__wrapper')
@@ -1110,14 +1013,12 @@
         if (wrapper) wrapper.hidden = true
         if (toggle) toggle.setAttribute('aria-expanded', 'false')
         if (toggle) toggle.focus()
-        // Now that we have a concrete menu element, sync its items
         updateOpsMenuForStatus(menu2, 'Read')
       }
 
       return
     }
 
-    // “Mark as unread” from the Document actions menu (ops bar)
     if (action === 'mark-unread') {
       var card2 =
         (viewer && viewer._currentCard) ||
@@ -1126,13 +1027,11 @@
         null
 
       if (card2) {
-        // New behaviour: mark as Unread but do NOT reintroduce "New"
         setMaterialStatus(card2, 'Unread')
       } else {
         console.warn('mark-unread: could not resolve current card')
       }
 
-      // Close the menu + return focus to the toggle
       var menu3 = a.closest('.moj-button-menu')
       if (menu3) {
         var wrapper2 = menu3.querySelector('.moj-button-menu__wrapper')
@@ -1140,16 +1039,12 @@
         if (wrapper2) wrapper2.hidden = true
         if (toggle2) toggle2.setAttribute('aria-expanded', 'false')
         if (toggle2) toggle2.focus()
-        // Reflect the new status in which menu item is visible
         updateOpsMenuForStatus(menu3, 'Unread')
       }
 
       return
     }
 
-    // ----------------------------------
-    // Material assessment & request actions (inline MoJ menu in meta)
-    // ----------------------------------
     if ([
       'assess-unused',
       'assess-disclosable',
@@ -1163,7 +1058,6 @@
       'generate-cps-docs'
     ].indexOf(action) !== -1) {
 
-      // The currently active/previewed card
       var currentCard =
         (viewer && viewer._currentCard) ||
         viewer.querySelector('.dcf-material-card--active') ||
@@ -1172,17 +1066,8 @@
 
       console.log('Material action:', action, 'on card:', currentCard)
 
-      // TODO: plug in real behaviour per action
-      // Example:
-      // if (action === 'assess-unused') {
-      //   setMaterialStatus(currentCard, 'Unused')
-      // }
-
-      // If the action came from inside a MoJ button-menu, politely close it
       var menuFromAction = a.closest('.moj-button-menu')
       if (menuFromAction) {
-        // The inline meta menu uses the "simple" pattern (no toggle wrapper),
-        // so only close if there is a wrapper+toggle present.
         var wrapperInline = menuFromAction.querySelector('.moj-button-menu__wrapper')
         var toggleInline  = menuFromAction.querySelector('.moj-button-menu__toggle')
         if (wrapperInline && toggleInline) {
@@ -1195,7 +1080,6 @@
       return
     }
 
-    // Placeholder for future behaviour
     if (action === 'ops-icon') {
       console.log('Ops icon clicked')
       return
@@ -1205,19 +1089,18 @@
   // --------------------------------------
   // "Go back to documents" (search → previous document)
   // --------------------------------------
+
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest('a[data-action="back-to-documents"]')
     if (!a) return
 
     e.preventDefault()
 
-    // restore the last document viewer HTML if we have it
     if (viewer._lastDocumentHTML) {
       viewer.innerHTML = viewer._lastDocumentHTML
       viewer.hidden = false
       viewer.dataset.mode = 'document'
     } else {
-      // Fallback: original hint if no stored document view
       viewer.dataset.mode = 'document'
       viewer.dataset.fromSearch = 'false'
 
@@ -1228,7 +1111,6 @@
       viewer.hidden = false
     }
 
-    // Hide the search status and the inline link + separator
     var s = document.getElementById('search-status')
     if (s) {
       s.hidden = true
@@ -1242,8 +1124,9 @@
   // --------------------------------------
   // Ops menu (MoJ button menu) open/close
   // --------------------------------------
+
   viewer.addEventListener('click', function (e) {
-    var toggle = e.target.closest('.moj-button-menu__toggle')
+    var toggle = e.target && e.target.closest('.moj-button-menu__toggle')
     if (!toggle) return
     e.preventDefault()
     var menu = toggle.closest('.moj-button-menu')
@@ -1254,7 +1137,6 @@
     wrapper.hidden = expanded
   })
 
-  // Click-away to close the menu if open
   document.addEventListener('click', function (evt) {
     if (!viewer) return
     var openToggle = viewer.querySelector('.moj-button-menu__toggle[aria-expanded="true"]')
@@ -1267,8 +1149,9 @@
   })
 
   // --------------------------------------
-  // Initial status badges on material cards
+  // Initial status badges
   // --------------------------------------
+
   ;(function initialiseMaterialStatuses () {
     var cards = document.querySelectorAll('.dcf-material-card')
     if (!cards.length) return
@@ -1278,14 +1161,12 @@
   // --------------------------------------
   // Meta link behaviour
   // --------------------------------------
-  // If user clicks a document link *inside* the meta (opens a new tab),
-  // we don’t block navigation — we just clear the search status banner
+
   viewer.addEventListener('click', function (e) {
     var a = e.target && e.target.closest('a.js-doc-link')
     if (!a) return
     removeSearchStatus()
   }, true)
 
-  // Sanity flag for debugging / feature detection
   window.__materialsPreviewReady = true
 })()
