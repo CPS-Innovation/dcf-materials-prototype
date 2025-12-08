@@ -15,14 +15,25 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  justify-content: flex-start; // left group pinned left
 }
 
+/* Left group (Close documents, View full width) */
+.dcf-viewer__toolbar > a {
+  display: inline-block;
+}
+
+/* Right group (Back to search results, Previous, Next) */
 .dcf-viewer__toolbar-right {
-  margin-left: auto;
+  margin-left: auto;          // pushes this cluster to the far right
   display: inline-flex;
   align-items: center;
 }
 
+/* Optional: tiny spacing inside the right cluster */
+.dcf-viewer__toolbar-right > * + * {
+  margin-left: 4px;
+}
 
 /* Keep the viewer visible while the left column scrolls */
 @media (min-width: 769px) {
@@ -31,6 +42,7 @@
     top: 16px; // leave room from top
   }
 }
+
 
 /* ----------------------------------------------------------------------
    FULL-WIDTH VIEWER MODE (within the materials grid row)

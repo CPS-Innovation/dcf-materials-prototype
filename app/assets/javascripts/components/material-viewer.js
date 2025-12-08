@@ -171,49 +171,35 @@
     if (tabs) return tabs
 
     viewer.innerHTML = [
-      '<div class="dcf-viewer__toolbar govuk-!-margin-bottom-4 govuk-body">',
-        '<a href="#" class="govuk-link" data-action="close-viewer">Close documents</a>',
-        '<span aria-hidden="true" class="govuk-!-margin-horizontal-2">&nbsp;|&nbsp;</span>',
-        '<a href="#" class="govuk-link" data-action="toggle-full" aria-pressed="false">View full width</a>',
-        '<span aria-hidden="true" class="govuk-!-margin-horizontal-2" data-role="back-to-search-sep" hidden>&nbsp;|&nbsp;</span>',
+    '<div class="dcf-viewer__toolbar govuk-!-margin-bottom-4 govuk-body">',
+
+      // LEFT group – stays as-is
+      '<a href="#" class="govuk-link" data-action="close-viewer">Close documents</a>',
+      '<span aria-hidden="true" class="govuk-!-margin-horizontal-2">&nbsp; | &nbsp;</span>',
+      '<a href="#" class="govuk-link" data-action="toggle-full" aria-pressed="false">View document full width</a>',
+
+      // RIGHT group – new wrapper, contents moved
+      '<span class="dcf-viewer__toolbar-right">',
+
+        // No separator between left and right groups any more
         '<a href="#" class="govuk-link" data-action="back-to-search" hidden>Back to search results</a>',
+        // Pipe *between* "Back to search results" and the nav cluster
+        '<span aria-hidden="true" class="govuk-!-margin-horizontal-2" data-role="back-to-search-sep" hidden>&nbsp; | &nbsp;</span>',
         '<span class="dcf-viewer__navcluster" data-role="search-nav"></span>',
-      '</div>',
 
-      '<div id="dcf-viewer-tabs" class="dcf-viewer__tabs dcf-viewer__tabs--flush"></div>',
-      '<div class="dcf-viewer__meta" data-meta-root></div>',
+      '</span>',
 
-      '<div class="dcf-viewer__ops-bar" data-ops-root>',
-        '<div class="dcf-ops-actions">',
-          '<a href="#" class="govuk-button govuk-button--inverse dcf-ops-iconbtn" data-action="ops-icon">',
-            '<span class="dcf-ops-icon" aria-hidden="true">',
-              '<img src="/public/files/marquee-blue.svg" alt="" width="20" height="20" />',
-            '</span>',
-            '<span class="govuk-visually-hidden">Primary action</span>',
-          '</a>',
-          '<div class="moj-button-menu" data-module="moj-button-menu">',
-            '<button type="button" class="govuk-button govuk-button--inverse moj-button-menu__toggle" aria-haspopup="true" aria-expanded="false">',
-              'Document actions <span class="moj-button-menu__icon" aria-hidden="true">▾</span>',
-            '</button>',
-            '<div class="moj-button-menu__wrapper" hidden>',
-              '<ul class="moj-button-menu__list" role="menu">',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Log an under or over redaction</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">View redaction log history</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Turn on potential redactions</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Rotate pages</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Discard pages</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link" data-action="mark-read">Mark as read</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link" data-action="mark-unread">Mark as unread</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Rename</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Delete page</a></li>',
-              '</ul>',
-            '</div>',
-          '</div>',
-        '</div>',
-      '</div>',
+    '</div>',
 
-      '<iframe class="dcf-viewer__frame" src="" title="Preview" loading="lazy" referrerpolicy="no-referrer"></iframe>'
-    ].join('')
+    '<div id="dcf-viewer-tabs" class="dcf-viewer__tabs dcf-viewer__tabs--flush"></div>',
+    '<div class="dcf-viewer__meta" data-meta-root></div>',
+
+    '<div class="dcf-viewer__ops-bar" data-ops-root>',
+      '... unchanged ...',
+    '</div>',
+
+    '<iframe class="dcf-viewer__frame" src="" title="Preview" loading="lazy" referrerpolicy="no-referrer"></iframe>'
+  ].join('')
 
     viewer.hidden = false
     viewer.setAttribute('tabindex', '-1')
@@ -938,7 +924,7 @@
 
       var on = layout.classList.toggle('is-full')
 
-      a.textContent = on ? 'Exit full width' : 'View full width'
+      a.textContent = on ? 'Exit full width' : 'View document full width'
       a.setAttribute('aria-pressed', String(on))
       try { viewer.focus({ preventScroll: true }) } catch (e) {}
 
