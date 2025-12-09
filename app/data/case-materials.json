@@ -116,55 +116,79 @@
       "Type": "Unused non-sensitive",
       "materialStatus": "New",
       "myFileUrl": "/public/files/MG06_3June.pdf",
-      "ItemId": "MAT-02007",
       "date": "30/06/2025",
-      "Title": "MG06 03 June",
       "Reference": "DOC-2025-09-16-CA48321-STOCK-REC",
-      "ProducedbyWitnessId": "WIT-0007",
-      "MaterialClassification": "Document",
-      "MaterialType": "Spreadsheet",
-      "SentExternally": "Email",
-      "RelatedParticipantId": "VIC-0012",
-      "Incident": "Post-incident inventory checks",
-      "Location": "12 Hawthorn Avenue, Sheffield S7 2PL",
-      "PeriodFrom": "2025-09-16T08:00:00Z",
-      "PeriodTo": "2025-09-16T10:30:00Z"
+      "Title": "MG06 03 June",
+      "MaterialClassification": "Document - other",
+      "Description": "DA History for Ella Quagmire. This is a compilation of all the domestic abuse reports which the victim has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 17 pages and is redacted as per redaction guidelines.",
+      "PeriodFrom": "19/05/2025 09:32:03",
+      "ProducedbyWitnessId": "Sgt Andrew Cornholio",
+      "policeDisclosure": {
+        "status": "Passes disclosure test",
+        "rationale": "Case contains a mixture of relied-upon evidence and unused schedules.",
+        "rebuttable": null,
+        "exception": "Frank Deesee",
+        "exceptionReason": "The reason for this is something blah blah",
+        "inspectedOn": "19/05/2025",
+        "InspectedBy": "Sgt Robert Dobbins"
+      },
+      "cpsDisclosure": {
+        "status": "To be assessed",
+        "rationale": null,
+        "SensitivityDispute": "None"
+      }
     },
     {
       "Type": "Unused non-sensitive",
       "materialStatus": "New",
       "myFileUrl": "/public/files/MG06_10june.pdf",
-      "ItemId": "MAT-02008",
-      "date": "05/07/2025",
+      "date": "10/06/2025",
+      "Reference": "DOC-2025-06-10-CA48321-MG06-ADDL",
       "Title": "MG06 10 June",
-      "Reference": "DOC-2025-09-10-CA48321-ROTA",
-      "ProducedbyWitnessId": "WIT-0005",
-      "MaterialClassification": "Document",
-      "MaterialType": "Schedule",
-      "SentExternally": "Email",
-      "RelatedParticipantId": "WIT-0005",
-      "Incident": "Staff presence around time of incident",
-      "Location": "Store Back Office, Sheffield S7 2PL",
-      "PeriodFrom": "2025-09-10T00:00:00Z",
-      "PeriodTo": "2025-09-16T23:59:00Z"
+      "MaterialClassification": "Document - other",
+      "Description": "Supplementary DA incident history for Ella Quagmire, covering incidents reported after 03 June. Redacted in line with force redaction guidelines.",
+      "PeriodFrom": "03/06/2025 14:10:45",
+      "ProducedbyWitnessId": "PC Sally Roper",
+      "policeDisclosure": {
+        "status": "Passes disclosure test",
+        "rationale": "Additional unused material that may reasonably assist the defence or undermine the prosecution.",
+        "rebuttable": null,
+        "exception": null,
+        "exceptionReason": null,
+        "inspectedOn": "21/06/2025",
+        "InspectedBy": "PCSO Mark Lennox"
+      },
+      "cpsDisclosure": {
+        "status": "Disclosable",
+        "rationale": "Material is relevant to the issues in dispute and should be disclosed to the defence.",
+        "SensitivityDispute": "None"
+      }
     },
     {
       "Type": "Unused non-sensitive",
       "materialStatus": "New",
       "myFileUrl": "/public/files/UNUSED_1_STORM_LOG_1881_01.6.20_EDITED_2020-11-23_MCLOVE.pdf",
-      "ItemId": "MAT-02009",
-      "date": "07/07/2025",
+      "date": "15/06/2025",
+      "Reference": "DOC-2025-06-15-CA48321-CALL-LOGS",
       "Title": "UNUSED 1 STORM LOG 1881 01.6.20 EDITED 2020-11-23 MCLOVE",
-      "Reference": "DOC-2025-09-14-CA48321-DELIVERY",
-      "ProducedbyWitnessId": "WIT-0010",
-      "MaterialClassification": "Document",
-      "MaterialType": "Log",
-      "SentExternally": "Email",
-      "RelatedParticipantId": "WIT-0010",
-      "Incident": "Recording deliveries during incident window",
-      "Location": "Goods In, Sheffield S7 2PL",
-      "PeriodFrom": "2025-09-14T08:00:00Z",
-      "PeriodTo": "2025-09-14T12:00:00Z"
+      "MaterialClassification": "Document - other",
+      "Description": "Call logs relating to historic incidents involving Ella Quagmire. Extracted from control room system and redacted to remove unrelated third-party information.",
+      "PeriodFrom": "01/01/2024 00:00:00",
+      "ProducedbyWitnessId": "Sgt Clare Jennings",
+      "policeDisclosure": {
+        "status": "Does not pass disclosure test",
+        "rationale": "Material does not meet the test for disclosure and is retained as unused.",
+        "rebuttable": null,
+        "exception": null,
+        "exceptionReason": null,
+        "inspectedOn": "22/06/2025",
+        "InspectedBy": "Sgt Clare Jennings"
+      },
+      "cpsDisclosure": {
+        "status": "Not disclosable",
+        "rationale": "Material is not capable of undermining the prosecution or assisting the defence.",
+        "SensitivityDispute": "None"
+      }
     },
 
     {
