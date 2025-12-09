@@ -718,13 +718,63 @@
   // Meta panel builder
   // --------------------------------------
 
-  function buildMetaPanel (meta, bodyId) {
-    var mat = (meta && meta.Material) || {}
+    function buildMetaPanel (meta, bodyId) {
+    // Meta may either be a flat material object, or { Material: { ... } }
+    var mat = (meta && meta.Material) || meta || {}
+
+    // Related / digital structures (as before)
     var rel = (meta && meta.RelatedMaterials) || {}
     var dig = (meta && meta.DigitalRepresentation) || {}
-    var pol = (meta && meta.PoliceMaterial) || {}
-    var cps = (meta && meta.CPSMaterial) || {}
-    var insp = pol.Inspection || {}
+
+    // Detect type – prefer mat.Type but fall back to meta.Type
+    var rawType = mat.Type || (meta && meta.Type) || ''
+    var typeNorm = String(rawType).toLowerCase().trim()
+    var isUnusedOrSensitive = (typeNorm === 'unused non-sensitive' || typeNorm === 'sensitive')
+
+    // Disclosure objects ONLY exist on Unused non-sensitive / Sensitive
+    var pol = (mat && mat.policeDisclosure) ||
+              (meta && meta.policeDisclosure) ||
+              {}
+    var cps = (mat && mat.cpsDisclosure) ||
+              (meta && meta.cpsDisclosure) ||
+              {}
+
+    // Helper: render a status value as a GOV.UK tag
+    function statusTagHTML (kind, value) {
+      var text = (value == null ? '' : String(value)).trim()
+      if (!text) return '—'
+
+      var cls = 'govuk-tag'
+      var lower = text.toLowerCase()
+
+      if (kind === 'police') {
+        // disclosureStatuses.police
+        if (lower === 'passes disclosure test') {
+          cls += ' govuk-tag--green'
+        } else if (lower === 'does not pass disclosure test') {
+          cls += ' govuk-tag--yellow'
+        }
+      } else if (kind === 'cps') {
+        // disclosureStatuses.cps
+        if (lower === 'to be assessed') {
+          cls += ' govuk-tag--grey'
+        } else if (lower === 'disclosable') {
+          // "light blue" – turquoise is the lighter govuk tag
+          cls += ' govuk-tag--turquoise'
+        } else if (lower === 'disclosable by inspection') {
+          cls += ' govuk-tag--purple'
+        } else if (lower === 'not disclosable') {
+          cls += ' govuk-tag--orange'
+        } else if (lower === 'clearly not disclosable') {
+          cls += ' govuk-tag--red'
+        } else if (lower === 'evidence') {
+          cls += ' govuk-tag--blue'
+        }
+      }
+
+      return '<strong class="' + cls + '">' + esc(text) + '</strong>'
+    }
+
 
     function rowsHTMLLocal (obj, mapping) {
       return mapping.map(function (m) {
@@ -739,6 +789,9 @@
         )
       }).join('')
     }
+
+    // ...rest of your buildMetaPanel exactly as you already have it...
+
 
     function sectionHTMLLocal (title, rows) {
       if (!rows) return ''
@@ -755,19 +808,42 @@
       )
     }
 
-    var materialRows = rowsHTMLLocal(mat, [
-      { key: 'Title',                  label: 'Title' },
-      { key: 'Reference',              label: 'Reference' },
-      { key: 'ProducedbyWitnessId',    label: 'Produced by (witness id)' },
-      { key: 'MaterialClassification', label: 'Material classification' },
-      { key: 'MaterialType',           label: 'Material type' },
-      { key: 'SentExternally',         label: 'Sent externally' },
-      { key: 'RelatedParticipantId',   label: 'Related participant id' },
-      { key: 'Incident',               label: 'Incident' },
-      { key: 'Location',               label: 'Location' },
-      { key: 'PeriodFrom',             label: 'Period from' },
-      { key: 'PeriodTo',               label: 'Period to' }
-    ])
+    // ----------------------------------
+    // Core material rows
+    // ----------------------------------
+
+    var materialRows
+
+    if (isUnusedOrSensitive) {
+      // Desired layout for Unused non-sensitive / Sensitive
+      materialRows = rowsHTMLLocal(mat, [
+        { key: 'Reference',              label: 'Reference' },
+        { key: 'Title',                  label: 'Title' },
+        { key: 'MaterialClassification', label: 'Classification' },
+        { key: 'Description',            label: 'Description' },
+        { key: 'PeriodFrom',             label: 'Period from' },
+        { key: 'ProducedbyWitnessId',    label: 'Produced by witness' }
+      ])
+    } else {
+      // Default layout (Statements, Exhibits, etc)
+      materialRows = rowsHTMLLocal(mat, [
+        { key: 'Title',                  label: 'Title' },
+        { key: 'Reference',              label: 'Reference' },
+        { key: 'ProducedbyWitnessId',    label: 'Produced by (witness id)' },
+        { key: 'MaterialClassification', label: 'Material classification' },
+        { key: 'MaterialType',           label: 'Material type' },
+        { key: 'SentExternally',         label: 'Sent externally' },
+        { key: 'RelatedParticipantId',   label: 'Related participant id' },
+        { key: 'Incident',               label: 'Incident' },
+        { key: 'Location',               label: 'Location' },
+        { key: 'PeriodFrom',             label: 'Period from' },
+        { key: 'PeriodTo',               label: 'Period to' }
+      ])
+    }
+
+    // ----------------------------------
+    // Related + digital (unchanged)
+    // ----------------------------------
 
     var relatedRows = rowsHTMLLocal(rel, [
       { key: 'RelatesToItem',    label: 'Relates to item' },
@@ -807,27 +883,39 @@
       ])
     }
 
-    var policeRows = rowsHTMLLocal(pol, [
-      { key: 'DisclosureStatus',               label: 'Disclosure status' },
-      { key: 'RationaleForDisclosureDecision', label: 'Rationale for disclosure decision' },
-      { key: 'Rebuttable',                     label: 'Rebuttable' },
-      { key: 'SensitivityRationale',           label: 'Sensitivity rationale' },
-      { key: 'Description',                    label: 'Description' },
-      { key: 'Exceptions',                     label: 'Exceptions', render: function (arr) {
-        if (!Array.isArray(arr) || !arr.length) return '—'
-        return '<ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">' +
-               arr.map(function (x) { return '<li>' + esc(x) + '</li>' }).join('') +
-               '</ul>'
-      } },
-      { label: 'Inspection date', get: function () { return insp.DateOfInspection } },
-      { label: 'Inspected by',   get: function () { return insp.InspectedBy } }
-    ])
+    // ----------------------------------
+    // Police / CPS disclosure (new model)
+    // ----------------------------------
 
-    var cpsRows = rowsHTMLLocal(cps, [
-      { key: 'DisclosureStatus',               label: 'Disclosure status' },
-      { key: 'RationaleForDisclosureDecision', label: 'Rationale for disclosure decision' },
-      { key: 'SensitivityDispute',             label: 'Sensitivity dispute' }
-    ])
+    var policeRows = ''
+    var cpsRows = ''
+
+    if (isUnusedOrSensitive) {
+      policeRows = rowsHTMLLocal(pol, [
+        {
+          key: 'status',
+          label: 'Police disclosure status',
+          render: function (v) { return statusTagHTML('police', v) }
+        },
+        { key: 'rationale',       label: 'Disclosure rationale' },
+        { key: 'rebuttable',      label: 'Rebuttable' },
+        { key: 'exception',       label: 'Exception' },
+        { key: 'exceptionReason', label: 'Exception reason' },
+        { key: 'InspectedBy',     label: 'Inspected by' },
+        { key: 'inspectedOn',     label: 'Inspected on' }
+      ])
+
+      cpsRows = rowsHTMLLocal(cps, [
+        {
+          key: 'status',
+          label: 'Disclosure status',
+          render: function (v) { return statusTagHTML('cps', v) }
+        },
+        { key: 'rationale',          label: 'Disclosure rationale' },
+        { key: 'SensitivityDispute', label: 'Sensitivity dispute' }
+      ])
+    }
+
 
     var metaBar =
       '<div class="dcf-viewer__meta-bar">' +
@@ -852,16 +940,17 @@
         metaBar +
         '<div id="' + esc(bodyId) + '" class="dcf-viewer__meta-body" hidden>' +
           inlineActions +
-          // Keeping your existing behaviour: materialRows appears twice
-          sectionHTMLNoHeadingLocal(materialRows) +
           sectionHTMLNoHeadingLocal(materialRows) +
           sectionHTMLLocal('Related materials',      relatedRows)  +
           sectionHTMLLocal('Digital representation', digitalRows)  +
-          sectionHTMLLocal('Police material',        policeRows)   +
-          sectionHTMLLocal('CPS material',           cpsRows)      +
+          (policeRows ? sectionHTMLLocal('Police disclosure status', policeRows) : '') +
+          (cpsRows    ? sectionHTMLLocal('CPS disclosure status',    cpsRows)    : '') +
         '</div>' +
       '</div>'
   }
+
+
+
 
   // --------------------------------------
   // Preview builder (pdf.js + chrome)

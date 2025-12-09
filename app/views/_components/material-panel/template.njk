@@ -64,9 +64,10 @@
             Status: m.Status,
 
             Material: {
+              Type: m.Type,
               Title: m.Title,
               myFileUrl: m.myFileUrl,
-              MaterialStatus: m.materialStatus,
+              materialStatus: m.materialStatus,
               Reference: m.Reference,
               ProducedbyWitnessId: m.ProducedbyWitnessId,
               MaterialClassification: m.MaterialClassification,
@@ -76,7 +77,11 @@
               Incident: m.Incident,
               Location: m.Location,
               PeriodFrom: m.PeriodFrom,
-              PeriodTo: m.PeriodTo
+              PeriodTo: m.PeriodTo,
+              Description: m.Description,
+
+              policeDisclosure: m.policeDisclosure,
+              cpsDisclosure: m.cpsDisclosure
             },
 
             RelatedMaterials: cm.RelatedMaterials,
@@ -84,6 +89,7 @@
             PoliceMaterial: cm.PoliceMaterial,
             CPSMaterial: cm.CPSMaterial
           } %}
+
           <script type="application/json" class="js-material-data">{{ __meta__ | dump | safe }}</script>
         {% else %}
           {{ linkText }}
