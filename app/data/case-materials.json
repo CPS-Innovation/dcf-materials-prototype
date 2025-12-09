@@ -245,19 +245,5 @@
         "DigitalSignature": "b1a2c3d4e5f60718293a4b5c6d7e8f9012ab34cd56ef7890ab12cd34ef56a7b8"
       }
     ]
-  },
-  "PoliceMaterial": {
-    "DisclosureStatus": "Mixed",
-    "RationaleForDisclosureDecision": "Case contains a mixture of relied-upon evidence and unused schedules.",
-    "Inspection": {
-      "DateOfInspection": "2025-10-18T11:30:00Z",
-      "InspectedBy": "DI Morton"
-    },
-    "Notes": "Case-level metadata only; see individual items for specifics in the source system."
-  },
-  "CPSMaterial": {
-    "DisclosureStatus": "Mixed",
-    "RationaleForDisclosureDecision": "Some materials probative; others unused or clearly not disclosable.",
-    "SensitivityDispute": "None"
   }
 }
