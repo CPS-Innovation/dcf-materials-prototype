@@ -1,4 +1,6 @@
-/* materials-accordion-card.scss */
+/* ======================================================================
+   materials-accordion-card.scss  (full file)
+   ====================================================================== */
 
 /* Palette */
 $dcf-card-bg:      #eaf2fc;
@@ -47,10 +49,10 @@ $dcf-muted:        #505a5f;
 }
 
 // Visually selected material card – matches the active tab background
-.dcf-material-card--active {
-  background: $dcf-card-bg;
-  border-color: $dcf-card-border;
-}
+// .dcf-material-card--active {
+//   background: $dcf-card-bg;
+//   border-color: $dcf-card-border;
+// }
 
 // Keep hover from fighting with the active colour
 .dcf-material-card--active:hover {
@@ -65,6 +67,15 @@ $dcf-muted:        #505a5f;
   align-items: stretch;   // children (including meta row) can stretch full width
   row-gap: 5px;           // space between badge, title, and date/note row
   // if you want a bit more, try 6px or 8px instead of 4px
+}
+
+/* -------------------------------------------------------
+   GOV.UK-style focus for material cards
+   ------------------------------------------------------- */
+
+.dcf-material-card {
+  // Let us control the focus outline ourselves
+  outline: none;
 }
 
 /* Badge container: holds one or more status chips */
@@ -218,4 +229,22 @@ $dcf-muted:        #505a5f;
   .dcf-material-card {
     padding: 10px 12px;
   }
+}
+
+/* Keyboard focus on the card itself */
+.dcf-material-card:focus,
+.dcf-material-card:focus-visible,
+.dcf-material-card--active:focus,
+.dcf-material-card--active:focus-visible {
+  outline: 3px solid #fd0;      // GOV.UK yellow
+  outline-offset: 0;
+  box-shadow: 0 0 0 3px #0b0c0c; // black halo, like GDS components
+}
+
+/* Keyboard focus within the card (e.g., on links) */
+
+.dcf-material-card:focus-within {
+  outline: 3px solid #fd0;
+  outline-offset: 0;
+  box-shadow: 0 0 0 3px #0b0c0c;
 }
