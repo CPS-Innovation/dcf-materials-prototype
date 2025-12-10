@@ -56,9 +56,9 @@
       "PeriodFrom": "2025-09-15T13:00:00Z",
       "PeriodTo": "2025-09-15T13:45:00Z"
     },
-
     {
       "Type": "Exhibit",
+      "isEvidence": true,
       "materialStatus": "New",
       "myFileUrl": "/public/files/MG12.pdf",
       "ItemId": "MAT-02004",
@@ -73,10 +73,25 @@
       "Incident": "Theft and common assault at High Street Store",
       "Location": "15 Rowan Close, Manchester M14 5PT",
       "PeriodFrom": "2025-09-14T20:41:00Z",
-      "PeriodTo": "2025-09-14T20:41:00Z"
+      "PeriodTo": "2025-09-14T20:41:00Z",
+      "policeDisclosure": {
+        "status": "Evidence",
+        "rationale": "Still image captures the key point of contact between suspect and victim and is relied upon as evidence.",
+        "rebuttable": null,
+        "exception": null,
+        "exceptionReason": null,
+        "inspectedOn": "20/09/2025",
+        "InspectedBy": "DC Alex Morton"
+      },
+      "cpsDisclosure": {
+        "status": "Evidence",
+        "rationale": "Image forms part of the core evidential bundle and will be served to the defence.",
+        "SensitivityDispute": "None"
+      }
     },
     {
       "Type": "Exhibit",
+      "isEvidence": true,
       "materialStatus": "New",
       "myFileUrl": "/public/files/MG00.pdf",
       "ItemId": "MAT-02005",
@@ -91,10 +106,25 @@
       "Incident": "Suspect entering store before altercation",
       "Location": "High Street Store, Manchester M1 2AB",
       "PeriodFrom": "2025-09-14T19:35:20Z",
-      "PeriodTo": "2025-09-14T19:45:00Z"
+      "PeriodTo": "2025-09-14T19:45:00Z",
+      "policeDisclosure": {
+        "status": "Evidence",
+        "rationale": "Footage provides contextual material showing the suspect’s movements before the incident.",
+        "rebuttable": null,
+        "exception": null,
+        "exceptionReason": null,
+        "inspectedOn": "21/09/2025",
+        "InspectedBy": "PCSO Mark Lennox"
+      },
+      "cpsDisclosure": {
+        "status": "Disclosable by inspection",
+        "rationale": "Material is relevant background and should be made available to the defence for inspection.",
+        "SensitivityDispute": "None"
+      }
     },
     {
       "Type": "Exhibit",
+      "isEvidence": true,
       "materialStatus": "New",
       "myFileUrl": "/public/files/defendants.pdf",
       "ItemId": "MAT-02006",
@@ -109,9 +139,22 @@
       "Incident": "Bruising documented following altercation",
       "Location": "St Mary’s Hospital, Manchester M20 4BX",
       "PeriodFrom": "2025-09-15T21:00:00Z",
-      "PeriodTo": "2025-09-15T21:05:00Z"
+      "PeriodTo": "2025-09-15T21:05:00Z",
+      "policeDisclosure": {
+        "status": "Evidence",
+        "rationale": "Photographs show injuries relied upon to support the complainant’s account.",
+        "rebuttable": null,
+        "exception": null,
+        "exceptionReason": null,
+        "inspectedOn": "22/09/2025",
+        "InspectedBy": "DS Clare Jennings"
+      },
+      "cpsDisclosure": {
+        "status": "Disclosable",
+        "rationale": "Injury photographs are directly relevant to the issues in dispute and must be disclosed.",
+        "SensitivityDispute": "None"
+      }
     },
-
     {
       "Type": "Unused non-sensitive",
       "materialStatus": "New",

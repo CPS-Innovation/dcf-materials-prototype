@@ -2,10 +2,10 @@
    materials-viewer.scss  (full file)
    ====================================================================== */
 
-/* Highlight active card in the left list */
+/* Highlight active card in the left list (non-focus) */
 .dcf-material-card--active {
-  outline: 3px solid #1d70b8; // GOV.UK blue
-  outline-offset: 2px;
+  border-color: #1d70b8; // GOV.UK blue thin border
+  outline: none;         // let focus styles control outline
 }
 
 /* ----------------------------------------------------------------------
