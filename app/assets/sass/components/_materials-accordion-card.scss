@@ -49,10 +49,10 @@ $dcf-muted:        #505a5f;
 }
 
 // Visually selected material card – matches the active tab background
-// .dcf-material-card--active {
-//   background: $dcf-card-bg;
-//   border-color: $dcf-card-border;
-// }
+.dcf-material-card--active {
+  background: $dcf-card-bg;
+  border-color: $dcf-card-border;
+}
 
 // Keep hover from fighting with the active colour
 .dcf-material-card--active:hover {

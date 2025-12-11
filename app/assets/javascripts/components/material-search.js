@@ -125,6 +125,41 @@
     searchItems = viewer._searchHits || []
   }
 
+  // ------------------------------------------------------------
+  // HIGHLIGHT ACTIVE CARD + TAB FOR CURRENT SEARCH HIT
+  // ------------------------------------------------------------
+
+  function highlightMaterialsUI (itemId) {
+    if (!itemId) return
+
+    // 1) Left-hand accordion card
+    var cards = document.querySelectorAll('.dcf-materials-panel .dcf-material-card')
+    cards.forEach(function (card) {
+      card.classList.remove('dcf-material-card--active')
+    })
+
+    var activeCard = document.querySelector(
+      '.dcf-materials-panel .dcf-material-card[data-item-id="' + itemId + '"]'
+    )
+    if (activeCard) {
+      activeCard.classList.add('dcf-material-card--active')
+    }
+
+    // 2) Tabs above the viewer
+    var tabs = document.querySelectorAll('.dcf-doc-tab')
+    tabs.forEach(function (tab) {
+      tab.classList.remove('is-active')
+    })
+
+    var activeTab = document.querySelector(
+      '.dcf-doc-tab[data-item-id="' + itemId + '"]'
+    )
+    if (activeTab) {
+      activeTab.classList.add('is-active')
+    }
+  }
+
+
   function updateNavUI () {
     var cluster = navCluster()
     if (!cluster) return
@@ -172,37 +207,41 @@
       window.location = hit.href
     }
 
+    // NEW: sync the left-hand card + tab with this search hit
+    highlightMaterialsUI(hit.itemId)
+
     updateNavUI()
   }
 
-    // When user clicks a search result, we:
-    //  - record which hit index was clicked
-    //  - mark that the viewer journey is "from search"
-    //  - open the hit inside the viewer (so no "old" behaviour)
-    document.addEventListener('click', function (e) {
-      var link = e.target && e.target.closest('.dcf-search-hit a, .dcf-material-card a.js-material-link')
-      if (!link) return
-      if (viewer.dataset.mode !== 'search') return
 
-      buildHitsFromViewer()
+  // When user clicks a search result, we:
+  //  - record which hit index was clicked
+  //  - mark that the viewer journey is "from search"
+  //  - open the hit inside the viewer (so no "old" behaviour)
+  document.addEventListener('click', function (e) {
+    var link = e.target && e.target.closest('.dcf-search-hit a, .dcf-material-card a.js-material-link')
+    if (!link) return
+    if (viewer.dataset.mode !== 'search') return
 
-      var href = link.getAttribute('data-file-url') || link.getAttribute('href') || ''
-      searchIndex = searchItems.findIndex(function (hit) { return hit && hit.href === href })
-      if (searchIndex < 0) searchIndex = 0
+    buildHitsFromViewer()
 
-      viewer.dataset.fromSearch = 'true'
+    var href = link.getAttribute('data-file-url') || link.getAttribute('href') || ''
+    searchIndex = searchItems.findIndex(function (hit) { return hit && hit.href === href })
+    if (searchIndex < 0) searchIndex = 0
 
-      // NEW: if this click came from a search hit, always route via the
-      // search navigation helper (so it opens in the viewer, not a new tab)
-      if (link.closest('.dcf-search-hit')) {
-        e.preventDefault()
-        openSearchResultAt(searchIndex)
-      }
+    viewer.dataset.fromSearch = 'true'
 
-      // After material-viewer.js has opened the viewer shell, we can
-      // render the Prev / Next nav row.
-      setTimeout(updateNavUI, 20)
-    }, true)
+    // NEW: if this click came from a search hit, always route via the
+    // search navigation helper (so it opens in the viewer, not a new tab)
+    if (link.closest('.dcf-search-hit')) {
+      e.preventDefault()
+      openSearchResultAt(searchIndex)
+    }
+
+    // After material-viewer.js has opened the viewer shell, we can
+    // render the Prev / Next nav row.
+    setTimeout(updateNavUI, 20)
+  }, true)
 
 
   // ------------------------------------------------------------
