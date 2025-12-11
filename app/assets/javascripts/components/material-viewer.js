@@ -292,7 +292,7 @@
       btn.setAttribute('role', 'tab')
       btn.setAttribute('aria-selected', 'false')
       btn.setAttribute('data-tab-id', id)
-      btn.setAttribute('data-item-id', (meta && meta.ItemId) || '')
+      btn.setAttribute('data-item-id', (meta && (meta.ItemId || (meta.Material && meta.Material.ItemId))) || '')
       btn.setAttribute('data-url', url || '')
       btn.setAttribute('data-title', title || 'Document')
       btn.title = title || 'Document'
@@ -1014,22 +1014,58 @@ function buildMetaPanel (meta, bodyId) {
 
     removeSearchStatus()
 
+    // Pull meta for the material
     var meta = getMaterialJSONFromLink(link) || {}
-    var url = link.getAttribute('data-file-url') || link.getAttribute('href')
+    var url  = link.getAttribute('data-file-url') || link.getAttribute('href')
 
     if (!url && meta && meta.Material && meta.Material.myFileUrl) {
       url = meta.Material.myFileUrl
     }
 
-    var title = link.getAttribute('data-title') || (link.textContent || '').trim() || 'Selected file'
+    var title =
+      link.getAttribute('data-title') ||
+      (link.textContent || '').trim() ||
+      'Selected file'
 
-    var card = link.closest('.dcf-material-card')
-    if (card) {
-      viewer._currentCard = card
-      markCardVisited(card)
-      setActiveCard(card)
+    // NEW: work out canonical ItemId from meta
+    var itemId =
+      (meta && (meta.ItemId ||
+                (meta.Material && meta.Material.ItemId) ||
+                meta.itemId)) || null
+
+    var realCard = null
+
+    // If we have an ItemId, try to find the real card in the left-hand list
+    if (itemId) {
+      try {
+        realCard = document.querySelector(
+          '.dcf-material-card[data-item-id="' + CSS.escape(itemId) + '"]'
+        )
+      } catch (e) {
+        // CSS.escape might not exist in some older browsers; fall back
+        realCard = document.querySelector(
+          '.dcf-material-card[data-item-id="' + itemId.replace(/"/g, '\\"') + '"]'
+        )
+      }
     }
 
+    // Fallback: use the card from the DOM that actually contains this link
+    var closestCard = link.closest('.dcf-material-card')
+    if (closestCard && !realCard && document.documentElement.contains(closestCard)) {
+      realCard = closestCard
+    }
+
+    // Update viewer._currentCard + active state using the *real* card only
+    if (realCard) {
+      viewer._currentCard = realCard
+      markCardVisited(realCard)
+      setActiveCard(realCard)
+    } else {
+      viewer._currentCard = null
+      setActiveCard(null)
+    }
+
+    // Normal viewer setup continues as before
     viewer.dataset.mode = 'document'
     viewer.dataset.fromSearch = fromSearch ? 'true' : 'false'
 
@@ -1040,19 +1076,31 @@ function buildMetaPanel (meta, bodyId) {
       try { new MOJFrontend.ButtonMenu({ container: menu }).init() } catch (e) {}
     }
 
+    // This creates/updates the tab and applies .is-active
     addOrActivateTab(meta, url, title)
 
+    // Back-to-search visibility
     var backLink = viewer.querySelector('[data-action="back-to-search"]')
-    var backSep = viewer.querySelector('[data-role="back-to-search-sep"]')
-    var canShowBackToSearch = (viewer.dataset.fromSearch === 'true') && !!viewer._lastSearchHTML
+    var backSep  = viewer.querySelector('[data-role="back-to-search-sep"]')
+    var canShowBackToSearch =
+      (viewer.dataset.fromSearch === 'true') && !!viewer._lastSearchHTML
     if (backLink) backLink.hidden = !canShowBackToSearch
-    if (backSep) backSep.hidden = !canShowBackToSearch
+    if (backSep)  backSep.hidden  = !canShowBackToSearch
 
-    console.log('Opening', { url: url, title: title, itemId: meta && meta.ItemId })
+    console.log('Opening', {
+      url: url,
+      title: title,
+      itemId: itemId
+    })
 
     viewer.hidden = false
     try { viewer.focus({ preventScroll: true }) } catch (e) {}
   }
+
+
+  // --------------------------------------
+  // Helper for search navigation (Prev / Next)
+  // --------------------------------------
 
   // --------------------------------------
   // Helper for search navigation (Prev / Next)
@@ -1061,6 +1109,8 @@ function buildMetaPanel (meta, bodyId) {
   window.__dcfOpenMaterialFromSearch = function (hit) {
     if (!hit || !hit.href) return
 
+    // Build a temporary, off-DOM card just so openMaterialPreview
+    // can read its JSON meta in the usual way.
     var card = document.createElement('article')
     card.className = 'dcf-material-card'
     if (hit.itemId) card.setAttribute('data-item-id', hit.itemId)
@@ -1083,8 +1133,19 @@ function buildMetaPanel (meta, bodyId) {
     card.appendChild(link)
     card.appendChild(script)
 
+    // Let the normal preview flow run (this will create/update the tab)
     openMaterialPreview(link, { fromSearch: true })
+
+    // EXTRA: explicitly activate the correct tab for this hit.
+    // Use the same stableId logic as addOrActivateTab so we target
+    // *exactly* the tab that was just created/updated.
+    var id = stableId(hit.meta || {}, hit.href)
+    if (id) {
+      switchToTabById(id)
+    }
   }
+
+
 
   // --------------------------------------
   // Intercepts: open previews from cards/links
