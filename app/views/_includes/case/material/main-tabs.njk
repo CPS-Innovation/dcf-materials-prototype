@@ -10,7 +10,9 @@
 {% set viewMaterialsLabel = "Review and redact (" ~ totalCount ~ ")" %}
 
 {% set disclosureHtml %}
-  {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
+  <div class="govuk-!-width-two-thirds">
+    {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
+  </div>
 {% endset -%}
 {% set communicationsHtml %}<h3 class="govuk-heading-m">Communications</h3>{% endset -%}
 

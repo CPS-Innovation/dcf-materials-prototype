@@ -2,13 +2,18 @@
 .app-list {
   border-top: 1px solid govuk-colour('mid-grey');
 	margin-bottom: govuk-spacing(6);
-}
 
-.app-list__item {
-  border-bottom: 1px solid govuk-colour('mid-grey');
-  padding-top: 15px;
-  padding-bottom: 15px;
-	position: relative;
+	.app-list__item {
+		border-bottom: 1px solid govuk-colour('mid-grey');
+		padding-top: 15px;
+		padding-bottom: 15px;
+		position: relative;
+	}
+
+	h2 {
+		margin-bottom: govuk-spacing(0);
+		@include govuk-font(19);
+	}
 
 	h2, h3 {
 		display: flex;
@@ -40,11 +45,21 @@
 	}
 
 	.govuk-summary-list {
-		margin: 0;
+		margin-bottom: 0;
+		@include govuk-font(16);
 
 		.govuk-summary-list__row:last-child {
 			border-bottom: none;
 		}
+	}
+
+	.govuk-summary-list__key, .govuk-summary-list__value {
+		padding-bottom: govuk-spacing(0);
+	}
+
+	.govuk-details{
+		margin-top: govuk-spacing(2);
+		@include govuk-font(16);
 	}
 }
 
