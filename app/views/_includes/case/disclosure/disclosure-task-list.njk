@@ -7,7 +7,6 @@
 
     <h2 class="govuk-heading-m">Police certification</h2>
 
-    {# Only render if we actually have certification data #}
     <div class="app-list">
       <div class="app-list__item">
         <h3 class="govuk-heading-s">
@@ -45,21 +44,24 @@
       items: [
         {
           title: {
-            text: "Company Directors"
-          },
-          href: "#",
-          status: {
-            text: "Completed"
-          }
-        },
-        {
-          title: {
-            text: "Registered company details"
+            text: "Assess non-sensitive materials"
           },
           href: "#",
           status: {
             tag: {
-              text: "Incomplete",
+              text: cm.cpsDisclosureAssessment.hasAssessedNonSensitive,
+              classes: "govuk-tag--blue"
+            }
+          }
+        },
+        {
+          title: {
+            text: "Assess sensitive materials"
+          },
+          href: "#",
+          status: {
+            tag: {
+              text: cm.cpsDisclosureAssessment.hasAssessedSensitive,
               classes: "govuk-tag--blue"
             }
           }
