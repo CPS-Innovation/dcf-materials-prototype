@@ -9,7 +9,9 @@
 {% endset -%}
 {% set viewMaterialsLabel = "Review and redact (" ~ totalCount ~ ")" %}
 
-{% set disclosureHtml %}<h3 class="govuk-heading-m">Disclosure</h3>{% endset -%}
+{% set disclosureHtml %}
+  {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
+{% endset -%}
 {% set communicationsHtml %}<h3 class="govuk-heading-m">Communications</h3>{% endset -%}
 
 
