@@ -47,8 +47,12 @@ function normaliseRecord(m) {
 //////////////////////////////////////////////////////////////////
 
 module.exports = router => {
+  
   router.get("/cases/:caseId/material", async (req, res) => {
     const caseId = parseInt(req.params.caseId)
+
+     // e.g. /cases/123/material?tab=disclosure
+    const activeTab = req.query.tab || 'view-materials'
 
     let selectedDocumentTypeFilters = _.get(req.session.data.documentListFilters, 'documentTypes', [])
 
@@ -167,7 +171,8 @@ module.exports = router => {
       documentTypeItems,
       selectedFilters,
       assetFiles,        // just names
-      assetFileLinks     // [{name, href}]
+      assetFileLinks,     // [{name, href}]
+      activeTab
     })
   })
 
@@ -245,23 +250,6 @@ module.exports = router => {
     })
   })
 
-
-  router.get('/cases/:caseId/material/remove-type/:type', (req, res) => {
-    _.set(req, 'session.data.documentListFilters.documentTypes', _.pull(req.session.data.documentListFilters.documentTypes, req.params.type))
-    res.redirect(`/cases/${req.params.caseId}/material`)
-  })
-
-  router.get('/cases/:caseId/material/clear-filters', (req, res) => {
-    resetFilters(req)
-    res.redirect(`/cases/${req.params.caseId}/material`)
-  })
-
-  router.get('/cases/:caseId/material/clear-search', (req, res) => {
-    _.set(req, 'session.data.documentSearch.keywords', '')
-    res.redirect(`/cases/${req.params.caseId}/material`)
-  })
-
-
    // --- tiny esc helper ---
   const esc = s => (s == null ? '' : String(s))
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -330,9 +318,6 @@ module.exports = router => {
         <script type="application/json" class="js-material-data">${JSON.stringify(meta)}</script>
       </section>`;
   }
-
-
-
 
 
   function fragmentHTML(matches, q) {
