@@ -1,6 +1,16 @@
 {
   "caseId": "CASE-48321",
   "caseStatus": "New",
+  "policeDisclosureCertification": {
+    "referenceNumber": "PD-2025-03-11-CA48321",
+    "dateOfCertification": "11 March 2025",
+    "disclosingOfficerName": "Sgt Clare Jennings",
+    "certifierComment": "I certify that, to the best of my knowledge and belief, no information has been withheld which would assist the accused in the preparation of the defence in accordance with R. v Director of Public Prosecutions ex parte Lee [1999] 2 CR. App. R. 304 which includes, but is not limited to, information that might assist the defence in making an application for bail." 
+  },
+  "cpsDisclosureAssessment": {
+    "hasAssessedNonSensitive": "Not started yet",
+    "hasAssessedSensitive": "Not started yet"
+  },
   "Material": [
     {
       "Type": "Statement",
@@ -188,6 +198,36 @@
     {
       "Type": "Unused non-sensitive",
       "materialStatus": "New",
+      "myFileUrl": "/public/files/UNUSED_1_STORM_LOG_1881_01.6.20_EDITED_2020-11-23_MCLOVE.pdf",
+      "date": "15/06/2025",
+      "Reference": "DOC-2025-06-15-CA48321-CALL-LOGS",
+      "Title": "UNUSED 1 STORM LOG 1881 01.6.20 EDITED 2020-11-23 MCLOVE",
+      "MaterialClassification": "Document - other",
+      "Description": "Call logs relating to historic incidents involving Ella Quagmire. Extracted from control room system and redacted to remove unrelated third-party information.",
+      "PeriodFrom": "01/01/2024 00:00:00",
+      "ProducedbyWitnessId": "Sgt Clare Jennings",
+      "policeDisclosure": {
+        "itemNumber": "1",
+        "title": "Exh SP/1 ",
+        "description": "DA History for Ella Quagmire. This is a compilation of all the domestic abuse reports which the victim has been involved  in. The reports have been taken from the police system iOPS. This document contains a total of 17 pages and is redacted as per redaction guidelines.",
+        "materialProvidedToCPS": "No",
+        "status": "Passes disclosure test",
+        "rationale": "Material does not meet the test for disclosure and is retained as unused.",
+        "rebuttable": "Not rebuttable",
+        "exception": "None",
+        "exceptionReason": "None",
+        "inspectedOn": "22/06/2025",
+        "InspectedBy": "Sgt Clare Jennings"
+      },
+      "cpsDisclosure": {
+        "status": "To be assessed",
+        "rationale": null,
+        "SensitivityDispute": "None"
+      }
+    },
+    {
+      "Type": "Unused non-sensitive",
+      "materialStatus": "New",
       "myFileUrl": "/public/files/MG06_3June.pdf",
       "date": "30/06/2025",
       "Reference": "DOC-2025-09-16-CA48321-STOCK-REC",
@@ -197,10 +237,14 @@
       "PeriodFrom": "19/05/2025 09:32:03",
       "ProducedbyWitnessId": "Sgt Andrew Cornholio",
       "policeDisclosure": {
-        "status": "Passes disclosure test",
-        "rationale": "Case contains a mixture of relied-upon evidence and unused schedules.",
-        "rebuttable": null,
-        "exception": "Frank Deesee",
+        "itemNumber": "2",
+        "title": "Exh SP/2 ",
+        "description": "DA History for Elton Berkley. This is a compilation of all the domestic abuse reports which the defendant has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 4 pages and is redacted as per redaction guidelines.",
+        "materialProvidedToCPS": "Yes",
+        "status": "Does not pass disclosure test",
+        "rationale": "Reason the material does not pass the disclosure test is that it contains sensitive information which is exempt from disclosure under the Police and Criminal Evidence Act 1984 Section 32.",
+        "rebuttable": "Rebuttable",
+        "exception": "DEESEE Frank",
         "exceptionReason": "The reason for this is something blah blah",
         "inspectedOn": "19/05/2025",
         "InspectedBy": "Sgt Robert Dobbins"
@@ -223,43 +267,21 @@
       "PeriodFrom": "03/06/2025 14:10:45",
       "ProducedbyWitnessId": "PC Sally Roper",
       "policeDisclosure": {
+         "itemNumber": "3",
+        "title": "Exh SP/3 ",
+        "description": "PNB entry made by PC 9999 Parsons from GMP issues Pocket Notebook. This entry was made on 07/03/2025 at 1921 hours and details the house-to-house enquiries conducted. This also includes information of the victims first account and the arrest of the defendant. This document consists of a total of 2 pages.",
+        "materialProvidedToCPS": "No",
         "status": "Passes disclosure test",
         "rationale": "Additional unused material that may reasonably assist the defence or undermine the prosecution.",
-        "rebuttable": null,
-        "exception": null,
-        "exceptionReason": null,
+        "rebuttable": "Not rebuttable",
+        "exception": "None",
+        "exceptionReason": "None",
         "inspectedOn": "21/06/2025",
         "InspectedBy": "PCSO Mark Lennox"
       },
       "cpsDisclosure": {
         "status": "Disclosable",
         "rationale": "Material is relevant to the issues in dispute and should be disclosed to the defence.",
-        "SensitivityDispute": "None"
-      }
-    },
-    {
-      "Type": "Unused non-sensitive",
-      "materialStatus": "New",
-      "myFileUrl": "/public/files/UNUSED_1_STORM_LOG_1881_01.6.20_EDITED_2020-11-23_MCLOVE.pdf",
-      "date": "15/06/2025",
-      "Reference": "DOC-2025-06-15-CA48321-CALL-LOGS",
-      "Title": "UNUSED 1 STORM LOG 1881 01.6.20 EDITED 2020-11-23 MCLOVE",
-      "MaterialClassification": "Document - other",
-      "Description": "Call logs relating to historic incidents involving Ella Quagmire. Extracted from control room system and redacted to remove unrelated third-party information.",
-      "PeriodFrom": "01/01/2024 00:00:00",
-      "ProducedbyWitnessId": "Sgt Clare Jennings",
-      "policeDisclosure": {
-        "status": "Does not pass disclosure test",
-        "rationale": "Material does not meet the test for disclosure and is retained as unused.",
-        "rebuttable": null,
-        "exception": null,
-        "exceptionReason": null,
-        "inspectedOn": "22/06/2025",
-        "InspectedBy": "Sgt Clare Jennings"
-      },
-      "cpsDisclosure": {
-        "status": "To be assessed",
-        "rationale": "Material is not capable of undermining the prosecution or assisting the defence.",
         "SensitivityDispute": "None"
       }
     },

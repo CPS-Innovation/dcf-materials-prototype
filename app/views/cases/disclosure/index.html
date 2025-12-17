@@ -1,70 +1,49 @@
 {% extends "layouts/main.html" %}
+{% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
-{% set secondaryNavId = 'material' %}
-{% set pageName = 'Disclosure' %}
+{% set secondaryNavId = 'materials' %}
+
+{# default if route forgot to pass it #}
+{# {% set activeTab = activeTab or 'disclosure' %} #}
+
+{# -------------------------
+   Defendants display value
+   ------------------------- #}
+{% set firstDefendant = (_case.defendants | first) %}
+
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set pageName = defendantsValue %}
 
 {% block beforeContent %}
-  
-  {{ govukBreadcrumbs({
-    items: [
-      {
-        text: _case.reference,
-        href: "/cases/:caseId" | replace(':caseId', _case.id)
-      },
-      {
-        text: "Material",
-        href: "/cases/:caseId/material" | replace(':caseId', _case.id)
-      },
-      {
-        html: "Disclosure"
-      }
-    ]
-  }) }} 
-{% endblock beforeContent %}
-
+  {# {% include "_includes/case/identity-bar.njk" %} #}
+{% endblock %}
 
 {% block content %}
+
   {% include "_includes/success-banner.njk" %}
-  {# {% include "_includes/case/header.njk" %} #}
-  {# {% include "_includes/case/material/navigation.njk" %} #}
+  {% include "_includes/case/dcf-navigation.njk" %}
 
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-full">
-      <h1 class="govuk-heading-l">{{pageName}}</h1>
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ _case.reference }}</span>
+      <h1 class="govuk-heading-m">{{ pageName }}</h1>
 
-      <div class="govuk-button-group">
-       
-      </div>
-
-      <div class="govuk-button-group">
-         {{ mojButtonMenu({
-            button: {
-              text: "Assess material"
-            },
-            items: [
-              {
-                text: "Assess as disclosable"
-              },
-              {
-                text: "Assess as disclosable by inspection"
-              },
-              {
-                text: "Assess as clearly not disclosable"
-              },
-              {
-                text: "Assess as notdisclosable"
-              }
-            ]
-          }) }}
-
-        <a class="govuk-link" href="/cases/{{_case.id}}/disclosure/certificate">Certificate</a>
-        <a class="govuk-link" href="/cases/{{_case.id}}/disclosure/schedule">Schedule</a>
-      </div>
-
-     
-
-      {% include "_includes/case/disclosure/disclosure-table.njk" %}
-      
+      {# 👉 Just the disclosure task list, no tabs, no materials panel #}
+      {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
     </div>
   </div>
 {% endblock %}
+
+{# No scripts block needed here – we’re not toggling header actions #}

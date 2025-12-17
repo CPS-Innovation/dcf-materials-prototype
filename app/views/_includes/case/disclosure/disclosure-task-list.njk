@@ -1,2 +1,71 @@
-{# Police disclosure pulled into _includes/case/material/main-tabs.njk ////////////////////////////////////////// #}
-<h1 class="govuk-heading-m">Assess unused case materials</h1>
+{# _includes/case/disclosure/disclosure-task-list.njk ////////////////////////////////////////// #}
+{% set cm = data.caseMaterials or {} %}
+{% set materials = cm.Material or [] %}
+
+
+    {# <h1 class="govuk-heading-m">Assess unused case materials</h1> #}
+
+    <h2 class="govuk-heading-l">Police certification</h2>
+
+    <div class="app-list">
+      <div class="app-list__item">
+        <h3 class="govuk-heading-s">
+          <a href="{{ material.myFileUrl or '#' }}" class="govuk-link">
+            {{ cm.policeDisclosureCertification.referenceNumber }}
+          </a>
+        </h3>
+
+        {{ govukSummaryList({
+          classes: "govuk-summary-list--no-border",
+          rows: [
+            {
+              key: { text: "Date of certification" },
+              value: { text: cm.policeDisclosureCertification.dateOfCertification }
+            },
+            {
+              key: { text: "Disclosing officer name" },
+              value: { text: cm.policeDisclosureCertification.disclosingOfficerName }
+            }
+          ]
+        }) }}
+        {{ govukDetails({
+          classes: "govuk-!-width-two-thirds",
+          summaryText: "Show certification comments",
+          text: cm.policeDisclosureCertification.certifierComment
+        }) }}
+      </div>
+    </div>
+
+  
+    <h2 class="govuk-heading-l">CPS disclosure assessment</h2>
+
+    {{ govukTaskList({
+      idPrefix: "company-details",
+      items: [
+        {
+          title: {
+            text: "Assess non-sensitive materials"
+          },
+          href: "#",
+          status: {
+            tag: {
+              text: cm.cpsDisclosureAssessment.hasAssessedNonSensitive,
+              classes: "govuk-tag--blue"
+            }
+          }
+        },
+        {
+          title: {
+            text: "Assess sensitive materials"
+          },
+          href: "#",
+          status: {
+            tag: {
+              text: cm.cpsDisclosureAssessment.hasAssessedSensitive,
+              classes: "govuk-tag--blue"
+            }
+          }
+        }
+      ]
+    }) }}
+
