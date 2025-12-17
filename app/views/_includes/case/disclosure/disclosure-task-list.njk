@@ -43,10 +43,8 @@
       idPrefix: "company-details",
       items: [
         {
-          title: {
-            text: "Assess non-sensitive materials"
-          },
-          href: "#",
+          title: { text: "Assess non-sensitive materials" },
+          href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive",
           status: {
             tag: {
               text: cm.cpsDisclosureAssessment.hasAssessedNonSensitive,
@@ -55,10 +53,8 @@
           }
         },
         {
-          title: {
-            text: "Assess sensitive materials"
-          },
-          href: "#",
+          title: { text: "Assess sensitive materials" },
+          href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive",
           status: {
             tag: {
               text: cm.cpsDisclosureAssessment.hasAssessedSensitive,

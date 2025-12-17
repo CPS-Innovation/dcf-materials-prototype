@@ -1,12 +1,11 @@
 {% extends "layouts/main.html" %}
-{% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
-{% set secondaryNavId = 'materials' %}
 
-{# default if route forgot to pass it #}
-{# {% set activeTab = activeTab or 'disclosure' %} #}
+
+{% set cm = caseMaterials or data.caseMaterials or {} %}
+
 
 {# -------------------------
    Defendants display value
@@ -24,24 +23,34 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = defendantsValue %}
+{% set pageName = 'Assess non-sensitive materials' %}
 
 {% block beforeContent %}
-  {# {% include "_includes/case/identity-bar.njk" %} #}
+  {{ govukBreadcrumbs({
+    classes: "govuk-!-margin-top-6",
+    items: [
+      {
+        text: _case.reference + " Disclosure",
+        href: "/cases/" ~ _case.id ~ "/material#disclosure"
+      },
+      {
+        text: "Assess non-sensitive materials"
+      }
+    ]
+  }) }}
 {% endblock %}
+
 
 {% block content %}
 
-
   {% include "_includes/success-banner.njk" %}
-  {% include "_includes/case/dcf-navigation.njk" %}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
-      <span class="govuk-caption-m">{{ _case.reference }} - {{ pageName }}</span>
-      <h1 class="govuk-heading-m">{{ pageName }}</h1>
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
+      {% include "_includes/case/disclosure/disclosure-table.njk" %}
       
     </div>
   </div>
