@@ -5,15 +5,12 @@
 
     {# <h1 class="govuk-heading-m">Assess unused case materials</h1> #}
 
-    <h2 class="govuk-heading-l">Police certification</h2>
+    <h2 class="govuk-heading-l">Disclosure</h2>
 
     <div class="app-list">
       <div class="app-list__item">
-        <h3 class="govuk-heading-s">
-          <a href="{{ material.myFileUrl or '#' }}" class="govuk-link">
-            {{ cm.policeDisclosureCertification.referenceNumber }}
-          </a>
-        </h3>
+        
+        <h3 class="govuk-heading-m">Police certification</h3>
 
         {{ govukSummaryList({
           classes: "govuk-summary-list--no-border",
@@ -29,18 +26,19 @@
           ]
         }) }}
         {{ govukDetails({
-          classes: "govuk-!-width-two-thirds",
-          summaryText: "Show certification comments",
+          classes: "govuk-!-width-two-thirds govuk-!-margin-top-6 govuk-!-margin-bottom-4",
+          summaryText: "Show certification",
           text: cm.policeDisclosureCertification.certifierComment
         }) }}
       </div>
     </div>
 
-  
-    <h2 class="govuk-heading-l">CPS disclosure assessment</h2>
+
+    <h3 class="govuk-heading-m govuk-!-margin-bottom-6">CPS disclosure assessment</h3>
 
     {{ govukTaskList({
-      idPrefix: "company-details",
+      idPrefix: "assess-disclosure-tasks",
+      classes: "govuk-summary-list--no-border",
       items: [
         {
           title: { text: "Assess non-sensitive materials" },

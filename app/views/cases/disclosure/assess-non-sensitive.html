@@ -26,19 +26,12 @@
 {% set pageName = 'Assess non-sensitive materials' %}
 
 {% block beforeContent %}
-  {{ govukBreadcrumbs({
-    classes: "govuk-!-margin-top-6",
-    items: [
-      {
-        text: "Disclosure",
-        href: "/cases/" ~ _case.id ~ "/material?tab=disclosure"
-      },
-      {
-        text: "Assess non-sensitive materials"
-      }
-    ]
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:window.history.back()"
   }) }}
 {% endblock %}
+
 
 
 {% block content %}
