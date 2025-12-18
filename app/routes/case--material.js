@@ -49,26 +49,34 @@ function normaliseRecord(m) {
 module.exports = router => {
   
   router.get("/cases/:caseId/material", async (req, res) => {
-    const caseId = parseInt(req.params.caseId)
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) {
+      return res.status(400).send('Invalid case id')
+    }
 
-     // e.g. /cases/123/material?tab=disclosure
-    const activeTab = req.query.tab || 'view-materials'
+    // ✅ Make query-string tabs work with GOV.UK Tabs (which uses URL hash on load)
+    // e.g. /cases/123/material?tab=disclosure  ->  /cases/123/material#disclosure
+    const tab = (req.query.tab || '').toString().trim()
+    if (tab) {
+      return res.redirect(`/cases/${caseId}/material#${encodeURIComponent(tab)}`)
+    }
+
+    // (After redirect, this route will be re-hit with no ?tab=... )
+    // Default active tab for server-rendered state (still useful if you ever wire it into markup)
+    const activeTab = 'view-materials'
 
     let selectedDocumentTypeFilters = _.get(req.session.data.documentListFilters, 'documentTypes', [])
-
     let selectedFilters = { categories: [] }
 
     // Document type filter display
     if (selectedDocumentTypeFilters?.length) {
       selectedFilters.categories.push({
         heading: { text: 'Type' },
-        items: selectedDocumentTypeFilters.map(function(label) {
+        items: selectedDocumentTypeFilters.map(function (label) {
           return { text: label, href: `/cases/${caseId}/material/remove-type/${label}` }
         })
       })
     }
-
-    
 
     // Build Prisma where clause for documents
     let where = { caseId: caseId, AND: [] }
@@ -81,8 +89,7 @@ module.exports = router => {
       delete where.AND
     }
 
-    
-  // Fetch case
+    // Fetch case
     const _case = await prisma.case.findUnique({
       where: { id: caseId },
       include: {
@@ -112,27 +119,30 @@ module.exports = router => {
         },
         notes: {
           include: {
-            user: true            // ✅ Note.user
+            user: true // ✅ Note.user
           }
         },
         activityLogs: {
           include: {
-            user: true            // ✅ ActivityLog.user
+            user: true // ✅ ActivityLog.user
           }
         },
         prosecutors: {
           include: {
-            user: true            // ✅ CaseProsecutor.user
+            user: true // ✅ CaseProsecutor.user
           }
         },
         paralegalOfficers: {
           include: {
-            user: true            // ✅ CaseParalegalOfficer.user
+            user: true // ✅ CaseParalegalOfficer.user
           }
         }
       }
     })
 
+    if (!_case) {
+      return res.status(404).render('not-found')
+    }
 
     // Fetch documents with filters
     let documents = await prisma.document.findMany({
@@ -142,10 +152,10 @@ module.exports = router => {
     // Search by document name
     let keywords = _.get(req.session.data.documentSearch, 'keywords')
 
-    if(keywords) {
+    if (keywords) {
       keywords = keywords.toLowerCase()
       documents = documents.filter(document => {
-        let documentName = document.name.toLowerCase()
+        let documentName = (document.name || '').toLowerCase()
         return documentName.indexOf(keywords) > -1
       })
     }
@@ -164,17 +174,17 @@ module.exports = router => {
       href: `/public/files/${name}`
     }))
 
-
-    res.render("cases/material/index", {
+    return res.render("cases/material/index", {
       _case,
       documents,
       documentTypeItems,
       selectedFilters,
-      assetFiles,        // just names
+      assetFiles,         // just names
       assetFileLinks,     // [{name, href}]
       activeTab
     })
   })
+
 
   //////////////////////////////////////////////////////////////////
 

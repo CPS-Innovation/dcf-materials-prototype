@@ -22,6 +22,9 @@
   <h3 class="govuk-heading-m">Communications</h3>
 {% endset -%}
 
+{# default if route forgot to pass it #}
+{% set activeTab = activeTab or 'view-materials' %}
+
 {# --- The tabs component itself --- #}
 {{ govukTabs({
   id: "case-tabs",
@@ -46,3 +49,4 @@
     }
   ]
 }) }}
+{# End of _includes/case/material/main-tabs.njk #}
