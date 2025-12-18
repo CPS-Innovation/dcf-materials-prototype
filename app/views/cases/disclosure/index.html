@@ -2,10 +2,14 @@
 {% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
+{% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
 
 {# default if route forgot to pass it #}
+{% set activeTab = activeTab or 'disclosure' %}
 {% set activeTab = activeTab or 'disclosure' %}
 
 {# -------------------------
@@ -41,8 +45,8 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ pageName }}</span>
       <h1 class="govuk-heading-m">{{ pageName }}</h1>
 
-      {# {% include "_includes/case/disclosure/disclosure-task-list.njk" %} #}
-      
+      {# 👉 Just the disclosure task list, no tabs, no materials panel #}
+      {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
     </div>
   </div>
 {% endblock %}
