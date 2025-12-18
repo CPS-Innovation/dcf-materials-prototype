@@ -10,6 +10,7 @@
 
 {# default if route forgot to pass it #}
 {% set activeTab = activeTab or 'disclosure' %}
+{% set activeTab = activeTab or 'disclosure' %}
 
 {# -------------------------
    Defendants display value
@@ -44,7 +45,7 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ pageName }}</span>
       <h1 class="govuk-heading-m">{{ pageName }}</h1>
 
-      {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
+      {# {% include "_includes/case/disclosure/disclosure-task-list.njk" %} #}
       
     </div>
   </div>
