@@ -31,7 +31,7 @@
     items: [
       {
         text: "Disclosure",
-        href: "/cases/" ~ _case.id ~ "/material#disclosure"
+        href: "/cases/" ~ _case.id ~ "/material?tab=disclosure"
       },
       {
         text: "Assess non-sensitive materials"
@@ -49,6 +49,24 @@
     <div class="govuk-grid-column-full">
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ mojButtonMenu({
+      classes: "govuk-!-margin-bottom-6",
+      button: {
+        text: "Bulk actions"
+      },
+      items: [
+        {
+          text: "Menu item 1"
+        },
+        {
+          text: "Menu item 2"
+        },
+        {
+          text: "Menu item 3"
+        }
+      ]
+    }) }}
 
       {% include "_includes/case/disclosure/disclosure-table.njk" %}
       
