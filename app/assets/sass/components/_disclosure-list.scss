@@ -91,3 +91,11 @@
 		@include govuk-font(16);
 	}
 }
+
+/* Disclosure table: give the multi-select checkbox column some breathing room */
+.govuk-table[data-module="moj-multi-select"] .moj-multi-select__checkbox {
+  padding-right: govuk-spacing(4); /* tweak: 2/3/4 */
+	bottom: govuk-spacing(1);
+}
+
+
