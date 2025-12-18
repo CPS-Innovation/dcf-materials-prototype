@@ -99,3 +99,18 @@
 }
 
 
+.govuk-table,
+.govuk-table th,
+.govuk-table td,
+.govuk-table p,
+.govuk-table span,
+.govuk-table strong,
+.govuk-table a,
+.govuk-table button {
+  @include govuk-font(16);
+}
+
+/* Re-apply bold to table body cells */
+.govuk-table th {
+  font-weight: 700;
+}

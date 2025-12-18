@@ -100,10 +100,19 @@
         <td class="govuk-table__cell">{{ r.description }}</td>
 
         <td class="govuk-table__cell">
-          <strong class="govuk-tag govuk-!-font-size-16">
+          {% set policeTagClass = "govuk-tag--grey" %}
+
+          {% if r.policeAssessment == "Passes disclosure test" %}
+            {% set policeTagClass = "govuk-tag--green" %}
+          {% elseif r.policeAssessment == "Fails disclosure test" %}
+            {% set policeTagClass = "govuk-tag--yellow" %}
+          {% endif %}
+
+          <strong class="govuk-tag {{ policeTagClass }} govuk-!-font-size-16">
             {{ r.policeAssessment }}
           </strong>
         </td>
+
 
         <td class="govuk-table__cell">
           {{ r.policeRationale }}
@@ -115,8 +124,11 @@
           {% if r.hasException %}
             {{ r.hasException }}<br>
             <strong>Reason:</strong> {{ r.exceptionReason }}
+          {% else %}
+            None
           {% endif %}
         </td>
+
 
         <td class="govuk-table__cell">
           <strong class="govuk-tag govuk-tag--grey govuk-!-font-size-16">
