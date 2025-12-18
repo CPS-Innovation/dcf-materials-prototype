@@ -1,22 +1,33 @@
 {# _includes/case/material/main-tabs.njk #}
+{# _includes/case/material/main-tabs.njk #}
 
 {# If you actually want *all* materials regardless of type: #}
 {% set totalCount = (data.caseMaterials.Material or []) | length %}
 
 {# --- Materials tab panel --- #}
+{# --- Materials tab panel --- #}
 {% set reviewAndRedactMaterialsHtml %}
   {% include "_includes/case/material/material-panel.njk" %}
 {% endset -%}
 
+
 {% set viewMaterialsLabel = "Review and redact (" ~ totalCount ~ ")" %}
 
+{# --- Disclosure tab panel --- #}
 {# --- Disclosure tab panel --- #}
 {% set disclosureHtml %}
   <div class="govuk-!-width-two-thirds">
     {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
   </div>
+  <div class="govuk-!-width-two-thirds">
+    {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
+  </div>
 {% endset -%}
 
+{# --- Communications tab panel --- #}
+{% set communicationsHtml %}
+  <h3 class="govuk-heading-m">Communications</h3>
+{% endset -%}
 {# --- Communications tab panel --- #}
 {% set communicationsHtml %}
   <h3 class="govuk-heading-m">Communications</h3>
