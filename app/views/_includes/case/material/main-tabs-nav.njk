@@ -1,0 +1,27 @@
+{# _includes/case/material/main-tabs-nav.njk #}
+{# Expects: _case, data, activeTab: 'materials' | 'disclosure' | 'comms' #}
+
+{% set totalCount = (data.caseMaterials.Material or []) | length %}
+{% set viewMaterialsLabel = "Review and redact (" ~ totalCount ~ ")" %}
+
+<nav class="govuk-tabs" aria-label="Case sections">
+  <ul class="govuk-tabs__list">
+    <li class="govuk-tabs__list-item{% if activeTab == 'materials' %} govuk-tabs__list-item--selected{% endif %}">
+      <a class="govuk-tabs__tab" href="/cases/{{ _case.id }}/materials">
+        {{ viewMaterialsLabel }}
+      </a>
+    </li>
+
+    <li class="govuk-tabs__list-item{% if activeTab == 'disclosure' %} govuk-tabs__list-item--selected{% endif %}">
+      <a class="govuk-tabs__tab" href="/cases/{{ _case.id }}/disclosure">
+        Disclosure
+      </a>
+    </li>
+
+    <li class="govuk-tabs__list-item{% if activeTab == 'comms' %} govuk-tabs__list-item--selected{% endif %}">
+      <a class="govuk-tabs__tab" href="/cases/{{ _case.id }}/communications">
+        Communications
+      </a>
+    </li>
+  </ul>
+</nav>

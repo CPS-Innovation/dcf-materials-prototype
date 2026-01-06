@@ -91,3 +91,26 @@
 		@include govuk-font(16);
 	}
 }
+
+/* Disclosure table: give the multi-select checkbox column some breathing room */
+.govuk-table[data-module="moj-multi-select"] .moj-multi-select__checkbox {
+  padding-right: govuk-spacing(4); /* tweak: 2/3/4 */
+	bottom: govuk-spacing(1);
+}
+
+
+.govuk-table,
+.govuk-table th,
+.govuk-table td,
+.govuk-table p,
+.govuk-table span,
+.govuk-table strong,
+.govuk-table a,
+.govuk-table button {
+  @include govuk-font(16);
+}
+
+/* Re-apply bold to table body cells */
+.govuk-table th {
+  font-weight: 700;
+}

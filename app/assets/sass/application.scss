@@ -18,6 +18,7 @@
 
 // Lists
 @import "components/list.scss";
+@import "components/disclosure-list.scss";
 
 // Search
 @import "components/search-form.scss";
@@ -33,6 +34,9 @@
 @import "components/materials-viewer-tabs";
 @import "components/materials-search-results";
 @import "components/notes-modal";
+
+// Disclosure
+@import "components/disclosure-action-link";
 
 // Tasks - Task list selects
 @import "components/task-list-selects";

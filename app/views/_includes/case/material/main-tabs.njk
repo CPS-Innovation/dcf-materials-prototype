@@ -1,24 +1,63 @@
-{# _includes/case/details/main-tabs.njk #}
+{# _includes/case/material/main-tabs.njk #}
+{# _includes/case/material/main-tabs.njk #}
 
 {# If you actually want *all* materials regardless of type: #}
 {% set totalCount = (data.caseMaterials.Material or []) | length %}
 
-
+{# --- Materials tab panel --- #}
+{# --- Materials tab panel --- #}
 {% set reviewAndRedactMaterialsHtml %}
   {% include "_includes/case/material/material-panel.njk" %}
 {% endset -%}
+
+
 {% set viewMaterialsLabel = "Review and redact (" ~ totalCount ~ ")" %}
 
-{% set disclosureHtml %}<h3 class="govuk-heading-m">Disclosure</h3>{% endset -%}
-{% set communicationsHtml %}<h3 class="govuk-heading-m">Communications</h3>{% endset -%}
+{# --- Disclosure tab panel --- #}
+{# --- Disclosure tab panel --- #}
+{% set disclosureHtml %}
+  <div class="govuk-!-width-two-thirds">
+    {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
+  </div>
+  <div class="govuk-!-width-two-thirds">
+    {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
+  </div>
+{% endset -%}
 
+{# --- Communications tab panel --- #}
+{% set communicationsHtml %}
+  <h3 class="govuk-heading-m">Communications</h3>
+{% endset -%}
+{# --- Communications tab panel --- #}
+{% set communicationsHtml %}
+  <h3 class="govuk-heading-m">Communications</h3>
+{% endset -%}
 
+{# default if route forgot to pass it #}
+{% set activeTab = activeTab or 'view-materials' %}
 
+{# --- The tabs component itself --- #}
 {{ govukTabs({
   id: "case-tabs",
   items: [
-    { label: viewMaterialsLabel, id: "view-materials", panel: { html: reviewAndRedactMaterialsHtml } },
-    { label: "Disclosure", id: "disclosure", panel: { html: disclosureHtml } },
-    { label: "Communications", id: "communications", panel: { html: communicationsHtml } }
+    {
+      label: viewMaterialsLabel,
+      id: "view-materials",
+      panel: { html: reviewAndRedactMaterialsHtml },
+      selected: (activeTab == 'view-materials')
+    },
+    {
+      label: "Disclosure",
+      id: "disclosure",
+      panel: { html: disclosureHtml },
+      selected: (activeTab == 'disclosure')
+    },
+    {
+      label: "Communications",
+      id: "communications",
+      panel: { html: communicationsHtml },
+      selected: (activeTab == 'communications')
+    }
   ]
 }) }}
+{# End of _includes/case/material/main-tabs.njk #}

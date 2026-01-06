@@ -1,0 +1,66 @@
+{# _includes/case/disclosure/disclosure-task-list.njk ////////////////////////////////////////// #}
+{% set cm = data.caseMaterials or {} %}
+{% set materials = cm.Material or [] %}
+
+
+    {# <h1 class="govuk-heading-m">Assess unused case materials</h1> #}
+
+    <h2 class="govuk-heading-l">Disclosure</h2>
+
+    <div class="app-list">
+      <div class="app-list__item">
+        
+        <h3 class="govuk-heading-m">Police certification</h3>
+
+        {{ govukSummaryList({
+          classes: "govuk-summary-list--no-border govuk-!-margin-bottom-6",
+          rows: [
+            {
+              key: { text: "Date of certification" },
+              value: { text: cm.policeDisclosureCertification.dateOfCertification }
+            },
+            {
+              key: { text: "Disclosing officer name" },
+              value: { text: cm.policeDisclosureCertification.disclosingOfficerName }
+            }
+          ]
+        }) }}
+
+        {{ govukDetails({
+          summaryText: "Show certification",
+          html: cm.policeDisclosureCertification.certifierComment | replace('\n', '<br>')| safe
+        }) }}
+
+      </div>
+    </div>
+
+
+    <h3 class="govuk-heading-m govuk-!-margin-bottom-6">CPS disclosure assessment</h3>
+
+    {{ govukTaskList({
+      idPrefix: "assess-disclosure-tasks",
+      classes: "govuk-summary-list--no-border",
+      items: [
+        {
+          title: { text: "Assess non-sensitive materials" },
+          href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive",
+          status: {
+            tag: {
+              text: cm.cpsDisclosureAssessment.hasAssessedNonSensitive,
+              classes: "govuk-tag--blue"
+            }
+          }
+        },
+        {
+          title: { text: "Assess sensitive materials" },
+          href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive",
+          status: {
+            tag: {
+              text: cm.cpsDisclosureAssessment.hasAssessedSensitive,
+              classes: "govuk-tag--blue"
+            }
+          }
+        }
+      ]
+    }) }}
+
