@@ -1,3 +1,4 @@
+{# item-disclosable.html #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -5,6 +6,15 @@
 
 
 {% set cm = caseMaterials or data.caseMaterials or {} %}
+
+
+{# Pick up the selected row using the id in the query string #}
+{% set selectedId = data.id or (query.id if query) %}
+{% set rows = data.disclosureNonSensitiveRows or [] %}
+{% set selected = (rows | selectattr("id", "equalto", selectedId) | first) or {} %}
+
+
+
 
 
 {# -------------------------
@@ -39,11 +49,61 @@
   {% include "_includes/success-banner.njk" %}
 
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-full">
+    <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-     
+      {# <p class="govuk-body">{{ selected.description }}</p> #}
+
+
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-6",
+        rows: [
+          {
+            key: {
+              text: "Description"
+            },
+            value: {
+              html: selected.description
+            }
+          },
+          {
+            key: {
+              text: "Police assessment"
+            },
+            value: {
+              html: selected.policeAssessment
+            }
+          },
+          {
+            key: {
+              text: "Rationale for assessment"
+            },
+            value: {
+              html: selected.policeRationale
+            }
+          }
+        ]
+      }) }}
+
+      {{ govukTextarea({
+        name: "disclosureStatusChangeReason",
+        id: "disclosure-status-change-reason",
+        rows: "8",
+        classes: "govuk-!-width-one-half",
+        label: {
+          text: "Why is this material disclosable?",
+          classes: "govuk-label--m",
+          isPageHeading: false
+        },
+        hint: {
+          text: "Do we want some hint text here?"
+        }
+      }) }}
+
+      {{ govukButton({
+        text: "Save and continue"
+      }) }}
       
     </div>
   </div>
