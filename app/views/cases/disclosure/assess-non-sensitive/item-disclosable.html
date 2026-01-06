@@ -43,7 +43,48 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-     
+      <p class="govuk-body">{{ data.disclosureNonSensitive.description }}</p>
+
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-6",
+        rows: [
+          {
+            key: {
+              text: "Police assessment"
+            },
+            value: {
+              text: data.disclosureNonSensitive.policeAssessment
+            }
+          },
+          {
+            key: {
+              text: "Rationale for assessment"
+            },
+            value: {
+              text: data.disclosureNonSensitive.policeRationale
+            }
+          }
+        ]
+      }) }}
+
+      {{ govukTextarea({
+        name: "disclosureStatusChangeReason",
+        id: "disclosure-status-change-reason",
+        rows: "8",
+        classes: "govuk-!-width-one-third",
+        label: {
+          text: "Why is this material disclosable?",
+          classes: "govuk-label--m",
+          isPageHeading: false
+        },
+        hint: {
+          text: "Do we want some hint text here?"
+        }
+      }) }}
+
+      {{ govukButton({
+        text: "Save and continue"
+      }) }}
       
     </div>
   </div>
