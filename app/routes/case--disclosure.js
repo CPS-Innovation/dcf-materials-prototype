@@ -49,7 +49,7 @@ module.exports = router => {
     // If you’re storing caseMaterials in session, you can pass it explicitly too:
     const caseMaterials = _.get(req, 'session.data.caseMaterials', null)
 
-    res.render('cases/disclosure/assess-non-sensitive', {
+    res.render('cases/disclosure/assess-non-sensitive/index', {
       _case,
       caseMaterials
     })
@@ -65,7 +65,7 @@ module.exports = router => {
 
     const caseMaterials = _.get(req, 'session.data.caseMaterials', null)
 
-    res.render('cases/disclosure/assess-sensitive', {
+    res.render('cases/disclosure/assess-sensitive/index', {
       _case,
       caseMaterials
     })
