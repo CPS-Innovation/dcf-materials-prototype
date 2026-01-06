@@ -1,27 +1,10 @@
-{# disclosure-table.njk#}
+{# disclosure-table.njk #}
 {# MoJ Multi-select: checkbox | Item | Title | Description | Police assessment | Police rationale | Rebuttable | CPS assessment | Actions #}
 
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set singleRowActions %}
-  {{ mojButtonMenu({
-    classes: "dcf-button-menu--as-link",
-    button: { text: "Actions" },
-    items: [
-      {
-        text: "Assess as disclosable",
-        href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-disclosable"
-      },
-      { text: "Assess as disclosable by inspection" },
-      { text: "Assess as clearly not disclosable" },
-      { text: "Assess as not disclosable" },
-      { text: "Assess as evidence" },
-      { text: "Dispute sensitivity" },
-      { text: "Request material" },
-      { text: "Request updated description" }
-    ]
-  }) }}
-{% endset %}
+{# Source rows from session data #}
+{% set rows = data.disclosureNonSensitiveRows or [] %}
 
 <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="materials-">
   <thead class="govuk-table__head govuk-body-s">
@@ -40,49 +23,29 @@
   </thead>
 
   <tbody class="govuk-table__body govuk-body-s">
-    {% set rows = [
-      {
-        id: '01',
-        item: '01',
-        title: 'Exh SP/1',
-        description: 'DA History for Ella Quagmire. This is a compilation of all the domestic abuse reports which the victim has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 17 pages and is redacted as per redaction guidelines.',
-        policeAssessment: 'Passes disclosure test',
-        policeRationale: 'Reason material passes test here',
-        isRebuttable: 'No',
-        hasException: null,
-        exceptionReason: null,
-        cpsAssessment: 'To be assessed',
-        rowActions: singleRowActions
-      },
-      {
-        id: '02',
-        item: '02',
-        title: 'Exh SP/2',
-        description: 'DA History for Elton Berkley. This is a compilation of all the domestic abuse reports which the defendant has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 4 pages and is redacted as per redaction guidelines.',
-        policeAssessment: 'Fails disclosure test',
-        policeRationale: 'Reason material fails test here',
-        isRebuttable: 'Yes',
-        hasException: 'DEESEE Frank',
-        exceptionReason: 'Exception reason here if applicable',
-        cpsAssessment: 'To be assessed',
-        rowActions: singleRowActions
-      },
-      {
-        id: '03',
-        item: '03',
-        title: 'Exh SP/3',
-        description: 'PNB entry made by PC 9999 Parsons from GMP issues Pocket Notebook. This entry was made on 07/03/2025 at 1921 hours and details the house-to-house enquiries conducted. This also includes information of the victims first account and the arrest of the defendant. This document consists of a total of 2 pages.',
-        policeAssessment: 'Passes disclosure test',
-        policeRationale: 'Reason material passes test here',
-        isRebuttable: 'No',
-        hasException: null,
-        exceptionReason: null,
-        cpsAssessment: 'To be assessed',
-        rowActions: singleRowActions
-      }
-    ] %}
-
     {% for r in rows %}
+
+      {# Build the actions menu per row so the href includes the row id #}
+      {% set rowActions %}
+        {{ mojButtonMenu({
+          classes: "dcf-button-menu--as-link",
+          button: { text: "Actions" },
+          items: [
+            {
+              text: "Assess as disclosable",
+              href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id
+            },
+            { text: "Assess as disclosable by inspection", href: "#" },
+            { text: "Assess as clearly not disclosable", href: "#" },
+            { text: "Assess as not disclosable", href: "#" },
+            { text: "Assess as evidence", href: "#" },
+            { text: "Dispute sensitivity", href: "#" },
+            { text: "Request material", href: "#" },
+            { text: "Request updated description", href: "#" }
+          ]
+        }) }}
+      {% endset %}
+
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
           <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
@@ -105,7 +68,6 @@
 
         <td class="govuk-table__cell">
           {% set policeTagClass = "govuk-tag--grey" %}
-
           {% if r.policeAssessment == "Passes disclosure test" %}
             {% set policeTagClass = "govuk-tag--green" %}
           {% elseif r.policeAssessment == "Fails disclosure test" %}
@@ -116,7 +78,6 @@
             {{ r.policeAssessment }}
           </strong>
         </td>
-
 
         <td class="govuk-table__cell">
           {{ r.policeRationale }}
@@ -133,7 +94,6 @@
           {% endif %}
         </td>
 
-
         <td class="govuk-table__cell">
           <strong class="govuk-tag govuk-tag--grey govuk-!-font-size-16">
             {{ r.cpsAssessment }}
@@ -141,7 +101,7 @@
         </td>
 
         <td class="govuk-table__cell">
-          {{ r.rowActions | safe }}
+          {{ rowActions | safe }}
         </td>
       </tr>
     {% endfor %}
