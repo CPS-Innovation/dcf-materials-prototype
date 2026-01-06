@@ -4,10 +4,7 @@
 {% set navId = 'cases' %}
 
 
-{% set cm = caseMaterials or {} %}
-{% set materials = cm.Material or [] %}
-{% set firstMaterial = materials | first %}
-
+{% set cm = caseMaterials or data.caseMaterials or {} %}
 
 
 {# -------------------------
@@ -26,7 +23,7 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = 'Assess non-sensitive materials' %}
+{% set pageName = 'Assess item as disclosable' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -46,31 +43,7 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {{ mojButtonMenu({
-        classes: "govuk-!-margin-bottom-6",
-        button: { text: "Actions" },
-        items: [
-          {
-            text: "Assess as disclosable",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-disclosable"
-          },
-          { text: "Assess as disclosable by inspection" },
-          { text: "Assess as clearly not disclosable" },
-          { text: "Assess as not disclosable" },
-          { text: "Assess as evidence" },
-          { text: "Dispute sensitivity" },
-          { text: "Request material" },
-          { text: "Request updated description" }
-        ]
-      }) }}
-
-      <p class="govuk-body">
-        <a class="govuk-link" href="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable">DEBUG: Go to disclosable page</a>
-      </p>
-
-
-
-      {% include "_includes/case/disclosure/disclosure-table.njk" %}
+     
       
     </div>
   </div>

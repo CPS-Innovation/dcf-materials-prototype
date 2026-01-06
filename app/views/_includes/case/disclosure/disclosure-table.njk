@@ -1,3 +1,4 @@
+{# disclosure-table.njk#}
 {# MoJ Multi-select: checkbox | Item | Title | Description | Police assessment | Police rationale | Rebuttable | CPS assessment | Actions #}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -7,7 +8,10 @@
     classes: "dcf-button-menu--as-link",
     button: { text: "Actions" },
     items: [
-      { text: "Assess as disclosable" },
+      {
+        text: "Assess as disclosable",
+        href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-disclosable"
+      },
       { text: "Assess as disclosable by inspection" },
       { text: "Assess as clearly not disclosable" },
       { text: "Assess as not disclosable" },
