@@ -1,8 +1,9 @@
 {# _includes/case/material/main-tabs.njk #}
-{# _includes/case/material/main-tabs.njk #}
 
 {# If you actually want *all* materials regardless of type: #}
-{% set totalCount = (data.caseMaterials.Material or []) | length %}
+{% set cm = caseMaterials or data.caseMaterials or {} %}
+{% set totalCount = (cm.Material or []) | length %}
+
 
 {# --- Materials tab panel --- #}
 {# --- Materials tab panel --- #}
@@ -16,9 +17,6 @@
 {# --- Disclosure tab panel --- #}
 {# --- Disclosure tab panel --- #}
 {% set disclosureHtml %}
-  <div class="govuk-!-width-two-thirds">
-    {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
-  </div>
   <div class="govuk-!-width-two-thirds">
     {% include "_includes/case/disclosure/disclosure-task-list.njk" %}
   </div>

@@ -1,6 +1,12 @@
 {# _includes/case/disclosure/disclosure-task-list.njk ////////////////////////////////////////// #}
-{% set cm = data.caseMaterials or {} %}
+
+{# {% set cm = data.caseMaterials or {} %} #}
+{% set cm = caseMaterials or data.caseMaterials or {} %}
 {% set materials = cm.Material or [] %}
+{% set firstMaterial = materials | first %}
+
+
+
 
 
     {# <h1 class="govuk-heading-m">Assess unused case materials</h1> #}
