@@ -1,0 +1,79 @@
+{% extends "layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+
+
+{% set cm = caseMaterials or {} %}
+{% set materials = cm.Material or [] %}
+{% set firstMaterial = materials | first %}
+
+
+
+{# -------------------------
+   Defendants display value
+   ------------------------- #}
+{% set firstDefendant = (_case.defendants | first) %}
+
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set pageName = 'Assess non-sensitive materials' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:window.history.back()"
+  }) }}
+{% endblock %}
+
+
+
+{% block content %}
+
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ mojButtonMenu({
+        classes: "govuk-!-margin-bottom-6",
+        button: { text: "Actions" },
+        items: [
+          {
+            text: "Assess as disclosable",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-disclosable"
+          },
+          { text: "Assess as disclosable by inspection" },
+          { text: "Assess as clearly not disclosable" },
+          { text: "Assess as not disclosable" },
+          { text: "Assess as evidence" },
+          { text: "Dispute sensitivity" },
+          { text: "Request material" },
+          { text: "Request updated description" }
+        ]
+      }) }}
+
+      <p class="govuk-body">
+        <a class="govuk-link" href="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable">DEBUG: Go to disclosable page</a>
+      </p>
+
+
+
+      {% include "_includes/case/disclosure/disclosure-table.njk" %}
+      
+    </div>
+  </div>
+{% endblock %}
+
+{# No scripts block needed here – we’re not toggling header actions #}
