@@ -8,7 +8,8 @@
 
 {% set cpsTagClass = {
   "To be assessed": "govuk-tag--purple",
-  "Disclosable": "govuk-tag--light-blue"
+  "Disclosable": "govuk-tag--light-blue",
+  "Disclosable by inspection": "govuk-tag--purple"
 } %}  
 
 
@@ -46,10 +47,16 @@
           items: [
             {
               text: "Assess as disclosable",
-              href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id
+              href: "/cases/" ~ _case.id
+                ~ "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id
                 ~ "&returnUrl=" ~ (returnUrl | urlencode)
             },
-            { text: "Assess as disclosable by inspection", href: "#" },
+            {
+              text: "Assess as disclosable by inspection",
+              href: "/cases/" ~ _case.id
+                ~ "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id
+                ~ "&returnUrl=" ~ (returnUrl | urlencode)
+            },
             { text: "Assess as clearly not disclosable", href: "#" },
             { text: "Assess as not disclosable", href: "#" },
             { text: "Assess as evidence", href: "#" },
@@ -59,6 +66,7 @@
           ]
         }) }}
       {% endset %}
+
 
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
