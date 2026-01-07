@@ -6,6 +6,18 @@
 {# Source rows from session data #}
 {% set rows = data.disclosureNonSensitiveRows or [] %}
 
+{% set cpsTagClass = {
+  "To be assessed": "govuk-tag--purple",
+  "Disclosable": "govuk-tag--light-blue"
+} %}  
+
+
+{# Where the user should return to after any row workflow #}
+{% set returnUrl = "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" %}
+
+
+
+
 <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="materials-">
   <thead class="govuk-table__head govuk-body-s">
     <tr class="govuk-table__row">
@@ -18,6 +30,7 @@
       <th class="govuk-table__header" scope="col">Rebuttable</th>
       <th class="govuk-table__header" scope="col">Exceptions</th>
       <th class="govuk-table__header" scope="col">CPS assessment</th>
+      <th class="govuk-table__header" scope="col">CPS rationale</th>
       <th class="govuk-table__header" scope="col">Actions</th>
     </tr>
   </thead>
@@ -34,6 +47,7 @@
             {
               text: "Assess as disclosable",
               href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id
+                ~ "&returnUrl=" ~ (returnUrl | urlencode)
             },
             { text: "Assess as disclosable by inspection", href: "#" },
             { text: "Assess as clearly not disclosable", href: "#" },
@@ -95,10 +109,23 @@
         </td>
 
         <td class="govuk-table__cell">
-          <strong class="govuk-tag govuk-tag--grey govuk-!-font-size-16">
-            {{ r.cpsAssessment }}
+          {% set status = r.cpsAssessment or "To be assessed" %}
+          {% set tagClass = cpsTagClass[status] or "govuk-tag--blue" %}
+
+          <strong class="govuk-tag {{ tagClass }} govuk-!-font-size-16">
+            {{ status }}
           </strong>
         </td>
+
+
+        <td class="govuk-table__cell">
+          {% if r.cpsRationale %}
+            {{ r.cpsRationale }}
+          {% else %}
+            <span class="govuk-hint govuk-!-margin-0">None available</span>
+          {% endif %}
+        </td>
+
 
         <td class="govuk-table__cell">
           {{ rowActions | safe }}

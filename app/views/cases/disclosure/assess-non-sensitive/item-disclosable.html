@@ -1,4 +1,5 @@
-{# item-disclosable.html #}
+{# cases/disclosure/assess-non-sensitive/item-disclosable.html #}
+
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -9,9 +10,10 @@
 
 
 {# Pick up the selected row using the id in the query string #}
-{% set selectedId = data.id or (query.id if query) %}
-{% set rows = data.disclosureNonSensitiveRows or [] %}
-{% set selected = (rows | selectattr("id", "equalto", selectedId) | first) or {} %}
+{# Row is now resolved in the route and passed in #}
+{% set selectedId = selectedId or (query.id if query) %}
+{% set selected = selectedRow or {} %}
+
 
 
 
@@ -38,7 +40,7 @@
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
-    href: "javascript:window.history.back()"
+    href: (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()")
   }) }}
 {% endblock %}
 
@@ -86,6 +88,15 @@
         ]
       }) }}
 
+    <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable">
+      <input type="hidden" name="id" value="{{ selectedId }}">
+
+      {% if returnUrl %}
+        <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
+      {% elseif query and query.returnUrl %}
+        <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
+      {% endif %}
+
       {{ govukTextarea({
         name: "disclosureStatusChangeReason",
         id: "disclosure-status-change-reason",
@@ -104,6 +115,8 @@
       {{ govukButton({
         text: "Save and continue"
       }) }}
+    </form>
+
       
     </div>
   </div>
