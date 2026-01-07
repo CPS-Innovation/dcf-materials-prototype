@@ -1,10 +1,17 @@
-{# _includes/case/disclosure/disclosure-task-list.njk ////////////////////////////////////////// #}
+{# _includes/case/disclosure/disclosure-task-list.njk  #}
 
 {# {% set cm = data.caseMaterials or {} %} #}
 {% set cm = caseMaterials or data.caseMaterials or {} %}
 {% set materials = cm.Material or [] %}
 {% set firstMaterial = materials | first %}
 
+{% set progressTagClass = {
+  "Not started yet": "govuk-tag--grey",
+  "In progress": "govuk-tag--blue",
+  "Completed": "govuk-tag--green"
+} %}
+
+{% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
 
 
 
@@ -53,7 +60,7 @@
           status: {
             tag: {
               text: cm.cpsDisclosureAssessment.hasAssessedNonSensitive,
-              classes: "govuk-tag--blue"
+              classes: progressTagClass[cm.cpsDisclosureAssessment.hasAssessedNonSensitive] or "govuk-tag--grey"
             }
           }
         },
@@ -63,10 +70,11 @@
           status: {
             tag: {
               text: cm.cpsDisclosureAssessment.hasAssessedSensitive,
-              classes: "govuk-tag--blue"
+              classes: progressTagClass[cm.cpsDisclosureAssessment.hasAssessedSensitive] or "govuk-tag--grey"
             }
           }
         }
       ]
     }) }}
+
 

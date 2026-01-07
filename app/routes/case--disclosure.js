@@ -1,5 +1,5 @@
 // routes/case--disclosure.js
-// routes/case--disclosure.js
+
 const _ = require('lodash')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
@@ -54,8 +54,33 @@ module.exports = router => {
     return {}
   }
 
+  function computeNonSensitiveProgress(rows) {
+    const total = Array.isArray(rows) ? rows.length : 0
+    if (total === 0) return 'Not started yet'
+
+    const assessedCount = rows.filter(r => {
+      const status = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
+      return status && status !== 'To be assessed'
+    }).length
+
+    if (assessedCount === 0) return 'Not started yet'
+    if (assessedCount < total) return 'In progress'
+    return 'Completed'
+  }
+
+  function syncCpsDisclosureAssessment(req, _case) {
+    const cm = getCaseMaterialsForCase(req, _case)
+    if (!cm || !cm.cpsDisclosureAssessment) return
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const progress = computeNonSensitiveProgress(rows)
+
+    // Persist onto case materials so your Disclosure task list shows the right tag text
+    _.set(cm, 'cpsDisclosureAssessment.hasAssessedNonSensitive', progress)
+  }
 
 
+  // ✅ Disclosure home
   router.get('/cases/:caseId/disclosure', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
@@ -63,8 +88,14 @@ module.exports = router => {
     const _case = await fetchCase(caseId)
     if (!_case) return res.status(404).render('not-found')
 
-    res.render('cases/disclosure/index', { _case })
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    // ✅ keep CPS disclosure assessment status in sync
+    syncCpsDisclosureAssessment(req, _case)
+
+    return res.render('cases/disclosure/index', { _case, caseMaterials })
   })
+
 
   // ✅ Assess non-sensitive
   router.get('/cases/:caseId/disclosure/assess-non-sensitive', async (req, res) => {
@@ -75,6 +106,7 @@ module.exports = router => {
     if (!_case) return res.status(404).render('not-found')
 
     const caseMaterials = getCaseMaterialsForCase(req, _case)
+    syncCpsDisclosureAssessment(req, _case)
 
     //// Check everythuing is here
     console.log('caseId', caseId, 'caseMaterials session type:', Array.isArray(_.get(req,'session.data.caseMaterials')) ? 'array' : typeof _.get(req,'session.data.caseMaterials'))
@@ -84,10 +116,16 @@ module.exports = router => {
       _case,
       caseMaterials
     })
+
+    // Clear one-time success banner after render
+    if (_.get(req, 'session.data.successBanner')) {
+      _.unset(req, 'session.data.successBanner')
+    }
+
   })
 
 
-  // ✅ Item: assess as disclosable (GET) — MINIMAL
+  // ✅ Item: assess as disclosable (GET) — row-aware
   router.get('/cases/:caseId/disclosure/assess-non-sensitive/item-disclosable', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
@@ -97,83 +135,73 @@ module.exports = router => {
 
     const caseMaterials = getCaseMaterialsForCase(req, _case)
 
+    // 👇 Pull the row id from the query string (this is the id you already pass in the table link)
+    const selectedId = (req.query && req.query.id) ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    // 👇 Use the same session data that the table uses
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const selectedRow = rows.find(r => String(r.id) === selectedId)
+
+    if (!selectedRow) return res.status(404).send('Row not found')
+
     return res.render('cases/disclosure/assess-non-sensitive/item-disclosable', {
       _case,
-      caseMaterials
+      caseMaterials,
+      selectedId,
+      selectedRow,
+      returnUrl: req.query && req.query.returnUrl ? req.query.returnUrl : null
     })
   })
 
 
 
 
-
-  // ✅ Item: assess as disclosable (POST updates session data)
+ 
+  // ✅ Item: assess as disclosable (POST updates non-sensitive table rows in session)
   router.post('/cases/:caseId/disclosure/assess-non-sensitive/item-disclosable', async (req, res) => {
-    
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
-    const itemId = req.body.itemId
-    if (!itemId) return res.status(400).send('Missing itemId')
+    // From the form (Step 2)
+    const selectedId = (req.body && (req.body.id || req.body.itemId)) ? String(req.body.id || req.body.itemId) : null
+    if (!selectedId) return res.status(400).send('Missing id')
 
-    const policeStatus = req.body.policeStatus
-    const cpsStatus = req.body.cpsStatus
+    const rationale =
+      (req.body && (req.body.disclosureStatusChangeReason || req.body.cpsRationale))
+        ? String(req.body.disclosureStatusChangeReason || req.body.cpsRationale).trim()
+        : ''
 
+    // Same dataset the table uses
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+
+    const idx = rows.findIndex(r => String(r.id) === selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+
+    // ✅ Apply the decision
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Disclosable')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+
+    // ✅ Update overall CPS disclosure assessment status (Not started / In progress / Completed)
     const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
+    if (_case) syncCpsDisclosureAssessment(req, _case)
 
-    const cm = getCaseMaterialsForCase(req, _case)
-    const materials = cm.Material || []
-
-    const idx = materials.findIndex(m => m.ItemId === itemId)
-    if (idx === -1) return res.status(404).send('Material not found')
-
-    // Ensure disclosure objects exist
-    _.set(cm, `Material[${idx}].policeDisclosure`,
-      _.get(cm, `Material[${idx}].policeDisclosure`, {}))
-    _.set(cm, `Material[${idx}].cpsDisclosure`,
-      _.get(cm, `Material[${idx}].cpsDisclosure`, {}))
-
-    // Apply updates
-    if (policeStatus) _.set(cm, `Material[${idx}].policeDisclosure.status`, policeStatus)
-    if (cpsStatus) _.set(cm, `Material[${idx}].cpsDisclosure.status`, cpsStatus)
-
-    // Update case-level progress
-    const current =
-      _.get(cm, 'cpsDisclosureAssessment.hasAssessedNonSensitive', 'Not started yet')
-
-    if (current === 'Not started yet') {
-      _.set(cm, 'cpsDisclosureAssessment.hasAssessedNonSensitive', 'In progress')
-    }
-
-    const allAssessed = materials.every(m => {
-      const s = _.get(m, 'cpsDisclosure.status', 'To be assessed')
-      return s && s !== 'To be assessed'
-    })
-
-    if (allAssessed) {
-      _.set(cm, 'cpsDisclosureAssessment.hasAssessedNonSensitive', 'Completed')
-    }
-
-    // 🔐 Persist back to session (object OR array)
-    const stored = _.get(req, 'session.data.caseMaterials')
-
-    if (Array.isArray(stored)) {
-      const i = stored.findIndex(c => String(c.caseId) === String(caseId))
-      if (i > -1) stored[i] = cm
-      else stored.push(cm)
-      _.set(req, 'session.data.caseMaterials', stored)
-    } else {
-      _.set(req, 'session.data.caseMaterials', cm)
-    }
-
+    // ✅ Success banner (rendered on the table page)
     _.set(req, 'session.data.successBanner', {
       titleText: 'Disclosure decision saved',
-      text: `Assessment updated for ${itemId}.`
+      text: 'CPS assessment updated.'
     })
 
-    return res.redirect(`/cases/${caseId}/disclosure/assess-non-sensitive`)
+    // Redirect back to table (prefer returnUrl, fall back safely)
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const returnUrl = (req.body && req.body.returnUrl) ? String(req.body.returnUrl) : fallbackReturnUrl
+
+    // Add a query param we can use for banner + row focus
+    const separator = returnUrl.includes('?') ? '&' : '?'
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
+
 
 
 

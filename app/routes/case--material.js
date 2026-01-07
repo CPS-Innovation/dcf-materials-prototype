@@ -55,16 +55,12 @@ module.exports = router => {
       return res.status(400).send('Invalid case id')
     }
 
-    // ✅ Make query-string tabs work with GOV.UK Tabs (which uses URL hash on load)
-    // e.g. /cases/123/material?tab=disclosure  ->  /cases/123/material#disclosure
-    const tab = (req.query.tab || '').toString().trim()
-    if (tab) {
-      return res.redirect(`/cases/${caseId}/material#${encodeURIComponent(tab)}`)
-    }
+    // ✅ Server-driven tab selection (NO hash = no vertical jump)
+    // e.g. /cases/123/material?tab=disclosure selects the Disclosure tab at render time
+    const allowedTabs = new Set(['view-materials', 'disclosure', 'communications'])
+    const requestedTab = (req.query.tab || '').toString().trim()
+    const activeTab = allowedTabs.has(requestedTab) ? requestedTab : 'view-materials'
 
-    // (After redirect, this route will be re-hit with no ?tab=... )
-    // Default active tab for server-rendered state (still useful if you ever wire it into markup)
-    const activeTab = 'view-materials'
 
     let selectedDocumentTypeFilters = _.get(req.session.data.documentListFilters, 'documentTypes', [])
     let selectedFilters = { categories: [] }
@@ -175,8 +171,37 @@ module.exports = router => {
       href: `/public/files/${name}`
     }))
 
+    // Pull caseMaterials from session (this is what your tabs/templates expect)
+    const caseMaterials = _.get(req, 'session.data.caseMaterials', {})
+
+    // If your session data holds an array of cases, pick the matching one
+    const cm = Array.isArray(caseMaterials)
+      ? (caseMaterials.find(c => String(c.caseId) === String(caseId)) || {})
+      : caseMaterials
+
+    // Ensure cpsDisclosureAssessment exists and stays in sync with non-sensitive rows
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const total = Array.isArray(rows) ? rows.length : 0
+    const assessedCount = rows.filter(r => {
+      const status = r && r.cpsAssessment ? String(r.cpsAssessment) : ''
+      return status && status !== 'To be assessed'
+    }).length
+
+    let progress = 'Not started yet'
+    if (total > 0 && assessedCount === total) progress = 'Completed'
+    else if (assessedCount > 0) progress = 'In progress'
+
+    _.set(cm, 'cpsDisclosureAssessment.hasAssessedNonSensitive', progress)
+
+    // (optional) keep a default for sensitive too, so it doesn't explode
+    if (!_.get(cm, 'cpsDisclosureAssessment.hasAssessedSensitive')) {
+      _.set(cm, 'cpsDisclosureAssessment.hasAssessedSensitive', 'Not started yet')
+    }
+
+
     return res.render("cases/material/index", {
       _case,
+      caseMaterials: cm,
       documents,
       documentTypeItems,
       selectedFilters,
