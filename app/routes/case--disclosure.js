@@ -80,27 +80,22 @@ module.exports = router => {
   }
 
 
-  // ✅ Disclosure home
-  router.get('/cases/:caseId/disclosure', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+// ✅ Disclosure home
+router.get('/cases/:caseId/disclosure', async (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).render('not-found')
 
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
+  const caseMaterials = getCaseMaterialsForCase(req, _case)
 
-    // ✅ keep CPS disclosure assessment status in sync
-    syncCpsDisclosureAssessment(req, _case)
+  // ✅ keep CPS disclosure assessment status in sync
+  syncCpsDisclosureAssessment(req, _case)
 
-    return res.render('cases/disclosure/index', { _case, caseMaterials })
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
+  return res.render('cases/disclosure/index', { _case, caseMaterials })
+})
 
-    // ✅ keep CPS disclosure assessment status in sync
-    syncCpsDisclosureAssessment(req, _case)
-
-    return res.render('cases/disclosure/index', { _case, caseMaterials })
-  })
 
 
   // ✅ Assess non-sensitive
