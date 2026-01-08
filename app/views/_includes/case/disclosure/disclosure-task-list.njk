@@ -14,8 +14,6 @@
 {% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
 
 
-
-
     {# <h1 class="govuk-heading-m">Assess unused case materials</h1> #}
 
     <h2 class="govuk-heading-l">Disclosure</h2>
@@ -72,6 +70,33 @@
         </strong>
       {% endif %}
     {% endset %}
+
+    {# --- Disagreement flags (from rows) --- #}
+    {% set nsRows = data.disclosureNonSensitiveRows or [] %}
+    {% set sRows  = data.disclosureSensitiveRows or [] %}
+
+    {% set allRows = nsRows.concat(sRows) %}
+
+    {# True if ANY row has cpsDisagreesWithPolice === true #}
+    {% set hasAnyDisagreement = false %}
+    {% for r in allRows %}
+      {% if r.cpsDisagreesWithPolice %}
+        {% set hasAnyDisagreement = true %}
+      {% endif %}
+    {% endfor %}
+
+    {% set bothCompleted = (nonSensitiveStatus == "Completed") and (sensitiveStatus == "Completed") %}
+
+    {# --- Inset messaging --- #}
+    {% if bothCompleted and hasAnyDisagreement %}
+      {{ govukInsetText({
+        text: "Your assessment disagrees with the police on one or more selected items. They have been notified so they can update their disclosure status. Once all disagreements are resolved, the option to sign and export the disclosure schedules will become available on this page."
+      }) }}
+    {% elseif bothCompleted and (not hasAnyDisagreement) %}
+      {{ govukInsetText({
+        text: "This assessment has now been exported. Disclosure documents can be viewed in the unused non-sensitive and unused sensitive folders in the Review and redact tab."
+      }) }}
+    {% endif %}
 
 
    {{ govukTaskList({
