@@ -16,7 +16,7 @@
     "item": "02",
     "title": "Exh SP/2",
     "description": "DA History for Elton Berkley. This is a compilation of all the domestic abuse reports which the defendant has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 4 pages and is redacted as per redaction guidelines.",
-    "policeAssessment": "Fails disclosure test",
+    "policeAssessment": "Does not pass disclosure test",
     "policeRationale": "Reason material fails test here",
     "isRebuttable": "Yes",
     "hasException": "DEESEE Frank",

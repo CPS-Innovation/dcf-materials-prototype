@@ -80,21 +80,22 @@ module.exports = router => {
   }
 
 
-  // ✅ Disclosure home
-  router.get('/cases/:caseId/disclosure', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+// ✅ Disclosure home
+router.get('/cases/:caseId/disclosure', async (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).render('not-found')
 
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
+  const caseMaterials = getCaseMaterialsForCase(req, _case)
 
-    // ✅ keep CPS disclosure assessment status in sync
-    syncCpsDisclosureAssessment(req, _case)
+  // ✅ keep CPS disclosure assessment status in sync
+  syncCpsDisclosureAssessment(req, _case)
 
-    return res.render('cases/disclosure/index', { _case, caseMaterials })
-  })
+  return res.render('cases/disclosure/index', { _case, caseMaterials })
+})
+
 
 
   // ✅ Assess non-sensitive
@@ -124,6 +125,8 @@ module.exports = router => {
 
   })
 
+
+  ///////////////// ITEM DISCLOSABLE /////////////////////////////////////////////////////////////////////
 
   // ✅ Item: assess as disclosable (GET) — row-aware
   router.get('/cases/:caseId/disclosure/assess-non-sensitive/item-disclosable', async (req, res) => {
@@ -155,8 +158,6 @@ module.exports = router => {
   })
 
 
-
-
  
   // ✅ Item: assess as disclosable (POST updates non-sensitive table rows in session)
   router.post('/cases/:caseId/disclosure/assess-non-sensitive/item-disclosable', async (req, res) => {
@@ -178,10 +179,14 @@ module.exports = router => {
 
     const idx = rows.findIndex(r => String(r.id) === selectedId)
     if (idx === -1) return res.status(404).send('Row not found')
+    
+
 
     // ✅ Apply the decision
     _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Disclosable')
     _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+    // ✅ Explicit disagreement with police
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
 
     // ✅ Update overall CPS disclosure assessment status (Not started / In progress / Completed)
     const _case = await fetchCase(caseId)
@@ -189,8 +194,8 @@ module.exports = router => {
 
     // ✅ Success banner (rendered on the table page)
     _.set(req, 'session.data.successBanner', {
-      titleText: 'Disclosure decision saved',
-      text: 'CPS assessment updated.'
+      titleText: 'Item assessed as Disclosable',
+      text: 'This update has been sent to the police.'
     })
 
     // Redirect back to table (prefer returnUrl, fall back safely)
@@ -201,6 +206,301 @@ module.exports = router => {
     const separator = returnUrl.includes('?') ? '&' : '?'
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
+
+
+  ///////////////// ITEM DISCLOSABLE BY INSPECTION /////////////////////////////////////////////////////////////////////
+
+  // ✅ Item: assess as disclosable by inspection (GET) — row-aware
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/item-disclosable-by-inspection', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    const selectedId = (req.query && req.query.id) ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const selectedRow = rows.find(r => String(r.id) === selectedId)
+
+    if (!selectedRow) return res.status(404).send('Row not found')
+
+    return res.render('cases/disclosure/assess-non-sensitive/item-disclosable-by-inspection', {
+      _case,
+      caseMaterials,
+      selectedId,
+      selectedRow,
+      returnUrl: req.query && req.query.returnUrl ? req.query.returnUrl : null
+    })
+  })
+
+
+  // ✅ Item: assess as disclosable by inspection (POST updates non-sensitive table rows in session)
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/item-disclosable-by-inspection', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const selectedId = (req.body && (req.body.id || req.body.itemId)) ? String(req.body.id || req.body.itemId) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const rationale =
+      (req.body && (req.body.disclosureStatusChangeReason || req.body.cpsRationale))
+        ? String(req.body.disclosureStatusChangeReason || req.body.cpsRationale).trim()
+        : ''
+
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+
+    const idx = rows.findIndex(r => String(r.id) === selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+
+    // ✅ Apply the decision
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Disclosable by inspection')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+
+    // ✅ Explicit disagreement with police
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+
+
+    // ✅ Update overall CPS disclosure assessment status
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsDisclosureAssessment(req, _case)
+
+    // ✅ Success banner
+    _.set(req, 'session.data.successBanner', {
+      titleText: 'Item assessed as Disclosable by inspection',
+      text: 'This update has been sent to the police.'
+    })
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const returnUrl = (req.body && req.body.returnUrl) ? String(req.body.returnUrl) : fallbackReturnUrl
+
+    const separator = returnUrl.includes('?') ? '&' : '?'
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  ///////////////// ITEM ASSSES AS EVIDENCE /////////////////////////////////////////////////////////////////////
+
+  // ✅ Item: assess as evidence (GET) — row-aware
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/item-evidence', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const selectedRow = rows.find(r => String(r.id) === selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+
+    return res.render('cases/disclosure/assess-non-sensitive/item-evidence', {
+      _case,
+      caseMaterials,
+      selectedId,
+      selectedRow,
+      returnUrl: req.query?.returnUrl || null
+    })
+  })
+
+  // ✅ Item: assess as evidence (POST updates non-sensitive table rows in session)
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/item-evidence', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const rationale = req.body?.disclosureStatusChangeReason
+      ? String(req.body.disclosureStatusChangeReason).trim()
+      : ''
+
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = rows.findIndex(r => String(r.id) === selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+
+    // ✅ Evidence-specific change
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Evidence')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsDisclosureAssessment(req, _case)
+
+    _.set(req, 'session.data.successBanner', {
+      titleText: 'Item assessed as Evidence',
+      text: 'This update has been sent to the police.'
+    })
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const returnUrl = req.body?.returnUrl || fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+
+
+  ///////////////// ITEM NOT DISCLOSABLE /////////////////////////////////////////////////////////////////////
+
+  // ✅ Item: assess as not disclosable (GET) — row-aware
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/item-not-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const selectedRow = rows.find(r => String(r.id) === selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+
+    return res.render('cases/disclosure/assess-non-sensitive/item-not-disclosable', {
+      _case,
+      caseMaterials,
+      selectedId,
+      selectedRow,
+      returnUrl: req.query?.returnUrl || null
+    })
+  })
+
+  // ✅ Item: assess as not disclosable (POST updates non-sensitive table rows in session)
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/item-not-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const selectedId = (req.body && (req.body.id || req.body.itemId)) ? String(req.body.id || req.body.itemId) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const rationale =
+      (req.body && (req.body.disclosureStatusChangeReason || req.body.cpsRationale))
+        ? String(req.body.disclosureStatusChangeReason || req.body.cpsRationale).trim()
+        : ''
+
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+
+    const idx = rows.findIndex(r => String(r.id) === selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+
+    // ✅ Apply decision
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Not disclosable')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+
+    // ✅ Directional disagreement: Police passes -> CPS not disclosable
+    const policeAssessment = _.get(req, `${rowsPath}[${idx}].policeAssessment`, '')
+    const disagrees = String(policeAssessment) === 'Passes disclosure test'
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, disagrees)
+
+    // ✅ Update overall completion status
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsDisclosureAssessment(req, _case)
+
+    // ✅ Success banner
+    _.set(req, 'session.data.successBanner', {
+      titleText: 'Item assessed as Not disclosable',
+      text: 'This update has been sent to the police.'
+    })
+
+    // Redirect back to table
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const returnUrl = (req.body && req.body.returnUrl) ? String(req.body.returnUrl) : fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+
+
+
+
+
+
+
+  ///////////////// ITEM NOT CLEARLY NOT DISCLOSABLE /////////////////////////////////////////////////////////////////////
+
+  // ✅ Item: assess as clearly not disclosable (GET)
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/item-clearly-not-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const selectedRow = rows.find(r => String(r.id) === selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+
+    return res.render('cases/disclosure/assess-non-sensitive/item-clearly-not-disclosable', {
+      _case,
+      caseMaterials,
+      selectedId,
+      selectedRow,
+      returnUrl: req.query?.returnUrl || null
+    })
+  })
+
+
+  // ✅ Item: assess as clearly not disclosable (POST)
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/item-clearly-not-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const rationale = req.body?.disclosureStatusChangeReason
+      ? String(req.body.disclosureStatusChangeReason).trim()
+      : ''
+
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = rows.findIndex(r => String(r.id) === selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+
+    // ✅ Apply the decision
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Clearly not disclosable')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+
+    // ✅ Explicit agreement with police (disagreement)
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsDisclosureAssessment(req, _case)
+
+    _.set(req, 'session.data.successBanner', {
+      titleText: 'Item assessed as clearly not disclosable',
+      text: 'This update has been sent to the police.'
+    })
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const returnUrl = req.body?.returnUrl || fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+
+
+
+
 
 
 
