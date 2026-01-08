@@ -94,6 +94,12 @@ module.exports = router => {
     syncCpsDisclosureAssessment(req, _case)
 
     return res.render('cases/disclosure/index', { _case, caseMaterials })
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    // ✅ keep CPS disclosure assessment status in sync
+    syncCpsDisclosureAssessment(req, _case)
+
+    return res.render('cases/disclosure/index', { _case, caseMaterials })
   })
 
 
