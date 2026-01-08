@@ -7,9 +7,10 @@
 {% set rows = data.disclosureNonSensitiveRows or [] %}
 
 {% set cpsTagClass = {
-  "To be assessed": "govuk-tag--purple",
+  "To be assessed": "govuk-tag--yellow",
   "Disclosable": "govuk-tag--light-blue",
-  "Disclosable by inspection": "govuk-tag--purple"
+  "Disclosable by inspection": "govuk-tag--light-blue",
+  "Evidence": "govuk-tag--green"
 } %}  
 
 
@@ -59,7 +60,12 @@
             },
             { text: "Assess as clearly not disclosable", href: "#" },
             { text: "Assess as not disclosable", href: "#" },
-            { text: "Assess as evidence", href: "#" },
+            {
+              text: "Assess as evidence",
+              href: "/cases/" ~ _case.id
+                ~ "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id
+                ~ "&returnUrl=" ~ (returnUrl | urlencode)
+            },
             { text: "Dispute sensitivity", href: "#" },
             { text: "Request material", href: "#" },
             { text: "Request updated description", href: "#" }
@@ -93,7 +99,7 @@
           {% if r.policeAssessment == "Passes disclosure test" %}
             {% set policeTagClass = "govuk-tag--green" %}
           {% elseif r.policeAssessment == "Fails disclosure test" %}
-            {% set policeTagClass = "govuk-tag--yellow" %}
+            {% set policeTagClass = "govuk-tag--grey" %}
           {% endif %}
 
           <strong class="govuk-tag {{ policeTagClass }} govuk-!-font-size-16">
@@ -116,14 +122,22 @@
           {% endif %}
         </td>
 
+        {# Setting the CPS assessment cell with tag and disagreement hint #}
         <td class="govuk-table__cell">
           {% set status = r.cpsAssessment or "To be assessed" %}
           {% set tagClass = cpsTagClass[status] or "govuk-tag--blue" %}
 
-          <strong class="govuk-tag {{ tagClass }} govuk-!-font-size-16">
+          <strong class="govuk-tag {{ tagClass }} govuk-!-font-size-16 govuk-!-margin-right-1 govuk-!-margin-bottom-2">
             {{ status }}
           </strong>
+
+          {% if r.cpsDisagreesWithPolice %}
+            <strong>
+              Disagrees with police
+            </strong>
+          {% endif %}
         </td>
+
 
 
         <td class="govuk-table__cell">
