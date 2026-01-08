@@ -5,12 +5,12 @@
 {% set rows = data.disclosureNonSensitiveRows or [] %}
 
 {% set cpsTagClass = {
-  "To be assessed": "govuk-tag--yellow",
-  "Disclosable": "govuk-tag--light-blue",
-  "Disclosable by inspection": "govuk-tag--light-blue",
-  "Evidence": "govuk-tag--green",
-  "Clearly not disclosable": "govuk-tag--pink",
-  "Not disclosable": "govuk-tag--pink"
+  "To be assessed": "govuk-tag--blue",
+  "Disclosable": "govuk-tag--blue",
+  "Disclosable by inspection": "govuk-tag--blue",
+  "Evidence": "govuk-tag--blue",
+  "Clearly not disclosable": "govuk-tag--blue",
+  "Not disclosable": "govuk-tag--blue"
 } %}
 
 {% set returnUrl = "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" %}
@@ -106,7 +106,7 @@
           {# Tag #}
           {% set policeTagClass = "govuk-tag--grey" %}
           {% if r.policeAssessment == "Passes disclosure test" %}
-            {% set policeTagClass = "govuk-tag--green" %}
+            {% set policeTagClass = "govuk-tag--grey" %}
           {% endif %}
 
           <strong class="govuk-tag {{ policeTagClass }} govuk-!-font-size-16 govuk-!-margin-bottom-2">
