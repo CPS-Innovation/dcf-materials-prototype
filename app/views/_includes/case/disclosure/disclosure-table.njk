@@ -1,6 +1,4 @@
 {# disclosure-table.njk #}
-{# MoJ Multi-select: checkbox | Item | Title | Description | Police assessment | Police rationale | Rebuttable | CPS assessment | Actions #}
-
 {% set bodyClasses = "dcf-materials-wide" %}
 
 {# Source rows from session data #}
@@ -13,28 +11,18 @@
   "Evidence": "govuk-tag--green",
   "Clearly not disclosable": "govuk-tag--pink",
   "Not disclosable": "govuk-tag--pink"
-} %}  
+} %}
 
-
-{# Where the user should return to after any row workflow #}
 {% set returnUrl = "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" %}
-
-
-
 
 <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="materials-">
   <thead class="govuk-table__head govuk-body-s">
     <tr class="govuk-table__row">
       <th class="govuk-table__header" scope="col" id="materials-select-all"></th>
       <th class="govuk-table__header" scope="col">Item</th>
-      <th class="govuk-table__header" scope="col">Title</th>
-      <th class="govuk-table__header" scope="col">Description</th>
+      <th class="govuk-table__header govuk-!-width-one-third" scope="col">Title and description</th>
       <th class="govuk-table__header" scope="col">Police assessment</th>
-      <th class="govuk-table__header" scope="col">Police rationale</th>
-      <th class="govuk-table__header" scope="col">Rebuttable</th>
-      <th class="govuk-table__header" scope="col">Exceptions</th>
       <th class="govuk-table__header" scope="col">CPS assessment</th>
-      <th class="govuk-table__header" scope="col">CPS rationale</th>
       <th class="govuk-table__header" scope="col">Actions</th>
     </tr>
   </thead>
@@ -66,11 +54,12 @@
                 ~ "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id
                 ~ "&returnUrl=" ~ (returnUrl | urlencode)
             },
-            { text: "Assess as not disclosable",
-            href: "/cases/" ~ _case.id
-              ~ "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id
-              ~ "&returnUrl=" ~ (returnUrl | urlencode)
-          },
+            {
+              text: "Assess as not disclosable",
+              href: "/cases/" ~ _case.id
+                ~ "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id
+                ~ "&returnUrl=" ~ (returnUrl | urlencode)
+            },
             {
               text: "Assess as evidence",
               href: "/cases/" ~ _case.id
@@ -84,8 +73,8 @@
         }) }}
       {% endset %}
 
-
       <tr class="govuk-table__row">
+        {# Select checkbox #}
         <td class="govuk-table__cell">
           <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
             <input
@@ -101,65 +90,81 @@
           </div>
         </td>
 
+        {# Item #}
         <td class="govuk-table__cell">{{ r.item }}</td>
-        <td class="govuk-table__cell">{{ r.title }}</td>
-        <td class="govuk-table__cell">{{ r.description }}</td>
 
+        {# Title + description in one cell #}
         <td class="govuk-table__cell">
+          <strong class="govuk-!-font-weight-bold">{{ r.title }}</strong>
+          {% if r.description %}
+            <div class="govuk-!-margin-top-1">{{ r.description }}</div>
+          {% endif %}
+        </td>
+
+        {# Police assessment column: assessment + rationale + rebuttable + exceptions #}
+        <td class="govuk-table__cell">
+          {# Tag #}
           {% set policeTagClass = "govuk-tag--grey" %}
           {% if r.policeAssessment == "Passes disclosure test" %}
             {% set policeTagClass = "govuk-tag--green" %}
-          {% elseif r.policeAssessment == "Fails disclosure test" %}
-            {% set policeTagClass = "govuk-tag--grey" %}
           {% endif %}
 
-          <strong class="govuk-tag {{ policeTagClass }} govuk-!-font-size-16">
-            {{ r.policeAssessment }}
+          <strong class="govuk-tag {{ policeTagClass }} govuk-!-font-size-16 govuk-!-margin-bottom-2">
+            {{ r.policeAssessment or "Not assessed" }}
           </strong>
-        </td>
 
-        <td class="govuk-table__cell">
-          {{ r.policeRationale }}
-        </td>
+          {# Rationale #}
+          {% if r.policeRationale %}
+            <div class="govuk-!-margin-top-2">{{ r.policeRationale }}</div>
+          {% endif %}
 
-        <td class="govuk-table__cell">{{ r.isRebuttable }}</td>
+          {# Rebuttable #}
+          {% if r.isRebuttable %}
+            <div class="govuk-!-margin-top-2">
+              <strong>Rebuttable:</strong> {{ r.isRebuttable }}
+            </div>
+          {% endif %}
 
-        <td class="govuk-table__cell">
+          {# Exceptions #}
           {% if r.hasException %}
-            {{ r.hasException }}<br>
-            <strong>Reason:</strong> {{ r.exceptionReason }}
+            <div class="govuk-!-margin-top-2">
+              <strong>Exceptions:</strong> {{ r.hasException }}
+              {% if r.exceptionReason %}
+                <div><strong>Reason:</strong> {{ r.exceptionReason }}</div>
+              {% endif %}
+            </div>
           {% else %}
-            None
+            <div class="govuk-!-margin-top-2">
+              <strong>Exceptions:</strong> None
+            </div>
           {% endif %}
         </td>
 
-        {# Setting the CPS assessment cell with tag and disagreement hint #}
+        {# CPS assessment column: cpsAssessment + cpsRationale + cpsDisagreesWithPolice #}
         <td class="govuk-table__cell">
           {% set status = r.cpsAssessment or "To be assessed" %}
           {% set tagClass = cpsTagClass[status] or "govuk-tag--blue" %}
 
-          <strong class="govuk-tag {{ tagClass }} govuk-!-font-size-16 govuk-!-margin-right-1 govuk-!-margin-bottom-2">
+          <strong class="govuk-tag {{ tagClass }} govuk-!-font-size-16 govuk-!-margin-bottom-2">
             {{ status }}
           </strong>
 
           {% if r.cpsDisagreesWithPolice %}
-            <strong>
-              Disagrees with police
-            </strong>
+            <div class="govuk-!-margin-top-1">
+              <strong>Disagrees with police</strong>
+            </div>
           {% endif %}
-        </td>
 
-
-
-        <td class="govuk-table__cell">
           {% if r.cpsRationale %}
-            {{ r.cpsRationale }}
+            <div class="govuk-!-margin-top-2">{{ r.cpsRationale }}</div>
           {% else %}
-            <span class="govuk-hint govuk-!-margin-0">None available</span>
+            <div class="govuk-!-margin-top-2">
+              <span class="govuk-hint govuk-!-margin-0">None available</span>
+            </div>
           {% endif %}
         </td>
 
-
+        {# Actions #}
         <td class="govuk-table__cell">
           {{ rowActions | safe }}
         </td>
