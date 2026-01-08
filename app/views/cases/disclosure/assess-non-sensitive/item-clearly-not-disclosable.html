@@ -35,7 +35,7 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = 'Assess item as disclosable' %}
+{% set pageName = 'Assess item as clearly notdisclosable' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -88,7 +88,7 @@
         ]
       }) }}
 
-    <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable">
+    <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-clearly-not-disclosable">
       <input type="hidden" name="id" value="{{ selectedId }}">
 
       {% if returnUrl %}
@@ -103,7 +103,7 @@
         rows: "8",
         classes: "govuk-!-width-one-half",
         label: {
-          text: "Why is this material disclosable?",
+          text: "Why is this material clearly not disclosable?",
           classes: "govuk-label--m",
           isPageHeading: false
         },

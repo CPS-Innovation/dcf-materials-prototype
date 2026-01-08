@@ -6,10 +6,10 @@
 {% set firstMaterial = materials | first %}
 
 {% set progressTagClass = {
-  "Not started yet": "govuk-tag--grey",
-  "In progress": "govuk-tag--blue",
-  "Completed": "govuk-tag--green"
+  "Not started yet": "govuk-tag--blue",
+  "In progress": "govuk-tag--light-blue"
 } %}
+
 
 {% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
 
@@ -50,31 +50,46 @@
 
     <h3 class="govuk-heading-m govuk-!-margin-bottom-6">CPS disclosure assessment</h3>
 
-    {{ govukTaskList({
-      idPrefix: "assess-disclosure-tasks",
-      classes: "govuk-summary-list--no-border",
-      items: [
-        {
-          title: { text: "Assess non-sensitive materials" },
-          href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive",
-          status: {
-            tag: {
-              text: cm.cpsDisclosureAssessment.hasAssessedNonSensitive,
-              classes: progressTagClass[cm.cpsDisclosureAssessment.hasAssessedNonSensitive] or "govuk-tag--grey"
-            }
-          }
-        },
-        {
-          title: { text: "Assess sensitive materials" },
-          href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive",
-          status: {
-            tag: {
-              text: cm.cpsDisclosureAssessment.hasAssessedSensitive,
-              classes: progressTagClass[cm.cpsDisclosureAssessment.hasAssessedSensitive] or "govuk-tag--grey"
-            }
-          }
-        }
-      ]
-    }) }}
+    {% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+    {% set sensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedSensitive or "Not started yet" %}
+
+    {% set nonSensitiveStatusHtml %}
+      {% if nonSensitiveStatus == "Completed" %}
+        <span class="govuk-body govuk-!-margin-0">Completed</span>
+      {% else %}
+        <strong class="govuk-tag {{ progressTagClass[nonSensitiveStatus] or 'govuk-tag--grey' }}">
+          {{ nonSensitiveStatus }}
+        </strong>
+      {% endif %}
+    {% endset %}
+
+    {% set sensitiveStatusHtml %}
+      {% if sensitiveStatus == "Completed" %}
+        <span class="govuk-body govuk-!-margin-0">Completed</span>
+      {% else %}
+        <strong class="govuk-tag {{ progressTagClass[sensitiveStatus] or 'govuk-tag--grey' }}">
+          {{ sensitiveStatus }}
+        </strong>
+      {% endif %}
+    {% endset %}
+
+
+   {{ govukTaskList({
+    idPrefix: "assess-disclosure-tasks",
+    classes: "govuk-summary-list--no-border",
+    items: [
+      {
+        title: { text: "Assess non-sensitive materials" },
+        href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive",
+        status: { html: nonSensitiveStatusHtml }
+      },
+      {
+        title: { text: "Assess sensitive materials" },
+        href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive",
+        status: { html: sensitiveStatusHtml }
+      }
+    ]
+  }) }}
+
 
 

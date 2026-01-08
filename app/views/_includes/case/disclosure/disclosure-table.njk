@@ -10,7 +10,9 @@
   "To be assessed": "govuk-tag--yellow",
   "Disclosable": "govuk-tag--light-blue",
   "Disclosable by inspection": "govuk-tag--light-blue",
-  "Evidence": "govuk-tag--green"
+  "Evidence": "govuk-tag--green",
+  "Clearly not disclosable": "govuk-tag--pink",
+  "Not disclosable": "govuk-tag--pink"
 } %}  
 
 
@@ -58,8 +60,17 @@
                 ~ "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id
                 ~ "&returnUrl=" ~ (returnUrl | urlencode)
             },
-            { text: "Assess as clearly not disclosable", href: "#" },
-            { text: "Assess as not disclosable", href: "#" },
+            {
+              text: "Assess as clearly not disclosable",
+              href: "/cases/" ~ _case.id
+                ~ "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id
+                ~ "&returnUrl=" ~ (returnUrl | urlencode)
+            },
+            { text: "Assess as not disclosable",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
+            },
             {
               text: "Assess as evidence",
               href: "/cases/" ~ _case.id

@@ -66,11 +66,25 @@
         items: [
           {
             text: "Assess as disclosable",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-disclosable"
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
           },
-          { text: "Assess as disclosable by inspection" },
-          { text: "Assess as clearly not disclosable" },
-          { text: "Assess as not disclosable" },
+          { text: "Assess as disclosable by inspection",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode) },
+          {
+            text: "Assess as clearly not disclosable",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          { text: "Assess as not disclosable",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
+          },
           { text: "Assess as evidence" },
           { text: "Dispute sensitivity" },
           { text: "Request material" },
@@ -79,7 +93,7 @@
       }) }}
 
       <p class="govuk-body">
-        <a class="govuk-link" href="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable">DEBUG: Go to disclosable page</a>
+        <a class="govuk-link" href="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-not-disclosable">DEBUG: Go to not disclosable page</a>
       </p>
 
 
