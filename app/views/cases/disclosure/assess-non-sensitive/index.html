@@ -60,12 +60,17 @@
 
       
 
+      
+
       {{ mojButtonMenu({
         classes: "govuk-!-margin-bottom-6",
         button: { text: "Assess multiple items" },
         items: [
           {
             text: "Assess as disclosable",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
             href: "/cases/" ~ _case.id
               ~ "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id
               ~ "&returnUrl=" ~ (returnUrl | urlencode)
@@ -104,6 +109,7 @@
       }) }}
 
       <p class="govuk-body">
+        <a class="govuk-link" href="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-not-disclosable">DEBUG: Go to not disclosable page</a>
         <a class="govuk-link" href="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-not-disclosable">DEBUG: Go to not disclosable page</a>
       </p>
 

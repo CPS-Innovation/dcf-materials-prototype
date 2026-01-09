@@ -13,6 +13,14 @@
   "Not disclosable": "govuk-tag--blue"
 } %}
 
+  "To be assessed": "govuk-tag--blue",
+  "Disclosable": "govuk-tag--blue",
+  "Disclosable by inspection": "govuk-tag--blue",
+  "Evidence": "govuk-tag--blue",
+  "Clearly not disclosable": "govuk-tag--blue",
+  "Not disclosable": "govuk-tag--blue"
+} %}
+
 {% set returnUrl = "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" %}
 
 <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="materials-">
@@ -80,6 +88,7 @@
 
       <tr class="govuk-table__row">
         {# Select checkbox #}
+        {# Select checkbox #}
         <td class="govuk-table__cell">
           <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
             <input
@@ -96,7 +105,18 @@
         </td>
 
         {# Item #}
+        {# Item #}
         <td class="govuk-table__cell">{{ r.item }}</td>
+
+        {# Title + description in one cell #}
+        <td class="govuk-table__cell">
+          <strong class="govuk-!-font-weight-bold">{{ r.title }}</strong>
+          {% if r.description %}
+            <div class="govuk-!-margin-top-1">{{ r.description }}</div>
+          {% endif %}
+        </td>
+
+        {# Police assessment column: assessment + rationale + rebuttable + exceptions #}
 
         {# Title + description in one cell #}
         <td class="govuk-table__cell">
@@ -109,14 +129,32 @@
         {# Police assessment column: assessment + rationale + rebuttable + exceptions #}
         <td class="govuk-table__cell">
           {# Tag #}
+          {# Tag #}
           {% set policeTagClass = "govuk-tag--grey" %}
           {% if r.policeAssessment == "Passes disclosure test" %}
+            {% set policeTagClass = "govuk-tag--grey" %}
             {% set policeTagClass = "govuk-tag--grey" %}
           {% endif %}
 
           <strong class="govuk-tag {{ policeTagClass }} govuk-!-font-size-16 govuk-!-margin-bottom-2">
             {{ r.policeAssessment or "Not assessed" }}
+          <strong class="govuk-tag {{ policeTagClass }} govuk-!-font-size-16 govuk-!-margin-bottom-2">
+            {{ r.policeAssessment or "Not assessed" }}
           </strong>
+
+          {# Rationale #}
+          {% if r.policeRationale %}
+            <div class="govuk-!-margin-top-2">{{ r.policeRationale }}</div>
+          {% endif %}
+
+          {# Rebuttable #}
+          {% if r.isRebuttable %}
+            <div class="govuk-!-margin-top-2">
+              <strong>Rebuttable:</strong> {{ r.isRebuttable }}
+            </div>
+          {% endif %}
+
+          {# Exceptions #}
 
           {# Rationale #}
           {% if r.policeRationale %}
@@ -138,7 +176,16 @@
                 <div><strong>Reason:</strong> {{ r.exceptionReason }}</div>
               {% endif %}
             </div>
+            <div class="govuk-!-margin-top-2">
+              <strong>Exceptions:</strong> {{ r.hasException }}
+              {% if r.exceptionReason %}
+                <div><strong>Reason:</strong> {{ r.exceptionReason }}</div>
+              {% endif %}
+            </div>
           {% else %}
+            <div class="govuk-!-margin-top-2">
+              <strong>Exceptions:</strong> None
+            </div>
             <div class="govuk-!-margin-top-2">
               <strong>Exceptions:</strong> None
             </div>

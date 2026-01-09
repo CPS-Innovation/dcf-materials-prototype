@@ -80,6 +80,7 @@ module.exports = router => {
   }
 
 
+
 // ✅ Disclosure home
 router.get('/cases/:caseId/disclosure', async (req, res) => {
   const caseId = parseInt(req.params.caseId, 10)
@@ -89,12 +90,15 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
   if (!_case) return res.status(404).render('not-found')
 
   const caseMaterials = getCaseMaterialsForCase(req, _case)
+  
 
   // ✅ keep CPS disclosure assessment status in sync
   syncCpsDisclosureAssessment(req, _case)
 
+
   return res.render('cases/disclosure/index', { _case, caseMaterials })
 })
+
 
 
 
@@ -125,6 +129,8 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
 
   })
 
+
+  ///////////////// ITEM DISCLOSABLE /////////////////////////////////////////////////////////////////////
 
   ///////////////// ITEM DISCLOSABLE /////////////////////////////////////////////////////////////////////
 
@@ -181,12 +187,15 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
     if (idx === -1) return res.status(404).send('Row not found')
     
 
+    
+
 
     // ✅ Apply the decision
     _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Disclosable')
     _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
     // ✅ Explicit disagreement with police
     _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+    
 
     // ✅ Update overall CPS disclosure assessment status (Not started / In progress / Completed)
     const _case = await fetchCase(caseId)
