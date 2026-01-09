@@ -1,3 +1,4 @@
+{# cases/disclosure/assess-non-sensitive/index.html #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -31,9 +32,11 @@
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
-    href: "javascript:window.history.back()"
+    href: "/cases/" ~ _case.id ~ "/material?tab=disclosure"
   }) }}
 {% endblock %}
+
+
 
 
 
@@ -43,8 +46,19 @@
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
+
+      {% if data.successBanner %}
+        {{ govukNotificationBanner({
+          type: "success",
+          titleText: data.successBanner.titleText,
+          text: data.successBanner.text
+        }) }}
+      {% endif %}
+
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      
 
       {{ mojButtonMenu({
         classes: "govuk-!-margin-bottom-6",
@@ -52,11 +66,25 @@
         items: [
           {
             text: "Assess as disclosable",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-disclosable"
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
           },
-          { text: "Assess as disclosable by inspection" },
-          { text: "Assess as clearly not disclosable" },
-          { text: "Assess as not disclosable" },
+          { text: "Assess as disclosable by inspection",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode) },
+          {
+            text: "Assess as clearly not disclosable",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          { text: "Assess as not disclosable",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
+          },
           { text: "Assess as evidence" },
           { text: "Dispute sensitivity" },
           { text: "Request material" },
@@ -65,7 +93,7 @@
       }) }}
 
       <p class="govuk-body">
-        <a class="govuk-link" href="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable">DEBUG: Go to disclosable page</a>
+        <a class="govuk-link" href="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-not-disclosable">DEBUG: Go to not disclosable page</a>
       </p>
 
 

@@ -35,7 +35,7 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = 'Assess item as disclosable' %}
+{% set pageName = 'Assess item as disclosable by inspection' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -55,7 +55,9 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {# <p class="govuk-body">{{ selected.description }}</p> #}
+      {{ govukInsetText({
+        text: "Your assessment disagrees with the police. They will be notified so they can amend the item’s disclosure status."
+      }) }}
 
 
       {{ govukSummaryList({
@@ -88,8 +90,11 @@
         ]
       }) }}
 
-    <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable">
+    <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable-by-inspection">
+
       <input type="hidden" name="id" value="{{ selectedId }}">
+      <input type="hidden" name="cpsDecision" value="Disclosable by inspection">
+
 
       {% if returnUrl %}
         <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
@@ -103,7 +108,7 @@
         rows: "8",
         classes: "govuk-!-width-one-half",
         label: {
-          text: "Why is this material disclosable?",
+          text: "Why is this material disclosable by inspection?",
           classes: "govuk-label--m",
           isPageHeading: false
         },

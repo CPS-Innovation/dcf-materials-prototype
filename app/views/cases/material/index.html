@@ -1,3 +1,5 @@
+{# cases/material/index.html #}
+
 {% extends "layouts/main.html" %}
 {% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
 
@@ -67,36 +69,81 @@
   {{ super() }}
   <script>
     (function () {
-      var headerActions = document.getElementById('material-header-actions');
-      var tabsContainer = document.querySelector('[data-module="govuk-tabs"][id="case-tabs"], #case-tabs');
+      var tabsContainer = document.querySelector('[data-module="govuk-tabs"][id="case-tabs"], #case-tabs')
+      if (!tabsContainer) return
 
-      if (!headerActions || !tabsContainer) return;
+      var headerActions = document.getElementById('material-header-actions')
+      var tabs = tabsContainer.querySelectorAll('.govuk-tabs__tab')
 
-      var tabs = tabsContainer.querySelectorAll('.govuk-tabs__tab');
+      // ---------------------------------------------
+      // ✅ "Tags" / mapping: query param -> tab href
+      // ---------------------------------------------
+      var tabHrefByName = {
+        disclosure: '#disclosure',
+        materials: '#view-materials'
+        // Add more as needed, e.g.
+        // tasks: '#tasks',
+        // timeline: '#timeline'
+      }
 
+      // ---------------------------------------------
+      // ✅ Activate tab from ?tab=... WITHOUT scrolling
+      // ---------------------------------------------
+      function activateTabFromQuery () {
+        var params = new URLSearchParams(window.location.search)
+        var tabName = params.get('tab')
+        if (!tabName) return
+
+        var href = tabHrefByName[tabName]
+        if (!href) return
+
+        var link = tabsContainer.querySelector('.govuk-tabs__tab[href="' + href + '"]')
+        if (!link) return
+
+        // Prevent any vertical jump by preserving scroll position
+        var y = window.scrollY
+
+        // Let GOV.UK Tabs do its thing via a real click
+        link.click()
+
+        // Restore scroll position after click + any focus/scroll effects
+        setTimeout(function () {
+          window.scrollTo(0, y)
+        }, 0)
+      }
+
+      // ---------------------------------------------
+      // ✅ Show header actions only on Materials tab
+      // ---------------------------------------------
       function updateHeaderActions () {
-        var activeTab = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]');
-        if (!activeTab) return;
+        if (!headerActions) return
 
-        var href = activeTab.getAttribute('href') || '';
-        var panelId = href.replace('#', '');
+        var activeTab = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
+        if (!activeTab) return
 
-        // ✅ Show actions only when the Materials tab is active
-        headerActions.hidden = (panelId !== 'view-materials');
+        var href = activeTab.getAttribute('href') || ''
+        var panelId = href.replace('#', '')
+
+        // Only show actions when Materials tab is active
+        headerActions.hidden = (panelId !== 'view-materials')
       }
 
       // Run once on load (after GOV.UK tabs initialisation)
-      setTimeout(updateHeaderActions, 0);
+      setTimeout(function () {
+        activateTabFromQuery()
+        updateHeaderActions()
+      }, 0)
 
+      // Keep header actions in sync when user clicks tabs
       tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
-          // GOV.UK tabs updates aria-selected in its handler,
-          // so we wait a tick then read it.
-          setTimeout(updateHeaderActions, 0);
-        });
-      });
-    })();
+          // GOV.UK tabs updates aria-selected in its handler
+          setTimeout(updateHeaderActions, 0)
+        })
+      })
+    })()
   </script>
 {% endblock %}
+
 
 

@@ -35,7 +35,7 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = 'Assess item as disclosable' %}
+{% set pageName = 'Assess item as evidence' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -55,7 +55,9 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {# <p class="govuk-body">{{ selected.description }}</p> #}
+      {{ govukInsetText({
+        text: "Your assessment disagrees with the police. They will be notified so they can amend the item’s disclosure status."
+      }) }}
 
 
       {{ govukSummaryList({
@@ -88,7 +90,7 @@
         ]
       }) }}
 
-    <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable">
+    <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-evidence">
       <input type="hidden" name="id" value="{{ selectedId }}">
 
       {% if returnUrl %}
@@ -103,7 +105,7 @@
         rows: "8",
         classes: "govuk-!-width-one-half",
         label: {
-          text: "Why is this material disclosable?",
+          ext: "Why should this material be treated as evidence?",
           classes: "govuk-label--m",
           isPageHeading: false
         },
@@ -113,7 +115,7 @@
       }) }}
 
       {{ govukButton({
-        text: "Save and continue"
+        text: "Confirm and save"
       }) }}
     </form>
 
