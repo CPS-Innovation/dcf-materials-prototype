@@ -67,7 +67,12 @@
                 ~ "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id
                 ~ "&returnUrl=" ~ (returnUrl | urlencode)
             },
-            { text: "Dispute sensitivity", href: "#" },
+            {
+              text: "Dispute sensitivity",
+              href: "/cases/" ~ _case.id
+                ~ "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id
+                ~ "&returnUrl=" ~ (returnUrl | urlencode)
+            },
             { text: "Request material", href: "#" },
             { text: "Request updated description", href: "#" }
           ]
@@ -141,29 +146,47 @@
           {% endif %}
         </td>
 
-        {# CPS assessment column: cpsAssessment + cpsRationale + cpsDisagreesWithPolice #}
+        {# CPS assessment column: cpsAssessment + disagreement + rationale + sensitivity dispute #}
         <td class="govuk-table__cell">
           {% set status = r.cpsAssessment or "To be assessed" %}
           {% set tagClass = cpsTagClass[status] or "govuk-tag--blue" %}
 
+          {# Primary CPS assessment #}
           <strong class="govuk-tag {{ tagClass }} govuk-!-font-size-16 govuk-!-margin-bottom-2">
             {{ status }}
           </strong>
 
+          {# Disagreement helper #}
           {% if r.cpsDisagreesWithPolice %}
             <div class="govuk-!-margin-top-1">
               <strong>Disagrees with police</strong>
             </div>
           {% endif %}
 
+          {# CPS rationale #}
           {% if r.cpsRationale %}
-            <div class="govuk-!-margin-top-2">{{ r.cpsRationale }}</div>
-          {% else %}
             <div class="govuk-!-margin-top-2">
-              <span class="govuk-hint govuk-!-margin-0">None available</span>
+              {{ r.cpsRationale }}
+            </div>
+          {% endif %}
+
+          {# Sensitivity dispute block (comes last) #}
+          {% if r.sensitivityDisputed %}
+            <div class="govuk-!-margin-top-3">
+              <strong class="govuk-tag govuk-tag--yellow">
+                Sensitivity disputed
+              </strong>
+
+              {% if r.sensitivityDisputeReason %}
+                <div class="govuk-!-margin-top-1">
+                  {{ r.sensitivityDisputeReason }}
+                </div>
+              {% endif %}
             </div>
           {% endif %}
         </td>
+
+
 
         {# Actions #}
         <td class="govuk-table__cell">

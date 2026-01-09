@@ -62,7 +62,7 @@
 
       {{ mojButtonMenu({
         classes: "govuk-!-margin-bottom-6",
-        button: { text: "Actions" },
+        button: { text: "Assess multiple items" },
         items: [
           {
             text: "Assess as disclosable",
@@ -80,13 +80,24 @@
               ~ "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id
               ~ "&returnUrl=" ~ (returnUrl | urlencode)
           },
-          { text: "Assess as not disclosable",
+          { 
+            text: "Assess as not disclosable",
             href: "/cases/" ~ _case.id
               ~ "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id
               ~ "&returnUrl=" ~ (returnUrl | urlencode)
           },
-          { text: "Assess as evidence" },
-          { text: "Dispute sensitivity" },
+          {
+            text: "Assess as evidence",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Dispute sensitivity",
+            href: "/cases/" ~ _case.id
+              ~ "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id
+              ~ "&returnUrl=" ~ (returnUrl | urlencode)
+          },
           { text: "Request material" },
           { text: "Request updated description" }
         ]
