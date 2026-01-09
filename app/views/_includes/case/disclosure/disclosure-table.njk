@@ -17,7 +17,7 @@
 <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="materials-">
   <thead class="govuk-table__head govuk-body-s">
     <tr class="govuk-table__row">
-      <th class="govuk-table__header" scope="col"></th>
+      <th class="govuk-table__header" scope="col" id="materials-select-all"></th>
       <th class="govuk-table__header" scope="col">Item</th>
       <th class="govuk-table__header govuk-!-width-one-third" scope="col">Title and description</th>
       <th class="govuk-table__header govuk-!-width-one-third" scope="col">Police assessment</th>
@@ -77,10 +77,23 @@
       {% endset %}
 
       <tr class="govuk-table__row">
-
+        
+        {# Select checkbox #}
         <td class="govuk-table__cell">
-          <input class="govuk-checkboxes__input" type="checkbox" value="{{ r.id }}">
+          <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
+            <input
+              type="checkbox"
+              class="govuk-checkboxes__input"
+              id="materials-{{ r.id }}"
+              name="selectedMaterials"
+              value="{{ r.id }}"
+            >
+            <label class="govuk-label govuk-checkboxes__label" for="materials-{{ r.id }}">
+              <span class="govuk-visually-hidden">Select item {{ r.item }}</span>
+            </label>
+          </div>
         </td>
+
 
         {# Item #}
         <td class="govuk-table__cell">{{ r.item }}</td>
