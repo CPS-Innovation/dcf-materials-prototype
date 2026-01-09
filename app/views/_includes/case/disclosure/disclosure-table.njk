@@ -69,7 +69,9 @@
               href: "/cases/" ~ _case.id ~
                 "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
                 "&returnUrl=" ~ (returnUrl | urlencode)
-            }
+            },
+            { text: "Request material", href: "#" },
+            { text: "Request updated description", href: "#" }
           ]
         }) }}
       {% endset %}
