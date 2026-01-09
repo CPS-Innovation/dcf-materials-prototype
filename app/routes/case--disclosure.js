@@ -80,10 +80,7 @@ module.exports = router => {
   }
 
 
-// ✅ Disclosure home
-router.get('/cases/:caseId/disclosure', async (req, res) => {
-  const caseId = parseInt(req.params.caseId, 10)
-  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
 // ✅ Disclosure home
 router.get('/cases/:caseId/disclosure', async (req, res) => {
   const caseId = parseInt(req.params.caseId, 10)
@@ -91,19 +88,14 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
 
   const _case = await fetchCase(caseId)
   if (!_case) return res.status(404).render('not-found')
-  const _case = await fetchCase(caseId)
-  if (!_case) return res.status(404).render('not-found')
 
   const caseMaterials = getCaseMaterialsForCase(req, _case)
-  const caseMaterials = getCaseMaterialsForCase(req, _case)
+  
 
   // ✅ keep CPS disclosure assessment status in sync
   syncCpsDisclosureAssessment(req, _case)
-  // ✅ keep CPS disclosure assessment status in sync
-  syncCpsDisclosureAssessment(req, _case)
 
-  return res.render('cases/disclosure/index', { _case, caseMaterials })
-})
+
   return res.render('cases/disclosure/index', { _case, caseMaterials })
 })
 
@@ -203,8 +195,7 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
     _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
     // ✅ Explicit disagreement with police
     _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
-    // ✅ Explicit disagreement with police
-    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+    
 
     // ✅ Update overall CPS disclosure assessment status (Not started / In progress / Completed)
     const _case = await fetchCase(caseId)
@@ -212,8 +203,6 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
 
     // ✅ Success banner (rendered on the table page)
     _.set(req, 'session.data.successBanner', {
-      titleText: 'Item assessed as Disclosable',
-      text: 'This update has been sent to the police.'
       titleText: 'Item assessed as Disclosable',
       text: 'This update has been sent to the police.'
     })
