@@ -1,5 +1,8 @@
 {# cases/disclosure/assess-non-sensitive/index.html #}
+
 {% extends "layouts/main.html" %}
+{% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
+
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
@@ -50,10 +53,11 @@
       {% if data.successBanner %}
         {{ govukNotificationBanner({
           type: "success",
-          titleText: data.successBanner.titleText,
-          text: data.successBanner.text
+          titleText: data.successBanner.titleText or "Success",
+          text: data.successBanner.text or ""
         }) }}
       {% endif %}
+
 
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>

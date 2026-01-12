@@ -123,10 +123,10 @@
         {% endif %}
       {% endset %}
 
+      {# MUST match caseMaterials.Material[].ItemId (e.g. MAT-02007) #}
+      {% set itemId = r.ItemId or r.itemId or r.materialId %}
 
-
-
-      <tr class="govuk-table__row">
+      <tr class="govuk-table__row" {% if itemId %}data-item-id="{{ itemId }}"{% endif %}>
 
         {# Select checkbox #}
         <td class="govuk-table__cell">
@@ -144,17 +144,30 @@
           </div>
         </td>
 
-
         {# Item #}
         <td class="govuk-table__cell">{{ r.item }}</td>
 
+        {# Title and description #}
         <td class="govuk-table__cell">
           <strong class="govuk-body govuk-!-font-weight-bold">{{ r.title }}</strong>
+
           {% if r.description %}
             <div class="govuk-!-margin-top-1">{{ r.description }}</div>
           {% endif %}
+
+          {% if itemId %}
+            <div class="govuk-!-margin-top-2">
+              <a
+                class="govuk-link"
+                href="/cases/{{ _case.id }}/material?tab=view-materials&openItemId={{ itemId | urlencode }}"
+              >
+                View material
+              </a>
+            </div>
+          {% endif %}
         </td>
 
+        {# Police assessment #}
         <td class="govuk-table__cell">
           <strong class="govuk-tag govuk-tag--grey">
             {{ r.policeAssessment or "Not assessed" }}
@@ -165,6 +178,7 @@
           {% endif %}
         </td>
 
+        {# CPS assessment #}
         <td class="govuk-table__cell">
           {% set status = r.cpsAssessment or "To be assessed" %}
           <strong class="govuk-tag {{ cpsTagClass[status] }}">
@@ -193,6 +207,7 @@
           {% endif %}
         </td>
 
+        {# Actions #}
         <td class="govuk-table__cell">
           {{ rowActions | safe }}
         </td>

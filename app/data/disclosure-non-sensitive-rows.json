@@ -2,6 +2,7 @@
   {
     "id": "01",
     "item": "01",
+    "ItemId": "MAT-02007",
     "title": "Exh SP/1",
     "description": "DA History for Ella Quagmire. This is a compilation of all the domestic abuse reports which the victim has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 17 pages and is redacted as per redaction guidelines.",
     "policeAssessment": "Passes disclosure test",
@@ -14,6 +15,7 @@
   {
     "id": "02",
     "item": "02",
+    "ItemId": "MAT-02008",
     "title": "Exh SP/2",
     "description": "DA History for Elton Berkley. This is a compilation of all the domestic abuse reports which the defendant has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 4 pages and is redacted as per redaction guidelines.",
     "policeAssessment": "Does not pass disclosure test",
@@ -26,6 +28,7 @@
   {
     "id": "03",
     "item": "03",
+    "ItemId": "MAT-02009",
     "title": "Exh SP/3",
     "description": "PNB entry made by PC 9999 Parsons from GMP issues Pocket Notebook. This entry was made on 07/03/2025 at 1921 hours and details the house-to-house enquiries conducted. This also includes information of the victims first account and the arrest of the defendant. This document consists of a total of 2 pages.",
     "policeAssessment": "Passes disclosure test",

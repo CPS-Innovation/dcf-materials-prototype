@@ -131,12 +131,22 @@
   // --------------------------------------
 
   function getMaterialJSONFromLink (link) {
-    var card = link.closest('.dcf-material-card')
-    if (!card) return null
-    var tag = card.querySelector('script.js-material-data[type="application/json"]')
+    // 1) Preferred: normal card structure
+    var scope = link.closest('.dcf-material-card')
+
+    // 2) Also support table rows / other containers
+    if (!scope) scope = link.closest('tr')
+    if (!scope) scope = link.closest('[data-item-id]')
+    if (!scope) scope = link.parentElement
+
+    if (!scope) return null
+
+    var tag = scope.querySelector('script.js-material-data[type="application/json"]')
     if (!tag) return null
+
     try { return JSON.parse(tag.textContent) } catch (e) { return null }
   }
+
 
   function esc (s) {
     return (s == null ? '' : String(s))
@@ -196,22 +206,20 @@
             '</span>',
             '<span class="govuk-visually-hidden">Primary action</span>',
           '</a>',
-          '<div class="moj-button-menu" data-module="moj-button-menu">',
-            '<button type="button" class="govuk-button govuk-button--inverse moj-button-menu__toggle" aria-haspopup="true" aria-expanded="false">',
-              'Document actions <span class="moj-button-menu__icon" aria-hidden="true">▾</span>',
-            '</button>',
-            '<div class="moj-button-menu__wrapper" hidden>',
-              '<ul class="moj-button-menu__list" role="menu">',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Log an under or over redaction</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Rotate pages</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Discard pages</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link" data-action="mark-read">Mark as read</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link" data-action="mark-unread">Mark as unread</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Rename</a></li>',
-                '<li class="moj-button-menu__item" role="none"><a role="menuitem" href="#" class="moj-button-menu__link">Delete page</a></li>',
-              '</ul>',
-            '</div>',
-          '</div>',
+          '<details class="dcf-action-menu" data-menu="document">',
+            '<summary class="govuk-button govuk-button--inverse dcf-action-menu__summary">',
+              'Document actions <span class="dcf-action-menu__icon" aria-hidden="true">▾</span>',
+            '</summary>',
+            '<ul class="dcf-action-menu__list" role="list">',
+              '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link">Log an under or over redaction</a></li>',
+              '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link">Rotate pages</a></li>',
+              '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link">Discard pages</a></li>',
+              '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link" data-action="mark-read">Mark as read</a></li>',
+              '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link" data-action="mark-unread">Mark as unread</a></li>',
+              '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link">Rename</a></li>',
+              '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link">Delete page</a></li>',
+            '</ul>',
+          '</details>',
         '</div>',
       '</div>',
 
@@ -274,7 +282,7 @@
 
     renderMeta(meta)
 
-    var menuEl = viewer.querySelector('.moj-button-menu')
+    var menuEl = viewer.querySelector('details.dcf-action-menu[data-menu="document"]')
     var status = (viewer._currentCard && viewer._currentCard.dataset.materialStatus) || null
     updateOpsMenuForStatus(menuEl, status)
 
@@ -688,26 +696,25 @@
 
     var itemsHTML = actions.map(function (a) {
       return (
-        '<li class="moj-button-menu__item" role="none">' +
-          '<a href="#" role="menuitem" class="moj-button-menu__link" data-action="' + esc(a.id) + '">' +
+        '<li class="dcf-action-menu__item">' +
+          '<a href="#" class="govuk-link dcf-action-menu__link" data-action="' + esc(a.id) + '">' +
             esc(a.label) +
           '</a>' +
         '</li>'
       )
     }).join('')
 
+    // Use <details> to avoid nested-button markup issues from moj-button-menu
     return (
       '<div class="dcf-meta-inline-actions">' +
-        '<div class="moj-button-menu" data-module="moj-button-menu">' +
-          '<button type="button" class="govuk-button govuk-button--primary moj-button-menu__toggle" aria-haspopup="true" aria-expanded="false">' +
-            'Material actions <span class="moj-button-menu__icon" aria-hidden="true">▾</span>' +
-          '</button>' +
-          '<div class="moj-button-menu__wrapper" hidden>' +
-            '<ul class="moj-button-menu__list" role="menu">' +
-              itemsHTML +
-            '</ul>' +
-          '</div>' +
-        '</div>' +
+        '<details class="dcf-action-menu" data-menu="material">' +
+          '<summary class="govuk-button govuk-button--primary dcf-action-menu__summary">' +
+            'Material actions <span class="dcf-action-menu__icon" aria-hidden="true">▾</span>' +
+          '</summary>' +
+          '<ul class="dcf-action-menu__list">' +
+            itemsHTML +
+          '</ul>' +
+        '</details>' +
       '</div>'
     )
   }
@@ -1071,10 +1078,7 @@ function buildMetaPanel (meta, bodyId) {
 
     if (!viewer.querySelector('#dcf-viewer-tabs')) ensureShell()
 
-    var menu = viewer.querySelector('.moj-button-menu')
-    if (menu && window.MOJFrontend && MOJFrontend.ButtonMenu) {
-      try { new MOJFrontend.ButtonMenu({ container: menu }).init() } catch (e) {}
-    }
+    // No JS init needed for the action menus (we use native <details>)
 
     // This creates/updates the tab and applies .is-active
     addOrActivateTab(meta, url, title)
@@ -1329,13 +1333,9 @@ function buildMetaPanel (meta, bodyId) {
         console.warn('mark-read: could not resolve current card')
       }
 
-      var menu2 = a.closest('.moj-button-menu')
+      var menu2 = a.closest('details.dcf-action-menu')
       if (menu2) {
-        var wrapper = menu2.querySelector('.moj-button-menu__wrapper')
-        var toggle = menu2.querySelector('.moj-button-menu__toggle')
-        if (wrapper) wrapper.hidden = true
-        if (toggle) toggle.setAttribute('aria-expanded', 'false')
-        if (toggle) toggle.focus()
+        menu2.open = false
         updateOpsMenuForStatus(menu2, 'Read')
       }
 
@@ -1355,13 +1355,9 @@ function buildMetaPanel (meta, bodyId) {
         console.warn('mark-unread: could not resolve current card')
       }
 
-      var menu3 = a.closest('.moj-button-menu')
+      var menu3 = a.closest('details.dcf-action-menu')
       if (menu3) {
-        var wrapper2 = menu3.querySelector('.moj-button-menu__wrapper')
-        var toggle2 = menu3.querySelector('.moj-button-menu__toggle')
-        if (wrapper2) wrapper2.hidden = true
-        if (toggle2) toggle2.setAttribute('aria-expanded', 'false')
-        if (toggle2) toggle2.focus()
+        menu3.open = false
         updateOpsMenuForStatus(menu3, 'Unread')
       }
 
@@ -1388,15 +1384,9 @@ function buildMetaPanel (meta, bodyId) {
 
       console.log('Material action:', action, 'on card:', currentCard)
 
-      var menuFromAction = a.closest('.moj-button-menu')
+      var menuFromAction = a.closest('details.dcf-action-menu')
       if (menuFromAction) {
-        var wrapperInline = menuFromAction.querySelector('.moj-button-menu__wrapper')
-        var toggleInline  = menuFromAction.querySelector('.moj-button-menu__toggle')
-        if (wrapperInline && toggleInline) {
-          wrapperInline.hidden = true
-          toggleInline.setAttribute('aria-expanded', 'false')
-          toggleInline.focus()
-        }
+        menuFromAction.open = false
       }
 
       return
@@ -1443,32 +1433,7 @@ function buildMetaPanel (meta, bodyId) {
     }
   })
 
-  // --------------------------------------
-  // Ops menu (MoJ button menu) open/close
-  // --------------------------------------
-
-  viewer.addEventListener('click', function (e) {
-    var toggle = e.target && e.target.closest('.moj-button-menu__toggle')
-    if (!toggle) return
-    e.preventDefault()
-    var menu = toggle.closest('.moj-button-menu')
-    var wrapper = menu && menu.querySelector('.moj-button-menu__wrapper')
-    if (!wrapper) return
-    var expanded = toggle.getAttribute('aria-expanded') === 'true'
-    toggle.setAttribute('aria-expanded', String(!expanded))
-    wrapper.hidden = expanded
-  })
-
-  document.addEventListener('click', function (evt) {
-    if (!viewer) return
-    var openToggle = viewer.querySelector('.moj-button-menu__toggle[aria-expanded="true"]')
-    if (!openToggle) return
-    if (!evt.target.closest('.moj-button-menu')) {
-      openToggle.setAttribute('aria-expanded', 'false')
-      var wrap = openToggle.closest('.moj-button-menu').querySelector('.moj-button-menu__wrapper')
-      if (wrap) wrap.hidden = true
-    }
-  })
+  // (No JS required for action menus now: we use <details>.)
 
   // --------------------------------------
   // Initial status badges
@@ -1489,6 +1454,71 @@ function buildMetaPanel (meta, bodyId) {
     if (!a) return
     removeSearchStatus()
   }, true)
+
+  // --------------------------------------
+  // Deep link: openItemId=MAT-xxxxx
+  // --------------------------------------s
+
+  ;(function openFromQueryParam () {
+    try {
+      var params = new URLSearchParams(window.location.search || '')
+      var openItemId = params.get('openItemId')
+      if (!openItemId) return
+
+      function safeEscape (value) {
+        try {
+          return (window.CSS && typeof CSS.escape === 'function')
+            ? CSS.escape(value)
+            : String(value).replace(/"/g, '\\"')
+        } catch (e) {
+          return String(value).replace(/"/g, '\\"')
+        }
+      }
+
+      var attempts = 0
+      var maxAttempts = 40 // ~2s
+
+      function tryOpen () {
+        attempts++
+
+        var selector = '.dcf-material-card[data-item-id="' + safeEscape(openItemId) + '"]'
+        var card = document.querySelector(selector)
+
+        if (!card) {
+          if (attempts < maxAttempts) return setTimeout(tryOpen, 50)
+          return
+        }
+
+        // If the card is inside a collapsed GOV.UK accordion section, expand it
+        try {
+          var section = card.closest('.govuk-accordion__section')
+          if (section) {
+            var btn = section.querySelector('.govuk-accordion__section-button')
+            var content = section.querySelector('.govuk-accordion__section-content')
+            if (btn && content && content.hasAttribute('hidden')) {
+              btn.click()
+            }
+          }
+        } catch (e) {}
+
+        // Find the normal material link on the card
+        var link = card.querySelector('a.js-material-link[data-file-url]')
+        if (!link) {
+          if (attempts < maxAttempts) return setTimeout(tryOpen, 50)
+          return
+        }
+
+        // Make it feel intentional
+        try { card.scrollIntoView({ block: 'nearest' }) } catch (e) {}
+
+        // ✅ Open directly (no programmatic click dependency)
+        openMaterialPreview(link, { fromSearch: false })
+      }
+
+      tryOpen()
+    } catch (e) {}
+  })()
+
 
   window.__materialsPreviewReady = true
 })()
