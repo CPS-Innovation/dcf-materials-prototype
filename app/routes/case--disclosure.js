@@ -576,4 +576,87 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
 
+
+  /////////////// Change sensitivity flow ///////////////////////////////////////////////////////////////////
+
+  // ✅ Change sensitivity dispute (GET) — row-aware
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/change-sensitivity-dispute', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const selectedRow = rows.find(r => String(r.id) === selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+
+    return res.render('cases/disclosure/assess-non-sensitive/change-sensitivity-dispute', {
+      _case,
+      caseMaterials,
+      selectedId,
+      selectedRow,
+      returnUrl: req.query?.returnUrl || null
+    })
+  })
+
+  // ✅ Change sensitivity dispute (POST)
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/change-sensitivity-dispute', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+
+    const option = req.body?.changeSensitivityDisputeOption
+      ? String(req.body.changeSensitivityDisputeOption)
+      : null
+
+    const reason = req.body?.sensitivityDisputeReason
+      ? String(req.body.sensitivityDisputeReason).trim()
+      : ''
+
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = rows.findIndex(r => String(r.id) === selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+
+    if (option === 'agree') {
+      // ✅ Remove the dispute tag + reason
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, false)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, null)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, null)
+
+      _.set(req, 'session.data.successBanner', {
+        titleText: 'Sensitivity dispute removed',
+        text: 'The dispute has been removed from this item.'
+      })
+    } else if (option === 'wording') {
+      // ✅ Keep the dispute tag, update wording
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, true)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, reason || null)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, new Date().toISOString())
+
+      _.set(req, 'session.data.successBanner', {
+        titleText: 'Sensitivity dispute updated',
+        text: 'The dispute wording has been updated.'
+      })
+    } else {
+      return res.status(400).send('Missing option')
+    }
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+
+
 }

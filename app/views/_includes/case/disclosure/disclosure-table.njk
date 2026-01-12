@@ -30,51 +30,101 @@
     {% for r in rows %}
 
       {% set rowActions %}
-        {{ mojButtonMenu({
-          classes: "dcf-button-menu--as-link",
-          button: { text: "Actions" },
-          items: [
-            {
-              text: "Assess as disclosable",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Assess as disclosable by inspection",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Assess as clearly not disclosable",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Assess as not disclosable",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Assess as evidence",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Dispute sensitivity",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            { text: "Request material", href: "#" },
-            { text: "Request updated description", href: "#" }
-          ]
-        }) }}
+        {% if r.sensitivityDisputed %}
+          {{ mojButtonMenu({
+            classes: "dcf-button-menu--as-link",
+            button: { text: "Actions" },
+            items: [
+              {
+                text: "Assess as disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as disclosable by inspection",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as clearly not disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as not disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as evidence",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Change sensitivity dispute",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/change-sensitivity-dispute?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              { text: "Request material", href: "#" },
+              { text: "Request updated description", href: "#" }
+            ]
+          }) }}
+        {% else %}
+          {{ mojButtonMenu({
+            classes: "dcf-button-menu--as-link",
+            button: { text: "Actions" },
+            items: [
+              {
+                text: "Assess as disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as disclosable by inspection",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as clearly not disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as not disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as evidence",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Dispute sensitivity",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              { text: "Request material", href: "#" },
+              { text: "Request updated description", href: "#" }
+            ]
+          }) }}
+        {% endif %}
       {% endset %}
+
+
+
 
       <tr class="govuk-table__row">
 
