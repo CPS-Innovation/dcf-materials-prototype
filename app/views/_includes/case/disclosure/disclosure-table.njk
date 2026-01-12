@@ -142,6 +142,18 @@
               <span class="govuk-visually-hidden">Select item {{ r.item }}</span>
             </label>
           </div>
+          <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
+            <input
+              type="checkbox"
+              class="govuk-checkboxes__input"
+              id="materials-{{ r.id }}"
+              name="selectedMaterials"
+              value="{{ r.id }}"
+            >
+            <label class="govuk-label govuk-checkboxes__label" for="materials-{{ r.id }}">
+              <span class="govuk-visually-hidden">Select item {{ r.item }}</span>
+            </label>
+          </div>
         </td>
 
 
