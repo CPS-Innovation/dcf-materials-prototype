@@ -71,8 +71,13 @@
                   "/disclosure/assess-non-sensitive/change-sensitivity-dispute?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
-              { text: "Request material", href: "#" },
-              { text: "Request updated description", href: "#" }
+              {
+                text: "Request updated description",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              { text: "Request material", href: "#" }
             ]
           }) }}
         {% else %}
@@ -116,8 +121,13 @@
                   "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
-              { text: "Request material", href: "#" },
-              { text: "Request updated description", href: "#" }
+              {
+                text: "Request updated description",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              { text: "Request material", href: "#" }
             ]
           }) }}
         {% endif %}
