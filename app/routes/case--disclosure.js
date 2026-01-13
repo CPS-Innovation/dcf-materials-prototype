@@ -100,8 +100,6 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
 })
 
 
-
-
   // ✅ Assess non-sensitive
   router.get('/cases/:caseId/disclosure/assess-non-sensitive', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
@@ -117,20 +115,17 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
     console.log('caseId', caseId, 'caseMaterials session type:', Array.isArray(_.get(req,'session.data.caseMaterials')) ? 'array' : typeof _.get(req,'session.data.caseMaterials'))
     console.log('caseMaterials.Material length:', (caseMaterials.Material || []).length)
 
-    res.render('cases/disclosure/assess-non-sensitive/index', {
+    // ✅ One-time banner: capture then clear BEFORE render
+    const banner = _.get(req, 'session.data.successBanner')
+    if (banner) _.unset(req, 'session.data.successBanner')
+
+    return res.render('cases/disclosure/assess-non-sensitive/index', {
       _case,
-      caseMaterials
+      caseMaterials,
+      successBanner: banner
     })
-
-    // Clear one-time success banner after render
-    if (_.get(req, 'session.data.successBanner')) {
-      _.unset(req, 'session.data.successBanner')
-    }
-
   })
 
-
-  ///////////////// ITEM DISCLOSABLE /////////////////////////////////////////////////////////////////////
 
   ///////////////// ITEM DISCLOSABLE /////////////////////////////////////////////////////////////////////
 
@@ -657,7 +652,7 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
 
-  ////////// update desciption of item //////////////////////////////////////////////////////////////////
+   ////////// Request updated description //////////////////////////////////////////////////////////////////
 
   // ✅ Item: request updated description (GET) — row-aware
   router.get('/cases/:caseId/disclosure/assess-non-sensitive/item-request-updated-description', async (req, res) => {
@@ -693,11 +688,12 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
     const selectedId = req.body?.id ? String(req.body.id) : null
     if (!selectedId) return res.status(400).send('Missing id')
 
+    // ✅ Match template field name
     const requestText = req.body?.updatedDescriptionRequest
       ? String(req.body.updatedDescriptionRequest).trim()
       : ''
 
-    // (Optional) Store the request on the row for later playback/audit
+    // Store request on the row (optional but useful)
     const rowsPath = 'session.data.disclosureNonSensitiveRows'
     const rows = _.get(req, rowsPath, [])
     const idx = rows.findIndex(r => String(r.id) === selectedId)
@@ -720,5 +716,5 @@ router.get('/cases/:caseId/disclosure', async (req, res) => {
   })
 
 
-
+  
 }
