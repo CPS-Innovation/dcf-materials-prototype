@@ -77,7 +77,12 @@
                   "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
-              { text: "Request material", href: "#" }
+              {
+                text: "Request material",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              }
             ]
           }) }}
         {% else %}
@@ -127,7 +132,12 @@
                   "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
-              { text: "Request material", href: "#" }
+              {
+                text: "Request material",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              }
             ]
           }) }}
         {% endif %}
