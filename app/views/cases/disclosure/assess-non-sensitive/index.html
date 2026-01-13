@@ -71,7 +71,9 @@
             { text: "Assess as disclosable", href: "#" },
             { text: "Assess as disclosable by inspection", href: "#" },
             { text: "Assess as clearly not disclosable", href: "#" },
-            { text: "Assess as not disclosable", href: "#" },
+
+            { text: "Assess as clearly not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
+
             { text: "Assess as evidence", href: "#" },
             { text: "Dispute sensitivity", href: "#" },
             { text: "Change sensitivity dispute", href: "#" },
@@ -80,12 +82,6 @@
           ]
         }) }}
 
-        {# <p class="govuk-body">
-          <a class="govuk-link" href="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-not-disclosable">DEBUG: Go to not disclosable page</a>
-        </p> #}
-
-
-
         {# Row-level table lives entirely in the include #}
         {% include "_includes/case/disclosure/disclosure-table.njk" %}
       
@@ -93,4 +89,36 @@
   </div>
 {% endblock %}
 
-{# No scripts block needed here – we’re not toggling header actions #}
+{% block scripts %}
+  {{ super() }}
+  <script>
+    (function () {
+      var bulkLinks = document.querySelectorAll('a[href*="/assess-non-sensitive/bulk/"]');
+      if (!bulkLinks.length) return;
+
+      function getSelectedIds() {
+        return Array.prototype.slice.call(
+          document.querySelectorAll('input[name="selectedMaterials"]:checked')
+        ).map(function (el) { return el.value; });
+      }
+
+      bulkLinks.forEach(function (link) {
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+
+          var ids = getSelectedIds();
+          if (!ids.length) {
+            alert('Select at least one item to assess.');
+            return;
+          }
+
+          var url = new URL(link.href, window.location.origin);
+          url.searchParams.set('ids', ids.join(','));
+          window.location.href = url.toString();
+        });
+      });
+    })();
+  </script>
+{% endblock %}
+
+
