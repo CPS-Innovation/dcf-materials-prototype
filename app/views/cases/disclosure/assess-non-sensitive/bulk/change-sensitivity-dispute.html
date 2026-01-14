@@ -1,44 +1,10 @@
-{# cases/disclosure/assess-non-sensitive/change-sensitivity-dispute.html #}
-
+{# cases/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute.html #}
 {% extends "layouts/main.html" %}
-
-{# Import GOV.UK macros used on this page #}
-{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
-{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
-{% from "govuk/components/radios/macro.njk" import govukRadios %}
-{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 
-{% set cm = caseMaterials or data.caseMaterials or {} %}
-
-{# Row is resolved in the route and passed in #}
-{% set selectedId = selectedId or (query.id if query) %}
-{% set selected = selectedRow or {} %}
-
-{% set updateWordingHtml %}
-  {{ govukTextarea({
-    id: "sensitivity-dispute-reason",
-    name: "sensitivityDisputeReason",
-    value: selected.sensitivityDisputeReason,
-    classes: "govuk-!-width-two-thirds",
-    label: {
-      text: "Update the dispute wording",
-      classes: "govuk-label--s"
-    },
-    hint: {
-      text: "Explain why the police should change their sensitivity assessment for this item."
-    }
-  }) }}
-{% endset %}
-
-{# -------------------------
-   Defendants display value
-   ------------------------- #}
 {% set firstDefendant = (_case.defendants | first) %}
-
 {% set defendantsValue %}
   {% if firstDefendant %}
     {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
@@ -50,57 +16,88 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = 'Change sensitivity dispute' %}
+{% set count = selectedRows.length %}
+{% set pageName = "Change sensitivity dispute for " ~ count ~ " item" ~ ("s" if count != 1) %}
+
+
 
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
-    href: (returnUrl if returnUrl else (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()"))
+    href: returnUrl or "javascript:window.history.back()"
   }) }}
 {% endblock %}
 
 {% block content %}
-
-  {% include "_includes/success-banner.njk" %}
-
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {{ govukSummaryList({
-        classes: "govuk-!-margin-bottom-6",
-        rows: [
-          {
-            key: { text: "Description" },
-            value: { html: selected.description }
-          },
-          {
-            key: { text: "Police assessment" },
-            value: { html: selected.policeAssessment }
-          },
-          {
-            key: { text: "Rationale for assessment" },
-            value: { html: selected.policeRationale }
-          }
-        ]
-      }) }}
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">Show selected items</span>
+        </summary>
+        <div class="govuk-details__text">
 
-      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/change-sensitivity-dispute">
-        <input type="hidden" name="id" value="{{ selectedId }}">
+          {% for r in selectedRows %}
 
-        {% if returnUrl %}
-          <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
-        {% elseif query and query.returnUrl %}
-          <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
-        {% endif %}
+            {{ govukSummaryList({
+              classes: "govuk-!-margin-bottom-3",
+              rows: [
+                {
+                  key: { text: "Title" },
+                  value: { html: "<strong>" ~ r.item ~ " – " ~ r.title ~ "</strong>" }
+                },
+                {
+                  key: { text: "Description" },
+                  value: { text: r.description or "No description" }
+                },
+                {
+                  key: { text: "Sensitivity disputed" },
+                  value: { text: "Yes" if r.sensitivityDisputed else "No" }
+                },
+                {
+                  key: { text: "Dispute wording" },
+                  value: { text: r.sensitivityDisputeReason or "—" }
+                }
+              ]
+            }) }}
+
+            {% if not loop.last %}
+              <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+            {% endif %}
+
+          {% endfor %}
+
+        </div>
+      </details>
+
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute">
+        <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">
+        <input type="hidden" name="returnUrl" value="{{ returnUrl or '' }}">
+
+        {% set updateWordingHtml %}
+          {{ govukTextarea({
+            id: "bulk-wording",
+            name: "bulkWording",
+            classes: "govuk-!-width-two-thirds",
+            label: {
+              text: "Update the dispute wording",
+              classes: "govuk-label--s"
+            },
+            hint: {
+              text: "Explain why the police should change their sensitivity assessment for these items."
+            }
+          }) }}
+        {% endset %}
 
         {{ govukRadios({
           name: "changeSensitivityDisputeOption",
           fieldset: {
             legend: {
-              text: "How do you want to change this dispute?",
+              text: "How do you want to change these disputes?",
               isPageHeading: false,
               classes: "govuk-fieldset__legend--m"
             }
@@ -113,9 +110,7 @@
             {
               value: "wording",
               text: "Keep the dispute but update the wording",
-              conditional: {
-                html: updateWordingHtml
-              }
+              conditional: { html: updateWordingHtml }
             }
           ]
         }) }}

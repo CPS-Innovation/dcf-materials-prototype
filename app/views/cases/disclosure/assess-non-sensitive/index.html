@@ -74,7 +74,10 @@
             { text: "Assess as clearly not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
             { text: "Assess as evidence", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/evidence?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
             { text: "Dispute sensitivity", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/dispute-sensitivity?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
-            { text: "Change sensitivity dispute", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
+            {
+              text: "Change sensitivity dispute",
+              href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode)
+            },
             { text: "Request material", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-material?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
             { text: "Request updated description", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-updated-description?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) }
           ]
