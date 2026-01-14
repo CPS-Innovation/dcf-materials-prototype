@@ -544,67 +544,86 @@ router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/evidence', asyn
 
 
 
-  // ✅ Bulk: Dispute sensitivity (GET)
-  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/dispute-sensitivity', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+// ✅ Bulk: dispute sensitivity (GET)
+router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/dispute-sensitivity', async (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).render('not-found')
 
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
+  const caseMaterials = getCaseMaterialsForCase(req, _case)
 
-    const selectedIds = parseIdsParam(req.query?.ids)
-    if (!selectedIds.length) return res.status(400).send('Missing ids')
+  // ids comes from query string, e.g. ?ids=1,2,3
+  const idsParam = req.query?.ids ? String(req.query.ids) : ''
+  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
+  if (!selectedIds.length) return res.status(400).send('Missing ids')
 
-    const { selectedRows } = resolveSelectedRows(req, selectedIds)
-    if (!selectedRows.length) return res.status(404).send('No rows found')
+  // Resolve selected rows from the same session dataset the table uses
+  const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+  const selectedRows = selectedIds
+    .map(id => rows.find(r => String(r.id) === String(id)))
+    .filter(Boolean)
 
-    return res.render('cases/disclosure/assess-non-sensitive/bulk/dispute-sensitivity', {
-      _case,
-      caseMaterials,
-      selectedIds,
-      selectedRows,
-      returnUrl: getReturnUrl(req, caseId)
-    })
+  if (!selectedRows.length) return res.status(404).send('No rows found')
+
+  const returnUrl = req.query?.returnUrl
+    ? String(req.query.returnUrl)
+    : `/cases/${caseId}/disclosure/assess-non-sensitive`
+
+  return res.render('cases/disclosure/assess-non-sensitive/bulk/dispute-sensitivity', {
+    _case,
+    caseMaterials,
+    selectedIds,
+    selectedRows,
+    returnUrl
+  })
+})
+
+
+// ✅ Bulk: dispute sensitivity (POST)
+router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/dispute-sensitivity', async (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+  // ids comes from hidden input
+  const idsParam = req.body?.ids ? String(req.body.ids) : ''
+  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
+  if (!selectedIds.length) return res.status(400).send('Missing ids')
+
+  const reason = req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : ''
+
+  const rowsPath = 'session.data.disclosureNonSensitiveRows'
+  const rows = _.get(req, rowsPath, [])
+
+  selectedIds.forEach(id => {
+    const idx = rows.findIndex(r => String(r.id) === String(id))
+    if (idx === -1) return
+
+    // Mirror your single-item dispute behaviour
+    _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, true)
+    _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, reason || null)
+    _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, new Date().toISOString())
+
+    // In your current single-item route, disputing sensitivity sets this true
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
   })
 
-  // ✅ Bulk: Dispute sensitivity (POST)
-  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/dispute-sensitivity', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+  const _case = await fetchCase(caseId)
+  if (_case) syncCpsDisclosureAssessment(req, _case)
 
-    const selectedIds = parseIdsParam(req.body?.ids)
-    if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-    const reason = req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : ''
-
-    const rowsPath = 'session.data.disclosureNonSensitiveRows'
-    const rows = _.get(req, rowsPath, [])
-
-    selectedIds.forEach(id => {
-      const idx = rows.findIndex(r => String(r.id) === String(id))
-      if (idx === -1) return
-
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, true)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, reason || null)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, new Date().toISOString())
-
-      // Dispute sensitivity always flags disagreement
-      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
-    })
-
-    const _case = await fetchCase(caseId)
-    if (_case) syncCpsDisclosureAssessment(req, _case)
-
-    _.set(req, 'session.data.successBanner', {
-      titleText: `Sensitivity disputed for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
-      text: 'This update has been sent to the police.'
-    })
-
-    const returnUrl = postReturnUrl(req, caseId)
-    return redirectBack(res, returnUrl, selectedIds[0])
+  _.set(req, 'session.data.successBanner', {
+    titleText: `Sensitivity disputed for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
+    text: 'This update has been sent to the police.'
   })
+
+  const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+  const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
+  const separator = returnUrl.includes('?') ? '&' : '?'
+
+  return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedIds[0])}`)
+})
+
 
 
   // ✅ Bulk: Change sensitivity dispute (GET)
