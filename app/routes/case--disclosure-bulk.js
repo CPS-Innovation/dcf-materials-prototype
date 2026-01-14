@@ -208,7 +208,7 @@ module.exports = router => {
 
 
 
-  // ✅ Bulk: Disclosable by inspection (GET)
+ // ✅ Bulk: assess as disclosable by inspection (GET)
   router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
@@ -218,27 +218,43 @@ module.exports = router => {
 
     const caseMaterials = getCaseMaterialsForCase(req, _case)
 
-    const selectedIds = parseIdsParam(req.query?.ids)
+    const idsParam = req.query?.ids ? String(req.query.ids) : ''
+    const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
     if (!selectedIds.length) return res.status(400).send('Missing ids')
 
-    const { selectedRows } = resolveSelectedRows(req, selectedIds)
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const selectedRows = selectedIds
+      .map(id => rows.find(r => String(r.id) === String(id)))
+      .filter(Boolean)
+
     if (!selectedRows.length) return res.status(404).send('No rows found')
+
+    // Precompute per-row disagreement for this proposed decision
+    selectedRows.forEach(r => {
+      r.cpsDisagreesWithPolice = computeCpsDisagreesWithPolice(r.policeAssessment, 'Disclosable by inspection')
+    })
+
+    const returnUrl = req.query?.returnUrl
+      ? String(req.query.returnUrl)
+      : `/cases/${caseId}/disclosure/assess-non-sensitive`
 
     return res.render('cases/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection', {
       _case,
       caseMaterials,
       selectedIds,
       selectedRows,
-      returnUrl: getReturnUrl(req, caseId)
+      returnUrl
     })
   })
 
-  // ✅ Bulk: Disclosable by inspection (POST)
+
+  // ✅ Bulk: assess as disclosable by inspection (POST)
   router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
-    const selectedIds = parseIdsParam(req.body?.ids)
+    const idsParam = req.body?.ids ? String(req.body.ids) : ''
+    const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
     if (!selectedIds.length) return res.status(400).send('Missing ids')
 
     const rationale = req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : ''
@@ -266,9 +282,13 @@ module.exports = router => {
       text: 'This update has been sent to the police.'
     })
 
-    const returnUrl = postReturnUrl(req, caseId)
-    return redirectBack(res, returnUrl, selectedIds[0])
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedIds[0])}`)
   })
+
 
 
   // ✅ Bulk: Clearly not disclosable (GET)
