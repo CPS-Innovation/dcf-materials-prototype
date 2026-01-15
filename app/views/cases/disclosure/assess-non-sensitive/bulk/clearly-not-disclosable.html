@@ -1,3 +1,4 @@
+{# This file is a template for /disclosure/assess-non-sensitive/bulk/clearly-not-disclosable #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -18,6 +19,15 @@
 {% set count = selectedRows.length %}
 {% set pageName = "Assess " ~ count ~ " item" ~ ("s" if count != 1) ~ " as clearly not disclosable" %}
 
+{# ✅ For this bulk decision: disagreement happens when police said "Passes disclosure test" #}
+{% set hasAnyDisagreement = false %}
+{% for r in selectedRows %}
+  {% set disagrees = ((r.policeAssessment or '') | lower) == 'passes disclosure test' %}
+  {% if disagrees %}
+    {% set hasAnyDisagreement = true %}
+  {% endif %}
+{% endfor %}
+
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
@@ -32,9 +42,11 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {{ govukInsetText({
-        text: "Your assessment disagrees with the police on one or more items. They will be notified so they can amend their disclosure status."
-      }) }}
+      {% if hasAnyDisagreement %}
+        {{ govukInsetText({
+          text: "Your assessment disagrees with the police on one or more items. They will be notified so they can amend their disclosure status."
+        }) }}
+      {% endif %}
 
       <details class="govuk-details" data-module="govuk-details">
         <summary class="govuk-details__summary">
@@ -43,16 +55,22 @@
         <div class="govuk-details__text">
 
           {% for r in selectedRows %}
+            {% set disagrees = ((r.policeAssessment or '') | lower) == 'passes disclosure test' %}
 
             {{ govukSummaryList({
+              card: {
+                title: {
+                  html:
+                    ("<strong>" ~ r.item ~ " – " ~ r.title ~ "</strong>")
+                    ~ (
+                      ' <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Disagrees with police</strong>'
+                      if disagrees
+                      else ''
+                    )
+                }
+              },
               classes: "govuk-!-margin-bottom-3",
               rows: [
-                {
-                  key: { text: "Title" },
-                  value: {
-                    html: "<strong>" ~ r.item ~ " – " ~ r.title ~ "</strong>"
-                  }
-                },
                 {
                   key: { text: "Description" },
                   value: { text: r.description or "No description" }
@@ -63,28 +81,18 @@
                 },
                 {
                   key: { text: "Police disclosure reason" },
-                  value: { text: r.policeRationale or "" }
+                  value: { text: r.policeRationale or "—" }
                 }
               ]
             }) }}
 
-            {% if r.cpsDisagreesWithPolice %}
-              {{ govukInsetText({
-                text: "Your assessment disagrees with the police.",
-                classes: "govuk-!-margin-bottom-5"
-              }) }}
-            {% endif %}
-
-
             {% if not loop.last %}
               <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
             {% endif %}
-
           {% endfor %}
 
         </div>
       </details>
-
 
       <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable">
         <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">

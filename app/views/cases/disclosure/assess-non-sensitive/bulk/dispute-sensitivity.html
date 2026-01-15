@@ -19,6 +19,14 @@
 {% set count = selectedRows.length %}
 {% set pageName = "Dispute sensitivity for " ~ count ~ " item" ~ ("s" if count != 1) %}
 
+{# Top-level disagreement flag (if any selected row disagrees) #}
+{% set hasAnyDisagreement = false %}
+{% for r in selectedRows %}
+  {% if r.cpsDisagreesWithPolice %}
+    {% set hasAnyDisagreement = true %}
+  {% endif %}
+{% endfor %}
+
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
@@ -33,6 +41,7 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
+      {# For disputes, we always notify police. Keep your original inset text. #}
       {{ govukInsetText({
         text: "The police will be notified so they can review and amend their sensitivity assessment."
       }) }}
@@ -46,12 +55,15 @@
           {% for r in selectedRows %}
 
             {{ govukSummaryList({
+              card: {
+                title: {
+                  html:
+                    ("<strong>" ~ r.item ~ " – " ~ r.title ~ "</strong>")
+                    ~ ' <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Sensitivity disputed</strong>'
+                }
+              },
               classes: "govuk-!-margin-bottom-3",
               rows: [
-                {
-                  key: { text: "Title" },
-                  value: { html: "<strong>" ~ r.item ~ " – " ~ r.title ~ "</strong>" }
-                },
                 {
                   key: { text: "Description" },
                   value: { text: r.description or "No description" }
@@ -62,7 +74,7 @@
                 },
                 {
                   key: { text: "Police disclosure reason" },
-                  value: { text: r.policeRationale or "" }
+                  value: { text: r.policeRationale or "—" }
                 }
               ]
             }) }}
@@ -96,4 +108,3 @@
     </div>
   </div>
 {% endblock %}
-
