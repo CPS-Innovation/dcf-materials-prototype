@@ -31,19 +31,23 @@
 {# Single card renderer so meta stays consistent for all sections #}
 {% macro renderCard(m, cm) %}
   {% set linkText = m.Title or filenameFromUrl(m.myFileUrl) %}
+  {% set _status = (m.materialStatus or 'New') %}
   <article
     class="dcf-material-card"
     data-item-id="{{ m.ItemId }}"
+    data-material-status="{{ _status }}"
+    data-is-new="{{ "true" if (_status | lower) == "new" else "false" }}"
     {# NEW: expose the date to JS for sorting #}
     {% if m.date %}data-material-date="{{ m.date }}"{% endif %}
   >
     <div class="dcf-material-card__main">
 
-      {# --- status badge (show only when status is exactly "New") --- #}
-      {% set _status = m.materialStatus %}
-      {% if _status and (_status | lower) == 'new' %}
-        <span class="dcf-material-card__badge">New</span>
-      {% endif %}
+      {# --- status badge (NEW toggle: badge always exists; JS can hide/show it) --- #}
+      <span
+        class="dcf-material-card__badge"
+        data-raw-status="{{ _status }}"
+        {% if (_status | lower) != 'new' %}hidden{% endif %}
+      >New</span>
         
 <h3 class="dcf-material-card__title">
 
@@ -77,7 +81,7 @@
         Type: m.Type,
         Title: m.Title,
         myFileUrl: m.myFileUrl,
-        materialStatus: m.materialStatus,
+        materialStatus: _status,
         Reference: m.Reference,
         ProducedbyWitnessId: m.ProducedbyWitnessId,
         MaterialClassification: m.MaterialClassification,

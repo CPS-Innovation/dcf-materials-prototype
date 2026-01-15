@@ -1,4 +1,3 @@
-// public/javascripts/components/material-viewer.js
 (() => {
   // Grab the viewer shell and the layout wrapper (used to toggle full-width mode).
   // Bail early if the page doesn't have the viewer.
@@ -147,7 +146,6 @@
     try { return JSON.parse(tag.textContent) } catch (e) { return null }
   }
 
-
   function esc (s) {
     return (s == null ? '' : String(s))
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -283,8 +281,9 @@
     renderMeta(meta)
 
     var menuEl = viewer.querySelector('details.dcf-action-menu[data-menu="document"]')
-    var status = (viewer._currentCard && viewer._currentCard.dataset.materialStatus) || null
-    updateOpsMenuForStatus(menuEl, status)
+    var isNewForMenu = true
+    if (viewer._currentCard) isNewForMenu = (viewer._currentCard.dataset.isNew !== 'false')
+    updateOpsMenuForStatus(menuEl, isNewForMenu)
 
     try { tab.focus() } catch (e) {}
   }
@@ -407,37 +406,26 @@
     var badge = card.querySelector('.dcf-material-card__badge')
     if (!badge) return
 
-    var status = (card.dataset.materialStatus || 'Unread').toLowerCase()
+    // New behaviour:
+    // - Show ONLY the "New" tag when isNew is true
+    // - Otherwise hide/remove the badge entirely
+    // (We keep Read/Unread statuses in data/localStorage for now, but we do not render them.)
     var isNew = card.dataset.isNew !== 'false'
-    var hasViewedClosed = card.dataset.hasViewedAndClosed === 'true'
 
-    var tags = []
-
-    if (status === 'read') {
-      tags.push('<strong class="govuk-tag dcf-tag dcf-tag--read">Read</strong>')
+    if (isNew) {
+      badge.hidden = false
+      badge.innerHTML = '<strong class="govuk-tag dcf-tag dcf-tag--new">New</strong>'
     } else {
-      if (isNew) {
-        tags.push('<strong class="govuk-tag dcf-tag dcf-tag--new">New</strong>')
-
-        if (hasViewedClosed) {
-          tags.push('<strong class="govuk-tag dcf-tag dcf-tag--unread">Unread</strong>')
-        }
-      } else {
-        tags.push('<strong class="govuk-tag dcf-tag dcf-tag--unread">Unread</strong>')
-      }
-    }
-
-    if (!tags.length && badge.dataset.rawStatus) {
-      badge.textContent = badge.dataset.rawStatus
-    } else if (tags.length) {
-      badge.innerHTML = tags.join(' ')
+      badge.innerHTML = ''
+      badge.hidden = true
     }
   }
 
   function initCardStatus (card) {
+
     if (!card) return
 
-    var status = 'Unread'
+    var status = 'New'
     var isNew = true
     var hasViewedClosed = false
 
@@ -499,6 +487,8 @@
   }
 
   function setMaterialStatus (card, status) {
+    // Kept for future: we still persist a Read/Unread status value,
+    // but the UI no longer renders it (only the New tag is shown/hidden).
     if (!card) return
 
     var tag = card.querySelector('script.js-material-data[type="application/json"]')
@@ -516,22 +506,16 @@
       try { tag.textContent = JSON.stringify(data) } catch (e) {}
     }
 
-    var badge = card.querySelector('.dcf-material-card__badge')
-    if (badge) {
-      badge.dataset.rawStatus = status
-    }
-
     card.dataset.materialStatus = status
 
-    var statusLower = String(status).toLowerCase()
-    if (statusLower === 'read') {
-      card.dataset.isNew = 'false'
-    }
+    var badge = card.querySelector('.dcf-material-card__badge')
+    if (badge) badge.dataset.rawStatus = status
 
     var itemId =
       (data && (data.ItemId || (data.Material && data.Material.ItemId) || data.itemId)) ||
       card.getAttribute('data-item-id')
 
+    // Keep window.caseMaterials in sync if it exists
     if (itemId && window.caseMaterials && Array.isArray(window.caseMaterials.Material)) {
       var m = window.caseMaterials.Material.find(function (x) { return (x.ItemId || x.itemId) === itemId })
       if (m) {
@@ -545,22 +529,40 @@
       var caseId2 = (window.caseMaterials && window.caseMaterials.caseId) || card.getAttribute('data-case-id')
       if (itemId && caseId2) {
         localStorage.setItem('matStatus:' + caseId2 + ':' + itemId, status)
-        if (statusLower === 'read') {
-          localStorage.setItem('matIsNew:' + caseId2 + ':' + itemId, 'false')
-        }
+      }
+    } catch (e) {}
+  }
+
+  function setCardIsNew (card, isNew) {
+    if (!card) return
+    var next = !!isNew
+    card.dataset.isNew = String(next)
+
+    // Persist per-case/item toggle state
+    try {
+      var caseId = (window.caseMaterials && window.caseMaterials.caseId) || card.getAttribute('data-case-id')
+      var itemId = card.getAttribute('data-item-id')
+      if (caseId && itemId) {
+        localStorage.setItem('matIsNew:' + caseId + ':' + itemId, String(next))
       }
     } catch (e) {}
 
     renderStatusTags(card)
   }
 
-  function updateOpsMenuForStatus (menuEl, status) {
+  function updateOpsMenuForStatus (menuEl, isNew) {
     if (!menuEl) return
+
+    // New behaviour: menu toggles based on whether the item is "New"
+    // - If New: show "Mark as read", hide "Mark as unread"
+    // - If not New: show "Mark as unread", hide "Mark as read"
     var readItem = menuEl.querySelector('[data-action="mark-read"]')
     var unreadItem = menuEl.querySelector('[data-action="mark-unread"]')
-    var isRead = String(status).toLowerCase() === 'read'
-    if (readItem) readItem.closest('li').hidden = isRead
-    if (unreadItem) unreadItem.closest('li').hidden = !isRead
+
+    var showMarkRead = (isNew !== false) && (String(isNew) !== 'false')
+
+    if (readItem) readItem.closest('li').hidden = !showMarkRead
+    if (unreadItem) unreadItem.closest('li').hidden = showMarkRead
   }
 
   // --------------------------------------
@@ -960,7 +962,6 @@ function buildMetaPanel (meta, bodyId) {
     }
   }
 
-
   if (hasCpsSection) {
     cpsRows = rowsHTMLLocal(cps, [
       {
@@ -1008,8 +1009,6 @@ function buildMetaPanel (meta, bodyId) {
       '</div>' +
     '</div>'
 }
-
-
 
   // --------------------------------------
   // Preview builder (pdf.js + chrome)
@@ -1101,11 +1100,6 @@ function buildMetaPanel (meta, bodyId) {
     try { viewer.focus({ preventScroll: true }) } catch (e) {}
   }
 
-
-  // --------------------------------------
-  // Helper for search navigation (Prev / Next)
-  // --------------------------------------
-
   // --------------------------------------
   // Helper for search navigation (Prev / Next)
   // --------------------------------------
@@ -1148,8 +1142,6 @@ function buildMetaPanel (meta, bodyId) {
       switchToTabById(id)
     }
   }
-
-
 
   // --------------------------------------
   // Intercepts: open previews from cards/links
@@ -1327,8 +1319,9 @@ function buildMetaPanel (meta, bodyId) {
         null
 
       if (card) {
-        setMaterialStatus(card, 'Read')
-        updateOpsMenuForStatus(null, 'Read')
+        // Business rule: marking as read removes the "New" tag (toggle off)
+        setMaterialStatus(card, 'Read')   // kept for future
+        setCardIsNew(card, false)
       } else {
         console.warn('mark-read: could not resolve current card')
       }
@@ -1336,7 +1329,7 @@ function buildMetaPanel (meta, bodyId) {
       var menu2 = a.closest('details.dcf-action-menu')
       if (menu2) {
         menu2.open = false
-        updateOpsMenuForStatus(menu2, 'Read')
+        updateOpsMenuForStatus(menu2, false)
       }
 
       return
@@ -1350,7 +1343,9 @@ function buildMetaPanel (meta, bodyId) {
         null
 
       if (card2) {
-        setMaterialStatus(card2, 'Unread')
+        // Business rule: marking as unread reinstates the "New" tag (toggle on)
+        setMaterialStatus(card2, 'Unread') // kept for future
+        setCardIsNew(card2, true)
       } else {
         console.warn('mark-unread: could not resolve current card')
       }
@@ -1358,7 +1353,7 @@ function buildMetaPanel (meta, bodyId) {
       var menu3 = a.closest('details.dcf-action-menu')
       if (menu3) {
         menu3.open = false
-        updateOpsMenuForStatus(menu3, 'Unread')
+        updateOpsMenuForStatus(menu3, true)
       }
 
       return
@@ -1518,7 +1513,6 @@ function buildMetaPanel (meta, bodyId) {
       tryOpen()
     } catch (e) {}
   })()
-
 
   window.__materialsPreviewReady = true
 })()
