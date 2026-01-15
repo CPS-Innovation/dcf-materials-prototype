@@ -1,29 +1,10 @@
-{# cases/disclosure/assess-non-sensitive/item-disclosable.html #}
-
+{# cases/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection.html #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 
-
-{% set cm = caseMaterials or data.caseMaterials or {} %}
-
-
-{# Pick up the selected row using the id in the query string #}
-{# Row is now resolved in the route and passed in #}
-{% set selectedId = selectedId or (query.id if query) %}
-{% set selected = selectedRow or {} %}
-
-
-
-
-
-
-{# -------------------------
-   Defendants display value
-   ------------------------- #}
 {% set firstDefendant = (_case.defendants | first) %}
-
 {% set defendantsValue %}
   {% if firstDefendant %}
     {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
@@ -35,94 +16,101 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = 'Assess item as disclosable by inspection' %}
+{% set count = selectedRows.length %}
+{% set pageName = "Assess " ~ count ~ " item" ~ ("s" if count != 1) ~ " as disclosable by inspection" %}
+
+{# ✅ Disagreement: police said "Does not pass..." but CPS says Disclosable by inspection #}
+{% set hasAnyDisagreement = false %}
+{% for r in selectedRows %}
+  {% set disagrees = ((r.policeAssessment or '') | lower) == 'does not pass disclosure test' %}
+  {% if disagrees %}
+    {% set hasAnyDisagreement = true %}
+  {% endif %}
+{% endfor %}
 
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
-    href: (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()")
+    href: returnUrl or "javascript:window.history.back()"
   }) }}
 {% endblock %}
 
-
-
 {% block content %}
-
-  {% include "_includes/success-banner.njk" %}
-
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
+
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {{ govukInsetText({
-        text: "Your assessment disagrees with the police. They will be notified so they can amend the item’s disclosure status."
-      }) }}
-
-
-      {{ govukSummaryList({
-        classes: "govuk-!-margin-bottom-6",
-        rows: [
-          {
-            key: {
-              text: "Description"
-            },
-            value: {
-              html: selected.description
-            }
-          },
-          {
-            key: {
-              text: "Police assessment"
-            },
-            value: {
-              html: selected.policeAssessment
-            }
-          },
-          {
-            key: {
-              text: "Rationale for assessment"
-            },
-            value: {
-              html: selected.policeRationale
-            }
-          }
-        ]
-      }) }}
-
-    <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-disclosable-by-inspection">
-
-      <input type="hidden" name="id" value="{{ selectedId }}">
-      <input type="hidden" name="cpsDecision" value="Disclosable by inspection">
-
-
-      {% if returnUrl %}
-        <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
-      {% elseif query and query.returnUrl %}
-        <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
+      {% if hasAnyDisagreement %}
+        {{ govukInsetText({
+          text: "Your assessment disagrees with the police on one or more items. They will be notified so they can amend their disclosure status."
+        }) }}
       {% endif %}
 
-      {{ govukTextarea({
-        name: "disclosureStatusChangeReason",
-        id: "disclosure-status-change-reason",
-        rows: "8",
-        classes: "govuk-!-width-one-half",
-        label: {
-          text: "Why is this material disclosable by inspection?",
-          classes: "govuk-label--m",
-          isPageHeading: false
-        },
-        hint: {
-          text: "Do we want some hint text here?"
-        }
-      }) }}
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">Show selected items</span>
+        </summary>
+        <div class="govuk-details__text">
 
-      {{ govukButton({ text: "Save and confirm" }) }}
-    </form>
+          {% for r in selectedRows %}
+            {% set disagrees = ((r.policeAssessment or '') | lower) == 'does not pass disclosure test' %}
 
-      
+            {{ govukSummaryList({
+              card: {
+                title: {
+                  html:
+                    ("<strong>" ~ r.item ~ " – " ~ r.title ~ "</strong>")
+                    ~ (
+                      ' <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Disagrees with police</strong>'
+                      if disagrees
+                      else ''
+                    )
+                }
+              },
+              classes: "govuk-!-margin-bottom-3",
+              rows: [
+                {
+                  key: { text: "Description" },
+                  value: { text: r.description or "No description" }
+                },
+                {
+                  key: { text: "Police disclosure status" },
+                  value: { text: r.policeAssessment or "Not assessed" }
+                },
+                {
+                  key: { text: "Police disclosure reason" },
+                  value: { text: r.policeRationale or "—" }
+                }
+              ]
+            }) }}
+
+            {% if not loop.last %}
+              <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+            {% endif %}
+          {% endfor %}
+
+        </div>
+      </details>
+
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection">
+        <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">
+        <input type="hidden" name="returnUrl" value="{{ returnUrl or '' }}">
+
+        {{ govukTextarea({
+          name: "bulkRationale",
+          id: "bulk-rationale",
+          rows: 5,
+          label: {
+            text: "Why are these items disclosable by inspection?",
+            classes: "govuk-label--m"
+          }
+        }) }}
+
+        {{ govukButton({ text: "Save and confirm" }) }}
+      </form>
+
     </div>
   </div>
 {% endblock %}
-
-{# No scripts block needed here – we’re not toggling header actions #}

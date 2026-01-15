@@ -1,4 +1,6 @@
 {# _includes/case/disclosure/disclosure-table.njk #}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set rows = data.disclosureNonSensitiveRows or [] %}
@@ -28,7 +30,7 @@
 
   <tbody class="govuk-table__body govuk-body-s">
     {% for r in rows %}
-
+      {# Set table row actions first #}
       {% set rowActions %}
         {% if r.sensitivityDisputed %}
           {{ mojButtonMenu({
@@ -175,17 +177,25 @@
             <div class="govuk-!-margin-top-1">{{ r.description }}</div>
           {% endif %}
 
-          {% if itemId %}
-            <div class="govuk-!-margin-top-2">
-              <a
-                class="govuk-link"
-                href="/cases/{{ _case.id }}/material?tab=view-materials&openItemId={{ itemId | urlencode }}"
-              >
-                View material
-              </a>
-            </div>
-          {% endif %}
+          <div class="govuk-!-margin-top-2">
+            {% if r.isProvided === false %}
+              {{ govukTag({
+                text: "Material not provided",
+                classes: "govuk-tag--grey"
+              }) }}
+            {% else %}
+              {% if itemId %}
+                <a
+                  class="govuk-link"
+                  href="/cases/{{ _case.id }}/material?tab=view-materials&openItemId={{ itemId | urlencode }}"
+                >
+                  View material
+                </a>
+              {% endif %}
+            {% endif %}
+          </div>
         </td>
+
 
         {# Police assessment #}
         <td class="govuk-table__cell">

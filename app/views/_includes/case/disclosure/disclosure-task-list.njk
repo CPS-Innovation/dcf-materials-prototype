@@ -15,9 +15,8 @@
 {% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
 
 
-    {# <h1 class="govuk-heading-m">Assess unused case materials</h1> #}
-
     <h2 class="govuk-heading-l">Disclosure</h2>
+    <p class="govuk-body">Check or complete the assessment of unused case materials</p>
 
     <div class="app-list">
       <div class="app-list__item">
@@ -100,22 +99,29 @@
     {% endif %}
 
 
-   {{ govukTaskList({
-    idPrefix: "assess-disclosure-tasks",
-    classes: "govuk-summary-list--no-border",
-    items: [
-      {
-        title: { text: "Assess non-sensitive materials" },
-        href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive",
-        status: { html: nonSensitiveStatusHtml }
-      },
-      {
-        title: { text: "Assess sensitive materials" },
-        href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive",
-        status: { html: sensitiveStatusHtml }
-      }
-    ]
-  }) }}
+    {{ govukTaskList({
+      idPrefix: "assess-disclosure-tasks",
+      classes: "govuk-summary-list--no-border",
+      items: [
+        {
+          title: { text: "Assess non-sensitive materials" },
+          hint: {
+            text: "Complete disclosure for all unused non-sensitive items"
+          },
+          href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive",
+          status: { html: nonSensitiveStatusHtml }
+        },
+        {
+          title: { text: "Assess sensitive materials" },
+          hint: {
+            text: "Complete disclosure for all unused sensitive items"
+          },
+          href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive",
+          status: { html: sensitiveStatusHtml }
+        }
+      ]
+    }) }}
+
 
 
 
