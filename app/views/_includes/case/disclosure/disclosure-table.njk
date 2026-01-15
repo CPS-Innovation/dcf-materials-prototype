@@ -1,4 +1,6 @@
 {# _includes/case/disclosure/disclosure-table.njk #}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set rows = data.disclosureNonSensitiveRows or [] %}
@@ -17,7 +19,7 @@
 <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="materials-">
   <thead class="govuk-table__head govuk-body-s">
     <tr class="govuk-table__row">
-      <th class="govuk-table__header" scope="col"></th>
+      <th class="govuk-table__header" scope="col" id="materials-select-all"></th>
       <th class="govuk-table__header" scope="col">Item</th>
       <th class="govuk-table__header govuk-!-width-one-third" scope="col">Title and description</th>
       <th class="govuk-table__header govuk-!-width-one-third" scope="col">Police assessment</th>
@@ -28,69 +30,174 @@
 
   <tbody class="govuk-table__body govuk-body-s">
     {% for r in rows %}
-
+      {# Set table row actions first #}
       {% set rowActions %}
-        {{ mojButtonMenu({
-          classes: "dcf-button-menu--as-link",
-          button: { text: "Actions" },
-          items: [
-            {
-              text: "Assess as disclosable",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Assess as disclosable by inspection",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Assess as clearly not disclosable",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Assess as not disclosable",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Assess as evidence",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            {
-              text: "Dispute sensitivity",
-              href: "/cases/" ~ _case.id ~
-                "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
-                "&returnUrl=" ~ (returnUrl | urlencode)
-            },
-            { text: "Request material", href: "#" },
-            { text: "Request updated description", href: "#" }
-          ]
-        }) }}
+        {% if r.sensitivityDisputed %}
+          {{ mojButtonMenu({
+            classes: "dcf-button-menu--as-link",
+            button: { text: "Actions" },
+            items: [
+              {
+                text: "Assess as disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as disclosable by inspection",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as clearly not disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as not disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as evidence",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Change sensitivity dispute",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/change-sensitivity-dispute?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Request updated description",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Request material",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              }
+            ]
+          }) }}
+        {% else %}
+          {{ mojButtonMenu({
+            classes: "dcf-button-menu--as-link",
+            button: { text: "Actions" },
+            items: [
+              {
+                text: "Assess as disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as disclosable by inspection",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as clearly not disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as not disclosable",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as evidence",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Dispute sensitivity",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Request updated description",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Request material",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              }
+            ]
+          }) }}
+        {% endif %}
       {% endset %}
 
-      <tr class="govuk-table__row">
+      {# MUST match caseMaterials.Material[].ItemId (e.g. MAT-02007) #}
+      {% set itemId = r.ItemId or r.itemId or r.materialId %}
 
+      <tr class="govuk-table__row" {% if itemId %}data-item-id="{{ itemId }}"{% endif %}>
+
+        {# Select checkbox #}
         <td class="govuk-table__cell">
-          <input class="govuk-checkboxes__input" type="checkbox" value="{{ r.id }}">
+          <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
+            <input
+              type="checkbox"
+              class="govuk-checkboxes__input"
+              id="materials-{{ r.id }}"
+              name="selectedMaterials"
+              value="{{ r.id }}"
+            >
+            <label class="govuk-label govuk-checkboxes__label" for="materials-{{ r.id }}">
+              <span class="govuk-visually-hidden">Select item {{ r.item }}</span>
+            </label>
+          </div>
         </td>
 
+        {# Item #}
         <td class="govuk-table__cell">{{ r.item }}</td>
 
+        {# Title and description #}
         <td class="govuk-table__cell">
-          <strong>{{ r.title }}</strong>
+          <strong class="govuk-body govuk-!-font-weight-bold">{{ r.title }}</strong>
+
           {% if r.description %}
             <div class="govuk-!-margin-top-1">{{ r.description }}</div>
           {% endif %}
+
+          <div class="govuk-!-margin-top-2">
+            {% if r.isProvided === false %}
+              {{ govukTag({
+                text: "Material not provided",
+                classes: "govuk-tag--grey"
+              }) }}
+            {% else %}
+              {% if itemId %}
+                <a
+                  class="govuk-link"
+                  href="/cases/{{ _case.id }}/material?tab=view-materials&openItemId={{ itemId | urlencode }}"
+                >
+                  View material
+                </a>
+              {% endif %}
+            {% endif %}
+          </div>
         </td>
 
+
+        {# Police assessment #}
         <td class="govuk-table__cell">
           <strong class="govuk-tag govuk-tag--grey">
             {{ r.policeAssessment or "Not assessed" }}
@@ -101,6 +208,7 @@
           {% endif %}
         </td>
 
+        {# CPS assessment #}
         <td class="govuk-table__cell">
           {% set status = r.cpsAssessment or "To be assessed" %}
           <strong class="govuk-tag {{ cpsTagClass[status] }}">
@@ -129,6 +237,7 @@
           {% endif %}
         </td>
 
+        {# Actions #}
         <td class="govuk-table__cell">
           {{ rowActions | safe }}
         </td>

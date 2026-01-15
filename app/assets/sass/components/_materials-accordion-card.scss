@@ -248,3 +248,15 @@ $dcf-muted:        #505a5f;
   outline-offset: 0;
   box-shadow: 0 0 0 3px #0b0c0c;
 }
+
+/* Card Item Number pill style */
+.dcf-material-card__item-number {
+  display: inline-block;
+  padding: 1px 6px;
+  margin-right: 6px;
+  border: 1px solid #b1b4b6;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  color: #505a5f;
+}
