@@ -181,7 +181,7 @@
     viewer.innerHTML = [
       '<div class="dcf-viewer__toolbar govuk-!-margin-bottom-4 govuk-body">',
         // LEFT group
-        '<a href="#" class="govuk-link" data-action="close-viewer">Close documents</a>',
+        '<a href="#" class="govuk-link" data-action="close-viewer">Close all documents</a>',
         '<span aria-hidden="true" class="govuk-!-margin-horizontal-2">&nbsp; | &nbsp;</span>',
         '<a href="#" class="govuk-link" data-action="toggle-full" aria-pressed="false">View document full width</a>',
 
