@@ -5,9 +5,10 @@ const disclosureNonSensitiveRows = require('./disclosure-non-sensitive-rows.json
 module.exports = {
   caseSort: 'Name',
   taskSort: 'Due date',
-  // Insert values here
   caseMaterials,
   disclosureStatuses,
-  disclosureNonSensitiveRows
+  disclosureNonSensitiveRows,
 
+  // ✅ NEW: rows generated when CPS marks Evidence as "unused non-sensitive"
+  disclosureAssessedUnusedRows: []
 }

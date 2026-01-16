@@ -230,14 +230,56 @@ module.exports = router => {
 
     _.set(item, 'cpsDisclosure.disagreesWithPolice', disagrees)
 
+    // ✅ NEW: add a new row to a dedicated session bucket for "evidence assessed as unused non-sensitive"
+    const assessedUnusedPath = 'session.data.disclosureAssessedUnusedRows'
+    const existing = _.get(req, assessedUnusedPath, [])
+
+    const policeRationale =
+      _.get(item, 'policeDisclosure.rationale', null) ||
+      null
+
+    const newRow = {
+      // Unique id for highlighting / linking if needed later
+      id: `assessed-unused-${itemId}`,
+
+      // Keep both keys as your tables vary across templates
+      itemId: itemId,
+      ItemId: itemId,
+
+      // If you later want exhibitReference etc, they’re now available on the row
+      title: item.Title || item.exhibitReference || item.ItemId || 'Item',
+      Title: item.Title || item.exhibitReference || item.ItemId || 'Item',
+
+      description: item.exhibitDescription || item.Description || null,
+      Description: item.exhibitDescription || item.Description || null,
+
+      policeAssessment: policeStatus || 'Evidence',
+      policeRationale: policeRationale,
+
+      // Evidence won’t have rebuttable in your source model
+      rebuttable: null,
+
+      cpsAssessment: cpsStatus,
+      cpsRationale: cpsRationale,
+
+      cpsDisagreesWithPolice: disagrees,
+
+      // Optional metadata (handy for filtering/styling later)
+      source: 'evidence-assessed-unused',
+      createdAt: new Date().toISOString()
+    }
+
+    existing.push(newRow)
+    _.set(req, assessedUnusedPath, existing)
+
+    // ✅ Banner should show on assess-non-sensitive index (your disclosure route already clears+renders it)
     _.set(req, 'session.data.successBanner', {
-      titleText: 'Exhibit assessed as unused',
+      titleText: 'Item assessed as unused non-sensitive',
       text: 'This update has been sent to the police.'
     })
 
-    const fallbackReturn = buildDefaultViewerReturnUrl(caseId, itemId)
-    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturn
-
-    return res.redirect(returnUrl)
+    // ✅ Redirect to assess-non-sensitive (NOT back to viewer)
+    return res.redirect(`/cases/${caseId}/disclosure/assess-non-sensitive`)
   })
+
 }
