@@ -607,7 +607,7 @@ module.exports = router => {
     })
   })
 
-  // ✅ Change sensitivity dispute (POST)
+ // ✅ Change sensitivity dispute (POST)
   router.post('/cases/:caseId/disclosure/assess-non-sensitive/change-sensitivity-dispute', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
@@ -619,7 +619,8 @@ module.exports = router => {
       ? String(req.body.changeSensitivityDisputeOption)
       : null
 
-    const reason = req.body?.sensitivityDisputeReason
+    // Textarea is inside conditional reveal; still safest to trim + default.
+    const reason = req.body?.sensitivityDisputeReason != null
       ? String(req.body.sensitivityDisputeReason).trim()
       : ''
 
@@ -634,22 +635,44 @@ module.exports = router => {
       _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, null)
       _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, null)
 
+      // ✅ Clear/recompute the "disagrees with police" flag.
+      // Disputes force this true, so removing the dispute must undo that.
+      const policeAssessment = _.get(req, `${rowsPath}[${idx}].policeAssessment`, '')
+      const cpsAssessment = _.get(req, `${rowsPath}[${idx}].cpsAssessment`, '')
+      _.set(
+        req,
+        `${rowsPath}[${idx}].cpsDisagreesWithPolice`,
+        computeCpsDisagreesWithPolice(policeAssessment, cpsAssessment)
+      )
+
       _.set(req, 'session.data.successBanner', {
         titleText: 'Sensitivity dispute removed',
         text: 'The dispute has been removed from this item.'
       })
     } else if (option === 'wording') {
-      // ✅ Keep the dispute tag, update wording
+      // ✅ Keep the dispute and update wording
       _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, true)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, reason || null)
+
+      // If you want blank to clear it, swap to: reason || null
+      const existing = _.get(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, null)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, reason || existing)
+
+      // Optional but useful: refresh the timestamp so the change is trackable
       _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, new Date().toISOString())
+
+      // Your UI treats "dispute" as disagreement, so keep this true
+      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
 
       _.set(req, 'session.data.successBanner', {
         titleText: 'Sensitivity dispute updated',
         text: 'The dispute wording has been updated.'
       })
     } else {
-      return res.status(400).send('Missing option')
+      // No option chosen (prototype-friendly no-op, but still gives feedback)
+      _.set(req, 'session.data.successBanner', {
+        titleText: 'Nothing changed',
+        text: 'Select an option to update or remove the dispute.'
+      })
     }
 
     const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
@@ -658,6 +681,7 @@ module.exports = router => {
 
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
+
 
   ////////// Request updated description //////////////////////////////////////////////////////////////////
 
@@ -798,86 +822,6 @@ module.exports = router => {
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
 
-
-  /////////////// Change sensitivity flow ///////////////////////////////////////////////////////////////////
-
-  // ✅ Change sensitivity dispute (GET) — row-aware
-  router.get('/cases/:caseId/disclosure/assess-non-sensitive/change-sensitivity-dispute', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-    const selectedId = req.query?.id ? String(req.query.id) : null
-    if (!selectedId) return res.status(400).send('Missing id')
-
-    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-    const selectedRow = rows.find(r => String(r.id) === selectedId)
-    if (!selectedRow) return res.status(404).send('Row not found')
-
-    return res.render('cases/disclosure/assess-non-sensitive/change-sensitivity-dispute', {
-      _case,
-      caseMaterials,
-      selectedId,
-      selectedRow,
-      returnUrl: req.query?.returnUrl || null
-    })
-  })
-
-  // ✅ Change sensitivity dispute (POST)
-  router.post('/cases/:caseId/disclosure/assess-non-sensitive/change-sensitivity-dispute', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const selectedId = req.body?.id ? String(req.body.id) : null
-    if (!selectedId) return res.status(400).send('Missing id')
-
-    const option = req.body?.changeSensitivityDisputeOption
-      ? String(req.body.changeSensitivityDisputeOption)
-      : null
-
-    const reason = req.body?.sensitivityDisputeReason
-      ? String(req.body.sensitivityDisputeReason).trim()
-      : ''
-
-    const rowsPath = 'session.data.disclosureNonSensitiveRows'
-    const rows = _.get(req, rowsPath, [])
-    const idx = rows.findIndex(r => String(r.id) === selectedId)
-    if (idx === -1) return res.status(404).send('Row not found')
-
-    if (option === 'agree') {
-      // ✅ Remove the dispute tag + reason
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, false)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, null)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, null)
-
-      _.set(req, 'session.data.successBanner', {
-        titleText: 'Sensitivity dispute removed',
-        text: 'The dispute has been removed from this item.'
-      })
-    } else if (option === 'wording') {
-      // ✅ Keep the dispute tag, update wording
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, true)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, reason || null)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, new Date().toISOString())
-
-      _.set(req, 'session.data.successBanner', {
-        titleText: 'Sensitivity dispute updated',
-        text: 'The dispute wording has been updated.'
-      })
-    } else {
-      return res.status(400).send('Missing option')
-    }
-
-    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
-    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
-    const separator = returnUrl.includes('?') ? '&' : '?'
-
-    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
-  })
 
    ////////// Request updated description //////////////////////////////////////////////////////////////////
 
