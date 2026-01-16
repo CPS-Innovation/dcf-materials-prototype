@@ -765,7 +765,10 @@ function buildMetaPanel (meta, bodyId) {
 
   // For now, CPS appears only for unused / sensitive material.
   // (We’ll introduce Statement/Exhibit challenge flows later.)
-  var hasCpsSection = isUnusedOrSensitive
+  var hasCpsSection =
+    isUnusedOrSensitive ||
+    ((isExhibit || isStatement) && cps && typeof cps === 'object' && !!cps.status)
+
 
 
   // If/when you want CPS to appear for Exhibits, you can switch to:
@@ -805,6 +808,8 @@ function buildMetaPanel (meta, bodyId) {
       } else if (lower === 'clearly not disclosable') {
         cls += ' govuk-tag--red'
       } else if (lower === 'evidence') {
+        cls += ' govuk-tag--blue'
+      } else if (lower.indexOf('unused -') === 0) {
         cls += ' govuk-tag--blue'
       }
     }
@@ -967,7 +972,14 @@ function buildMetaPanel (meta, bodyId) {
       {
         key: 'status',
         label: 'Disclosure status',
-        render: function (v) { return statusTagHTML('cps', v) }
+        render: function (v) {
+          var tag = statusTagHTML('cps', v)
+          var disagree = (cps && cps.disagreesWithPolice === true)
+          if (disagree) {
+            tag += ' <strong class="govuk-tag govuk-tag--yellow">Disagrees with police</strong>'
+          }
+          return tag
+        }
       },
       { key: 'rationale',          label: 'Rationale for decision' },
       { key: 'SensitivityDispute', label: 'Reason for dispute' }
@@ -1371,13 +1383,43 @@ function buildMetaPanel (meta, bodyId) {
       'request-material'
     ].indexOf(action) !== -1) {
 
+      // --- NAVIGATE to server routes for material actions ---
       var currentCard =
         (viewer && viewer._currentCard) ||
         viewer.querySelector('.dcf-material-card--active') ||
         document.querySelector('.dcf-material-card--active') ||
         null
 
-      console.log('Material action:', action, 'on card:', currentCard)
+      var itemId = currentCard && currentCard.getAttribute('data-item-id')
+      if (!itemId) {
+        console.warn('Material action: could not resolve itemId')
+        return
+      }
+
+      // derive numeric caseId from URL: /cases/:caseId/...
+      var m = (window.location.pathname || '').match(/\/cases\/(\d+)\//)
+      var caseId = m && m[1] ? m[1] : null
+      if (!caseId) {
+        console.warn('Material action: could not resolve caseId from path')
+        return
+      }
+
+      // Always return to viewer, re-opening the same item
+      var returnUrl =
+        '/cases/' + caseId + '/material?tab=view-materials&openItemId=' + encodeURIComponent(itemId)
+
+      // Go through your existing resolver
+      var target =
+        '/cases/' + caseId + '/disclosure/actions/' + encodeURIComponent(action) +
+        '?itemId=' + encodeURIComponent(itemId) +
+        '&returnUrl=' + encodeURIComponent(returnUrl)
+
+      // For demo/debugging purposes
+      console.log('[Assess unused click]', { action, itemId, caseId, returnUrl, target })  
+
+      window.location.href = target
+
+      // ----------------------------------------------------
 
       var menuFromAction = a.closest('details.dcf-action-menu')
       if (menuFromAction) {

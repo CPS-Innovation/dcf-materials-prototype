@@ -176,8 +176,9 @@ module.exports = router => {
 
     // If your session data holds an array of cases, pick the matching one
     const cm = Array.isArray(caseMaterials)
-      ? (caseMaterials.find(c => String(c.caseId) === String(caseId)) || {})
+      ? (caseMaterials.find(c => String(c.caseId) === String(_case.reference)) || {})
       : caseMaterials
+
 
     // Ensure cpsDisclosureAssessment exists and stays in sync with non-sensitive rows
     const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
@@ -198,6 +199,9 @@ module.exports = router => {
       _.set(cm, 'cpsDisclosureAssessment.hasAssessedSensitive', 'Not started yet')
     }
 
+    // --- One-time success banner (set by assess-as-unused POST) ---
+    const successBanner = _.get(req, 'session.data.successBanner', null)
+    _.unset(req, 'session.data.successBanner')
 
     return res.render("cases/material/index", {
       _case,
@@ -207,7 +211,8 @@ module.exports = router => {
       selectedFilters,
       assetFiles,         // just names
       assetFileLinks,     // [{name, href}]
-      activeTab
+      activeTab,
+      successBanner
     })
   })
 
