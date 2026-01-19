@@ -444,10 +444,23 @@
           {# Title + description #}
           <td class="govuk-table__cell">
             <strong class="govuk-body govuk-!-font-weight-bold">{{ title }}</strong>
+
             {% if description %}
               <div class="govuk-!-margin-top-1">{{ description }}</div>
             {% endif %}
+
+            {% if itemId %}
+              <div class="govuk-!-margin-top-2">
+                <a
+                  class="govuk-link"
+                  href="/cases/{{ _case.id }}/material?tab=view-materials&openItemId={{ itemId | urlencode }}"
+                >
+                  View material
+                </a>
+              </div>
+            {% endif %}
           </td>
+
 
           {# Police assessment #}
           <td class="govuk-table__cell">
