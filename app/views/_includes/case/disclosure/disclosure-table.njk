@@ -226,9 +226,13 @@
             {{ status }}
           </strong>
 
+          {# ✅ FIX: yellow tag, not plain text #}
           {% if r.cpsDisagreesWithPolice %}
             <div class="govuk-!-margin-top-1">
-              <strong>Disagrees with police</strong>
+              {{ govukTag({
+                text: "Disagrees with police",
+                classes: "govuk-tag--yellow"
+              }) }}
             </div>
           {% endif %}
 
@@ -268,47 +272,28 @@
   </h3>
 
   <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="assessed-unused-">
-
     <colgroup>
-      {# Checkbox column #}
       <col style="width: 40px;">
-
-      {# Item column #}
       <col style="width: 60px;">
-
-      {# Title / description #}
       <col class="govuk-!-width-one-third">
-
-      {# Police assessment #}
       <col class="govuk-!-width-one-third">
-
-      {# CPS assessment #}
       <col class="govuk-!-width-one-third">
-
-      {# Actions #}
       <col style="width: 110px;">
     </colgroup>
 
-
     <tbody class="govuk-table__body govuk-body-s">
       {% for a in assessedUnusedRows %}
-
         {% set itemId = a.ItemId or a.itemId or a.materialId %}
-
         {% set title = a.title or a.Title or a.exhibitReference or "Item" %}
         {% set description = a.description or a.exhibitDescription or a.Description %}
-
         {% set policeAssessment = a.policeAssessment or a.policeStatus or a.policeDisclosureStatus or "Evidence" %}
         {% set policeRationale = a.policeRationale or a.policeDisclosureRationale %}
-
         {% set cpsAssessment = a.cpsAssessment or a.cpsStatus or "Unused - Disclosable" %}
         {% set cpsRationale = a.cpsRationale or a.cpsDisclosureRationale %}
-
         {% set disagrees = a.cpsDisagreesWithPolice or a.disagreesWithPolice %}
 
- {# Set table row actions first #}
-      {% set appendedActions %}
-        {% if r.sensitivityDisputed %}
+        {# ✅ FIX: appended rows must NOT reference r.* (use a.* and itemId) #}
+        {% set appendedActions %}
           {{ mojButtonMenu({
             classes: "dcf-button-menu--as-link",
             button: { text: "Actions" },
@@ -316,110 +301,62 @@
               {
                 text: "Assess as disclosable",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
+                  "/disclosure/assess-as-unused?itemId=" ~ (itemId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode) ~
+                  "&openItemId=" ~ (itemId | urlencode)
               },
               {
                 text: "Assess as disclosable by inspection",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
+                  "/disclosure/assess-as-unused?itemId=" ~ (itemId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode) ~
+                  "&openItemId=" ~ (itemId | urlencode)
               },
               {
                 text: "Assess as clearly not disclosable",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
+                  "/disclosure/assess-as-unused?itemId=" ~ (itemId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode) ~
+                  "&openItemId=" ~ (itemId | urlencode)
               },
               {
                 text: "Assess as not disclosable",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
+                  "/disclosure/assess-as-unused?itemId=" ~ (itemId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode) ~
+                  "&openItemId=" ~ (itemId | urlencode)
               },
               {
                 text: "Assess as evidence",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Change sensitivity dispute",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/change-sensitivity-dispute?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Request updated description",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Request material",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              }
-            ]
-          }) }}
-        {% else %}
-          {{ mojButtonMenu({
-            classes: "dcf-button-menu--as-link",
-            button: { text: "Actions" },
-            items: [
-              {
-                text: "Assess as disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as disclosable by inspection",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as clearly not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as evidence",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
+                  "/disclosure/assess-as-unused?itemId=" ~ (itemId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode) ~
+                  "&openItemId=" ~ (itemId | urlencode)
               },
               {
                 text: "Dispute sensitivity",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
+                  "/disclosure/assess-as-unused?itemId=" ~ (itemId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode) ~
+                  "&openItemId=" ~ (itemId | urlencode)
               },
               {
                 text: "Request updated description",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
+                  "/disclosure/assess-as-unused?itemId=" ~ (itemId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode) ~
+                  "&openItemId=" ~ (itemId | urlencode)
               },
               {
                 text: "Request material",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
+                  "/disclosure/assess-as-unused?itemId=" ~ (itemId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode) ~
+                  "&openItemId=" ~ (itemId | urlencode)
               }
             ]
           }) }}
-        {% endif %}
-      {% endset %}
+        {% endset %}
 
         <tr class="govuk-table__row" {% if itemId %}data-item-id="{{ itemId }}"{% endif %}>
           {# Checkbox #}
@@ -438,8 +375,8 @@
             </div>
           </td>
 
-          {# Item (placeholder for now) #}
-          <td class="govuk-table__cell">4</td>
+          {# ✅ FIX: item numbering starts AFTER the main table rows #}
+          <td class="govuk-table__cell">{{ rows.length + loop.index }}</td>
 
           {# Title + description #}
           <td class="govuk-table__cell">
@@ -460,7 +397,6 @@
               </div>
             {% endif %}
           </td>
-
 
           {# Police assessment #}
           <td class="govuk-table__cell">
@@ -484,7 +420,6 @@
                 }) }}
               </div>
             {% endif %}
-
 
             {% if cpsRationale %}
               <div class="govuk-!-margin-top-2">{{ cpsRationale }}</div>

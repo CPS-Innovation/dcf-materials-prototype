@@ -230,47 +230,51 @@ module.exports = router => {
 
     _.set(item, 'cpsDisclosure.disagreesWithPolice', disagrees)
 
-    // ✅ NEW: add a new row to a dedicated session bucket for "evidence assessed as unused non-sensitive"
-    const assessedUnusedPath = 'session.data.disclosureAssessedUnusedRows'
-    const existing = _.get(req, assessedUnusedPath, [])
 
-    const policeRationale =
-      _.get(item, 'policeDisclosure.rationale', null) ||
-      null
+    // ---------------------------------------------
+    // ✅ Append a REAL row into disclosureNonSensitiveRows
+    // ---------------------------------------------
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
 
-    const newRow = {
-      // Unique id for highlighting / linking if needed later
-      id: `assessed-unused-${itemId}`,
+    // Generate next numeric id: 01, 02, 03 → 04, 05…
+    const maxId = rows.reduce((acc, r) => {
+      const n = parseInt(r?.id, 10)
+      return Number.isFinite(n) ? Math.max(acc, n) : acc
+    }, 0)
+    const nextId = String(maxId + 1).padStart(2, '0')
 
-      // Keep both keys as your tables vary across templates
-      itemId: itemId,
-      ItemId: itemId,
+    // Prevent duplicates for same material
+    const alreadyExists = rows.some(r =>
+      String(r.ItemId || r.itemId) === String(itemId)
+    )
 
-      // If you later want exhibitReference etc, they’re now available on the row
-      title: item.Title || item.exhibitReference || item.ItemId || 'Item',
-      Title: item.Title || item.exhibitReference || item.ItemId || 'Item',
+    if (!alreadyExists) {
+      rows.push({
+        id: nextId,
 
-      description: item.exhibitDescription || item.Description || null,
-      Description: item.exhibitDescription || item.Description || null,
+        // ✅ DO NOT set `item` — template will number it (4, 5, 6...)
+        ItemId: itemId,
 
-      policeAssessment: policeStatus || 'Evidence',
-      policeRationale: policeRationale,
+        title: item.Title || item.exhibitReference || itemId,
+        description: item.exhibitDescription || item.Description || null,
 
-      // Evidence won’t have rebuttable in your source model
-      rebuttable: null,
+        policeAssessment: policeStatus || 'Evidence',
+        policeRationale: _.get(item, 'policeDisclosure.rationale', null),
 
-      cpsAssessment: cpsStatus,
-      cpsRationale: cpsRationale,
+        cpsAssessment: cpsStatus,
+        cpsRationale: cpsRationale,
+        cpsDisagreesWithPolice: disagrees,
 
-      cpsDisagreesWithPolice: disagrees,
+        assessedAsUnused: true,
+        assessedFromEvidence: true
+      })
 
-      // Optional metadata (handy for filtering/styling later)
-      source: 'evidence-assessed-unused',
-      createdAt: new Date().toISOString()
+      _.set(req, rowsPath, rows)
     }
 
-    existing.push(newRow)
-    _.set(req, assessedUnusedPath, existing)
+
+    /////////////////////////
 
     // ✅ Banner should show on assess-non-sensitive index (your disclosure route already clears+renders it)
     _.set(req, 'session.data.successBanner', {
