@@ -3,7 +3,6 @@
 {% from "govuk/components/accordion/macro.njk" import govukAccordion %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 
-
 {# expects: params.caseMaterials = { caseId, caseStatus, Material: [...] , RelatedMaterials, DigitalRepresentation, PoliceMaterial, CPSMaterial } #}
 
 {# ---------- data + helpers ---------- #}
@@ -16,15 +15,22 @@
 {% set sensitiveCount = 0 %}
 {% set otherCount = 0 %}
 {% set mgFormsCount = 0 %}
+
 {% for m in items %}
   {% set t = (m.Type | lower) %}
   {% if t == 'statement' %}{% set statementsCount = statementsCount + 1 %}{% endif %}
   {% if t == 'exhibit' %}{% set exhibitsCount = exhibitsCount + 1 %}{% endif %}
   {% if t == 'unused non-sensitive' %}{% set unsNonSensitiveCount = unsNonSensitiveCount + 1 %}{% endif %}
-  {% if t == 'sensitive' %}{% set sensitiveCount = sensitiveCount + 1 %}{% endif %}
+
+  {# Support both "Sensitive" and "Unused sensitive" just in case #}
+  {% if t == 'sensitive' or t == 'unused sensitive' %}{% set sensitiveCount = sensitiveCount + 1 %}{% endif %}
+
   {% if t == 'other material' %}{% set otherCount = otherCount + 1 %}{% endif %}
   {% if t == 'mg forms' %}{% set mgFormsCount = mgFormsCount + 1 %}{% endif %}
 {% endfor %}
+
+{# ✅ MUST be after the loop, otherwise it stays 0 #}
+{% set unusedCount = unsNonSensitiveCount + sensitiveCount %}
 
 {% macro filenameFromUrl(url) %}
   {% if url %}{{ url.split('/').pop() }}{% else %}Untitled{% endif %}
@@ -50,68 +56,67 @@
         data-raw-status="{{ _status }}"
         {% if (_status | lower) != 'new' %}hidden{% endif %}
       >New</span>
-        
-<h3 class="dcf-material-card__title">
 
-  {# NEW: item number shown before title #}
-  {% if m.item %}
-    <span class="dcf-material-card__item-number" aria-hidden="true">
-      {{ m.item }}
-    </span>
-    <span class="govuk-visually-hidden">Item </span>
-  {% endif %}
+      <h3 class="dcf-material-card__title">
 
-  {% if m.myFileUrl %}
-    <a
-      href="#"
-      class="govuk-link js-material-link"
-      rel="noreferrer"
-      role="button"
-      data-file-url="{{ m.myFileUrl }}"
-      data-title="{{ linkText }}"
-    >{{ linkText }}</a>
+        {# NEW: item number shown before title #}
+        {% if m.item %}
+          <span class="dcf-material-card__item-number" aria-hidden="true">
+            {{ m.item }}
+          </span>
+          <span class="govuk-visually-hidden">Item </span>
+        {% endif %}
 
-    {# meta must match buildMetaPanel(meta) #}
-    {% set __meta__ = {
-      ItemId: m.ItemId,
-      Type: m.Type,
-      date: m.date,
-      Status: m.Status,
+        {% if m.myFileUrl %}
+          <a
+            href="#"
+            class="govuk-link js-material-link"
+            rel="noreferrer"
+            role="button"
+            data-file-url="{{ m.myFileUrl }}"
+            data-title="{{ linkText }}"
+          >{{ linkText }}</a>
 
-      Material: {
-        item: m.item,            
-        Type: m.Type,
-        Title: m.Title,
-        myFileUrl: m.myFileUrl,
-        materialStatus: _status,
-        Reference: m.Reference,
-        ProducedbyWitnessId: m.ProducedbyWitnessId,
-        MaterialClassification: m.MaterialClassification,
-        MaterialType: m.MaterialType,
-        SentExternally: m.SentExternally,
-        RelatedParticipantId: m.RelatedParticipantId,
-        Incident: m.Incident,
-        Location: m.Location,
-        PeriodFrom: m.PeriodFrom,
-        PeriodTo: m.PeriodTo,
-        Description: m.Description,
+          {# meta must match buildMetaPanel(meta) #}
+          {% set __meta__ = {
+            ItemId: m.ItemId,
+            Type: m.Type,
+            date: m.date,
+            Status: m.Status,
 
-        policeDisclosure: m.policeDisclosure,
-        cpsDisclosure: m.cpsDisclosure
-      },
+            Material: {
+              item: m.item,
+              Type: m.Type,
+              Title: m.Title,
+              myFileUrl: m.myFileUrl,
+              materialStatus: _status,
+              Reference: m.Reference,
+              ProducedbyWitnessId: m.ProducedbyWitnessId,
+              MaterialClassification: m.MaterialClassification,
+              MaterialType: m.MaterialType,
+              SentExternally: m.SentExternally,
+              RelatedParticipantId: m.RelatedParticipantId,
+              Incident: m.Incident,
+              Location: m.Location,
+              PeriodFrom: m.PeriodFrom,
+              PeriodTo: m.PeriodTo,
+              Description: m.Description,
 
-      RelatedMaterials: cm.RelatedMaterials,
-      DigitalRepresentation: cm.DigitalRepresentation,
-      PoliceMaterial: cm.PoliceMaterial,
-      CPSMaterial: cm.CPSMaterial
-    } %}
+              policeDisclosure: m.policeDisclosure,
+              cpsDisclosure: m.cpsDisclosure
+            },
 
-    <script type="application/json" class="js-material-data">{{ __meta__ | dump | safe }}</script>
-  {% else %}
-    {{ linkText }}
-  {% endif %}
-</h3>
+            RelatedMaterials: cm.RelatedMaterials,
+            DigitalRepresentation: cm.DigitalRepresentation,
+            PoliceMaterial: cm.PoliceMaterial,
+            CPSMaterial: cm.CPSMaterial
+          } %}
 
+          <script type="application/json" class="js-material-data">{{ __meta__ | dump | safe }}</script>
+        {% else %}
+          {{ linkText }}
+        {% endif %}
+      </h3>
 
       {% if m.date %}
         <p class="dcf-material-card__meta dcf-material-card__meta--with-note">
@@ -154,6 +159,32 @@
   {% if not hasAny %}<p class="govuk-hint">No items yet.</p>{% endif %}
 {% endmacro %}
 
+{# ✅ MUST be defined before unusedHtml uses it #}
+{% macro renderSectionForTypes(typeLowers, addListMargins=false) %}
+  {% set hasAny = false %}
+  <ul class="dcf-material-list{% if addListMargins %} govuk-!-margin-top-1 govuk-!-margin-bottom-1{% endif %}">
+    {% for m in items %}
+      {% set mt = (m.Type | lower) %}
+      {% if mt in typeLowers %}
+        {% set hasAny = true %}
+        <li class="govuk-!-margin-bottom-2">{{ renderCard(m, cm) }}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+  {% if not hasAny %}<p class="govuk-hint">No items yet.</p>{% endif %}
+{% endmacro %}
+
+{# ---------- Unused combined accordion content ---------- #}
+{% set unusedHtml %}
+  <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Non-sensitive</h3>
+  {{ renderSection('unused non-sensitive') }}
+
+  <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+  <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Sensitives</h3>
+  {{ renderSectionForTypes(['sensitive', 'unused sensitive']) }}
+{% endset %}
+
 {# ---------- Layout ---------- #}
 <div class="govuk-grid-row dcf-materials-layout">
   <div class="govuk-grid-column-one-quarter">
@@ -173,15 +204,8 @@
               }
             },
             items: [
-              {
-                value: "materials",
-                text: "Materials",
-                checked: true
-              },
-              {
-                value: "case",
-                text: "Case"
-              }
+              { value: "materials", text: "Materials", checked: true },
+              { value: "case", text: "Case" }
             ]
           }) }} #}
 
@@ -198,17 +222,15 @@
         </form>
       </div>
 
-
       {{ govukAccordion({
         id: "materials-accordion",
         classes: "dcf-accordion",
         items: [
-          { heading: { text: "Statements (" ~ statementsCount ~ ")" },           content: { html: renderSection('statement', true) } },
-          { heading: { text: "Exhibits (" ~ exhibitsCount ~ ")" },               content: { html: renderSection('exhibit')        } },
-          { heading: { text: "MG forms (" ~ mgFormsCount ~ ")" },               content: { html: renderSection('mg forms')        } },
-          { heading: { text: "Other material (" ~ otherCount ~ ")" },               content: { html: renderSection('other material')        } },
-          { heading: { text: "Unused non-sensitive (" ~ unsNonSensitiveCount ~ ")" }, content: { html: renderSection('unused non-sensitive') } },
-          { heading: { text: "Unused Sensitive (" ~ sensitiveCount ~ ")" },      content: { html: renderSection('sensitive')      } }
+          { heading: { text: "Statements (" ~ statementsCount ~ ")" },      content: { html: renderSection('statement', true) } },
+          { heading: { text: "Exhibits (" ~ exhibitsCount ~ ")" },          content: { html: renderSection('exhibit') } },
+          { heading: { text: "MG forms (" ~ mgFormsCount ~ ")" },          content: { html: renderSection('mg forms') } },
+          { heading: { text: "Other material (" ~ otherCount ~ ")" },      content: { html: renderSection('other material') } },
+          { heading: { text: "Unused (" ~ unusedCount ~ ")" },             content: { html: unusedHtml } }
         ]
       }) }}
     </div>
@@ -223,7 +245,7 @@
           No results for “<span data-search-term></span>”.
         </div>
       </div>
-      
+
       <div data-some hidden>
         <div class="dcf-search-status-row">
           <p class="dcf-search-meta dcf-search-status-row__meta">
@@ -233,8 +255,7 @@
             <a href="#" class="govuk-link" data-action="back-to-documents" hidden>Back to document viewer</a>
           </p>
 
-          <div class="dcf-search-order dcf-search-status-row__order"
-              aria-label="Search result sort options">
+          <div class="dcf-search-order dcf-search-status-row__order" aria-label="Search result sort options">
             <span class="dcf-search-order__label"><b>Sort by: </b> </span>
 
             <a href="#"
@@ -255,7 +276,6 @@
           </div>
         </div>
       </div>
-
     </div>
 
     <div id="material-viewer" class="dcf-viewer" hidden aria-live="polite">
