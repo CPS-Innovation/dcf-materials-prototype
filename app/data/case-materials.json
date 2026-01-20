@@ -304,7 +304,7 @@
     },
 
     {
-      "Type": "Sensitive",
+      "Type": "Unused sensitive",
       "materialStatus": "New",
       "myFileUrl": "/public/files/ThirdParty_Medical_Note.pdf",
       "ItemId": "MAT-02010",
@@ -322,7 +322,7 @@
       "PeriodTo": "2025-09-17T14:10:00Z"
     },
     {
-      "Type": "Sensitive",
+      "Type": "Unused sensitive",
       "materialStatus": "New",
       "myFileUrl": "/public/files/Address_List_Witnesses_Redacted.pdf",
       "ItemId": "MAT-02011",
@@ -340,7 +340,7 @@
       "PeriodTo": "2025-09-12T09:30:00Z"
     },
     {
-      "Type": "Sensitive",
+      "Type": "Unused sensitive",
       "materialStatus": "New",
       "myFileUrl": "/public/files/Medical_Photo_Bystander_Redacted.jpg",
       "ItemId": "MAT-02012",
