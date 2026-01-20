@@ -57,11 +57,28 @@
           {% for r in selectedRows %}
             {% set disagrees = ((r.policeAssessment or '') | lower) == 'does not pass disclosure test' %}
 
+            {# If item is missing or is the placeholder, derive it from its position in the full dataset #}
+            {% if (not displayItem) or (displayItem == 'n/a') %}
+              {% set displayItem = '' %}
+
+              {% for rr in (data.disclosureNonSensitiveRows or []) %}
+                {% if (rr.id and r.id and (rr.id == r.id)) %}
+                  {# loop.index is 1-based, so this becomes 4, 5, 6... #}
+                  {% set displayItem = loop.index %}
+                {% endif %}
+              {% endfor %}
+
+              {% if not displayItem %}
+                {% set displayItem = 'n/a' %}
+              {% endif %}
+            {% endif %}
+
+
             {{ govukSummaryList({
               card: {
                 title: {
                   html:
-                    ("<strong>" ~ r.item ~ " – " ~ r.title ~ "</strong>")
+                    ("<strong>" ~ displayItem ~ " – " ~ r.title ~ "</strong>")
                     ~ (
                       ' <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Disagrees with police</strong>'
                       if disagrees
