@@ -176,12 +176,12 @@
 
 {# ---------- Unused combined accordion content ---------- #}
 {% set unusedHtml %}
-  <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Unused non-sensitive</h3>
+  <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Non-sensitive</h3>
   {{ renderSection('unused non-sensitive') }}
 
   <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
 
-  <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Unused sensitive</h3>
+  <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Sensitives</h3>
   {{ renderSectionForTypes(['sensitive', 'unused sensitive']) }}
 {% endset %}
 
