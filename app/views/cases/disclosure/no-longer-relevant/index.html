@@ -1,0 +1,99 @@
+{# /cases/disclosure/no-longer-relevant/index.html #}
+
+{% extends "layouts/main.html" %}
+{% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+
+{% set cm = caseMaterials or {} %}
+{% set materials = cm.Material or [] %}
+
+{# -------------------------
+   Build rows for this page
+   ONLY policeAssessment = "No longer relevant"
+   ------------------------- #}
+{% set allRows = data.disclosureNonSensitiveRows or [] %}
+{% set rows = [] %}
+{% for r in allRows %}
+  {% if r and ((r.policeAssessment or '') | lower) == 'no longer relevant' %}
+    {% set _ = rows.push(r) %}
+  {% endif %}
+{% endfor %}
+
+{# -------------------------
+   Defendants display value
+   ------------------------- #}
+{% set firstDefendant = (_case.defendants | first) %}
+
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set pageName = 'Assess material that is no longer relevant' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material?tab=disclosure"
+  }) }}
+{% endblock %}
+
+{% block content %}
+
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+      {% if data.successBanner %}
+        {{ govukNotificationBanner({
+          type: "success",
+          titleText: data.successBanner.titleText or "Success",
+          text: data.successBanner.text or ""
+        }) }}
+      {% endif %}
+
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {# Bulk actions – keep for now (you’ll probably replace with NLR-only actions later) #}
+      {{ mojButtonMenu({
+        classes: "govuk-!-margin-bottom-6",
+        button: { text: "Assess multiple items" },
+        items: [
+          {
+            text: "Agree no longer relevant",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" | urlencode),
+            attributes: { "data-allow-nlr": "true" }
+          },
+          {
+            text: "Request item is reinstated",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-item-reinstated?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" | urlencode),
+            attributes: { "data-allow-nlr": "true" }
+          }
+        ]
+      }) }}
+
+      {# ✅ This include will now render ONLY the filtered rows because `rows` exists in scope #}
+      {% include "_includes/case/disclosure/disclosure-table.njk" %}
+
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    (function () {
+      window.__disclosureRows = {{ rows | dump | safe }};
+    })();
+  </script>
+{% endblock %}

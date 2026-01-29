@@ -10,8 +10,19 @@
 {% set materials = cm.Material or [] %}
 {% set firstMaterial = materials | first %}
 
-{# Keep a rows reference for JS (bulk selection logic) #}
-{% set rows = data.disclosureNonSensitiveRows or [] %}
+{# Source all rows #}
+{% set allRows = data.disclosureNonSensitiveRows or [] %}
+
+{# Filter OUT policeAssessment = "No longer relevant" (handled on separate table) #}
+{% set rows = [] %}
+{% for r in allRows %}
+  {% if r and ((r.policeAssessment or '') | lower) != 'no longer relevant' %}
+    {% set _ = rows.push(r) %}
+  {% endif %}
+{% endfor %}
+
+
+
 
 {# -------------------------
    Defendants display value

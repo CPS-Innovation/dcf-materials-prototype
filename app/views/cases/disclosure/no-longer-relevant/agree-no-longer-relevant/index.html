@@ -35,11 +35,27 @@
 {% set hasDisagreement = hasDisagreement or inferredDisagreement %}
 
 {% block beforeContent %}
+
+  {# This is where the NLR index should send the user back to (e.g. disclosure tab) #}
+  {% set originalReturnUrl = (query.returnUrl if query and query.returnUrl else null) %}
+
+  {# NLR index URL #}
+  {% set nlrIndexUrl = "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" %}
+
+  {# Preserve originalReturnUrl as a query param on the NLR index #}
+  {% if originalReturnUrl %}
+    {% set backHref = nlrIndexUrl ~ "?returnUrl=" ~ (originalReturnUrl | urlencode) %}
+  {% else %}
+    {% set backHref = nlrIndexUrl %}
+  {% endif %}
+
   {{ govukBackLink({
     text: "Back",
-    href: (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()")
+    href: backHref
   }) }}
+
 {% endblock %}
+
 
 {% block content %}
 
@@ -139,11 +155,8 @@
         <input type="hidden" name="id" value="{{ selectedId }}">
         <input type="hidden" name="itemId" value="{{ selectedId }}">
 
-        {% if returnUrl %}
-          <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
-        {% elseif query and query.returnUrl %}
-          <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
-        {% endif %}
+        {# Always redirect back to the NLR index after saving #}
+        <input type="hidden" name="returnUrl" value="{{ backHref }}">
 
         {{ govukButton({ text: "Save and confirm" }) }}
       </form>

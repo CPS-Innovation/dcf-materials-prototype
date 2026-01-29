@@ -2,7 +2,10 @@
 {% from "govuk/components/tag/macro.njk" import govukTag %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
-{% set rows = data.disclosureNonSensitiveRows or [] %}
+
+{# Allow parent templates to pass a pre-filtered rows array #}
+{% set rows = rows or data.disclosureNonSensitiveRows or [] %}
+
 
 {# Appended rows (supports whatever key you ended up using) #}
 {% set assessedUnusedRows =
