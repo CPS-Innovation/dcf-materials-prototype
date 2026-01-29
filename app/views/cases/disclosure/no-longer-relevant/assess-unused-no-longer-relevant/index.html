@@ -51,13 +51,32 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {% if hasDisagreement %}
+        {% if hasDisagreement %}
         {{ govukInsetText({
           html: "<strong>Your assessment disagrees with the police.</strong><br>They will be notified so they can amend the item’s disclosure status."
         }) }}
       {% endif %}
 
-      {# Only show this block when the route provides selectedRows (bulk-style playback) #}
+      {# ✅ SINGLE ITEM SUMMARY (always visible) #}
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-6",
+        rows: [
+          {
+            key: { text: "Description" },
+            value: { html: (selected.description or "—") }
+          },
+          {
+            key: { text: "Police disclosure status" },
+            value: { html: (selected.policeAssessment or "Not assessed") }
+          },
+          {
+            key: { text: "Police disclosure reason" },
+            value: { html: (selected.policeRationale or "—") }
+          }
+        ]
+      }) }}
+
+      {# Optional: only show this block when the route provides selectedRows (bulk-style playback) #}
       {% if selectedRows and selectedRows.length %}
         <details class="govuk-details" data-module="govuk-details">
           <summary class="govuk-details__summary">
@@ -97,18 +116,9 @@
                 },
                 classes: "govuk-!-margin-bottom-3",
                 rows: [
-                  {
-                    key: { text: "Description" },
-                    value: { text: r.description or "No description" }
-                  },
-                  {
-                    key: { text: "Police disclosure status" },
-                    value: { text: r.policeAssessment or "Not assessed" }
-                  },
-                  {
-                    key: { text: "Police disclosure reason" },
-                    value: { text: r.policeRationale or "—" }
-                  }
+                  { key: { text: "Description" }, value: { text: r.description or "No description" } },
+                  { key: { text: "Police disclosure status" }, value: { text: r.policeAssessment or "Not assessed" } },
+                  { key: { text: "Police disclosure reason" }, value: { text: r.policeRationale or "—" } }
                 ]
               }) }}
 
@@ -120,6 +130,7 @@
           </div>
         </details>
       {% endif %}
+
 
       {# ✅ Correct route path #}
       <form method="post" action="/cases/{{ _case.id }}/disclosure/no-longer-relevant/assess-unused-no-longer-relevant">

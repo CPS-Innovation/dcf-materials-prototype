@@ -238,13 +238,14 @@
         {# CPS assessment #}
         <td class="govuk-table__cell">
           {% set status = r.cpsAssessment or "To be assessed" %}
-          <strong class="govuk-tag {{ cpsTagClass[status] }}">
-            {{ status }}
-          </strong>
+            <strong class="govuk-tag {{ cpsTagClass[status] }}">
+              {{ status }}
+            </strong>
+
 
           {# ✅ FIX: yellow tag, not plain text #}
           {% if r.cpsDisagreesWithPolice %}
-            <div class="govuk-!-margin-top-1">
+            <div class="govuk-!-margin-top-3">
               {{ govukTag({
                 text: "Disagrees with police",
                 classes: "govuk-tag--yellow"
