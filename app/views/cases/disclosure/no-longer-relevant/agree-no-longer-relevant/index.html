@@ -1,0 +1,163 @@
+{# /disclosure/no-longer-relevant/agree-no-longer-relevant/index.html #}
+
+{% extends "layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+
+{% set cm = caseMaterials or data.caseMaterials or {} %}
+
+{# Row is resolved in the route and passed in #}
+{# Accept either ?id= or ?itemId= #}
+{% set selectedId = selectedId or (query.id if query and query.id) or (query.itemId if query and query.itemId) %}
+{% set selected = selectedRow or {} %}
+
+{# -------------------------
+   Defendants display value
+   ------------------------- #}
+{% set firstDefendant = (_case.defendants | first) %}
+
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set pageName = "Agree item is no longer relevant" %}
+
+{# Disagreement logic: allow route to pass hasDisagreement, otherwise infer from police vs CPS assessment if present #}
+{% set inferredDisagreement = (selected.policeAssessment and selected.cpsAssessment and selected.policeAssessment != selected.cpsAssessment) %}
+{% set hasDisagreement = hasDisagreement or inferredDisagreement %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()")
+  }) }}
+{% endblock %}
+
+{% block content %}
+
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+        {% if hasDisagreement %}
+        {{ govukInsetText({
+          html: "<strong>Your assessment disagrees with the police.</strong><br>They will be notified so they can amend the item’s disclosure status."
+        }) }}
+      {% endif %}
+
+      {# ✅ SINGLE ITEM SUMMARY (always visible) #}
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-6",
+        rows: [
+          {
+            key: { text: "Description" },
+            value: { html: (selected.description or "—") }
+          },
+          {
+            key: { text: "Police disclosure status" },
+            value: { html: (selected.policeAssessment or "Not assessed") }
+          },
+          {
+            key: { text: "Police disclosure reason" },
+            value: { html: (selected.policeRationale or "—") }
+          }
+        ]
+      }) }}
+
+      {# Optional: only show this block when the route provides selectedRows (bulk-style playback) #}
+      {% if selectedRows and selectedRows.length %}
+        <details class="govuk-details" data-module="govuk-details">
+          <summary class="govuk-details__summary">
+            <span class="govuk-details__summary-text">Show selected items</span>
+          </summary>
+          <div class="govuk-details__text">
+
+            {% for r in selectedRows %}
+              {% set disagrees = ((r.policeAssessment or '') | lower) == 'does not pass disclosure test' %}
+
+              {# derive displayItem safely per row #}
+              {% set displayItem = r.item or r.Item or r.itemNumber or 'n/a' %}
+
+              {% if (displayItem == 'n/a') %}
+                {% set displayItem = '' %}
+                {% for rr in (data.disclosureNonSensitiveRows or []) %}
+                  {% if (rr.id and r.id and (rr.id == r.id)) %}
+                    {% set displayItem = loop.index %}
+                  {% endif %}
+                {% endfor %}
+                {% if not displayItem %}
+                  {% set displayItem = 'n/a' %}
+                {% endif %}
+              {% endif %}
+
+              {{ govukSummaryList({
+                card: {
+                  title: {
+                    html:
+                      ("<strong>" ~ displayItem ~ " – " ~ (r.title or 'Item') ~ "</strong>")
+                      ~ (
+                        ' <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Disagrees with police</strong>'
+                        if disagrees
+                        else ''
+                      )
+                  }
+                },
+                classes: "govuk-!-margin-bottom-3",
+                rows: [
+                  { key: { text: "Description" }, value: { text: r.description or "No description" } },
+                  { key: { text: "Police disclosure status" }, value: { text: r.policeAssessment or "Not assessed" } },
+                  { key: { text: "Police disclosure reason" }, value: { text: r.policeRationale or "—" } }
+                ]
+              }) }}
+
+              {% if not loop.last %}
+                <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+              {% endif %}
+            {% endfor %}
+
+          </div>
+        </details>
+      {% endif %}
+
+
+      {# ✅ Correct route path #}
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/no-longer-relevant/assess-unused-no-longer-relevant">
+        {# Post both keys so route can accept either #}
+        <input type="hidden" name="id" value="{{ selectedId }}">
+        <input type="hidden" name="itemId" value="{{ selectedId }}">
+
+        {% if returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
+        {% elseif query and query.returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
+        {% endif %}
+
+        {{ govukTextarea({
+          name: "noLongerRelevantReason",
+          id: "no-longer-relevant-reason",
+          rows: 5,
+          label: {
+            text: "Why is this material no longer relevant to this case?",
+            classes: "govuk-label--m"
+          },
+          value: (selected.noLongerRelevantReason or data.noLongerRelevantReason or "")
+        }) }}
+
+        {{ govukButton({ text: "Confirm" }) }}
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

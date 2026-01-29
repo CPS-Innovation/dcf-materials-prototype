@@ -33,9 +33,9 @@
     <tr class="govuk-table__row">
       <th class="govuk-table__header" scope="col" id="materials-select-all"></th>
       <th class="govuk-table__header" scope="col">Item</th>
-      <th class="govuk-table__header govuk-!-width-one-third" scope="col">Title and description</th>
-      <th class="govuk-table__header govuk-!-width-one-third" scope="col">Police assessment</th>
-      <th class="govuk-table__header govuk-!-width-one-third" scope="col">CPS assessment</th>
+      <th class="govuk-table__header govuk-!-width-two-quarters " scope="col">Title and description</th>
+      <th class="govuk-table__header govuk-!-width-one-quarter" scope="col">Police assessment</th>
+      <th class="govuk-table__header govuk-!-width-one-quarter" scope="col">CPS assessment</th>
       <th class="govuk-table__header" scope="col">Actions</th>
     </tr>
   </thead>
@@ -43,135 +43,159 @@
   <tbody class="govuk-table__body govuk-body-s">
     {% for r in rows %}
       {# Set table row actions first #}
-      {% set rowActions %}
-        {% if r.sensitivityDisputed %}
-          {{ mojButtonMenu({
-            classes: "dcf-button-menu--as-link",
-            button: { text: "Actions" },
-            items: [
-              {
-                text: "Assess as disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as disclosable by inspection",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as clearly not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as evidence",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as no longer relevant",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
+ {% set rowActions %}
 
-              {
-                text: "Change sensitivity dispute",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/change-sensitivity-dispute?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Request updated description",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Request material",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              }
-            ]
-          }) }}
-        {% else %}
-          {{ mojButtonMenu({
-            classes: "dcf-button-menu--as-link",
-            button: { text: "Actions" },
-            items: [
-              {
-                text: "Assess as disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as disclosable by inspection",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as clearly not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as evidence",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
+  {# ✅ New conditional rule based on police assessment #}
+  {% set isPoliceNoLongerRelevant = ((r.policeAssessment or '') | lower) == 'no longer relevant' %}
 
-              {
-                text: "Assess as no longer relevant",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
+  {% if isPoliceNoLongerRelevant %}
+    {{ mojButtonMenu({
+      classes: "dcf-button-menu--as-link",
+      button: { text: "Actions" },
+      items: [
+        {
+          text: "Agree no longer relevant",
+          href: "/cases/" ~ _case.id ~
+            "/disclosure/no-longer-relevant/agree-no-longer-relevant?id=" ~ r.id ~
+            "&returnUrl=" ~ (returnUrl | urlencode)
+        },
+        {
+          text: "Request item is reinstated",
+          href: "/cases/" ~ _case.id ~
+            "/disclosure/no-longer-relevant/request-item-reinstated?id=" ~ r.id ~
+            "&returnUrl=" ~ (returnUrl | urlencode)
+        }
+      ]
+    }) }}
+  {% else %}
 
+    {# ✅ Existing logic unchanged #}
+    {% if r.sensitivityDisputed %}
+      {{ mojButtonMenu({
+        classes: "dcf-button-menu--as-link",
+        button: { text: "Actions" },
+        items: [
+          {
+            text: "Assess as disclosable",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as disclosable by inspection",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as clearly not disclosable",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as not disclosable",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as evidence",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as no longer relevant",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Change sensitivity dispute",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/change-sensitivity-dispute?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Request updated description",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Request material",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          }
+        ]
+      }) }}
+    {% else %}
+      {{ mojButtonMenu({
+        classes: "dcf-button-menu--as-link",
+        button: { text: "Actions" },
+        items: [
+          {
+            text: "Assess as disclosable",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as disclosable by inspection",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as clearly not disclosable",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as not disclosable",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as evidence",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Assess as no longer relevant",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Dispute sensitivity",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Request updated description",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          },
+          {
+            text: "Request material",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
+              "&returnUrl=" ~ (returnUrl | urlencode)
+          }
+        ]
+      }) }}
+    {% endif %}
+  {% endif %}
+{% endset %}
 
-              {
-                text: "Dispute sensitivity",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Request updated description",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Request material",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              }
-            ]
-          }) }}
-        {% endif %}
-      {% endset %}
 
       {# MUST match caseMaterials.Material[].ItemId (e.g. MAT-02007) #}
       {% set itemId = r.ItemId or r.itemId or r.materialId %}
