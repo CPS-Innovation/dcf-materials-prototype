@@ -3,16 +3,12 @@
 {% extends "layouts/main.html" %}
 {% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
 
-
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
-
 
 {% set cm = caseMaterials or {} %}
 {% set materials = cm.Material or [] %}
 {% set firstMaterial = materials | first %}
-
-
 
 {# -------------------------
    Defendants display value
@@ -39,10 +35,6 @@
   }) }}
 {% endblock %}
 
-
-
-
-
 {% block content %}
 
   {% include "_includes/success-banner.njk" %}
@@ -58,35 +50,35 @@
         }) }}
       {% endif %}
 
-
-
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
-      
-        {# Bulk actions – placeholders only (no row context here) #}
-        {{ mojButtonMenu({
-          classes: "govuk-!-margin-bottom-6",
-          button: { text: "Assess multiple items" },
-          items: [
-            { text: "Assess as disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
-            { text: "Assess as disclosable by inspection", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
-            { text: "Assess as not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
-            { text: "Assess as clearly not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
-            { text: "Assess as evidence", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/evidence?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
-            { text: "Dispute sensitivity", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/dispute-sensitivity?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
-            {
-              text: "Change sensitivity dispute",
-              href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode)
-            },
-            { text: "Request material", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-material?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
-            { text: "Request updated description", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-updated-description?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) }
-          ]
-        }) }}
 
+      {# Bulk actions – placeholders only (no row context here) #}
+      {{ mojButtonMenu({
+        classes: "govuk-!-margin-bottom-6",
+        button: { text: "Assess multiple items" },
+        items: [
+          { text: "Assess as disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
+          { text: "Assess as disclosable by inspection", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
+          { text: "Assess as not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
+          { text: "Assess as clearly not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
+          { text: "Assess as evidence", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/evidence?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
+          
+          { text: "Assess as no longer relevant", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/no-longer-relevant?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
 
-        {# Row-level table lives entirely in the include #}
-        {% include "_includes/case/disclosure/disclosure-table.njk" %}
-      
+          { text: "Dispute sensitivity", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/dispute-sensitivity?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
+          {
+            text: "Change sensitivity dispute",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode)
+          },
+          { text: "Request material", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-material?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
+          { text: "Request updated description", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-updated-description?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) }
+        ]
+      }) }}
+
+      {# Row-level table lives entirely in the include #}
+      {% include "_includes/case/disclosure/disclosure-table.njk" %}
+
     </div>
   </div>
 {% endblock %}
@@ -122,5 +114,3 @@
     })();
   </script>
 {% endblock %}
-
-

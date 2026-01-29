@@ -80,6 +80,13 @@
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
+                text: "Assess as no longer relevant",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-no-longer-relevant?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+
+              {
                 text: "Change sensitivity dispute",
                 href: "/cases/" ~ _case.id ~
                   "/disclosure/assess-non-sensitive/change-sensitivity-dispute?id=" ~ r.id ~
@@ -134,6 +141,14 @@
                   "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
+
+              {
+                text: "Assess as no longer relevant",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-no-longer-relevant?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+
               {
                 text: "Dispute sensitivity",
                 href: "/cases/" ~ _case.id ~
@@ -333,6 +348,13 @@
                   "&returnUrl=" ~ (returnUrl | urlencode) ~
                   "&openItemId=" ~ (itemId | urlencode)
               },
+              {
+                text: "Assess as no longer relevant",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-no-longer-relevant?itemId=" ~ (itemId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+
               {
                 text: "Dispute sensitivity",
                 href: "/cases/" ~ _case.id ~
