@@ -450,6 +450,93 @@ router.post('/cases/:caseId/disclosure/no-longer-relevant/assess-unused-no-longe
 })
 
 
+///////////////// ITEM: AGREE NO LONGER RELEVANT ////////////////////////////////////////////////////////////////
+
+// ✅ Item: agree no longer relevant (GET)
+router.get('/cases/:caseId/disclosure/no-longer-relevant/agree-no-longer-relevant', async (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).render('not-found')
+
+  const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+  // Accept either ?id= (row id) OR ?itemId= (material id like MAT-02008)
+  const selectedKey = req.query?.id || req.query?.itemId
+  const selectedId = selectedKey ? String(selectedKey) : null
+  if (!selectedId) return res.status(400).send('Missing id')
+
+  const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+
+  // Support lookup by row.id OR by ItemId/itemId/materialId
+  const selectedRow =
+    rows.find(r => String(r.id) === selectedId) ||
+    rows.find(r => String(r.ItemId || r.itemId || r.materialId) === selectedId)
+
+  if (!selectedRow) return res.status(404).send('Row not found')
+
+  return res.render('cases/disclosure/no-longer-relevant/agree-no-longer-relevant/index', {
+    _case,
+    caseMaterials,
+    selectedId,
+    selectedRow,
+    returnUrl: req.query?.returnUrl || null
+  })
+})
+
+
+// ✅ Item: agree no longer relevant (POST)
+router.post('/cases/:caseId/disclosure/no-longer-relevant/agree-no-longer-relevant', async (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+  const selectedKey = req.body?.id || req.body?.itemId
+  const selectedId = selectedKey ? String(selectedKey) : null
+  if (!selectedId) return res.status(400).send('Missing id')
+
+  // Optional rationale (if your template includes a textarea)
+  const rationale =
+    (req.body?.noLongerRelevantReason ? String(req.body.noLongerRelevantReason).trim() : '') ||
+    (req.body?.agreeNoLongerRelevantReason ? String(req.body.agreeNoLongerRelevantReason).trim() : '') ||
+    ''
+
+  const rowsPath = 'session.data.disclosureNonSensitiveRows'
+  const rows = _.get(req, rowsPath, [])
+
+  // Find by row.id OR by ItemId/itemId/materialId
+  let idx = rows.findIndex(r => String(r.id) === selectedId)
+  if (idx === -1) {
+    idx = rows.findIndex(r => String(r.ItemId || r.itemId || r.materialId) === selectedId)
+  }
+  if (idx === -1) return res.status(404).send('Row not found')
+
+  // Agreeing with police: CPS assessment becomes No longer relevant and disagreement is cleared
+  _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'No longer relevant')
+  _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, false)
+
+  // Keep/record rationale if provided
+  if (rationale) {
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale)
+    _.set(req, `${rowsPath}[${idx}].noLongerRelevantReason`, rationale)
+  }
+
+  const _case = await fetchCase(caseId)
+  if (_case) syncCpsDisclosureAssessment(req, _case)
+
+  _.set(req, 'session.data.successBanner', {
+    titleText: 'Agreed item is no longer relevant',
+    text: 'This update has been sent to the police.'
+  })
+
+  const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+  const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
+  const separator = returnUrl.includes('?') ? '&' : '?'
+
+  return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
+})
+
+
   ///////////////// ITEM NOT DISCLOSABLE /////////////////////////////////////////////////////////////////////
 
   // ✅ Item: assess as not disclosable (GET) — row-aware
