@@ -82,10 +82,10 @@
               {
                 text: "Assess as no longer relevant",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-no-longer-relevant?id=" ~ r.id ~
+                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant" ~
+                  "?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
-
               {
                 text: "Change sensitivity dispute",
                 href: "/cases/" ~ _case.id ~
@@ -145,7 +145,8 @@
               {
                 text: "Assess as no longer relevant",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-no-longer-relevant?id=" ~ r.id ~
+                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant" ~
+                  "?itemId=" ~ (itemId | urlencode) ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
 
@@ -351,10 +352,10 @@
               {
                 text: "Assess as no longer relevant",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-no-longer-relevant?itemId=" ~ (itemId | urlencode) ~
+                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant" ~
+                  "?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
-
               {
                 text: "Dispute sensitivity",
                 href: "/cases/" ~ _case.id ~

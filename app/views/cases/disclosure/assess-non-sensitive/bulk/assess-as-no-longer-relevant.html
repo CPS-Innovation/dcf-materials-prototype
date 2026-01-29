@@ -1,0 +1,103 @@
+{# cases/disclosure/assess-unused-no-longer-relevant/index.html #}
+
+{% extends "layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+
+{% set cm = caseMaterials or data.caseMaterials or {} %}
+
+{# Row is resolved in the route and passed in #}
+{% set selectedId = selectedId or (query.id if query) %}
+{% set selected = selectedRow or {} %}
+
+{# -------------------------
+   Defendants display value
+   ------------------------- #}
+{% set firstDefendant = (_case.defendants | first) %}
+
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set pageName = "Assess item as no longer relevant" %}
+
+{# Disagreement logic: allow route to pass hasDisagreement, otherwise infer from police vs CPS assessment if present #}
+{% set inferredDisagreement = (selected.policeAssessment and selected.cpsAssessment and selected.policeAssessment != selected.cpsAssessment) %}
+{% set hasDisagreement = hasDisagreement or inferredDisagreement %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()")
+  }) }}
+{% endblock %}
+
+{% block content %}
+
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% if hasDisagreement %}
+        {{ govukInsetText({
+          html: "<strong>Your assessment disagrees with the police.</strong><br>They will be notified so they can amend the item’s disclosure status."
+        }) }}
+      {% endif %}
+
+      {# Description block (matches mockup style) #}
+      <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-6">
+        {% if selected.title %}{{ selected.title }}{% endif %}{% if selected.title and selected.description %} - {% endif %}{{ selected.description }}
+      </p>
+
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-6",
+        rows: [
+          {
+            key: { text: "Police disclosure status" },
+            value: { html: (selected.policeAssessment or "—") }
+          },
+          {
+            key: { text: "Police disclosure reason" },
+            value: { html: (selected.policeRationale or "—") }
+          }
+        ]
+      }) }}
+
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-unused-no-longer-relevant">
+        <input type="hidden" name="id" value="{{ selectedId }}">
+
+        {% if returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
+        {% elseif query and query.returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
+        {% endif %}
+
+        {{ govukTextarea({
+          name: "noLongerRelevantReason",
+          id: "no-longer-relevant-reason",
+          rows: 5,
+          label: {
+            text: "Why is this material no longer relevant to this case?",
+            classes: "govuk-label--m"
+          },
+          value: (selected.noLongerRelevantReason or data.noLongerRelevantReason or "")
+        }) }}
+
+        {{ govukButton({ text: "Confirm" }) }}
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

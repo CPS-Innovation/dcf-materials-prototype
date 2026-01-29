@@ -366,6 +366,74 @@ module.exports = router => {
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
 
+  ///////////////// ITEM: NO LONGER RELEVANT /////////////////////////////////////////////////////////////////////
+
+// ✅ Item: assess as no longer relevant (GET) — row-aware
+router.get('/cases/:caseId/disclosure/no-longer-relevant/assess-unused-no-longer-relevant', async (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).render('not-found')
+
+  const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+  const selectedId = req.query?.id ? String(req.query.id) : null
+  if (!selectedId) return res.status(400).send('Missing id')
+
+  const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+  const selectedRow = rows.find(r => String(r.id) === selectedId)
+  if (!selectedRow) return res.status(404).send('Row not found')
+
+  return res.render('cases/disclosure/no-longer-relevant/assess-unused-no-longer-relevant/index', {
+    _case,
+    caseMaterials,
+    selectedId,
+    selectedRow,
+    returnUrl: req.query?.returnUrl || null
+  })
+})
+
+// ✅ Item: assess as no longer relevant (POST updates non-sensitive table rows in session)
+router.post('/cases/:caseId/disclosure/no-longer-relevant/assess-unused-no-longer-relevant', async (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+  const selectedId = req.body?.id ? String(req.body.id) : null
+  if (!selectedId) return res.status(400).send('Missing id')
+
+  const rationale = req.body?.noLongerRelevantReason
+    ? String(req.body.noLongerRelevantReason).trim()
+    : ''
+
+  const rowsPath = 'session.data.disclosureNonSensitiveRows'
+  const rows = _.get(req, rowsPath, [])
+  const idx = rows.findIndex(r => String(r.id) === selectedId)
+  if (idx === -1) return res.status(404).send('Row not found')
+
+  _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'No longer relevant')
+  _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+  _.set(req, `${rowsPath}[${idx}].noLongerRelevantReason`, rationale || null)
+
+  // This is always a disagreement with the police assessment
+  _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+
+  const _case = await fetchCase(caseId)
+  if (_case) syncCpsDisclosureAssessment(req, _case)
+
+  _.set(req, 'session.data.successBanner', {
+    titleText: 'Item assessed as No longer relevant',
+    text: 'This update has been sent to the police.'
+  })
+
+  const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+  const returnUrl = req.body?.returnUrl || fallbackReturnUrl
+  const separator = returnUrl.includes('?') ? '&' : '?'
+
+  return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
+})
+
+
   ///////////////// ITEM NOT DISCLOSABLE /////////////////////////////////////////////////////////////////////
 
   // ✅ Item: assess as not disclosable (GET) — row-aware
