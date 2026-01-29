@@ -82,10 +82,10 @@
               {
                 text: "Assess as no longer relevant",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant" ~
-                  "?id=" ~ r.id ~
+                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
+
               {
                 text: "Change sensitivity dispute",
                 href: "/cases/" ~ _case.id ~
@@ -145,10 +145,10 @@
               {
                 text: "Assess as no longer relevant",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant" ~
-                  "?itemId=" ~ (itemId | urlencode) ~
+                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
+
 
               {
                 text: "Dispute sensitivity",
@@ -307,6 +307,8 @@
         {% set cpsAssessment = a.cpsAssessment or a.cpsStatus or "Unused - Disclosable" %}
         {% set cpsRationale = a.cpsRationale or a.cpsDisclosureRationale %}
         {% set disagrees = a.cpsDisagreesWithPolice or a.disagreesWithPolice %}
+        {% set linkId = a.id or a.rowId or (a.ItemId or a.itemId or a.materialId) %}
+
 
         {# ✅ FIX: appended rows must NOT reference r.* (use a.* and itemId) #}
         {% set appendedActions %}
@@ -352,10 +354,11 @@
               {
                 text: "Assess as no longer relevant",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant" ~
-                  "?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
+                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ (linkId | urlencode) ~
+                  "&returnUrl=" ~ (returnUrl | urlencode) ~
+                  "&openItemId=" ~ (itemId | urlencode)
               },
+
               {
                 text: "Dispute sensitivity",
                 href: "/cases/" ~ _case.id ~

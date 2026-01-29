@@ -366,7 +366,7 @@ module.exports = router => {
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
 
-  ///////////////// ITEM: NO LONGER RELEVANT /////////////////////////////////////////////////////////////////////
+ ///////////////// ITEM: NO LONGER RELEVANT /////////////////////////////////////////////////////////////////////
 
 // ✅ Item: assess as no longer relevant (GET) — row-aware
 router.get('/cases/:caseId/disclosure/no-longer-relevant/assess-unused-no-longer-relevant', async (req, res) => {
@@ -378,11 +378,19 @@ router.get('/cases/:caseId/disclosure/no-longer-relevant/assess-unused-no-longer
 
   const caseMaterials = getCaseMaterialsForCase(req, _case)
 
-  const selectedId = req.query?.id ? String(req.query.id) : null
+  // Accept either ?id= (row id) OR ?itemId= (material id like MAT-02008)
+  const selectedKey = req.query?.id || req.query?.itemId
+  const selectedId = selectedKey ? String(selectedKey) : null
   if (!selectedId) return res.status(400).send('Missing id')
 
+
   const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-  const selectedRow = rows.find(r => String(r.id) === selectedId)
+
+  // Support lookup by row.id OR by ItemId/itemId/materialId
+  const selectedRow =
+    rows.find(r => String(r.id) === selectedId) ||
+    rows.find(r => String(r.ItemId || r.itemId || r.materialId) === selectedId)
+
   if (!selectedRow) return res.status(404).send('Row not found')
 
   return res.render('cases/disclosure/no-longer-relevant/assess-unused-no-longer-relevant/index', {
@@ -390,6 +398,7 @@ router.get('/cases/:caseId/disclosure/no-longer-relevant/assess-unused-no-longer
     caseMaterials,
     selectedId,
     selectedRow,
+    // Keep selectedRows optional (template guards it)
     returnUrl: req.query?.returnUrl || null
   })
 })
@@ -399,16 +408,23 @@ router.post('/cases/:caseId/disclosure/no-longer-relevant/assess-unused-no-longe
   const caseId = parseInt(req.params.caseId, 10)
   if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
-  const selectedId = req.body?.id ? String(req.body.id) : null
+  const selectedKey = req.body?.id || req.body?.itemId
+  const selectedId = selectedKey ? String(selectedKey) : null
   if (!selectedId) return res.status(400).send('Missing id')
 
-  const rationale = req.body?.noLongerRelevantReason
-    ? String(req.body.noLongerRelevantReason).trim()
-    : ''
+  // Accept the single-item field name, with a safe fallback
+  const rationale =
+    (req.body?.noLongerRelevantReason ? String(req.body.noLongerRelevantReason).trim() : '') ||
+    (req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : '')
 
   const rowsPath = 'session.data.disclosureNonSensitiveRows'
   const rows = _.get(req, rowsPath, [])
-  const idx = rows.findIndex(r => String(r.id) === selectedId)
+
+  // Find by row.id OR by ItemId/itemId/materialId
+  let idx = rows.findIndex(r => String(r.id) === selectedId)
+  if (idx === -1) {
+    idx = rows.findIndex(r => String(r.ItemId || r.itemId || r.materialId) === selectedId)
+  }
   if (idx === -1) return res.status(404).send('Row not found')
 
   _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'No longer relevant')
@@ -427,7 +443,7 @@ router.post('/cases/:caseId/disclosure/no-longer-relevant/assess-unused-no-longe
   })
 
   const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
-  const returnUrl = req.body?.returnUrl || fallbackReturnUrl
+  const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
   const separator = returnUrl.includes('?') ? '&' : '?'
 
   return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)

@@ -7,9 +7,9 @@
 
 {% set cm = caseMaterials or data.caseMaterials or {} %}
 
-{# Row is resolved in the route and passed in #}
-{% set selectedId = selectedId or (query.id if query) %}
-{% set selected = selectedRow or {} %}
+{# Bulk pages use selectedIds + selectedRows passed from the route #}
+{% set selectedIds = selectedIds or (query.ids | split(',') if query and query.ids else []) %}
+{% set selectedRows = selectedRows or [] %}
 
 {# -------------------------
    Defendants display value
@@ -27,11 +27,7 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = "Assess item as no longer relevant" %}
-
-{# Disagreement logic: allow route to pass hasDisagreement, otherwise infer from police vs CPS assessment if present #}
-{% set inferredDisagreement = (selected.policeAssessment and selected.cpsAssessment and selected.policeAssessment != selected.cpsAssessment) %}
-{% set hasDisagreement = hasDisagreement or inferredDisagreement %}
+{% set pageName = "Assess items as no longer relevant" %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -50,33 +46,74 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {% if hasDisagreement %}
-        {{ govukInsetText({
-          html: "<strong>Your assessment disagrees with the police.</strong><br>They will be notified so they can amend the item’s disclosure status."
-        }) }}
-      {% endif %}
-
-      {# Description block (matches mockup style) #}
-      <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-6">
-        {% if selected.title %}{{ selected.title }}{% endif %}{% if selected.title and selected.description %} - {% endif %}{{ selected.description }}
-      </p>
-
-      {{ govukSummaryList({
-        classes: "govuk-!-margin-bottom-6",
-        rows: [
-          {
-            key: { text: "Police disclosure status" },
-            value: { html: (selected.policeAssessment or "—") }
-          },
-          {
-            key: { text: "Police disclosure reason" },
-            value: { html: (selected.policeRationale or "—") }
-          }
-        ]
+      {{ govukInsetText({
+        html: "<strong>Your assessment disagrees with the police.</strong><br>They will be notified so they can amend the item’s disclosure status."
       }) }}
 
-      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-unused-no-longer-relevant">
-        <input type="hidden" name="id" value="{{ selectedId }}">
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">Show selected items</span>
+        </summary>
+        <div class="govuk-details__text">
+
+          {% for r in selectedRows %}
+            {% set disagrees = true %}
+
+            {# derive displayItem safely per row #}
+            {% set displayItem = r.item or r.Item or r.itemNumber or 'n/a' %}
+
+            {% if (displayItem == 'n/a') %}
+              {% set displayItem = '' %}
+              {% for rr in (data.disclosureNonSensitiveRows or []) %}
+                {% if (rr.id and r.id and (rr.id == r.id)) %}
+                  {% set displayItem = loop.index %}
+                {% endif %}
+              {% endfor %}
+              {% if not displayItem %}
+                {% set displayItem = 'n/a' %}
+              {% endif %}
+            {% endif %}
+
+            {{ govukSummaryList({
+              card: {
+                title: {
+                  html:
+                    ("<strong>" ~ displayItem ~ " – " ~ (r.title or 'Item') ~ "</strong>")
+                    ~ (
+                      ' <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Disagrees with police</strong>'
+                      if disagrees
+                      else ''
+                    )
+                }
+              },
+              classes: "govuk-!-margin-bottom-3",
+              rows: [
+                {
+                  key: { text: "Description" },
+                  value: { text: r.description or "No description" }
+                },
+                {
+                  key: { text: "Police disclosure status" },
+                  value: { text: r.policeAssessment or "Not assessed" }
+                },
+                {
+                  key: { text: "Police disclosure reason" },
+                  value: { text: r.policeRationale or "—" }
+                }
+              ]
+            }) }}
+
+            {% if not loop.last %}
+              <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+            {% endif %}
+          {% endfor %}
+
+        </div>
+      </details>
+
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/assess-as-no-longer-relevant">
+        {# Bulk routes expect ids in the body #}
+        <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">
 
         {% if returnUrl %}
           <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
@@ -85,14 +122,14 @@
         {% endif %}
 
         {{ govukTextarea({
-          name: "noLongerRelevantReason",
-          id: "no-longer-relevant-reason",
+          name: "bulkRationale",
+          id: "bulk-rationale",
           rows: 5,
           label: {
             text: "Why is this material no longer relevant to this case?",
             classes: "govuk-label--m"
           },
-          value: (selected.noLongerRelevantReason or data.noLongerRelevantReason or "")
+          value: (data.bulkRationale or "")
         }) }}
 
         {{ govukButton({ text: "Confirm" }) }}
