@@ -43,7 +43,7 @@
   },
   {
     "id": "04",
-    "item": "4",
+    "item": "n/a",
     "ItemId": "MAT-02010",
     "title": "Exh SP/4 ",
     "isProvided": false,
@@ -57,7 +57,7 @@
   },
    {
     "id": "05",
-    "item": "5",
+    "item": "n/a",
     "ItemId": "MAT-02011",
     "title": "Exh SP/5",
     "isProvided": true,
@@ -71,7 +71,7 @@
     },
     {
     "id": "06",
-    "item": "6",
+    "item": "n/a",
     "ItemId": "MAT-02012",
     "title": "Exh SP/6",
     "isProvided": true,
@@ -81,11 +81,13 @@
     "isRebuttable": "No",
     "hasException": null,
     "exceptionReason": null,
-    "cpsAssessment": "Evidence"
+    "cpsAssessment": "Evidence",
+    "disagreesWithPolice": true,
+    "cpsRationale": "Although assessed by police as no longer relevant, this material provides contextual evidence relevant to the prosecution case."
   },
   {
     "id": "07",
-    "item": "7",
+    "item": "n/a",
     "ItemId": "MAT-02013",
     "title": "Sens SP/7",
     "isProvided": true,
@@ -95,11 +97,13 @@
     "isRebuttable": "Yes",
     "hasException": null,
     "exceptionReason": null,
-    "cpsAssessment": "Disclosable by inspection"
+    "cpsAssessment": "Disclosable by inspection",
+    "disagreesWithPolice": true,
+    "cpsRationale": "Although assessed by police as no longer relevant, this material provides contextual evidence relevant to the prosecution case."
   },
   {
     "id": "08",
-    "item": "8",
+    "item": "n/a",
     "ItemId": "MAT-02014",
     "title": "Stmt Jones Ella 2",
     "isProvided": false,
@@ -109,6 +113,8 @@
     "isRebuttable": "No",
     "hasException": null,
     "exceptionReason": null,
-    "cpsAssessment": "Clearly not disclosable"
+    "cpsAssessment": "Clearly not disclosable",
+    "disagreesWithPolice": true,
+    "cpsRationale": "Although assessed by police as no longer relevant, this material provides contextual evidence relevant to the prosecution case."
   }
 ]
