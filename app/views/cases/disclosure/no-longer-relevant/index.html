@@ -91,9 +91,96 @@
 
 {% block scripts %}
   {{ super() }}
-  <script>
-    (function () {
-      window.__disclosureRows = {{ rows | dump | safe }};
-    })();
-  </script>
+    <script>
+      (function () {
+
+        // Expose row data for bulk selection logic
+        window.__disclosureRows = {{ (data.disclosureNonSensitiveRows or []) | dump | safe }};
+
+        var bulkMenu = document.querySelector('.moj-button-menu');
+        if (!bulkMenu) return;
+
+        // IMPORTANT: grab ALL links in the bulk menu (some may be "#" placeholders)
+        var bulkLinks = bulkMenu.querySelectorAll('a');
+
+        function getSelectedIds() {
+          return Array.prototype.slice.call(
+            document.querySelectorAll('input[name="selectedMaterials"]:checked')
+          ).map(function (el) { return String(el.value); });
+        }
+
+        function selectedIncludesPoliceNoLongerRelevant(ids) {
+          if (!ids || !ids.length) return false;
+
+          var rows = window.__disclosureRows || [];
+          return ids.some(function (id) {
+            var r = rows.find(function (x) { return String(x.id) === String(id); });
+            if (!r) return false;
+            return String(r.policeAssessment || '').toLowerCase() === 'no longer relevant';
+          });
+        }
+
+        function toggleBulkMenu() {
+          var ids = getSelectedIds();
+          var hasNlr = selectedIncludesPoliceNoLongerRelevant(ids);
+
+          Array.prototype.forEach.call(bulkLinks, function (a) {
+            var li = a.parentNode;
+            while (li && li.nodeName !== 'LI') li = li.parentNode;
+
+            if (!li) return;
+
+            var allowNlr = a.getAttribute('data-allow-nlr') === 'true';
+
+            if (hasNlr) {
+              // Only show the two allowed actions
+              li.style.display = allowNlr ? '' : 'none';
+            } else {
+              // Show everything
+              li.style.display = '';
+            }
+          });
+        }
+
+        // Click behaviour: append ids= to bulk links, but block invalid actions when hasNlr is true
+        Array.prototype.forEach.call(bulkLinks, function (link) {
+          link.addEventListener('click', function (e) {
+            var ids = getSelectedIds();
+            if (!ids.length) {
+              e.preventDefault();
+              alert('Select at least one item to assess.');
+              return;
+            }
+
+            var hasNlr = selectedIncludesPoliceNoLongerRelevant(ids);
+            var allowNlr = link.getAttribute('data-allow-nlr') === 'true';
+
+            if (hasNlr && !allowNlr) {
+              e.preventDefault();
+              alert("For items marked 'No longer relevant', you can only agree or request reinstatement.");
+              return;
+            }
+
+            // Only add ids= to real bulk routes
+            if (link.href && link.href.indexOf('/disclosure/assess-non-sensitive/bulk/') !== -1) {
+              e.preventDefault();
+              var url = new URL(link.href, window.location.origin);
+              url.searchParams.set('ids', ids.join(','));
+              window.location.href = url.toString();
+            }
+          });
+        });
+
+        document.addEventListener('change', function (e) {
+          if (e.target && e.target.name === 'selectedMaterials') {
+            toggleBulkMenu();
+          }
+        });
+
+        toggleBulkMenu();
+
+      })();
+    </script>
+
+
 {% endblock %}

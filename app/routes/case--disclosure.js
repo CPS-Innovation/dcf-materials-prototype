@@ -75,6 +75,9 @@ module.exports = router => {
 
   // helper for syncing CPS disclosure assessment status
   function syncCpsDisclosureAssessment(req, _case) {
+
+    _.defaults(req.session.data, { cpsDisclosureAssessment: {} })
+
     const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
 
     // Only count rows that are truly part of NS assessment (exclude NLR)
