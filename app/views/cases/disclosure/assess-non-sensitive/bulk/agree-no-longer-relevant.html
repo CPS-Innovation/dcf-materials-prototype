@@ -1,21 +1,10 @@
-{# /disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant.html #}
-
+{# This file is a template for /disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 
-{% set cm = caseMaterials or data.caseMaterials or {} %}
-
-{# Bulk routes pass these #}
-{% set selectedIds = selectedIds or [] %}
-{% set selectedRows = selectedRows or [] %}
-
-{# -------------------------
-   Defendants display value
-   ------------------------- #}
 {% set firstDefendant = (_case.defendants | first) %}
-
 {% set defendantsValue %}
   {% if firstDefendant %}
     {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
@@ -27,84 +16,91 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = "Agree items are no longer relevant" %}
+{% set count = selectedRows.length %}
+{% set pageName = "Agree " ~ count ~ " item" ~ ("s" if count != 1) ~ " as no longer relevant" %}
 
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
-    href: (returnUrl if returnUrl else (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()"))
+    href: returnUrl or "javascript:window.history.back()"
   }) }}
 {% endblock %}
 
 {% block content %}
-
-  {% include "_includes/success-banner.njk" %}
-
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {% if selectedRows and selectedRows.length %}
-        <details class="govuk-details" data-module="govuk-details" open>
-          <summary class="govuk-details__summary">
-            <span class="govuk-details__summary-text">
-              Show selected items ({{ selectedRows.length }})
-            </span>
-          </summary>
+      {{ govukInsetText({
+        text: "You are agreeing with the police that these items are no longer relevant. This update will be sent to the police."
+      }) }}
 
-          <div class="govuk-details__text">
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">Show selected items</span>
+        </summary>
+        <div class="govuk-details__text">
 
-            {% for r in selectedRows %}
-              {% set displayItem = r.item or r.Item or r.itemNumber or 'n/a' %}
+          {% for r in selectedRows %}
 
-              {# If item is missing, derive it from its position in the full dataset #}
-              {% if (displayItem == 'n/a') %}
-                {% set displayItem = '' %}
-                {% for rr in (data.disclosureNonSensitiveRows or []) %}
-                  {% if (rr.id and r.id and (rr.id == r.id)) %}
-                    {% set displayItem = loop.index %}
-                  {% endif %}
-                {% endfor %}
-                {% if not displayItem %}
-                  {% set displayItem = 'n/a' %}
+            {# Reset per row to avoid leaking between loop iterations #}
+            {% set displayItem = r.item or r.Item or r.itemNumber or r.ItemNumber or r.displayItem %}
+
+            {# If item is missing or is the placeholder, derive it from its position in the full dataset #}
+            {% if (not displayItem) or (displayItem == 'n/a') %}
+              {% set displayItem = '' %}
+
+              {% for rr in (data.disclosureNonSensitiveRows or []) %}
+                {% if (rr.id and r.id and (rr.id == r.id)) %}
+                  {# loop.index is 1-based #}
+                  {% set displayItem = loop.index %}
                 {% endif %}
-              {% endif %}
+              {% endfor %}
 
-              {{ govukSummaryList({
-                card: {
-                  title: {
-                    html: "<strong>" ~ displayItem ~ " – " ~ (r.title or "Item") ~ "</strong>"
-                  }
+              {% if not displayItem %}
+                {% set displayItem = 'n/a' %}
+              {% endif %}
+            {% endif %}
+
+            {{ govukSummaryList({
+              card: {
+                title: {
+                  html: "<strong>" ~ displayItem ~ " – " ~ r.title ~ "</strong>"
+                }
+              },
+              classes: "govuk-!-margin-bottom-3",
+              rows: [
+                {
+                  key: { text: "Description" },
+                  value: { text: r.description or "No description" }
                 },
-                classes: "govuk-!-margin-bottom-3",
-                rows: [
-                  { key: { text: "Description" }, value: { text: r.description or "—" } },
-                  { key: { text: "Police disclosure status" }, value: { text: r.policeAssessment or "Not assessed" } },
-                  { key: { text: "Police disclosure reason" }, value: { text: r.policeRationale or "—" } }
-                ]
-              }) }}
+                {
+                  key: { text: "Police assessment" },
+                  value: { text: r.policeAssessment or "Not assessed" }
+                },
+                {
+                  key: { text: "Police rationale" },
+                  value: { text: r.policeRationale or "—" }
+                }
+              ]
+            }) }}
 
-              {% if not loop.last %}
-                <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
-              {% endif %}
-            {% endfor %}
+            {% if not loop.last %}
+              <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+            {% endif %}
+          {% endfor %}
 
-          </div>
-        </details>
-      {% else %}
-        <p class="govuk-body">No items selected.</p>
-      {% endif %}
+        </div>
+      </details>
 
       <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant">
         <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">
 
-        {% if returnUrl %}
-          <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
-        {% elseif query and query.returnUrl %}
-          <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
-        {% endif %}
+        {# IMPORTANT: for NLR we default returnUrl back to the NLR hub server-side,
+           but keep passing it through if it exists #}
+        <input type="hidden" name="returnUrl" value="{{ returnUrl or '' }}">
 
         {{ govukButton({ text: "Save and confirm" }) }}
       </form>

@@ -1,4 +1,4 @@
-{# cases/disclosure/assess-non-sensitive/bulk/evidence.html #}
+{# This file is a template for /disclosure/assess-non-sensitive/bulk/evidence #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -19,15 +19,6 @@
 {% set count = selectedRows.length %}
 {% set pageName = "Assess " ~ count ~ " item" ~ ("s" if count != 1) ~ " as evidence" %}
 
-{# ✅ Disagreement: police said "Does not pass..." but CPS says Evidence #}
-{% set hasAnyDisagreement = false %}
-{% for r in selectedRows %}
-  {% set disagrees = ((r.policeAssessment or '') | lower) == 'does not pass disclosure test' %}
-  {% if disagrees %}
-    {% set hasAnyDisagreement = true %}
-  {% endif %}
-{% endfor %}
-
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
@@ -42,12 +33,6 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {# {% if hasAnyDisagreement %}
-        {{ govukInsetText({
-          text: "Your assessment disagrees with the police on one or more items. They will be notified so they can amend their disclosure status."
-        }) }}
-      {% endif %} #}
-
       <details class="govuk-details" data-module="govuk-details">
         <summary class="govuk-details__summary">
           <span class="govuk-details__summary-text">Show selected items</span>
@@ -55,13 +40,30 @@
         <div class="govuk-details__text">
 
           {% for r in selectedRows %}
-            {% set disagrees = ((r.policeAssessment or '') | lower) == 'does not pass disclosure test' %}
+
+            {# Reset per row to avoid leaking between loop iterations #}
+            {% set displayItem = r.item or r.Item or r.itemNumber or r.ItemNumber or r.displayItem %}
+
+            {# If item is missing or is the placeholder, derive it from its position in the full dataset #}
+            {% if (not displayItem) or (displayItem == 'n/a') %}
+              {% set displayItem = '' %}
+
+              {% for rr in (data.disclosureNonSensitiveRows or []) %}
+                {% if (rr.id and r.id and (rr.id == r.id)) %}
+                  {# loop.index is 1-based #}
+                  {% set displayItem = loop.index %}
+                {% endif %}
+              {% endfor %}
+
+              {% if not displayItem %}
+                {% set displayItem = 'n/a' %}
+              {% endif %}
+            {% endif %}
 
             {{ govukSummaryList({
               card: {
                 title: {
-                  html:
-                    ("<strong>" ~ r.item ~ " – " ~ r.title ~ "</strong>")
+                  html: "<strong>" ~ displayItem ~ " – " ~ r.title ~ "</strong>"
                 }
               },
               classes: "govuk-!-margin-bottom-3",
@@ -98,7 +100,7 @@
           id: "bulk-rationale",
           rows: 5,
           label: {
-            text: "Why should these items be treated as evidence?",
+            text: "Why are these items evidence?",
             classes: "govuk-label--m"
           }
         }) }}

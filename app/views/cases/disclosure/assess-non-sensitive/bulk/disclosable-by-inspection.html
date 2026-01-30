@@ -1,4 +1,4 @@
-{# cases/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection.html #}
+{# This file is a template for /disclosure/assess-non-sensitive/bulk/disclosable-by-inspection #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -55,6 +55,10 @@
         <div class="govuk-details__text">
 
           {% for r in selectedRows %}
+
+            {# Reset per row to avoid leaking between loop iterations #}
+            {% set displayItem = r.item or r.Item or r.itemNumber or r.ItemNumber or r.displayItem %}
+
             {% set disagrees = ((r.policeAssessment or '') | lower) == 'does not pass disclosure test' %}
 
             {# If item is missing or is the placeholder, derive it from its position in the full dataset #}
@@ -63,7 +67,7 @@
 
               {% for rr in (data.disclosureNonSensitiveRows or []) %}
                 {% if (rr.id and r.id and (rr.id == r.id)) %}
-                  {# loop.index is 1-based, so this becomes 4, 5, 6... #}
+                  {# loop.index is 1-based #}
                   {% set displayItem = loop.index %}
                 {% endif %}
               {% endfor %}
@@ -72,7 +76,6 @@
                 {% set displayItem = 'n/a' %}
               {% endif %}
             {% endif %}
-
 
             {{ govukSummaryList({
               card: {

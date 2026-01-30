@@ -1,5 +1,4 @@
-{# Template for /disclosure/assess-non-sensitive/bulk/request-updated-description.html #}
-
+{# This file is a template for /disclosure/assess-non-sensitive/bulk/request-updated-description #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -34,10 +33,6 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {{ govukInsetText({
-        text: "Your request will be sent to the police. They can update the item description."
-      }) }}
-
       <details class="govuk-details" data-module="govuk-details">
         <summary class="govuk-details__summary">
           <span class="govuk-details__summary-text">Show selected items</span>
@@ -46,26 +41,51 @@
 
           {% for r in selectedRows %}
 
+            {# Reset per row to avoid leaking between loop iterations #}
+            {% set displayItem = r.item or r.Item or r.itemNumber or r.ItemNumber or r.displayItem %}
+
+            {# If item is missing or is the placeholder, derive it from its position in the full dataset #}
+            {% if (not displayItem) or (displayItem == 'n/a') %}
+              {% set displayItem = '' %}
+
+              {% for rr in (data.disclosureNonSensitiveRows or []) %}
+                {% if (rr.id and r.id and (rr.id == r.id)) %}
+                  {# loop.index is 1-based #}
+                  {% set displayItem = loop.index %}
+                {% endif %}
+              {% endfor %}
+
+              {% if not displayItem %}
+                {% set displayItem = 'n/a' %}
+              {% endif %}
+            {% endif %}
+
             {{ govukSummaryList({
               card: {
                 title: {
-                  html:
-                    ("<strong>" ~ r.item ~ " – " ~ r.title ~ "</strong>")
+                  html: "<strong>" ~ displayItem ~ " – " ~ r.title ~ "</strong>"
                 }
               },
               classes: "govuk-!-margin-bottom-3",
               rows: [
                 {
-                  key: { text: "Current description" },
-                  value: { text: r.description or "No description provided" }
+                  key: { text: "Description" },
+                  value: { text: r.description or "No description" }
+                },
+                {
+                  key: { text: "Police disclosure status" },
+                  value: { text: r.policeAssessment or "Not assessed" }
+                },
+                {
+                  key: { text: "Police disclosure reason" },
+                  value: { text: r.policeRationale or "—" }
                 }
               ]
             }) }}
 
-            {% if loop.last %}
+            {% if not loop.last %}
               <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
             {% endif %}
-
           {% endfor %}
 
         </div>
@@ -80,32 +100,12 @@
           id: "bulk-rationale",
           rows: 8,
           classes: "govuk-!-width-one-half",
-          value: "Inadequate disclosure description.",
           label: {
             text: "What do you need the police to update? (Optional)",
             classes: "govuk-label--m"
           },
           hint: {
             text: "Include what’s missing or unclear, and what you need the description to cover."
-          }
-        }) }}
-
-
-        {% from "govuk/components/date-input/macro.njk" import govukDateInput %}
-
-        {{ govukDateInput({
-          id: "description-needed-by",
-          namePrefix: "descriptionNeededBy",
-          classes: "govuk-!-margin-bottom-6",
-          fieldset: {
-            legend: {
-              text: "When do you need the description update by? (Optional)",
-              isPageHeading: false,
-              classes: "govuk-fieldset__legend--m"
-            }
-          },
-          hint: {
-            text: "For example, 27 3 2024"
           }
         }) }}
 
