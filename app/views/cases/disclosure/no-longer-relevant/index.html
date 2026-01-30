@@ -95,6 +95,7 @@
       (function () {
 
         // Expose row data for bulk selection logic
+        
         window.__disclosureRows = {{ (data.disclosureNonSensitiveRows or []) | dump | safe }};
 
         var bulkMenu = document.querySelector('.moj-button-menu');

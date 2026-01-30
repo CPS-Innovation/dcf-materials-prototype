@@ -41,7 +41,7 @@
     "exceptionReason": null,
     "cpsAssessment": "To be assessed"
   },
-   {
+  {
     "id": "04",
     "item": "4",
     "ItemId": "MAT-02010",
@@ -68,5 +68,47 @@
     "hasException": null,
     "exceptionReason": null,
     "cpsAssessment": "To be assessed"
+    },
+    {
+    "id": "06",
+    "item": "6",
+    "ItemId": "MAT-02012",
+    "title": "Exh SP/6",
+    "isProvided": true,
+    "description": "Exhibit SP/1. Supporting material relating to the case, previously assessed by police as no longer relevant.",
+    "policeAssessment": "No longer relevant",
+    "policeRationale": "Reason material is no longer relevant here",
+    "isRebuttable": "No",
+    "hasException": null,
+    "exceptionReason": null,
+    "cpsAssessment": "Evidence"
+  },
+  {
+    "id": "07",
+    "item": "7",
+    "ItemId": "MAT-02013",
+    "title": "Sens SP/7",
+    "isProvided": true,
+    "description": "DA History for Elton Berkley. This is a compilation of all the domestic abuse reports which the defendant has been involved in. The reports have been taken from the police system iOPS. This document contains a total of 4 pages and is redacted as per redaction guidelines.",
+    "policeAssessment": "No longer relevant",
+    "policeRationale": "Reason material is no longer relevant here",
+    "isRebuttable": "Yes",
+    "hasException": null,
+    "exceptionReason": null,
+    "cpsAssessment": "Disclosable by inspection"
+  },
+  {
+    "id": "08",
+    "item": "8",
+    "ItemId": "MAT-02014",
+    "title": "Stmt Jones Ella 2",
+    "isProvided": false,
+    "description": "Witness statement of Ella Jones. Description here description here description here description here description here description here.",
+    "policeAssessment": "No longer relevant",
+    "policeRationale": "Reason material is no longer relevant here",
+    "isRebuttable": "No",
+    "hasException": null,
+    "exceptionReason": null,
+    "cpsAssessment": "Clearly not disclosable"
   }
 ]
