@@ -73,16 +73,38 @@ module.exports = router => {
     return 'Completed'
   }
 
+  // helper for syncing CPS disclosure assessment status
   function syncCpsDisclosureAssessment(req, _case) {
-    const cm = getCaseMaterialsForCase(req, _case)
-    if (!cm || !cm.cpsDisclosureAssessment) return
-
     const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-    const progress = computeNonSensitiveProgress(rows)
 
-    // Persist onto case materials so your Disclosure task list shows the right tag text
-    _.set(cm, 'cpsDisclosureAssessment.hasAssessedNonSensitive', progress)
+    // Only count rows that are truly part of NS assessment (exclude NLR)
+    const assessableRows = rows.filter(r => {
+      const status = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
+      return status !== 'No longer relevant'
+    })
+
+    let status = 'Not started yet'
+
+    if (assessableRows.length) {
+      const assessedCount = assessableRows.filter(r => {
+        const s = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
+        return s && s !== 'To be assessed'
+      }).length
+
+      if (assessedCount === 0) status = 'Not started yet'
+      else if (assessedCount < assessableRows.length) status = 'In progress'
+      else status = 'Completed'
+    }
+
+    // ✅ Store status somewhere stable (session) for UI to read
+    _.set(req, 'session.data.cpsDisclosureAssessment.hasAssessedNonSensitive', status)
+
+    // (Optional but safe) also mirror it into caseMaterials if it exists in session
+    // This avoids other pages reading the old path.
+    _.set(req, 'session.data.caseMaterials.cpsDisclosureAssessment.hasAssessedNonSensitive', status)
   }
+
+
 
   /**
    * Disagreement rules:
@@ -518,7 +540,8 @@ module.exports = router => {
       text: 'This update has been sent to the police.'
     })
 
-    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/no-longer-relevant`
+
     const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
     const separator = returnUrl.includes('?') ? '&' : '?'
 

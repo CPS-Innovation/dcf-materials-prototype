@@ -13,7 +13,10 @@
 } %}
 
 
-{% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+{% set nonSensitiveStatus = data.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+
+
+
 
 
     <h2 class="govuk-heading-l">Disclosure</h2>
@@ -49,7 +52,8 @@
 
     <h3 class="govuk-heading-m govuk-!-margin-bottom-6">CPS disclosure assessment</h3>
 
-      {% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+      {% set nonSensitiveStatus = data.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+
       {% set sensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedSensitive or "Not started yet" %}
 
       {% set nonSensitiveStatusHtml %}
