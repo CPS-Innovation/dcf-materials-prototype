@@ -13,7 +13,10 @@
 } %}
 
 
-{% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+{% set nonSensitiveStatus = data.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+
+
+
 
 
     <h2 class="govuk-heading-l">Disclosure</h2>
@@ -49,7 +52,8 @@
 
     <h3 class="govuk-heading-m govuk-!-margin-bottom-6">CPS disclosure assessment</h3>
 
-      {% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+      {% set nonSensitiveStatus = data.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+
       {% set sensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedSensitive or "Not started yet" %}
 
       {% set nonSensitiveStatusHtml %}
@@ -89,6 +93,19 @@
       {# --- Disagreement flags (from rows) --- #}
       {% set nsRows = data.disclosureNonSensitiveRows or [] %}
 
+
+      {# --- Police "No longer relevant" flags (from rows) --- #}
+      {% set nlrRows = [] %}
+
+      {% for r in nsRows %}
+        {% if r and ((r.policeAssessment or '') | lower == 'no longer relevant') %}
+          {% set _ = nlrRows.push(r) %}
+        {% endif %}
+      {% endfor %}
+
+      {% set hasPoliceNoLongerRelevant = (nlrRows.length > 0) %}
+
+
       {# Nunjucks-safe: mutate an array (push) so state persists across the loop #}
       {% set disagreements = [] %}
 
@@ -104,15 +121,21 @@
       {% set nonSensitiveCompleted = (nonSensitiveStatus == "Completed") %}
 
       {# --- Inset messaging --- #}
-      {% if nonSensitiveCompleted and hasAnyDisagreement %}
+      {# ✅ NEW: Police have marked items as "No longer relevant" #}
+      {% if hasPoliceNoLongerRelevant %}
+
+        {% set disclosureReturnUrl = ("/cases/" ~ _case.id ~ "/material?tab=disclosure") | urlencode %}
+        {% set nlrHref = "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant?returnUrl=" ~ disclosureReturnUrl %}
+
         {{ govukInsetText({
-          text: "Your assessment disagrees with the police on one or more selected items. They have been notified so they can update their disclosure status. Once all disagreements are resolved, the option to sign and export the disclosure schedules will become available on this page."
+          html:
+            "The police have assessed one or more items as no longer relevant as part of splitting or merging this case.<br><br>" ~
+            "You need to <a class='govuk-link' href='" ~ nlrHref ~ "'>review material that is no longer relevant</a> and either agree that the items are no longer relevant or ask the police to reinstate them."
         }) }}
-      {% elseif nonSensitiveCompleted and (not hasAnyDisagreement) %}
-        {{ govukInsetText({
-          text: "This assessment has now been exported. Disclosure documents can be viewed in the unused non-sensitive and unused sensitive folders in the Review and redact tab."
-        }) }}
+
       {% endif %}
+
+
 
 
       {# --- Sign and export schedule status --- #}
