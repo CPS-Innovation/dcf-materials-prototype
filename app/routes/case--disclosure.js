@@ -76,14 +76,20 @@ module.exports = router => {
   // helper for syncing CPS disclosure assessment status
   function syncCpsDisclosureAssessment(req, _case) {
 
-    _.defaults(req.session.data, { cpsDisclosureAssessment: {} })
+    _.defaults(req.session.data, {
+      cpsDisclosureAssessment: {}
+    })
 
     const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
 
-    // Only count rows that are truly part of NS assessment (exclude NLR)
+    // -------------------------------------------------------------------------
+    // 1) NON-SENSITIVE progress (exclude police "No longer relevant" rows)
+    //    NOTE: Your previous filter was excluding CPS "No longer relevant".
+    //    What you actually want is exclude rows where POLICE said NLR.
+    // -------------------------------------------------------------------------
     const assessableRows = rows.filter(r => {
-      const status = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
-      return status !== 'No longer relevant'
+      const police = (r && r.policeAssessment) ? String(r.policeAssessment).toLowerCase().trim() : ''
+      return police !== 'no longer relevant'
     })
 
     let status = 'Not started yet'
@@ -102,11 +108,38 @@ module.exports = router => {
     // ✅ Store status somewhere stable (session) for UI to read
     _.set(req, 'session.data.cpsDisclosureAssessment.hasAssessedNonSensitive', status)
 
-    // (Optional but safe) also mirror it into caseMaterials if it exists in session
-    // This avoids other pages reading the old path.
+    // Mirror into caseMaterials in session (if it exists)
     _.set(req, 'session.data.caseMaterials.cpsDisclosureAssessment.hasAssessedNonSensitive', status)
-  }
 
+    // -------------------------------------------------------------------------
+    // 2) Show "No longer relevant" inset when:
+    //    - there is pending NLR work (police NLR + CPS still To be assessed), OR
+    //    - CPS has already disagreed on at least one police-NLR item
+    //    This supports prototype testing where NLR is "known" / in-flight.
+    // -------------------------------------------------------------------------
+    const hasPendingNlr = rows.some(r => {
+      const police = (r && r.policeAssessment) ? String(r.policeAssessment).toLowerCase().trim() : ''
+      if (police !== 'no longer relevant') return false
+
+      const cps = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
+      return !cps || cps === 'To be assessed'
+    })
+
+    const hasNlrDisagreement = rows.some(r => {
+      const police = (r && r.policeAssessment) ? String(r.policeAssessment).toLowerCase().trim() : ''
+      if (police !== 'no longer relevant') return false
+
+      return Boolean(
+        r && (
+          r.cpsDisagreesWithPolice === true ||
+          r.disagreesWithPolice === true ||
+          r.sensitivityDisputed === true
+        )
+      )
+    })
+
+    _.set(req, 'session.data.showNoLongerRelevantInset', hasPendingNlr || hasNlrDisagreement)
+  }
 
 
   /**
