@@ -94,9 +94,9 @@
    Also try cm.cpsDisclosureAssessment (you have it in case-material.json).
 #}
 {% set nonSensitiveStatus =
-  (data.cpsDisclosureAssessment and data.cpsDisclosureAssessment.hasAssessedNonSensitive)
+  derivedNonSensitiveStatus
+  or (data.cpsDisclosureAssessment and data.cpsDisclosureAssessment.hasAssessedNonSensitive)
   or (cm.cpsDisclosureAssessment and cm.cpsDisclosureAssessment.hasAssessedNonSensitive)
-  or derivedNonSensitiveStatus
   or "Not started yet"
 %}
 

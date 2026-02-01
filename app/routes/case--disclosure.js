@@ -59,19 +59,33 @@ module.exports = router => {
     return {}
   }
 
-  function computeNonSensitiveProgress(rows) {
-    const total = Array.isArray(rows) ? rows.length : 0
-    if (total === 0) return 'Not started yet'
+    /// Helper to compute non-sensitive assessment progress
+    function computeNonSensitiveProgress(rows) {
+      const NON_SENSITIVE_STATES = [
+        'To be assessed',
+        'Disclosable',
+        'Disclosable by inspection',
+        'Not disclosable',
+        'Clearly not disclosable'
+      ]
 
-    const assessedCount = rows.filter(r => {
-      const status = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
-      return status && status !== 'To be assessed'
-    }).length
+      const assessableRows = (rows || []).filter(r =>
+        r &&
+        NON_SENSITIVE_STATES.includes(r.cpsAssessment)
+      )
 
-    if (assessedCount === 0) return 'Not started yet'
-    if (assessedCount < total) return 'In progress'
-    return 'Completed'
-  }
+      if (assessableRows.length === 0) {
+        return 'Not started yet'
+      }
+
+      const touchedRows = assessableRows.filter(r =>
+        r.cpsAssessment !== 'To be assessed'
+      )
+
+      if (touchedRows.length === 0) return 'Not started yet'
+      if (touchedRows.length < assessableRows.length) return 'In progress'
+      return 'Completed'
+    }
 
   // helper for syncing CPS disclosure assessment status
   function syncCpsDisclosureAssessment(req, _case) {
