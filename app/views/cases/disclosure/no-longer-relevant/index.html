@@ -83,6 +83,7 @@
       }) }}
 
       {# ✅ This include will now render ONLY the filtered rows because `rows` exists in scope #}
+      {% set showItemColumn = false %}
       {% include "_includes/case/disclosure/disclosure-table.njk" %}
 
     </div>
