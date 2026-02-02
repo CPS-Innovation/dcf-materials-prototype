@@ -81,6 +81,13 @@ module.exports = router => {
     return 'Completed'
   }
 
+  /**
+   * Sync CPS disclosure assessment status onto caseMaterials
+   *
+   * This is intentionally derived from session rows, NOT routes,
+   * because bulk NLR routes live under assess-non-sensitive for
+   * historical prototype reasons.
+   */
   function syncCpsDisclosureAssessment(req, _case) {
     const cm = getCaseMaterialsForCase(req, _case)
     if (!cm || !cm.cpsDisclosureAssessment) return
