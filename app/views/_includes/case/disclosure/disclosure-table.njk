@@ -51,7 +51,8 @@
     {% for r in rows %}
 
       {% set itemId = r.ItemId or r.itemId or r.materialId %}
-      {% set disagrees = r.disagreesWithPolice or r.cpsDisagreesWithPolice %}
+      {% set isPoliceNoLongerRelevant = ((r.policeAssessment or '') | lower) == 'no longer relevant' %}
+      {% set disagrees = (not isPoliceNoLongerRelevant) and (r.disagreesWithPolice or r.cpsDisagreesWithPolice) %}
       {% set cpsRationale = r.cpsRationale or r.cpsDisclosureRationale %}
       {% set isPoliceNoLongerRelevant = ((r.policeAssessment or '') | lower) == 'no longer relevant' %}
 
@@ -69,7 +70,9 @@
               },
               {
                 text: "Request item is reinstated",
-                href: "#"
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/no-longer-relevant/request-item-reinstatement?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
               }
             ]
           }) }}
@@ -232,7 +235,7 @@
     <tbody class="govuk-table__body govuk-body-s">
       {% for a in assessedUnusedRows %}
         {% set itemId = a.ItemId or a.itemId or a.materialId %}
-        {% set disagrees = a.disagreesWithPolice or a.cpsDisagreesWithPolice %}
+        {% set disagrees = (not isPoliceNoLongerRelevant) and (r.disagreesWithPolice or r.cpsDisagreesWithPolice) %}
 
         <tr class="govuk-table__row">
           <td class="govuk-table__cell">{{ rows.length + loop.index }}</td>

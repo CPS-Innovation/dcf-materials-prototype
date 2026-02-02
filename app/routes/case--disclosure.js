@@ -59,31 +59,51 @@ module.exports = router => {
     return {}
   }
 
-  function computeNonSensitiveProgress(rows) {
-    const total = Array.isArray(rows) ? rows.length : 0
-    if (total === 0) return 'Not started yet'
+    /// Helper to compute non-sensitive assessment progress
+    function computeNonSensitiveProgress(rows) {
+      const NON_SENSITIVE_STATES = [
+        'To be assessed',
+        'Disclosable',
+        'Disclosable by inspection',
+        'Not disclosable',
+        'Clearly not disclosable'
+      ]
 
-    const assessedCount = rows.filter(r => {
-      const status = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
-      return status && status !== 'To be assessed'
-    }).length
+      const assessableRows = (rows || []).filter(r =>
+        r &&
+        NON_SENSITIVE_STATES.includes(r.cpsAssessment)
+      )
 
-    if (assessedCount === 0) return 'Not started yet'
-    if (assessedCount < total) return 'In progress'
-    return 'Completed'
-  }
+      if (assessableRows.length === 0) {
+        return 'Not started yet'
+      }
+
+      const touchedRows = assessableRows.filter(r =>
+        r.cpsAssessment !== 'To be assessed'
+      )
+
+      if (touchedRows.length === 0) return 'Not started yet'
+      if (touchedRows.length < assessableRows.length) return 'In progress'
+      return 'Completed'
+    }
 
   // helper for syncing CPS disclosure assessment status
   function syncCpsDisclosureAssessment(req, _case) {
 
-    _.defaults(req.session.data, { cpsDisclosureAssessment: {} })
+    _.defaults(req.session.data, {
+      cpsDisclosureAssessment: {}
+    })
 
     const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
 
-    // Only count rows that are truly part of NS assessment (exclude NLR)
+    // -------------------------------------------------------------------------
+    // 1) NON-SENSITIVE progress (exclude police "No longer relevant" rows)
+    //    NOTE: Your previous filter was excluding CPS "No longer relevant".
+    //    What you actually want is exclude rows where POLICE said NLR.
+    // -------------------------------------------------------------------------
     const assessableRows = rows.filter(r => {
-      const status = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
-      return status !== 'No longer relevant'
+      const police = (r && r.policeAssessment) ? String(r.policeAssessment).toLowerCase().trim() : ''
+      return police !== 'no longer relevant'
     })
 
     let status = 'Not started yet'
@@ -102,11 +122,38 @@ module.exports = router => {
     // ✅ Store status somewhere stable (session) for UI to read
     _.set(req, 'session.data.cpsDisclosureAssessment.hasAssessedNonSensitive', status)
 
-    // (Optional but safe) also mirror it into caseMaterials if it exists in session
-    // This avoids other pages reading the old path.
+    // Mirror into caseMaterials in session (if it exists)
     _.set(req, 'session.data.caseMaterials.cpsDisclosureAssessment.hasAssessedNonSensitive', status)
-  }
 
+    // -------------------------------------------------------------------------
+    // 2) Show "No longer relevant" inset when:
+    //    - there is pending NLR work (police NLR + CPS still To be assessed), OR
+    //    - CPS has already disagreed on at least one police-NLR item
+    //    This supports prototype testing where NLR is "known" / in-flight.
+    // -------------------------------------------------------------------------
+    const hasPendingNlr = rows.some(r => {
+      const police = (r && r.policeAssessment) ? String(r.policeAssessment).toLowerCase().trim() : ''
+      if (police !== 'no longer relevant') return false
+
+      const cps = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
+      return !cps || cps === 'To be assessed'
+    })
+
+    const hasNlrDisagreement = rows.some(r => {
+      const police = (r && r.policeAssessment) ? String(r.policeAssessment).toLowerCase().trim() : ''
+      if (police !== 'no longer relevant') return false
+
+      return Boolean(
+        r && (
+          r.cpsDisagreesWithPolice === true ||
+          r.disagreesWithPolice === true ||
+          r.sensitivityDisputed === true
+        )
+      )
+    })
+
+    _.set(req, 'session.data.showNoLongerRelevantInset', hasPendingNlr || hasNlrDisagreement)
+  }
 
 
   /**
@@ -549,6 +596,147 @@ module.exports = router => {
     const separator = returnUrl.includes('?') ? '&' : '?'
 
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // REQUEST ITEM REINSTATEMENT (No longer relevant)
+  // - DOES NOT change any status
+  // - Creates Action plan entry/entries in session
+  // ---------------------------------------------------------------------------
+
+  function parseIdsParam(raw) {
+    const idsParam = raw ? String(raw) : ''
+    return idsParam.split(',').map(s => s.trim()).filter(Boolean)
+  }
+
+  function ensureActionPlan(req) {
+    _.defaults(req.session.data, { actionPlan: [] })
+    if (!Array.isArray(req.session.data.actionPlan)) {
+      req.session.data.actionPlan = []
+    }
+    return req.session.data.actionPlan
+  }
+
+  /**
+   * Build an action plan entry snapshot from a disclosure row.
+   * Captures the statuses at the time of request.
+   */
+  function buildReinstatementActionEntry(row, extra = {}) {
+    const nowIso = new Date().toISOString()
+
+    return {
+      id: `ap-${Date.now()}-${Math.random().toString(16).slice(2)}`, // good enough for prototype
+      type: 'request-item-reinstatement',
+      createdAt: nowIso,
+
+      // identify the item
+      rowId: row?.id || null,
+      itemId: row?.ItemId || row?.itemId || row?.materialId || null,
+      title: row?.title || null,
+
+      // snapshot what you asked for
+      policeAssessmentAtTime: row?.policeAssessment || null,
+      cpsAssessmentAtTime: row?.cpsAssessment || null,
+
+      // optional context (nice to have for playback)
+      policeRationaleAtTime: row?.policeRationale || null,
+      cpsRationaleAtTime: row?.cpsRationale || null,
+
+      // user input
+      requestReason: extra.requestReason || null,
+
+      // any future fields can go here
+      ...extra
+    }
+  }
+
+  
+  // GET: supports ?id= or ?itemId= (single) OR ?ids= (bulk)
+  router.get('/cases/:caseId/disclosure/no-longer-relevant/request-item-reinstatement', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+
+    // Accept either single id/itemId or bulk ids
+    const singleKey = req.query?.id || req.query?.itemId
+    const idsFromQuery = parseIdsParam(req.query?.ids)
+    const selectedIds = idsFromQuery.length ? idsFromQuery : (singleKey ? [String(singleKey)] : [])
+
+    if (!selectedIds.length) return res.status(400).send('Missing id(s)')
+
+    const selectedRows = selectedIds
+      .map(id => findRowByIdOrItemId(rows, id))
+      .filter(Boolean)
+
+    if (!selectedRows.length) return res.status(404).send('Row(s) not found')
+
+    // For single-item rendering convenience
+    const selectedRow = selectedRows[0]
+    const selectedId = String(selectedRow?.id || selectedIds[0])
+
+    return res.render('cases/disclosure/no-longer-relevant/request-item-reinstatement/index', {
+      _case,
+      caseMaterials,
+      selectedId,
+      selectedIds,
+      selectedRow,
+      selectedRows,
+      returnUrl: req.query?.returnUrl || null
+    })
+  })
+
+  router.post('/cases/:caseId/disclosure/no-longer-relevant/request-item-reinstatement', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    // Accept ids (bulk) or id (single)
+    const selectedIds = parseIdsParam(req.body?.ids)
+    const singleId = req.body?.id || req.body?.itemId
+    const ids = selectedIds.length ? selectedIds : (singleId ? [String(singleId)] : [])
+
+    if (!ids.length) return res.status(400).send('Missing id(s)')
+
+    const requestReason = req.body?.reinstatementReason
+      ? String(req.body.reinstatementReason).trim()
+      : ''
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+
+    const selectedRows = ids
+      .map(id => findRowByIdOrItemId(rows, id))
+      .filter(Boolean)
+
+    if (!selectedRows.length) return res.status(404).send('Row(s) not found')
+
+    // ✅ Write Action plan entries (no status changes)
+    const actionPlan = ensureActionPlan(req)
+
+    selectedRows.forEach(r => {
+      actionPlan.push(buildReinstatementActionEntry(r, {
+        requestReason: requestReason || null
+      }))
+    })
+
+    _.set(req, 'session.data.actionPlan', actionPlan)
+
+    // Success banner (reuses your existing pattern)
+    _.set(req, 'session.data.successBanner', {
+      titleText: `Requested reinstatement for ${selectedRows.length} item${selectedRows.length === 1 ? '' : 's'}`,
+      text: 'This request has been saved for the action plan.'
+    })
+
+    // Redirect back to NLR hub by default
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/no-longer-relevant`
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedRows[0].id || ids[0])}`)
   })
 
   // ---------------------------------------------------------------------------

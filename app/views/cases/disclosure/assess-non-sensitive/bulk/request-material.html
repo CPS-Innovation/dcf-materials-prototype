@@ -1,18 +1,10 @@
+{# This file is a template for /disclosure/assess-non-sensitive/bulk/request-material #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 
-{% set cm = caseMaterials or data.caseMaterials or {} %}
-
-{# Resolved in the route and passed in #}
-{% set selected = selectedRow or {} %}
-
-{# -------------------------
-   Defendants display value
-   ------------------------- #}
 {% set firstDefendant = (_case.defendants | first) %}
-
 {% set defendantsValue %}
   {% if firstDefendant %}
     {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
@@ -24,7 +16,8 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = 'Request material' %}
+{% set count = selectedRows.length %}
+{% set pageName = "Request material for " ~ count ~ " item" ~ ("s" if count != 1) %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -34,71 +27,91 @@
 {% endblock %}
 
 {% block content %}
-
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {# {{ govukInsetText({
-        text: "Your request will be sent to the police. They can update the item description."
-      }) }} #}
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">Show selected items</span>
+        </summary>
+        <div class="govuk-details__text">
 
-      {{ govukSummaryList({
-        classes: "govuk-!-margin-bottom-6",
-        rows: [
-          {
-            key: { text: "Title" },
-            value: { html: selected.title }
-          },
-          {
-            key: { text: "Current description" },
-            value: { html: (selected.description or "No description provided") }
-          }
-        ]
-      }) }}
+          {% for r in selectedRows %}
 
-      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-request-material">
-        <input type="hidden" name="id" value="{{ selectedId }}">
+            {# Reset per row to avoid leaking between loop iterations #}
+            {% set displayItem = r.item or r.Item or r.itemNumber or r.ItemNumber or r.displayItem %}
+
+            {# If item is missing or is the placeholder, derive it from its position in the full dataset #}
+            {% if (not displayItem) or (displayItem == 'n/a') %}
+              {% set displayItem = '' %}
+
+              {% for rr in (data.disclosureNonSensitiveRows or []) %}
+                {% if (rr.id and r.id and (rr.id == r.id)) %}
+                  {# loop.index is 1-based #}
+                  {% set displayItem = loop.index %}
+                {% endif %}
+              {% endfor %}
+
+              {% if not displayItem %}
+                {% set displayItem = 'n/a' %}
+              {% endif %}
+            {% endif %}
+
+            {{ govukSummaryList({
+              card: {
+                title: {
+                  html: "<strong>" ~ displayItem ~ " – " ~ r.title ~ "</strong>"
+                }
+              },
+              classes: "govuk-!-margin-bottom-3",
+              rows: [
+                {
+                  key: { text: "Description" },
+                  value: { text: r.description or "No description" }
+                },
+                {
+                  key: { text: "Police disclosure status" },
+                  value: { text: r.policeAssessment or "Not assessed" }
+                },
+                {
+                  key: { text: "Police disclosure reason" },
+                  value: { text: r.policeRationale or "—" }
+                }
+              ]
+            }) }}
+
+            {% if not loop.last %}
+              <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+            {% endif %}
+          {% endfor %}
+
+        </div>
+      </details>
+
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/request-material">
+        <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">
         <input type="hidden" name="returnUrl" value="{{ returnUrl or '' }}">
 
         {{ govukTextarea({
-          name: "requestMaterialReason",
-          id: "request-material-reason",
+          name: "bulkRationale",
+          id: "bulk-rationale",
           rows: 8,
           classes: "govuk-!-width-one-half",
           label: {
-            text: "Why do you need the material?  (optional)",
+            text: "What material do you need from the police? (Optional)",
             classes: "govuk-label--m"
           },
           hint: {
-            text: "Placeholdert hint . Do we need hint text here?"
+            text: "Include what you need and why, for example the full document, missing pages, or a clearer copy."
           }
         }) }}
 
-        {% from "govuk/components/date-input/macro.njk" import govukDateInput %}
-
-        {{ govukDateInput({
-          id: "material-needed-by",
-          namePrefix: "materialNeededBy",
-          classes: "govuk-!-margin-bottom-6",
-          fieldset: {
-            legend: {
-              text: "When do you need the material by?  (Optional)",
-              isPageHeading: false,
-              classes: "govuk-fieldset__legend--m"
-            }
-          },
-          hint: {
-            text: "For example, 27 3 2024"
-          }
-        }) }}
-
-       {{ govukButton({ text: "Save and confirm" }) }}
+        {{ govukButton({ text: "Save and confirm" }) }}
       </form>
 
     </div>
   </div>
-
 {% endblock %}
