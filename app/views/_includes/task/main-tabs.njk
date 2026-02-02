@@ -134,13 +134,13 @@
 
           {% set startTaskLink %}
             <a class="govuk-link govuk-link--no-visited-state govuk-!-margin-bottom-0"
-              href="/cases/{{ task.case.id }}/material?tab=disclosure">
+              href="/cases/{{ task.case.id }}/material?tab=disclosure">                                                                                                                                                                                                                                                                                                                   
               Start task
             </a>
           {% endset %}
 
           {{ govukSummaryList({
-            classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text ",
+            classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
             rows: [
               {
                 key: { text: "Task" },
