@@ -58,8 +58,11 @@ module.exports = router => {
     // ✅ Server-driven tab selection (NO hash = no vertical jump)
     // e.g. /cases/123/material?tab=disclosure selects the Disclosure tab at render time
     const allowedTabs = new Set(['view-materials', 'disclosure', 'communications'])
-    const requestedTab = (req.query.tab || '').toString().trim()
-    const activeTab = allowedTabs.has(requestedTab) ? requestedTab : 'view-materials'
+
+    const requestedTabRaw = (req.query.tab || '').toString().trim()
+    const requestedTab = requestedTabRaw === 'materials' ? 'view-materials' : requestedTabRaw
+
+    const activeTab = allowedTabs.has(requestedTab) ? requestedTab : 'disclosure'
 
 
     let selectedDocumentTypeFilters = _.get(req.session.data.documentListFilters, 'documentTypes', [])

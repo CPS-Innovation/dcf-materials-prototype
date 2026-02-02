@@ -8,7 +8,7 @@
 {% set secondaryNavId = 'materials' %}
 
 {# default if route forgot to pass it #}
-{% set activeTab = activeTab or 'view-materials' %}
+{% set activeTab = activeTab or 'disclosure' %}
 
 {# -------------------------
    Defendants display value
@@ -58,6 +58,11 @@
           </div>
         </div>
       </div>
+
+      <p class="govuk-body-s" style="opacity:.7">
+        debug activeTab={{ activeTab }}
+      </p>
+
       {# 👇 All materials and Disclosure content is grabbed from here #}
       {% include "_includes/case/material/main-tabs.njk" %}
     </div>
@@ -67,71 +72,58 @@
 
 {% block scripts %}
   {{ super() }}
+
   <script>
     (function () {
-      var tabsContainer = document.querySelector('[data-module="govuk-tabs"][id="case-tabs"], #case-tabs')
+      var tabsContainer = document.querySelector('#case-tabs')
       if (!tabsContainer) return
 
       var headerActions = document.getElementById('material-header-actions')
       var tabs = tabsContainer.querySelectorAll('.govuk-tabs__tab')
 
       // ---------------------------------------------
-      // ✅ "Tags" / mapping: query param -> tab href
-      // ---------------------------------------------
-      var tabHrefByName = {
-        disclosure: '#disclosure',
-        materials: '#view-materials'
-        // Add more as needed, e.g.
-        // tasks: '#tasks',
-        // timeline: '#timeline'
-      }
-
-      // ---------------------------------------------
-      // ✅ Activate tab from ?tab=... WITHOUT scrolling
-      // ---------------------------------------------
-      function activateTabFromQuery () {
-        var params = new URLSearchParams(window.location.search)
-        var tabName = (params.get('tab') || '').trim()
-        if (!tabName) return
-
-        var href = tabHrefByName[tabName]
-        if (!href) return
-
-        var link = tabsContainer.querySelector('.govuk-tabs__tab[href="' + href + '"]')
-        if (!link) return
-
-        var y = window.scrollY
-        link.click()
-        setTimeout(function () { window.scrollTo(0, y) }, 0)
-      }
-
-      // ---------------------------------------------
-      // ✅ Show header actions only on Materials tab
+      // Show header actions ONLY on Review & redact
       // ---------------------------------------------
       function updateHeaderActions () {
         if (!headerActions) return
-
         var activeTab = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
         if (!activeTab) return
-
-        var href = activeTab.getAttribute('href') || ''
-        var panelId = href.replace('#', '')
-
-        // Only show actions when Materials tab is active
+        var panelId = activeTab.getAttribute('href').replace('#', '')
         headerActions.hidden = (panelId !== 'view-materials')
       }
 
-      // Run once on load (after GOV.UK tabs initialisation)
+      // ---------------------------------------------
+      // 💣 FORCE y = 0 when Disclosure tab is active
+      // (wins against GOV.UK focus + scroll)
+      // ---------------------------------------------
+      function forceTopIfDisclosure () {
+        var activeTab = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
+        if (!activeTab) return
+
+        if (activeTab.getAttribute('href') === '#disclosure') {
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              window.scrollTo(0, 0)
+            })
+          })
+        }
+      }
+
+      // Initial run (after tabs init)
       setTimeout(function () {
-        activateTabFromQuery()
         updateHeaderActions()
+        forceTopIfDisclosure()
       }, 0)
 
-      // Keep header actions in sync when user clicks tabs
+      // On tab click
       tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
-          // GOV.UK tabs updates aria-selected in its handler
-          setTimeout(updateHeaderActions, 0)
+          setTimeout(function () {
+            // Strip hash so refreshes don’t jump
+            history.replaceState(null, document.title, window.location.pathname + window.location.search)
+            updateHeaderActions()
+            forceTopIfDisclosure()
+          }, 0)
         })
       })
     })()
