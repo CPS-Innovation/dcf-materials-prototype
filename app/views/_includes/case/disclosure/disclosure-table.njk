@@ -34,6 +34,10 @@
   <thead class="govuk-table__head govuk-body-s">
     <tr class="govuk-table__row">
       <th class="govuk-table__header" scope="col" id="materials-select-all"></th>
+      {% if showItemColumn %}
+        <th class="govuk-table__header" scope="col">Item</th>
+      {% endif %}
+
       <th class="govuk-table__header govuk-!-width-one-half" scope="col">
         Title and description
       </th>
@@ -151,6 +155,14 @@
             </label>
           </div>
         </td>
+
+          
+        {# Item number #}
+        {% if showItemColumn %}
+          <td class="govuk-table__cell">
+            {{ r.item or r.Item or loop.index }}
+          </td>
+        {% endif %}
 
         {# Title + description #}
         <td class="govuk-table__cell">
