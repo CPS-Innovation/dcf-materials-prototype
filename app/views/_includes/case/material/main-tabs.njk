@@ -4,12 +4,10 @@
 {% set cm = caseMaterials or data.caseMaterials or {} %}
 {% set totalCount = (cm.Material or []) | length %}
 
-
-{# --- Materials tab panel --- #}
+{# --- Review and redact tab panel --- #}
 {% set reviewAndRedactMaterialsHtml %}
   {% include "_includes/case/material/material-panel.njk" %}
 {% endset -%}
-
 
 {% set viewMaterialsLabel = "Review and redact (" ~ totalCount ~ ")" %}
 
@@ -24,15 +22,12 @@
 {% set communicationsHtml %}
   <h3 class="govuk-heading-m">Communications</h3>
 {% endset -%}
-{# --- Communications tab panel --- #}
-{% set communicationsHtml %}
-  <h3 class="govuk-heading-m">Communications</h3>
-{% endset -%}
 
-{# default if route forgot to pass it #}
-{% set activeTab = activeTab or 'view-materials' %}
+{# IMPORTANT:
+   Do NOT default activeTab here.
+   activeTab is set in the route (/cases/:caseId/material) and passed into the page.
+#}
 
-{# --- The tabs component itself --- #}
 {{ govukTabs({
   id: "case-tabs",
   items: [
@@ -56,4 +51,3 @@
     }
   ]
 }) }}
-{# End of _includes/case/material/main-tabs.njk #}
