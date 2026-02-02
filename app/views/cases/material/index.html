@@ -91,7 +91,7 @@
       // ---------------------------------------------
       function activateTabFromQuery () {
         var params = new URLSearchParams(window.location.search)
-        var tabName = params.get('tab')
+        var tabName = (params.get('tab') || '').trim()
         if (!tabName) return
 
         var href = tabHrefByName[tabName]
@@ -100,16 +100,9 @@
         var link = tabsContainer.querySelector('.govuk-tabs__tab[href="' + href + '"]')
         if (!link) return
 
-        // Prevent any vertical jump by preserving scroll position
         var y = window.scrollY
-
-        // Let GOV.UK Tabs do its thing via a real click
         link.click()
-
-        // Restore scroll position after click + any focus/scroll effects
-        setTimeout(function () {
-          window.scrollTo(0, y)
-        }, 0)
+        setTimeout(function () { window.scrollTo(0, y) }, 0)
       }
 
       // ---------------------------------------------
