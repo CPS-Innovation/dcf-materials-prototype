@@ -5,10 +5,12 @@
 {% set navId = 'tasks' %}
 {% set pageName = "Tasks (:total)" | replace(':total', totalTasks | formatNumber) %}
 
+
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
 {% block beforeContent %}
   {% set html %}
     <p class="govuk-notification-banner__heading">
-      This is only a representation of the task list as an entry point for case details & materials.
+      This is only a representation of the task list as an entry point for dcf materials & disclosure. It is not the final design.
     </p>
   {% endset %}
 
