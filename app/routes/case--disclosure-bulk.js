@@ -519,6 +519,70 @@ module.exports = router => {
   return redirectBack(res, postReturnUrl(req, caseId), selectedIds[0])
 })
 
+  // ===========================================================================
+  // ✅ BULK: REQUEST ITEM REINSTATEMENT
+  // Renders: views/cases/disclosure/assess-non-sensitive/bulk/request-item-reinstatement.html
+  // POST: saves "reinstatement request" per selected row, then returns to NLR hub
+  // ===========================================================================
+
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-item-reinstatement', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/request-item-reinstatement')
+  })
+
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-item-reinstatement', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
+
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    if (!selectedIds.length) return res.status(400).send('Missing ids')
+
+    const reason = req.body?.reinstatementReason
+      ? String(req.body.reinstatementReason).trim()
+      : ''
+
+    const day = req.body?.['reinstatementNeededBy-day'] ? String(req.body['reinstatementNeededBy-day']).trim() : ''
+    const month = req.body?.['reinstatementNeededBy-month'] ? String(req.body['reinstatementNeededBy-month']).trim() : ''
+    const year = req.body?.['reinstatementNeededBy-year'] ? String(req.body['reinstatementNeededBy-year']).trim() : ''
+
+    let neededBy = null
+    if (day && month && year) {
+      const dd = day.padStart(2, '0')
+      const mm = month.padStart(2, '0')
+      neededBy = `${year}-${mm}-${dd}`
+    }
+
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+
+    // Save the request against each selected row (prototype-friendly)
+    selectedIds.forEach(id => {
+      const idx = rows.findIndex(r => String(r.id) === String(id))
+      if (idx === -1) return
+
+      _.set(req, `${rowsPath}[${idx}].reinstatementRequested`, true)
+      _.set(req, `${rowsPath}[${idx}].reinstatementReason`, reason || null)
+      _.set(req, `${rowsPath}[${idx}].reinstatementNeededBy`, neededBy)
+      _.set(req, `${rowsPath}[${idx}].reinstatementRequestedAt`, new Date().toISOString())
+
+      // This is a disagreement in the NLR context (you’re asserting it should be reinstated)
+      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+    })
+
+    // NLR requests should NOT move non-sensitive progress (same as your NLR rule)
+    // So we intentionally DO NOT call syncCpsDisclosureAssessment here.
+
+    setSuccessBanner(
+      req,
+      `Requested reinstatement for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
+      'This update has been sent to the police.'
+    )
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/no-longer-relevant`
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
+
+    return redirectBack(res, returnUrl, selectedIds[0])
+  })
+
 
   // ===========================================================================
   // ✅ BULK: AGREE NO LONGER RELEVANT
@@ -565,30 +629,5 @@ module.exports = router => {
     return redirectBack(res, returnUrl, selectedIds[0])
   })
 
-  // ===========================================================================
-  // ✅ BULK: REQUEST ITEM REINSTATEMENT (stubbed to your folder structure)
-  //
-  // You have: disclosure/no-longer-relevant/request-item-reinstatement/index.html
-  // This bulk route keeps legacy entry under assess-non-sensitive, but redirects
-  // users to the NLR reinstatement page to do the request.
-  // ===========================================================================
-
-  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-item-reinstatement', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const selectedIds = parseIdsParam(req.query?.ids)
-    if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-    const returnUrl = req.query?.returnUrl
-      ? String(req.query.returnUrl)
-      : `/cases/${caseId}/disclosure/no-longer-relevant`
-
-    // Take them to the NLR reinstatement screen (your folder structure)
-    // Carry ids + returnUrl through.
-    return res.redirect(
-      `/cases/${caseId}/disclosure/no-longer-relevant/request-item-reinstatement?ids=${encodeURIComponent(selectedIds.join(','))}&returnUrl=${encodeURIComponent(returnUrl)}`
-    )
-  })
 
 }

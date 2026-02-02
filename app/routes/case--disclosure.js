@@ -599,6 +599,147 @@ module.exports = router => {
   })
 
   // ---------------------------------------------------------------------------
+  // REQUEST ITEM REINSTATEMENT (No longer relevant)
+  // - DOES NOT change any status
+  // - Creates Action plan entry/entries in session
+  // ---------------------------------------------------------------------------
+
+  function parseIdsParam(raw) {
+    const idsParam = raw ? String(raw) : ''
+    return idsParam.split(',').map(s => s.trim()).filter(Boolean)
+  }
+
+  function ensureActionPlan(req) {
+    _.defaults(req.session.data, { actionPlan: [] })
+    if (!Array.isArray(req.session.data.actionPlan)) {
+      req.session.data.actionPlan = []
+    }
+    return req.session.data.actionPlan
+  }
+
+  /**
+   * Build an action plan entry snapshot from a disclosure row.
+   * Captures the statuses at the time of request.
+   */
+  function buildReinstatementActionEntry(row, extra = {}) {
+    const nowIso = new Date().toISOString()
+
+    return {
+      id: `ap-${Date.now()}-${Math.random().toString(16).slice(2)}`, // good enough for prototype
+      type: 'request-item-reinstatement',
+      createdAt: nowIso,
+
+      // identify the item
+      rowId: row?.id || null,
+      itemId: row?.ItemId || row?.itemId || row?.materialId || null,
+      title: row?.title || null,
+
+      // snapshot what you asked for
+      policeAssessmentAtTime: row?.policeAssessment || null,
+      cpsAssessmentAtTime: row?.cpsAssessment || null,
+
+      // optional context (nice to have for playback)
+      policeRationaleAtTime: row?.policeRationale || null,
+      cpsRationaleAtTime: row?.cpsRationale || null,
+
+      // user input
+      requestReason: extra.requestReason || null,
+
+      // any future fields can go here
+      ...extra
+    }
+  }
+
+  
+  // GET: supports ?id= or ?itemId= (single) OR ?ids= (bulk)
+  router.get('/cases/:caseId/disclosure/no-longer-relevant/request-item-reinstatement', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+
+    // Accept either single id/itemId or bulk ids
+    const singleKey = req.query?.id || req.query?.itemId
+    const idsFromQuery = parseIdsParam(req.query?.ids)
+    const selectedIds = idsFromQuery.length ? idsFromQuery : (singleKey ? [String(singleKey)] : [])
+
+    if (!selectedIds.length) return res.status(400).send('Missing id(s)')
+
+    const selectedRows = selectedIds
+      .map(id => findRowByIdOrItemId(rows, id))
+      .filter(Boolean)
+
+    if (!selectedRows.length) return res.status(404).send('Row(s) not found')
+
+    // For single-item rendering convenience
+    const selectedRow = selectedRows[0]
+    const selectedId = String(selectedRow?.id || selectedIds[0])
+
+    return res.render('cases/disclosure/no-longer-relevant/request-item-reinstatement/index', {
+      _case,
+      caseMaterials,
+      selectedId,
+      selectedIds,
+      selectedRow,
+      selectedRows,
+      returnUrl: req.query?.returnUrl || null
+    })
+  })
+
+  router.post('/cases/:caseId/disclosure/no-longer-relevant/request-item-reinstatement', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    // Accept ids (bulk) or id (single)
+    const selectedIds = parseIdsParam(req.body?.ids)
+    const singleId = req.body?.id || req.body?.itemId
+    const ids = selectedIds.length ? selectedIds : (singleId ? [String(singleId)] : [])
+
+    if (!ids.length) return res.status(400).send('Missing id(s)')
+
+    const requestReason = req.body?.reinstatementReason
+      ? String(req.body.reinstatementReason).trim()
+      : ''
+
+    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+
+    const selectedRows = ids
+      .map(id => findRowByIdOrItemId(rows, id))
+      .filter(Boolean)
+
+    if (!selectedRows.length) return res.status(404).send('Row(s) not found')
+
+    // ✅ Write Action plan entries (no status changes)
+    const actionPlan = ensureActionPlan(req)
+
+    selectedRows.forEach(r => {
+      actionPlan.push(buildReinstatementActionEntry(r, {
+        requestReason: requestReason || null
+      }))
+    })
+
+    _.set(req, 'session.data.actionPlan', actionPlan)
+
+    // Success banner (reuses your existing pattern)
+    _.set(req, 'session.data.successBanner', {
+      titleText: `Requested reinstatement for ${selectedRows.length} item${selectedRows.length === 1 ? '' : 's'}`,
+      text: 'This request has been saved for the action plan.'
+    })
+
+    // Redirect back to NLR hub by default
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/no-longer-relevant`
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedRows[0].id || ids[0])}`)
+  })
+
+  // ---------------------------------------------------------------------------
   // ITEM: Not disclosable
   // ---------------------------------------------------------------------------
   router.get('/cases/:caseId/disclosure/assess-non-sensitive/item-not-disclosable', async (req, res) => {
