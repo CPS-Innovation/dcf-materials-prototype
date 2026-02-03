@@ -1,0 +1,112 @@
+[
+  {
+    "id": 1,
+    "caseReferenceNumber": "53W497316/6",
+    "numberOfDefendants": 2,
+    "defendants": [
+      {
+        "defendantName": "Daniel Wright",
+        "policeCharge": "Robbery",
+        "policeParticulars": "On 12 January 2026 at High Street, Croydon, the defendant robbed a mobile phone from John Smith, using threats of immediate force."
+      },
+      {
+        "defendantName": "Liam O'Connor",
+        "policeCharge": "Possession of a controlled drug (Class B)",
+        "policeParticulars": "On 12 January 2026 at High Street, Croydon, the defendant was found in possession of cannabis resin."
+      }
+    ],
+    "numberOfCounts": "Not started"
+  },
+  {
+    "id": 2,
+    "caseReferenceNumber": "53W497842/2",
+    "numberOfDefendants": 3,
+    "defendants": [
+      {
+        "defendantName": "Aisha Khan",
+        "policeCharge": "Robbery",
+        "policeParticulars": "On 3 February 2026 at a convenience store in Leeds, the defendant robbed cash from the till while threatening staff with violence."
+      },
+      {
+        "defendantName": "Mohammed Ali",
+        "policeCharge": "Robbery",
+        "policeParticulars": "On 3 February 2026 at a convenience store in Leeds, the defendant acted jointly with others in robbing cash using threats of force."
+      },
+      {
+        "defendantName": "Thomas Reed",
+        "policeCharge": "Possession of a controlled drug (Class A)",
+        "policeParticulars": "On 3 February 2026 at Albion Street, Leeds, the defendant was found in possession of cocaine."
+      }
+    ],
+    "numberOfCounts": "Not started"
+  },
+  {
+    "id": 3,
+    "caseReferenceNumber": "53W498104/9",
+    "numberOfDefendants": 4,
+    "defendants": [
+      {
+        "defendantName": "Kyle Bennett",
+        "policeCharge": "Robbery",
+        "policeParticulars": "On 18 December 2025 at a bus stop in Birmingham, the defendant robbed a wallet from Sarah Jones using force."
+      },
+      {
+        "defendantName": "Ryan Mitchell",
+        "policeCharge": "Robbery",
+        "policeParticulars": "On 18 December 2025 at a bus stop in Birmingham, the defendant assisted in the robbery by acting as lookout."
+      },
+      {
+        "defendantName": "Jordan Price",
+        "policeCharge": "Possession of a controlled drug (Class B)",
+        "policeParticulars": "On 18 December 2025 at Corporation Street, Birmingham, the defendant was found in possession of cannabis."
+      },
+      {
+        "defendantName": "Callum Harris",
+        "policeCharge": "Possession of a controlled drug (Class B)",
+        "policeParticulars": "On 18 December 2025 at Corporation Street, Birmingham, the defendant was found in possession of cannabis."
+      }
+    ],
+    "numberOfCounts": "Not started"
+  },
+  {
+    "id": 4,
+    "caseReferenceNumber": "53W498511/1",
+    "numberOfDefendants": 2,
+    "defendants": [
+      {
+        "defendantName": "Emily Turner",
+        "policeCharge": "Possession of a controlled drug (Class A)",
+        "policeParticulars": "On 22 January 2026 at Piccadilly Gardens, Manchester, the defendant was found in possession of heroin."
+      },
+      {
+        "defendantName": "Nathan Brooks",
+        "policeCharge": "Robbery",
+        "policeParticulars": "On 22 January 2026 at Piccadilly Gardens, Manchester, the defendant robbed a handbag from Laura Green using force."
+      }
+    ],
+    "numberOfCounts": "Not started"
+  },
+  {
+    "id": 5,
+    "caseReferenceNumber": "53W498773/4",
+    "numberOfDefendants": 3,
+    "defendants": [
+      {
+        "defendantName": "Samuel Lewis",
+        "policeCharge": "Robbery",
+        "policeParticulars": "On 5 March 2026 at a petrol station in Bristol, the defendant robbed cash while threatening staff."
+      },
+      {
+        "defendantName": "Oliver James",
+        "policeCharge": "Robbery",
+        "policeParticulars": "On 5 March 2026 at a petrol station in Bristol, the defendant acted jointly in the robbery."
+      },
+      {
+        "defendantName": "Ben Carter",
+        "policeCharge": "Possession of a controlled drug (Class B)",
+        "policeParticulars": "On 5 March 2026 at Temple Meads, Bristol, the defendant was found in possession of cannabis."
+      }
+    ],
+    "numberOfCounts": "Not started"
+  }
+]

@@ -1,0 +1,120 @@
+{# /cases/indictment/index.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Indictment' %}
+
+{% block beforeContent %}
+  {% include "_includes/case/identity-bar.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+  {% include "_includes/case/dcf-navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+    
+
+      <div class="app-filter-layout">
+        <div class="app-filter-layout__filter">
+          {# filter panel optional #}
+        </div>
+
+        <div class="app-filter-layout__content">
+          <div class="app-action-bar">
+            <div class="app-action-bar__filter"></div>
+          </div>
+
+          {# =========================================================
+             Case indictment list (NEW seed shape)
+             Expect: caseIndictments = array of objects (your JSON)
+             ========================================================= #}
+
+          {% if caseIndictments and caseIndictments.length %}
+            <div class="app-list">
+              {% for c in caseIndictments %}
+
+                {# --- Defendants display: "Name and X more" --- #}
+                {% set defendantsValue %}
+                  {{ c.defendants[0].defendantName }}
+                  {% if c.defendants.length > 1 %}
+                    and {{ c.defendants.length - 1 }} more
+                  {% endif %}
+                {% endset %}
+
+                {# --- Charges display: list unique charges across defendants --- #}
+                {% set chargesValue %}
+                  {% for d in c.defendants %}
+                    {{ d.policeCharge }}{% if not loop.last %}<br>{% endif %}
+                  {% endfor %}
+                {% endset %}
+
+                {# --- Counts status tag class --- #}
+                {% set countsTagClass = "" %}
+                {% if c.numberOfCounts == "Completed" %}
+                  {% set countsTagClass = "govuk-tag--green" %}
+                {% elif c.numberOfCounts == "In progress" %}
+                  {% set countsTagClass = "govuk-tag--blue" %}
+                {% else %}
+                  {% set countsTagClass = "govuk-tag--grey" %}
+                {% endif %}
+
+                {# --- Link to indictment (case is driven by real _case.id) --- #}
+                {% set viewIndictmentLink %}
+                  <a class="govuk-link govuk-link--no-visited-state"
+                     href="/cases/{{ _case.id }}/indictment/show">
+                    Build count
+                  </a>
+                {% endset %}
+
+                  <div class="app-list__item">
+
+                    {{ govukSummaryList({
+                      classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+                      rows: [
+                       {
+                          key: { text: "Case reference number" },
+                          value: { text: c.caseReferenceNumber }
+                        },
+                        {
+                          key: { text: "Indictment" },
+                          value: {
+                            html: govukTag({
+                              text: c.numberOfCounts,
+                              classes: countsTagClass + " govuk-!-font-size-16"
+                            })
+                          },
+                          actions: {
+                            items: [
+                              { html: viewIndictmentLink }
+                            ]
+                          }
+                        },
+                        {
+                          key: { text: "Defendant(s)" },
+                          value: { html: defendantsValue }
+                        },
+                        {
+                          key: { text: "Charges (police)" },
+                          value: { html: chargesValue }
+                        }
+                      ]
+                    }) }}
+
+                  </div>
+
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="govuk-body">There are no results.</p>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

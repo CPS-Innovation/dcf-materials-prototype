@@ -1,0 +1,30 @@
+{# /cases/counts/defendants.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Defendants' %}
+
+{% block beforeContent %}
+  {% include "_includes/case/identity-bar.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+  {% include "_includes/case/dcf-navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+    
+
+    </div>
+  </div>
+
+  <form method="post">
+    {{ govukButton({
+      text: "Continue",
+    }) }}
+  </form>
+{% endblock %}
