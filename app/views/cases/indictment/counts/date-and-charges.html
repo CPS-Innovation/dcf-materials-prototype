@@ -3,7 +3,7 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Date and charges' %}
+{% set pageName = 'Date of offence' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -18,15 +18,47 @@
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
+      <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-    
+      <h3 class="govuk-heading-m">Date of offence between</h3>
+
+      <form method="post">
+
+        {{ govukDateInput({
+          id: "date-of-offence-from",
+          namePrefix: "date-of-offence-from",
+          fieldset: {
+            legend: {
+              text: "Offence committed from",
+              isPageHeading: false,
+              classes: "govuk-fieldset__legend--l govuk-visually-hidden"
+            }
+          }
+        }) }}
+
+        <p class="govuk-body">and</p>
+
+        {{ govukDateInput({
+          id: "date-of-offence-to",
+          namePrefix: "date-of-offence-to",
+          fieldset: {
+            legend: {
+              text: "Offence comitted to",
+              isPageHeading: false,
+              classes: "govuk-fieldset__legend--l govuk-visually-hidden"
+            }
+          }
+        }) }}
+
+        {{ govukButton({
+          text: "Continue",
+          classes: "govuk-!-margin-top-6"
+        }) }}
+      </form>
 
     </div>
   </div>
-    <form method="post">
-      {{ govukButton({
-        text: "Continue"
-      }) }}
-    </form>
+    
+     
 {% endblock %}

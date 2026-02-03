@@ -15,7 +15,7 @@
   {% include "_includes/case/dcf-navigation.njk" %}
 
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-three-quarters">
+    <div class="govuk-grid-column-two-thirds">
       {# <span class="govuk-caption-m">{{ _case.reference }}</span> #}
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
@@ -28,11 +28,13 @@
       </div>
 
       {# --- Defendants display: "Name and X more" (Prisma) --- #}
+      {# --- Defendants display: list all full names --- #}
       {% set defendantsValue %}
-        {{ _case.defendants[0].firstName }} {{ _case.defendants[0].lastName }}
-        {% if _case.defendants.length > 1 %}
-          and {{ _case.defendants.length - 1 }} more
-        {% endif %}
+        <ul class="govuk-list govuk-list--bullet">
+          {% for defendant in _case.defendants %}
+            <li>{{ defendant.firstName }} {{ defendant.lastName }}</li>
+          {% endfor %}
+        </ul>
       {% endset %}
 
      {# --- Charges display: charge code + description (Prisma) --- #}
@@ -74,7 +76,7 @@
       {# Build the Indictment row with/without actions #}
       {% if indictment.status == "In progress" %}
         {% set indictmentRow = {
-          key: { text: "Indictment" },
+          key: { text: "Indictment status" },
           value: {
             html: govukTag({
               text: indictment.status,
@@ -89,7 +91,7 @@
         } %}
       {% else %}
         {% set indictmentRow = {
-          key: { text: "Indictment" },
+          key: { text: "Indictment status" },
           value: {
             html: govukTag({
               text: indictment.status,
