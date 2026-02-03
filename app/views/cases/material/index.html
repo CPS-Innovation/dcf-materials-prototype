@@ -59,9 +59,9 @@
         </div>
       </div>
 
-      <p class="govuk-body-s" style="opacity:.7">
+      {# <p class="govuk-body-s" style="opacity:.7">
         debug activeTab={{ activeTab }}
-      </p>
+      </p> #}
 
       {# 👇 All materials and Disclosure content is grabbed from here #}
       {% include "_includes/case/material/main-tabs.njk" %}
@@ -74,6 +74,65 @@
   {{ super() }}
 
   <script>
+  (function () {
+    // Stop browser restoring scroll position (helps with BFCache + some tab focus jumps)
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual'
+    }
+
+    function isDisclosureTarget() {
+      // Disclosure can be indicated by hash OR by query param
+      var params = new URLSearchParams(window.location.search)
+      var tab = (params.get('tab') || '').trim()
+      return window.location.hash === '#disclosure' || tab === 'disclosure'
+    }
+
+    function forceTopHard() {
+      // Multiple ticks to beat GOV.UK tabs init + focus timing + layout settling
+      window.scrollTo(0, 0)
+      requestAnimationFrame(function () {
+        window.scrollTo(0, 0)
+        setTimeout(function () { window.scrollTo(0, 0) }, 0)
+        setTimeout(function () { window.scrollTo(0, 0) }, 50)
+        setTimeout(function () { window.scrollTo(0, 0) }, 250)
+      })
+    }
+
+    // 1) On initial load / BFCache return
+    function onEntry() {
+      if (isDisclosureTarget()) {
+        forceTopHard()
+      }
+    }
+
+    window.addEventListener('load', onEntry)
+    window.addEventListener('pageshow', function (e) {
+      // pageshow fires on BFCache restores too
+      onEntry()
+    })
+
+    // 2) If hash changes (rare, but safe)
+    window.addEventListener('hashchange', function () {
+      if (window.location.hash === '#disclosure') {
+        forceTopHard()
+      }
+    })
+
+    // 3) When user clicks Disclosure tab, always go top (your requirement)
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a.govuk-tabs__tab') : null
+      if (!a) return
+
+      // If they clicked the disclosure tab link, force top after GOVUK tabs switches panels
+      if (a.getAttribute('href') === '#disclosure') {
+        setTimeout(forceTopHard, 0)
+      }
+    })
+  })()
+</script>
+
+  <script>
+    // 👇 your existing materials page JS stays here
     (function () {
       var tabsContainer = document.querySelector('#case-tabs')
       if (!tabsContainer) return
@@ -81,54 +140,21 @@
       var headerActions = document.getElementById('material-header-actions')
       var tabs = tabsContainer.querySelectorAll('.govuk-tabs__tab')
 
-      // ---------------------------------------------
-      // Show header actions ONLY on Review & redact
-      // ---------------------------------------------
       function updateHeaderActions () {
-        if (!headerActions) return
-        var activeTab = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
-        if (!activeTab) return
-        var panelId = activeTab.getAttribute('href').replace('#', '')
-        headerActions.hidden = (panelId !== 'view-materials')
+        var active = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
+        if (!active) return
+        headerActions.hidden = active.getAttribute('href') !== '#view-materials'
       }
 
-      // ---------------------------------------------
-      // 💣 FORCE y = 0 when Disclosure tab is active
-      // (wins against GOV.UK focus + scroll)
-      // ---------------------------------------------
-      function forceTopIfDisclosure () {
-        var activeTab = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
-        if (!activeTab) return
+      setTimeout(updateHeaderActions, 0)
 
-        if (activeTab.getAttribute('href') === '#disclosure') {
-          requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-              window.scrollTo(0, 0)
-            })
-          })
-        }
-      }
-
-      // Initial run (after tabs init)
-      setTimeout(function () {
-        updateHeaderActions()
-        forceTopIfDisclosure()
-      }, 0)
-
-      // On tab click
       tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
-          setTimeout(function () {
-            // Strip hash so refreshes don’t jump
-            history.replaceState(null, document.title, window.location.pathname + window.location.search)
-            updateHeaderActions()
-            forceTopIfDisclosure()
-          }, 0)
+          setTimeout(updateHeaderActions, 0)
         })
       })
     })()
   </script>
 {% endblock %}
-
 
 
