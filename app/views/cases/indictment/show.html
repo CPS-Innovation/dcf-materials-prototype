@@ -3,7 +3,7 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Show Indictment' %}
+{% set pageName = 'Indictment Details (placeholder) name)' %}
 
 {% block beforeContent %}
   {% include "_includes/case/identity-bar.njk" %}
@@ -15,7 +15,10 @@
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
+      <span class="govuk-caption-m">{{ _case.reference }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+     
 
     
 

@@ -1,8 +1,12 @@
 const _ = require('lodash')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
-//// Indictment data
+
+// Seed indictment list (array)
 const caseIndictments = require('../data/case-indictments.json')
+
+// fast lookup: { "12": {..seed..}, "13": {..seed..} }
+const seedByCaseId = Object.fromEntries(caseIndictments.map(c => [String(c.id), c]))
 
 module.exports = router => {
   // ----------------------------
@@ -22,12 +26,7 @@ module.exports = router => {
       where: { id: caseId },
       include: {
         unit: true,
-        defendants: {
-          include: {
-            defenceLawyer: true,
-            charges: true
-          }
-        },
+        defendants: { include: { defenceLawyer: true, charges: true } },
         victims: true,
         hearings: true,
         location: true
@@ -39,17 +38,18 @@ module.exports = router => {
   // /cases/:caseId/indictment (GET + POST)
   // ============================================================
 
-  
-
   router.get('/cases/:caseId/indictment', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
     const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
+    if (!_case) return res.status(404).render('error/404')
 
+    const seedCase = seedByCaseId[String(_case.id)] || null
+
+    // Prefer session status, fall back to seed, then default
     const indictment = _.get(req, `session.data.indictments.${caseId}`, {
-      status: 'Not started',
+      status: seedCase?.numberOfCounts || 'Not started',
       counts: []
     })
 
@@ -58,12 +58,11 @@ module.exports = router => {
 
     return res.render('cases/indictment/index', {
       _case,
+      seedCase,
       indictment,
-      successBanner,
-      caseIndictments
+      successBanner
     })
   })
-
 
   router.post('/cases/:caseId/indictment', async (req, res) => {
     const caseId = parseCaseId(req, res)
@@ -77,13 +76,10 @@ module.exports = router => {
       counts: []
     })
 
-    if (action === 'start') {
-      indictment.status = 'In progress'
-    }
+    if (action === 'start') indictment.status = 'In progress'
 
     if (action === 'save') {
       indictment.status = req.body.status || indictment.status || 'In progress'
-
       if (req.body.countsJson) {
         try {
           const parsed = JSON.parse(req.body.countsJson)
@@ -94,9 +90,7 @@ module.exports = router => {
       }
     }
 
-    if (action === 'complete') {
-      indictment.status = 'Completed'
-    }
+    if (action === 'complete') indictment.status = 'Completed'
 
     indictment.lastSavedAt = new Date().toISOString()
     _.set(req, basePath, indictment)
@@ -113,25 +107,33 @@ module.exports = router => {
   // /cases/:caseId/indictment/show (GET + POST)
   // ============================================================
 
-  router.get('/cases/:caseId/indictment/count', async (req, res) => {
+  router.get('/cases/:caseId/indictment/show', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
     const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
+    if (!_case) return res.status(404).render('error/404')
+
+    const seedCase = caseIndictments.find(c => Number(c.id) === Number(caseId))
+    if (!seedCase) return res.status(404).render('error/404')
 
     const indictment = _.get(req, `session.data.indictments.${caseId}`, {
       status: 'Not started',
       counts: []
     })
 
-    return res.render('cases/indictment/count', {
+    const successBanner = _.get(req, 'session.data.successBanner', null)
+    _.unset(req, 'session.data.successBanner')
+
+    return res.render('cases/indictment/show', {
       _case,
-      indictment
+      seedCase,
+      indictment,
+      successBanner
     })
   })
 
-  router.post('/cases/:caseId/indictment/count', async (req, res) => {
+  router.post('/cases/:caseId/indictment/show', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 

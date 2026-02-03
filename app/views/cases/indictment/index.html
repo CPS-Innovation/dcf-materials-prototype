@@ -1,13 +1,10 @@
 {# /cases/indictment/index.html #}
 
 {% extends "layouts/main.html" %}
+{% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
 {% set pageName = 'Indictment' %}
-
-{% block beforeContent %}
-  {% include "_includes/case/identity-bar.njk" %}
-{% endblock %}
 
 {% block content %}
   {% include "_includes/success-banner.njk" %}
@@ -17,104 +14,96 @@
     <div class="govuk-grid-column-three-quarters">
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-    
+       <div class="govuk-button-group">
+        <a href="/cases/{{_case.id}}/indictment/counts/date-and-charges" class="govuk-button">Draft count</a>
+        {{ govukButton({
+          text: "xxxxxxxxxx",
+          classes: 'govuk-button--secondary'
+        }) }}
+      </div>
 
-      <div class="app-filter-layout">
-        <div class="app-filter-layout__filter">
-          {# filter panel optional #}
-        </div>
+      {# --- Defendants display: "Name and X more" (Prisma) --- #}
+      {% set defendantsValue %}
+        {{ _case.defendants[0].firstName }} {{ _case.defendants[0].lastName }}
+        {% if _case.defendants.length > 1 %}
+          and {{ _case.defendants.length - 1 }} more
+        {% endif %}
+      {% endset %}
 
-        <div class="app-filter-layout__content">
-          <div class="app-action-bar">
-            <div class="app-action-bar__filter"></div>
-          </div>
-
-          {# =========================================================
-             Case indictment list (NEW seed shape)
-             Expect: caseIndictments = array of objects (your JSON)
-             ========================================================= #}
-
-          {% if caseIndictments and caseIndictments.length %}
-            <div class="app-list">
-              {% for c in caseIndictments %}
-
-                {# --- Defendants display: "Name and X more" --- #}
-                {% set defendantsValue %}
-                  {{ c.defendants[0].defendantName }}
-                  {% if c.defendants.length > 1 %}
-                    and {{ c.defendants.length - 1 }} more
-                  {% endif %}
-                {% endset %}
-
-                {# --- Charges display: list unique charges across defendants --- #}
-                {% set chargesValue %}
-                  {% for d in c.defendants %}
-                    {{ d.policeCharge }}{% if not loop.last %}<br>{% endif %}
-                  {% endfor %}
-                {% endset %}
-
-                {# --- Counts status tag class --- #}
-                {% set countsTagClass = "" %}
-                {% if c.numberOfCounts == "Completed" %}
-                  {% set countsTagClass = "govuk-tag--green" %}
-                {% elif c.numberOfCounts == "In progress" %}
-                  {% set countsTagClass = "govuk-tag--blue" %}
-                {% else %}
-                  {% set countsTagClass = "govuk-tag--grey" %}
-                {% endif %}
-
-                {# --- Link to indictment (case is driven by real _case.id) --- #}
-                {% set viewIndictmentLink %}
-                  <a class="govuk-link govuk-link--no-visited-state"
-                     href="/cases/{{ _case.id }}/indictment/show">
-                    Build count
-                  </a>
-                {% endset %}
-
-                  <div class="app-list__item">
-
-                    {{ govukSummaryList({
-                      classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
-                      rows: [
-                       {
-                          key: { text: "Case reference number" },
-                          value: { text: c.caseReferenceNumber }
-                        },
-                        {
-                          key: { text: "Indictment" },
-                          value: {
-                            html: govukTag({
-                              text: c.numberOfCounts,
-                              classes: countsTagClass + " govuk-!-font-size-16"
-                            })
-                          },
-                          actions: {
-                            items: [
-                              { html: viewIndictmentLink }
-                            ]
-                          }
-                        },
-                        {
-                          key: { text: "Defendant(s)" },
-                          value: { html: defendantsValue }
-                        },
-                        {
-                          key: { text: "Charges (police)" },
-                          value: { html: chargesValue }
-                        }
-                      ]
-                    }) }}
-
-                  </div>
-
-              {% endfor %}
-            </div>
-          {% else %}
-            <p class="govuk-body">There are no results.</p>
+     {# --- Charges display: charge code + description (Prisma) --- #}
+      {% set chargesValue %}
+        {% for defendant in _case.defendants %}
+          {% if defendant.charges and defendant.charges.length %}
+            {% for charge in defendant.charges %}
+              {{ charge.chargeCode }}: {{ charge.description }}
+              {% if not (loop.last and loop.parent.last) %}
+                <br>
+              {% endif %}
+            {% endfor %}
           {% endif %}
+        {% endfor %}
+      {% endset %}
+
+      {# --- Indictment status tag class (session/route sets indictment.status) --- #}
+      {% set countsTagClass = "" %}
+      {% if indictment.status == "Completed" %}
+        {% set countsTagClass = "govuk-tag--green" %}
+      {% elif indictment.status == "In progress" %}
+        {% set countsTagClass = "govuk-tag--blue" %}
+      {% else %}
+        {% set countsTagClass = "govuk-tag--grey" %}
+      {% endif %}
+
+      {# --- Set condtional link for View Indictment --- #}
+      {% if indictment.status == "In progress" %}
+        {% set viewIndictmentLink %}
+          <a class="govuk-link govuk-link--no-visited-state"
+            href="/cases/{{ _case.id }}/indictment/show">
+            View indictment
+          </a>
+        {% endset %}
+      {% else %}
+        {% set viewIndictmentLink = null %}
+      {% endif %}
+
+      <div class="app-list">
+        <div class="app-list__item">
+
+          {{ govukSummaryList({
+            classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+            rows: [
+              {
+                key: { text: "Case reference number" },
+                value: { text: _case.reference }
+              },
+              {
+                key: { text: "Indictment" },
+                value: {
+                  html: govukTag({
+                    text: indictment.status,
+                    classes: countsTagClass + " govuk-!-font-size-16"
+                  })
+                },
+                actions: {
+                  items: [
+                    { html: viewIndictmentLink }
+                  ]
+                }
+              },
+              {
+                key: { text: "Defendant(s)" },
+                value: { html: defendantsValue }
+              },
+              {
+                key: { text: "Charges (police)" },
+                value: { html: chargesValue }
+              }
+            ]
+          }) }}
 
         </div>
       </div>
+
     </div>
   </div>
 {% endblock %}
