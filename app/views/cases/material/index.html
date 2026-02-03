@@ -71,64 +71,121 @@
 
 
 {% block scripts %}
-  {{ super() }}
 
+  {# ------------------------------------------------------------
+     Script A (MUST be before {{ super() }}):
+     Add the correct hash so GOV.UK Tabs selects the right tab.
+     ------------------------------------------------------------ #}
   <script>
     (function () {
-      var tabsContainer = document.querySelector('#case-tabs')
+      var params = new URLSearchParams(window.location.search)
+      var tab = (params.get('tab') || '').trim()
+
+      // map query param to hash
+      var hashByTab = {
+        disclosure: '#disclosure',
+        materials: '#view-materials',
+        'view-materials': '#view-materials',
+        communications: '#communications'
+      }
+
+      var hash = hashByTab[tab]
+      if (!hash) return
+
+      // if already has a hash, don't override it
+      if (window.location.hash) return
+
+      // record scroll so we can undo any jump later
+      window.__tabsScrollYBeforeInit = window.scrollY || 0
+      window.__tabsCameFromQuery = true
+
+      // set hash BEFORE GOV.UK initAll runs (no reload)
+      history.replaceState(
+        null,
+        document.title,
+        window.location.pathname + window.location.search + hash
+      )
+    })()
+  </script>
+
+  {{ super() }}
+
+  {# ------------------------------------------------------------
+     Script B (AFTER initAll):
+     - undo any scroll jump
+     - remove hash from the URL
+     - toggle header actions visibility
+     - force y=0 when disclosure tab clicked
+     ------------------------------------------------------------ #}
+  <script>
+    (function () {
+      var tabsContainer = document.querySelector('[data-module="govuk-tabs"][id="case-tabs"], #case-tabs')
       if (!tabsContainer) return
 
       var headerActions = document.getElementById('material-header-actions')
       var tabs = tabsContainer.querySelectorAll('.govuk-tabs__tab')
 
-      // ---------------------------------------------
-      // Show header actions ONLY on Review & redact
-      // ---------------------------------------------
+      function activePanelId () {
+        var active = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
+        if (!active) return ''
+        var href = active.getAttribute('href') || ''
+        return href.replace('#', '')
+      }
+
       function updateHeaderActions () {
         if (!headerActions) return
-        var activeTab = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
-        if (!activeTab) return
-        var panelId = activeTab.getAttribute('href').replace('#', '')
-        headerActions.hidden = (panelId !== 'view-materials')
+        headerActions.hidden = (activePanelId() !== 'view-materials')
       }
 
-      // ---------------------------------------------
-      // 💣 FORCE y = 0 when Disclosure tab is active
-      // (wins against GOV.UK focus + scroll)
-      // ---------------------------------------------
-      function forceTopIfDisclosure () {
-        var activeTab = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
-        if (!activeTab) return
-
-        if (activeTab.getAttribute('href') === '#disclosure') {
-          requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-              window.scrollTo(0, 0)
-            })
-          })
-        }
+      function stripHashKeepQuery () {
+        history.replaceState(null, document.title, window.location.pathname + window.location.search)
       }
 
-      // Initial run (after tabs init)
-      setTimeout(function () {
-        updateHeaderActions()
-        forceTopIfDisclosure()
-      }, 0)
+      // --- On load: if we came from ?tab=..., undo any scroll-to-tabs jump and clean URL ---
+      if (window.__tabsCameFromQuery) {
+        // restore scroll position (or force 0 if you prefer)
+        var y = (typeof window.__tabsScrollYBeforeInit === 'number') ? window.__tabsScrollYBeforeInit : 0
 
-      // On tab click
-      tabs.forEach(function (tab) {
-        tab.addEventListener('click', function () {
+        // beat focus/scroll timing
+        window.scrollTo(0, y)
+        requestAnimationFrame(function () {
+          window.scrollTo(0, y)
+          setTimeout(function () { window.scrollTo(0, y) }, 0)
+        })
+
+        // keep URL clean
+        stripHashKeepQuery()
+      }
+
+      // ensure header actions correct on load
+      setTimeout(updateHeaderActions, 0)
+
+      // --- On tab click: keep URL clean + header toggle + your requested y=0 for Disclosure ---
+      tabs.forEach(function (tabEl) {
+        tabEl.addEventListener('click', function () {
+          var yBefore = window.scrollY || 0
+
           setTimeout(function () {
-            // Strip hash so refreshes don’t jump
-            history.replaceState(null, document.title, window.location.pathname + window.location.search)
+            // remove hash
+            stripHashKeepQuery()
+
+            // if disclosure was clicked, FORCE y = 0 (as requested)
+            var panel = activePanelId()
+            if (panel === 'disclosure') {
+              window.scrollTo(0, 0)
+              requestAnimationFrame(function () { window.scrollTo(0, 0) })
+            } else {
+              // otherwise preserve scroll position
+              window.scrollTo(0, yBefore)
+            }
+
             updateHeaderActions()
-            forceTopIfDisclosure()
           }, 0)
         })
       })
     })()
   </script>
-{% endblock %}
 
+{% endblock %}
 
 
