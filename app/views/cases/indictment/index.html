@@ -53,12 +53,12 @@
 
       {# --- Indictment status tag class (session/route sets indictment.status) --- #}
       {% set countsTagClass = "" %}
-      {% if indictment.status == "Completed" %}
-        {% set countsTagClass = "govuk-tag--green" %}
-      {% elif indictment.status == "In progress" %}
-        {% set countsTagClass = "govuk-tag--blue" %}
-      {% else %}
-        {% set countsTagClass = "govuk-tag--grey" %}
+        {% if indictment.status == "Completed" %}
+          {% set countsTagClass = "govuk-tag--green" %}
+        {% elif indictment.status == "In progress" %}
+          {% set countsTagClass = "govuk-tag--blue" %}
+        {% else %}
+          {% set countsTagClass = "govuk-tag--yellow" %}
       {% endif %}
 
       {# --- Set condtional link for View Indictment --- #}
