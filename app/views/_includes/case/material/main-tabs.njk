@@ -42,9 +42,9 @@
 {% if activeTab == 'disclosure' %}
   {% set tabItems = [tabDisclosure, tabViewMaterials, tabCommunications] %}
 {% elif activeTab == 'communications' %}
-  {% set tabItems = [tabCommunications, tabViewMaterials, tabDisclosure] %}
+  {% set tabItems = [tabDisclosure, tabViewMaterials, tabCommunications] %}
 {% else %}
-  {% set tabItems = [tabViewMaterials, tabDisclosure, tabCommunications] %}
+  {% set tabItems = [tabDisclosure, tabViewMaterials, tabCommunications] %}
 {% endif %}
 
 {{ govukTabs({
