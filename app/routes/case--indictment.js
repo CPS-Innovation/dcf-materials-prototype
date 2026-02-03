@@ -161,4 +161,60 @@ module.exports = router => {
 
     return res.redirect(`/cases/${caseId}/indictment/show`)
   })
+
+
+  // ============================================================
+  // /cases/:caseId/indictment/counts/date-and-charges
+  // ============================================================
+
+  router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('error/404')
+
+    // Pull draft count data from session (or initialise)
+    const draftCount = _.get(
+      req,
+      `session.data.indictmentDrafts.${caseId}.currentCount`,
+      {}
+    )
+
+    return res.render('cases/indictment/counts/date-and-charges', {
+      _case,
+      draftCount
+    })
+  })
+
+
+  router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    // Ensure draft structure exists
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+
+    const draftCount = _.get(req, basePath, {})
+
+    // Expected form fields (adjust names if needed):
+    // req.body.offenceDate
+    // req.body.chargeCode
+    // req.body.chargeDescription
+
+    draftCount.offenceDate = req.body.offenceDate
+    draftCount.chargeCode = req.body.chargeCode
+    draftCount.chargeDescription = req.body.chargeDescription
+
+    draftCount.lastUpdatedAt = new Date().toISOString()
+
+    _.set(req, basePath, draftCount)
+
+    // Mark indictment as "In progress" once a count is drafted
+    _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+
+    return res.redirect(
+      `/cases/${caseId}/indictment/counts/particulars`
+    )
+  })
 }

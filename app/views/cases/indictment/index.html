@@ -6,12 +6,17 @@
 {% set secondaryNavId = 'indictment' %}
 {% set pageName = 'Indictment' %}
 
+{% block beforeContent %}
+  {% include "_includes/case/identity-bar.njk" %}
+{% endblock %}
+
 {% block content %}
   {% include "_includes/success-banner.njk" %}
   {% include "_includes/case/dcf-navigation.njk" %}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
+      {# <span class="govuk-caption-m">{{ _case.reference }}</span> #}
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
        <div class="govuk-button-group">
@@ -37,7 +42,7 @@
             {% for charge in defendant.charges %}
               {{ charge.chargeCode }}: {{ charge.description }}
               {% if not (loop.last and loop.parent.last) %}
-                <br>
+                <br><br>
               {% endif %}
             {% endfor %}
           {% endif %}
@@ -66,36 +71,47 @@
         {% set viewIndictmentLink = null %}
       {% endif %}
 
+      {# Build the Indictment row with/without actions #}
+      {% if indictment.status == "In progress" %}
+        {% set indictmentRow = {
+          key: { text: "Indictment" },
+          value: {
+            html: govukTag({
+              text: indictment.status,
+              classes: countsTagClass + " govuk-!-font-size-16"
+            })
+          },
+          actions: {
+            items: [
+              { html: viewIndictmentLink }
+            ]
+          }
+        } %}
+      {% else %}
+        {% set indictmentRow = {
+          key: { text: "Indictment" },
+          value: {
+            html: govukTag({
+              text: indictment.status,
+              classes: countsTagClass + " govuk-!-font-size-16"
+            })
+          }
+        } %}
+      {% endif %}
+
       <div class="app-list">
         <div class="app-list__item">
 
           {{ govukSummaryList({
             classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
             rows: [
-              {
-                key: { text: "Case reference number" },
-                value: { text: _case.reference }
-              },
-              {
-                key: { text: "Indictment" },
-                value: {
-                  html: govukTag({
-                    text: indictment.status,
-                    classes: countsTagClass + " govuk-!-font-size-16"
-                  })
-                },
-                actions: {
-                  items: [
-                    { html: viewIndictmentLink }
-                  ]
-                }
-              },
+              indictmentRow,
               {
                 key: { text: "Defendant(s)" },
                 value: { html: defendantsValue }
               },
               {
-                key: { text: "Charges (police)" },
+                key: { text: "Charge" },
                 value: { html: chargesValue }
               }
             ]

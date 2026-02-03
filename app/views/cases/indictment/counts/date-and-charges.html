@@ -6,12 +6,15 @@
 {% set pageName = 'Date and charges' %}
 
 {% block beforeContent %}
-  {% include "_includes/case/identity-bar.njk" %}
+  {{ govukBackLink({
+    text: 'Back',
+    href: 'javascript:history.back()'
+  }) }}
 {% endblock %}
 
 {% block content %}
   {% include "_includes/success-banner.njk" %}
-  {% include "_includes/case/dcf-navigation.njk" %}
+  {# {% include "_includes/case/dcf-navigation.njk" %} #}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
@@ -22,8 +25,8 @@
     </div>
   </div>
     <form method="post">
-    {{ govukButton({
-      text: "Continue",
-    }) }}
-  </form>
+      {{ govukButton({
+        text: "Continue"
+      }) }}
+    </form>
 {% endblock %}
