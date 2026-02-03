@@ -399,4 +399,14 @@ module.exports = router => {
     res.render('cases/materials/search', { q: qRaw, results, prebuilt: fragmentHTML(results, qRaw) });
   });
 
+  // Redirect to material page with Disclosure tab active
+  router.get('/cases/:caseId/material/start-disclosure', (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+  // Force GOV.UK Tabs to open Disclosure by default.
+  // Keep the URL clean-ish by still preserving the query if you want it.
+  return res.redirect(`/cases/${caseId}/material#disclosure`)
+})
+
 }
