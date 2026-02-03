@@ -1,4 +1,4 @@
-{# This file is a template for /disclosure/assess-non-sensitive/bulk/evidence #}
+{# This file is a template for /disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -17,7 +17,7 @@
 {% endset %}
 
 {% set count = selectedRows.length %}
-{% set pageName = "Assess " ~ count ~ " item" ~ ("s" if count != 1) ~ " as evidence" %}
+{% set pageName = "Agree " ~ count ~ " item" ~ ("s" if count != 1) ~ " as no longer relevant" %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -32,6 +32,10 @@
 
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ govukInsetText({
+        text: "You are agreeing with the police that these items are no longer relevant. This update will be sent to the police."
+      }) }}
 
       <details class="govuk-details" data-module="govuk-details">
         <summary class="govuk-details__summary">
@@ -73,11 +77,11 @@
                   value: { text: r.description or "No description" }
                 },
                 {
-                  key: { text: "Police disclosure status" },
+                  key: { text: "Police assessment" },
                   value: { text: r.policeAssessment or "Not assessed" }
                 },
                 {
-                  key: { text: "Police disclosure reason" },
+                  key: { text: "Police rationale" },
                   value: { text: r.policeRationale or "—" }
                 }
               ]
@@ -91,19 +95,12 @@
         </div>
       </details>
 
-      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/evidence">
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant">
         <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">
-        <input type="hidden" name="returnUrl" value="{{ returnUrl or '' }}">
 
-        {{ govukTextarea({
-          name: "bulkRationale",
-          id: "bulk-rationale",
-          rows: 5,
-          label: {
-            text: "Why are these items evidence?",
-            classes: "govuk-label--m"
-          }
-        }) }}
+        {# IMPORTANT: for NLR we default returnUrl back to the NLR hub server-side,
+           but keep passing it through if it exists #}
+        <input type="hidden" name="returnUrl" value="{{ returnUrl or '' }}">
 
         {{ govukButton({ text: "Save and confirm" }) }}
       </form>

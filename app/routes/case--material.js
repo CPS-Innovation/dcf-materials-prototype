@@ -58,8 +58,11 @@ module.exports = router => {
     // ✅ Server-driven tab selection (NO hash = no vertical jump)
     // e.g. /cases/123/material?tab=disclosure selects the Disclosure tab at render time
     const allowedTabs = new Set(['view-materials', 'disclosure', 'communications'])
-    const requestedTab = (req.query.tab || '').toString().trim()
-    const activeTab = allowedTabs.has(requestedTab) ? requestedTab : 'view-materials'
+
+    const requestedTabRaw = (req.query.tab || '').toString().trim()
+    const requestedTab = requestedTabRaw === 'materials' ? 'view-materials' : requestedTabRaw
+
+    const activeTab = allowedTabs.has(requestedTab) ? requestedTab : 'disclosure'
 
 
     let selectedDocumentTypeFilters = _.get(req.session.data.documentListFilters, 'documentTypes', [])
@@ -176,8 +179,9 @@ module.exports = router => {
 
     // If your session data holds an array of cases, pick the matching one
     const cm = Array.isArray(caseMaterials)
-      ? (caseMaterials.find(c => String(c.caseId) === String(caseId)) || {})
+      ? (caseMaterials.find(c => String(c.caseId) === String(_case.reference)) || {})
       : caseMaterials
+
 
     // Ensure cpsDisclosureAssessment exists and stays in sync with non-sensitive rows
     const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
@@ -198,6 +202,9 @@ module.exports = router => {
       _.set(cm, 'cpsDisclosureAssessment.hasAssessedSensitive', 'Not started yet')
     }
 
+    // --- One-time success banner (set by assess-as-unused POST) ---
+    const successBanner = _.get(req, 'session.data.successBanner', null)
+    _.unset(req, 'session.data.successBanner')
 
     return res.render("cases/material/index", {
       _case,
@@ -207,7 +214,8 @@ module.exports = router => {
       selectedFilters,
       assetFiles,         // just names
       assetFileLinks,     // [{name, href}]
-      activeTab
+      activeTab,
+      successBanner
     })
   })
 
@@ -390,5 +398,15 @@ module.exports = router => {
     // Full page render via Nunjucks (styled)
     res.render('cases/materials/search', { q: qRaw, results, prebuilt: fragmentHTML(results, qRaw) });
   });
+
+  // Redirect to material page with Disclosure tab active
+  router.get('/cases/:caseId/material/start-disclosure', (req, res) => {
+  const caseId = parseInt(req.params.caseId, 10)
+  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+  // Force GOV.UK Tabs to open Disclosure by default.
+  // Keep the URL clean-ish by still preserving the query if you want it.
+  return res.redirect(`/cases/${caseId}/material#disclosure`)
+})
 
 }

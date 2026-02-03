@@ -1,9 +1,18 @@
 {# _includes/case/disclosure/disclosure-table.njk #}
 {% from "govuk/components/tag/macro.njk" import govukTag %}
 
-
 {% set bodyClasses = "dcf-materials-wide" %}
-{% set rows = data.disclosureNonSensitiveRows or [] %}
+
+{# Allow parent templates to pass a pre-filtered rows array #}
+{% set rows = rows or data.disclosureNonSensitiveRows or [] %}
+
+{# Appended rows (unused non-sensitive) #}
+{% set assessedUnusedRows =
+  data.disclosureAssessedUnusedRows
+  or data.assessedUnusedNonSensitiveRows
+  or data.assessedUnusedRows
+  or []
+%}
 
 {% set cpsTagClass = {
   "To be assessed": "govuk-tag--blue",
@@ -11,7 +20,12 @@
   "Disclosable by inspection": "govuk-tag--blue",
   "Evidence": "govuk-tag--blue",
   "Clearly not disclosable": "govuk-tag--blue",
-  "Not disclosable": "govuk-tag--blue"
+  "Not disclosable": "govuk-tag--blue",
+
+  "Unused - Disclosable": "govuk-tag--blue",
+  "Unused - Disclosable by inspection": "govuk-tag--blue",
+  "Unused - Not disclosable": "govuk-tag--blue",
+  "Unused - Clearly not disclosable": "govuk-tag--blue"
 } %}
 
 {% set returnUrl = "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" %}
@@ -20,69 +34,48 @@
   <thead class="govuk-table__head govuk-body-s">
     <tr class="govuk-table__row">
       <th class="govuk-table__header" scope="col" id="materials-select-all"></th>
-      <th class="govuk-table__header" scope="col">Item</th>
-      <th class="govuk-table__header govuk-!-width-one-third" scope="col">Title and description</th>
-      <th class="govuk-table__header govuk-!-width-one-third" scope="col">Police assessment</th>
-      <th class="govuk-table__header govuk-!-width-one-third" scope="col">CPS assessment</th>
+      {% if showItemColumn %}
+        <th class="govuk-table__header" scope="col">Item</th>
+      {% endif %}
+
+      <th class="govuk-table__header govuk-!-width-one-half" scope="col">
+        Title and description
+      </th>
+      <th class="govuk-table__header govuk-!-width-one-quarter" scope="col">
+        Police assessment
+      </th>
+      <th class="govuk-table__header govuk-!-width-one-quarter" scope="col">
+        CPS assessment
+      </th>
       <th class="govuk-table__header" scope="col">Actions</th>
     </tr>
   </thead>
 
   <tbody class="govuk-table__body govuk-body-s">
     {% for r in rows %}
-      {# Set table row actions first #}
+
+      {% set itemId = r.ItemId or r.itemId or r.materialId %}
+      {% set isPoliceNoLongerRelevant = ((r.policeAssessment or '') | lower) == 'no longer relevant' %}
+      {% set disagrees = (not isPoliceNoLongerRelevant) and (r.disagreesWithPolice or r.cpsDisagreesWithPolice) %}
+      {% set cpsRationale = r.cpsRationale or r.cpsDisclosureRationale %}
+      {% set isPoliceNoLongerRelevant = ((r.policeAssessment or '') | lower) == 'no longer relevant' %}
+
       {% set rowActions %}
-        {% if r.sensitivityDisputed %}
+        {% if isPoliceNoLongerRelevant %}
           {{ mojButtonMenu({
             classes: "dcf-button-menu--as-link",
             button: { text: "Actions" },
             items: [
               {
-                text: "Assess as disclosable",
+                text: "Agree no longer relevant",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
+                  "/disclosure/no-longer-relevant/agree-no-longer-relevant?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
-                text: "Assess as disclosable by inspection",
+                text: "Request item is reinstated",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as clearly not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as evidence",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Change sensitivity dispute",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/change-sensitivity-dispute?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Request updated description",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Request material",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
+                  "/disclosure/no-longer-relevant/request-item-reinstatement?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               }
             ]
@@ -123,9 +116,9 @@
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
-                text: "Dispute sensitivity",
+                text: "Assess as no longer relevant",
                 href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
+                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
@@ -145,12 +138,9 @@
         {% endif %}
       {% endset %}
 
-      {# MUST match caseMaterials.Material[].ItemId (e.g. MAT-02007) #}
-      {% set itemId = r.ItemId or r.itemId or r.materialId %}
-
       <tr class="govuk-table__row" {% if itemId %}data-item-id="{{ itemId }}"{% endif %}>
 
-        {# Select checkbox #}
+        {# Checkbox #}
         <td class="govuk-table__cell">
           <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
             <input
@@ -161,15 +151,20 @@
               value="{{ r.id }}"
             >
             <label class="govuk-label govuk-checkboxes__label" for="materials-{{ r.id }}">
-              <span class="govuk-visually-hidden">Select item {{ r.item }}</span>
+              <span class="govuk-visually-hidden">Select {{ r.title }}</span>
             </label>
           </div>
         </td>
 
-        {# Item #}
-        <td class="govuk-table__cell">{{ r.item }}</td>
+          
+        {# Item number #}
+        {% if showItemColumn %}
+          <td class="govuk-table__cell">
+            {{ r.item or r.Item or loop.index }}
+          </td>
+        {% endif %}
 
-        {# Title and description #}
+        {# Title + description #}
         <td class="govuk-table__cell">
           <strong class="govuk-body govuk-!-font-weight-bold">{{ r.title }}</strong>
 
@@ -196,7 +191,6 @@
           </div>
         </td>
 
-
         {# Police assessment #}
         <td class="govuk-table__cell">
           <strong class="govuk-tag govuk-tag--grey">
@@ -215,25 +209,17 @@
             {{ status }}
           </strong>
 
-          {% if r.cpsDisagreesWithPolice %}
-            <div class="govuk-!-margin-top-1">
-              <strong>Disagrees with police</strong>
-            </div>
-          {% endif %}
-
-          {% if r.cpsRationale %}
-            <div class="govuk-!-margin-top-2">{{ r.cpsRationale }}</div>
-          {% endif %}
-
-          {% if r.sensitivityDisputed %}
+          {% if disagrees %}
             <div class="govuk-!-margin-top-3">
-              <strong class="govuk-tag govuk-tag--yellow">Sensitivity disputed</strong>
-              {% if r.sensitivityDisputeReason %}
-                <div class="govuk-!-margin-top-1">
-                  {{ r.sensitivityDisputeReason }}
-                </div>
-              {% endif %}
+              {{ govukTag({
+                text: "Disagrees with police",
+                classes: "govuk-tag--yellow"
+              }) }}
             </div>
+          {% endif %}
+
+          {% if cpsRationale %}
+            <div class="govuk-!-margin-top-2">{{ cpsRationale }}</div>
           {% endif %}
         </td>
 
@@ -246,3 +232,64 @@
     {% endfor %}
   </tbody>
 </table>
+
+{# -------------------------------
+   Appended: Unused non-sensitive
+   (Item column intentionally kept)
+   ------------------------------- #}
+
+{% if assessedUnusedRows and assessedUnusedRows.length %}
+  <h3 class="govuk-heading-m govuk-!-margin-top-6">
+    Items of evidence that the CPS have assessed as unused non-sensitive
+  </h3>
+
+  <table class="govuk-table" data-module="moj-multi-select">
+    <tbody class="govuk-table__body govuk-body-s">
+      {% for a in assessedUnusedRows %}
+        {% set itemId = a.ItemId or a.itemId or a.materialId %}
+        {% set disagrees = (not isPoliceNoLongerRelevant) and (r.disagreesWithPolice or r.cpsDisagreesWithPolice) %}
+
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell">{{ rows.length + loop.index }}</td>
+
+          <td class="govuk-table__cell">
+            <strong>{{ a.title }}</strong>
+            {% if a.description %}
+              <div class="govuk-!-margin-top-1">{{ a.description }}</div>
+            {% endif %}
+          </td>
+
+          <td class="govuk-table__cell">
+            <strong class="govuk-tag govuk-tag--grey">
+              {{ a.policeAssessment or "Evidence" }}
+            </strong>
+          </td>
+
+          <td class="govuk-table__cell">
+            <strong class="govuk-tag {{ cpsTagClass[a.cpsAssessment] }}">
+              {{ a.cpsAssessment }}
+            </strong>
+
+            {% if disagrees %}
+              <div class="govuk-!-margin-top-1">
+                {{ govukTag({
+                  text: "Disagrees with police",
+                  classes: "govuk-tag--yellow"
+                }) }}
+              </div>
+               {% if disagrees and cpsRationale %}
+                <div class="govuk-!-margin-top-1 govuk-body-s">
+                  {{ cpsRationale }}
+                </div>
+              {% endif %}
+            {% endif %}
+          </td>
+
+          <td class="govuk-table__cell">
+            Actions
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}

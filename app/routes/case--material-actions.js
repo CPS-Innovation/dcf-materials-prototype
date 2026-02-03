@@ -84,6 +84,26 @@ module.exports = router => {
     const action = String(req.params.action || '').trim()
     if (!action) return res.status(400).send('Missing action')
 
+    // Add near the top of the GET handler, after caseId/action parsing:
+    if (action === 'assess-unused') {
+      const itemId = req.query?.itemId ? String(req.query.itemId) : null
+      if (!itemId) return res.status(400).send('Missing itemId')
+
+      const returnUrl =
+        req.query?.returnUrl
+          ? String(req.query.returnUrl)
+          : buildDefaultViewerReturnUrl(caseId, itemId)
+
+      const target =
+        `/cases/${caseId}/disclosure/assess-as-unused` +
+        `?itemId=${encodeURIComponent(itemId)}` +
+        `&returnUrl=${encodeURIComponent(returnUrl)}` +
+        `&openItemId=${encodeURIComponent(itemId)}`
+
+      return res.redirect(target)
+    }
+
+
     const itemId = req.query?.itemId ? String(req.query.itemId) : null
     const idFromQuery = req.query?.id ? String(req.query.id) : null
 
@@ -111,9 +131,9 @@ module.exports = router => {
     const mapped = MATERIAL_ACTION_TO_ROUTE[action]
     if (!mapped) return res.status(400).send('Unknown action')
 
-    if (mapped === '__NOT_IMPLEMENTED__') {
-      return res.status(501).send('Action not implemented')
-    }
+    // if (mapped === '__NOT_IMPLEMENTED__') {
+    //   return res.status(501).send('Action not implemented')
+    // }
 
     let targetLeaf = mapped
 

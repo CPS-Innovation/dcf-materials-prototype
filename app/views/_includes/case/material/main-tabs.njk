@@ -1,17 +1,25 @@
-{# _includes/case/material/main-tabs.njk #}
+{# --------------------------------------------------
+   Case materials tabs
+   Order is FIXED to match design + mental model
+   State is controlled ONLY via `selected`
+   -------------------------------------------------- #}
 
-{# If you actually want *all* materials regardless of type: #}
 {% set cm = caseMaterials or data.caseMaterials or {} %}
 {% set totalCount = (cm.Material or []) | length %}
 
-
-{# --- Materials tab panel --- #}
+{# --- Review and redact tab panel --- #}
 {% set reviewAndRedactMaterialsHtml %}
   {% include "_includes/case/material/material-panel.njk" %}
 {% endset -%}
 
-
 {% set viewMaterialsLabel = "Review and redact (" ~ totalCount ~ ")" %}
+
+{% set tabViewMaterials = {
+  label: viewMaterialsLabel,
+  id: "view-materials",
+  panel: { html: reviewAndRedactMaterialsHtml },
+  selected: (activeTab == 'view-materials')
+} %}
 
 {# --- Disclosure tab panel --- #}
 {% set disclosureHtml %}
@@ -20,40 +28,37 @@
   </div>
 {% endset -%}
 
-{# --- Communications tab panel --- #}
-{% set communicationsHtml %}
-  <h3 class="govuk-heading-m">Communications</h3>
-{% endset -%}
+{% set tabDisclosure = {
+  label: "Disclosure",
+  id: "disclosure",
+  panel: { html: disclosureHtml },
+  selected: (activeTab == 'disclosure')
+} %}
+
 {# --- Communications tab panel --- #}
 {% set communicationsHtml %}
   <h3 class="govuk-heading-m">Communications</h3>
 {% endset -%}
 
-{# default if route forgot to pass it #}
-{% set activeTab = activeTab or 'view-materials' %}
+{% set tabCommunications = {
+  label: "Communications",
+  id: "communications",
+  panel: { html: communicationsHtml },
+  selected: (activeTab == 'communications')
+} %}
 
-{# --- The tabs component itself --- #}
+{# --------------------------------------------------
+   IMPORTANT:
+   - DO NOT reorder tabs based on state
+   - Order MUST remain: Review → Disclosure → Comms
+   - State is driven by `selected`
+   -------------------------------------------------- #}
+
 {{ govukTabs({
   id: "case-tabs",
   items: [
-    {
-      label: viewMaterialsLabel,
-      id: "view-materials",
-      panel: { html: reviewAndRedactMaterialsHtml },
-      selected: (activeTab == 'view-materials')
-    },
-    {
-      label: "Disclosure",
-      id: "disclosure",
-      panel: { html: disclosureHtml },
-      selected: (activeTab == 'disclosure')
-    },
-    {
-      label: "Communications",
-      id: "communications",
-      panel: { html: communicationsHtml },
-      selected: (activeTab == 'communications')
-    }
+    tabViewMaterials,
+    tabDisclosure,
+    tabCommunications
   ]
 }) }}
-{# End of _includes/case/material/main-tabs.njk #}

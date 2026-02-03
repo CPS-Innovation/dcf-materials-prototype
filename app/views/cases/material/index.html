@@ -8,7 +8,7 @@
 {% set secondaryNavId = 'materials' %}
 
 {# default if route forgot to pass it #}
-{% set activeTab = activeTab or 'view-materials' %}
+{% set activeTab = activeTab or 'disclosure' %}
 
 {# -------------------------
    Defendants display value
@@ -58,6 +58,11 @@
           </div>
         </div>
       </div>
+
+      {# <p class="govuk-body-s" style="opacity:.7">
+        debug activeTab={{ activeTab }}
+      </p> #}
+
       {# 👇 All materials and Disclosure content is grabbed from here #}
       {% include "_includes/case/material/main-tabs.njk" %}
     </div>
@@ -67,83 +72,89 @@
 
 {% block scripts %}
   {{ super() }}
+
   <script>
+  (function () {
+    // Stop browser restoring scroll position (helps with BFCache + some tab focus jumps)
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual'
+    }
+
+    function isDisclosureTarget() {
+      // Disclosure can be indicated by hash OR by query param
+      var params = new URLSearchParams(window.location.search)
+      var tab = (params.get('tab') || '').trim()
+      return window.location.hash === '#disclosure' || tab === 'disclosure'
+    }
+
+    function forceTopHard() {
+      // Multiple ticks to beat GOV.UK tabs init + focus timing + layout settling
+      window.scrollTo(0, 0)
+      requestAnimationFrame(function () {
+        window.scrollTo(0, 0)
+        setTimeout(function () { window.scrollTo(0, 0) }, 0)
+        setTimeout(function () { window.scrollTo(0, 0) }, 50)
+        setTimeout(function () { window.scrollTo(0, 0) }, 250)
+      })
+    }
+
+    // 1) On initial load / BFCache return
+    function onEntry() {
+      if (isDisclosureTarget()) {
+        forceTopHard()
+      }
+    }
+
+    window.addEventListener('load', onEntry)
+    window.addEventListener('pageshow', function (e) {
+      // pageshow fires on BFCache restores too
+      onEntry()
+    })
+
+    // 2) If hash changes (rare, but safe)
+    window.addEventListener('hashchange', function () {
+      if (window.location.hash === '#disclosure') {
+        forceTopHard()
+      }
+    })
+
+    // 3) When user clicks Disclosure tab, always go top (your requirement)
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a.govuk-tabs__tab') : null
+      if (!a) return
+
+      // If they clicked the disclosure tab link, force top after GOVUK tabs switches panels
+      if (a.getAttribute('href') === '#disclosure') {
+        setTimeout(forceTopHard, 0)
+      }
+    })
+  })()
+</script>
+
+  <script>
+    // 👇 your existing materials page JS stays here
     (function () {
-      var tabsContainer = document.querySelector('[data-module="govuk-tabs"][id="case-tabs"], #case-tabs')
+      var tabsContainer = document.querySelector('#case-tabs')
       if (!tabsContainer) return
 
       var headerActions = document.getElementById('material-header-actions')
       var tabs = tabsContainer.querySelectorAll('.govuk-tabs__tab')
 
-      // ---------------------------------------------
-      // ✅ "Tags" / mapping: query param -> tab href
-      // ---------------------------------------------
-      var tabHrefByName = {
-        disclosure: '#disclosure',
-        materials: '#view-materials'
-        // Add more as needed, e.g.
-        // tasks: '#tasks',
-        // timeline: '#timeline'
-      }
-
-      // ---------------------------------------------
-      // ✅ Activate tab from ?tab=... WITHOUT scrolling
-      // ---------------------------------------------
-      function activateTabFromQuery () {
-        var params = new URLSearchParams(window.location.search)
-        var tabName = params.get('tab')
-        if (!tabName) return
-
-        var href = tabHrefByName[tabName]
-        if (!href) return
-
-        var link = tabsContainer.querySelector('.govuk-tabs__tab[href="' + href + '"]')
-        if (!link) return
-
-        // Prevent any vertical jump by preserving scroll position
-        var y = window.scrollY
-
-        // Let GOV.UK Tabs do its thing via a real click
-        link.click()
-
-        // Restore scroll position after click + any focus/scroll effects
-        setTimeout(function () {
-          window.scrollTo(0, y)
-        }, 0)
-      }
-
-      // ---------------------------------------------
-      // ✅ Show header actions only on Materials tab
-      // ---------------------------------------------
       function updateHeaderActions () {
-        if (!headerActions) return
-
-        var activeTab = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
-        if (!activeTab) return
-
-        var href = activeTab.getAttribute('href') || ''
-        var panelId = href.replace('#', '')
-
-        // Only show actions when Materials tab is active
-        headerActions.hidden = (panelId !== 'view-materials')
+        var active = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
+        if (!active) return
+        headerActions.hidden = active.getAttribute('href') !== '#view-materials'
       }
 
-      // Run once on load (after GOV.UK tabs initialisation)
-      setTimeout(function () {
-        activateTabFromQuery()
-        updateHeaderActions()
-      }, 0)
+      setTimeout(updateHeaderActions, 0)
 
-      // Keep header actions in sync when user clicks tabs
       tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {
-          // GOV.UK tabs updates aria-selected in its handler
           setTimeout(updateHeaderActions, 0)
         })
       })
     })()
   </script>
 {% endblock %}
-
 
 

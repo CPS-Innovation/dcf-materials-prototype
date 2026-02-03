@@ -1,7 +1,10 @@
 {# _includes/case/disclosure/disclosure-task-list.njk  #}
-{# _includes/case/disclosure/disclosure-task-list.njk  #}
 
-{# {% set cm = data.caseMaterials or {} %} #}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+
 {% set cm = caseMaterials or data.caseMaterials or {} %}
 {% set materials = cm.Material or [] %}
 {% set firstMaterial = materials | first %}
@@ -11,117 +14,212 @@
   "In progress": "govuk-tag--light-blue"
 } %}
 
+<h2 class="govuk-heading-l">Disclosure</h2>
+<p class="govuk-body">Check or complete the assessment of unused case materials</p>
 
-{% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
+<div class="app-list">
+  <div class="app-list__item">
 
+    <h3 class="govuk-heading-m">Police certification</h3>
 
-    <h2 class="govuk-heading-l">Disclosure</h2>
-    <p class="govuk-body">Check or complete the assessment of unused case materials</p>
-
-    <div class="app-list">
-      <div class="app-list__item">
-        
-        <h3 class="govuk-heading-m">Police certification</h3>
-
-        {{ govukSummaryList({
-          classes: "govuk-summary-list--no-border govuk-!-margin-bottom-6",
-          rows: [
-            {
-              key: { text: "Date of certification" },
-              value: { text: cm.policeDisclosureCertification.dateOfCertification }
-            },
-            {
-              key: { text: "Disclosing officer name" },
-              value: { text: cm.policeDisclosureCertification.disclosingOfficerName }
-            }
-          ]
-        }) }}
-
-        {{ govukDetails({
-          summaryText: "Show certification",
-          html: cm.policeDisclosureCertification.certifierComment | replace('\n', '<br>')| safe
-        }) }}
-
-      </div>
-    </div>
-
-
-    <h3 class="govuk-heading-m govuk-!-margin-bottom-6">CPS disclosure assessment</h3>
-
-    {% set nonSensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedNonSensitive or "Not started yet" %}
-    {% set sensitiveStatus = cm.cpsDisclosureAssessment.hasAssessedSensitive or "Not started yet" %}
-
-    {% set nonSensitiveStatusHtml %}
-      {% if nonSensitiveStatus == "Completed" %}
-        <span class="govuk-body govuk-!-margin-0">Completed</span>
-      {% else %}
-        <strong class="govuk-tag {{ progressTagClass[nonSensitiveStatus] or 'govuk-tag--grey' }}">
-          {{ nonSensitiveStatus }}
-        </strong>
-      {% endif %}
-    {% endset %}
-
-    {% set sensitiveStatusHtml %}
-      {% if sensitiveStatus == "Completed" %}
-        <span class="govuk-body govuk-!-margin-0">Completed</span>
-      {% else %}
-        <strong class="govuk-tag {{ progressTagClass[sensitiveStatus] or 'govuk-tag--grey' }}">
-          {{ sensitiveStatus }}
-        </strong>
-      {% endif %}
-    {% endset %}
-
-    {# --- Disagreement flags (from rows) --- #}
-    {% set nsRows = data.disclosureNonSensitiveRows or [] %}
-    {% set sRows  = data.disclosureSensitiveRows or [] %}
-
-    {% set allRows = nsRows.concat(sRows) %}
-
-    {# True if ANY row has cpsDisagreesWithPolice === true #}
-    {% set hasAnyDisagreement = false %}
-    {% for r in allRows %}
-      {% if r.cpsDisagreesWithPolice %}
-        {% set hasAnyDisagreement = true %}
-      {% endif %}
-    {% endfor %}
-
-    {% set bothCompleted = (nonSensitiveStatus == "Completed") and (sensitiveStatus == "Completed") %}
-
-    {# --- Inset messaging --- #}
-    {% if bothCompleted and hasAnyDisagreement %}
-      {{ govukInsetText({
-        text: "Your assessment disagrees with the police on one or more selected items. They have been notified so they can update their disclosure status. Once all disagreements are resolved, the option to sign and export the disclosure schedules will become available on this page."
-      }) }}
-    {% elseif bothCompleted and (not hasAnyDisagreement) %}
-      {{ govukInsetText({
-        text: "This assessment has now been exported. Disclosure documents can be viewed in the unused non-sensitive and unused sensitive folders in the Review and redact tab."
-      }) }}
-    {% endif %}
-
-
-    {{ govukTaskList({
-      idPrefix: "assess-disclosure-tasks",
-      classes: "govuk-summary-list--no-border",
-      items: [
+    {{ govukSummaryList({
+      classes: "govuk-summary-list--no-border govuk-!-margin-bottom-6",
+      rows: [
         {
-          title: { text: "Assess non-sensitive materials" },
-          hint: {
-            text: "Complete disclosure for all unused non-sensitive items"
-          },
-          href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive",
-          status: { html: nonSensitiveStatusHtml }
+          key: { text: "Date of certification" },
+          value: { text: cm.policeDisclosureCertification.dateOfCertification }
         },
         {
-          title: { text: "Assess sensitive materials" },
-          hint: {
-            text: "Complete disclosure for all unused sensitive items"
-          },
-          href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive",
-          status: { html: sensitiveStatusHtml }
+          key: { text: "Disclosing officer name" },
+          value: { text: cm.policeDisclosureCertification.disclosingOfficerName }
         }
       ]
     }) }}
 
+    {{ govukDetails({
+      summaryText: "Show certification",
+      html: (cm.policeDisclosureCertification.certifierComment or "") | replace('\n', '<br>') | safe
+    }) }}
 
+  </div>
+</div>
 
+<h3 class="govuk-heading-m govuk-!-margin-bottom-6">CPS disclosure assessment</h3>
 
+{# ------------------------------
+   Rows (session data)
+   ------------------------------ #}
+{% set nsRows = data.disclosureNonSensitiveRows or [] %}
+
+{# ------------------------------
+   1) Split rows into:
+      - Assess NS flow rows (exclude police NLR)
+      - NLR rows (police says "No longer relevant")
+   ------------------------------ #}
+{% set assessNsRows = [] %}
+{% set nlrRows = [] %}
+
+{% for r in nsRows %}
+  {% set policeIsNlr = r and (((r.policeAssessment or '') | lower) == 'no longer relevant') %}
+  {% if policeIsNlr %}
+    {% set _ = nlrRows.push(r) %}
+  {% else %}
+    {% set _ = assessNsRows.push(r) %}
+  {% endif %}
+{% endfor %}
+
+{# ------------------------------
+   2) Derive NS progress (ONLY from assessNsRows)
+   ------------------------------ #}
+{% set touchedAssessNsRows = [] %}
+{% for r in assessNsRows %}
+  {% if r and r.cpsAssessment and r.cpsAssessment != 'To be assessed' %}
+    {% set _ = touchedAssessNsRows.push(r) %}
+  {% endif %}
+{% endfor %}
+
+{% set derivedNonSensitiveStatus = "Not started yet" %}
+{% if assessNsRows.length > 0 %}
+  {% if touchedAssessNsRows.length == 0 %}
+    {% set derivedNonSensitiveStatus = "Not started yet" %}
+  {% elseif touchedAssessNsRows.length < assessNsRows.length %}
+    {% set derivedNonSensitiveStatus = "In progress" %}
+  {% else %}
+    {% set derivedNonSensitiveStatus = "Completed" %}
+  {% endif %}
+{% endif %}
+
+{# IMPORTANT:
+   Prefer route-computed session status if present, but fall back safely.
+   Also try cm.cpsDisclosureAssessment (you have it in case-material.json).
+#}
+{% set nonSensitiveStatus =
+  derivedNonSensitiveStatus
+  or (data.cpsDisclosureAssessment and data.cpsDisclosureAssessment.hasAssessedNonSensitive)
+  or (cm.cpsDisclosureAssessment and cm.cpsDisclosureAssessment.hasAssessedNonSensitive)
+  or "Not started yet"
+%}
+
+{% set sensitiveStatus =
+  (data.cpsDisclosureAssessment and data.cpsDisclosureAssessment.hasAssessedSensitive)
+  or (cm.cpsDisclosureAssessment and cm.cpsDisclosureAssessment.hasAssessedSensitive)
+  or "Not started yet"
+%}
+
+{% set nonSensitiveStatusHtml %}
+  {% if nonSensitiveStatus == "Completed" %}
+    <span class="govuk-body govuk-!-margin-0">Completed</span>
+  {% else %}
+    <strong class="govuk-tag {{ progressTagClass[nonSensitiveStatus] or 'govuk-tag--grey' }}">
+      {{ nonSensitiveStatus }}
+    </strong>
+  {% endif %}
+{% endset %}
+
+{% set sensitiveStatusHtml %}
+  {% if sensitiveStatus == "Completed" %}
+    <span class="govuk-body govuk-!-margin-0">Completed</span>
+  {% else %}
+    <strong class="govuk-tag {{ progressTagClass[sensitiveStatus] or 'govuk-tag--grey' }}">
+      {{ sensitiveStatus }}
+    </strong>
+  {% endif %}
+{% endset %}
+
+{# TEMP: demo toggle #}
+{% set simulateSensitiveCompleted = true %}
+{% if simulateSensitiveCompleted %}
+  {% set sensitiveStatus = "Completed" %}
+  {% set sensitiveStatusHtml %}
+    <span class="govuk-body govuk-!-margin-0">Completed</span>
+  {% endset %}
+{% endif %}
+
+{# ------------------------------
+   3) Disagreement detection (ONLY for assessNsRows)
+      and be strict about booleans/strings
+   ------------------------------ #}
+{% set disagreements = [] %}
+
+{% for r in assessNsRows %}
+  {% set d1 = (r and (r.disagreesWithPolice === true or r.disagreesWithPolice == 'true')) %}
+  {% set d2 = (r and (r.cpsDisagreesWithPolice === true or r.cpsDisagreesWithPolice == 'true')) %}
+  {% set d3 = (r and (r.sensitivityDisputed === true or r.sensitivityDisputed == 'true')) %}
+
+  {% if d1 or d2 or d3 %}
+    {% set _ = disagreements.push(true) %}
+  {% endif %}
+{% endfor %}
+
+{% set hasAnyDisagreement = (disagreements.length > 0) %}
+{% set nonSensitiveCompleted = (nonSensitiveStatus == "Completed") %}
+
+{# ------------------------------
+   Insets
+   - NLR inset: PROTOTYPE ONLY show by default
+   - Export/disagreement inset: show NOTHING until NS is Completed
+   ------------------------------ #}
+
+{# ----------------------------------------------------------------
+   PROTOTYPE ONLY: show NLR inset by default.
+   Later flow will remove it, so keep this as a single toggle.
+----------------------------------------------------------------- #}
+{% set showNoLongerRelevantInset = true %}
+
+{% if showNoLongerRelevantInset %}
+  {% set disclosureReturnUrl = ("/cases/" ~ _case.id ~ "/material?tab=disclosure") | urlencode %}
+  {% set nlrHref = "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant?returnUrl=" ~ disclosureReturnUrl %}
+
+  {{ govukInsetText({
+    html:
+      "The police have assessed one or more items as no longer relevant as part of splitting or merging this case.<br><br>" ~
+      "You need to <a class='govuk-link' href='" ~ nlrHref ~ "'>review material that is no longer relevant</a> and either agree that the items are no longer relevant or ask the police to reinstate them."
+  }) }}
+{% endif %}
+
+{% if nonSensitiveCompleted %}
+  {% if hasAnyDisagreement %}
+    {{ govukInsetText({
+      html:
+        "Your assessment disagrees with the police on one or more selected items.<br>" ~
+        "They have been notified so they can update their disclosure status. Once all disagreements are resolved, the option to sign and export the disclosure schedules will become available on this page."
+    }) }}
+  {% else %}
+    {{ govukInsetText({
+      html:
+        "This assessment has now been exported.<br>" ~
+        "Disclosure documents can be viewed in the unused non-sensitive and unused sensitive folders in the Review and redact tab."
+    }) }}
+  {% endif %}
+{% endif %}
+
+{# --- Build task list items dynamically --- #}
+{% set taskItems = [] %}
+
+{% set _ = taskItems.push({
+  title: { text: "Assess non-sensitive materials" },
+  hint: { text: "Complete disclosure for all unused non-sensitive items" },
+  href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive",
+  status: { html: nonSensitiveStatusHtml }
+}) %}
+
+{% set _ = taskItems.push({
+  title: { text: "Assess sensitive materials" },
+  hint: { text: "Complete disclosure for all unused sensitive items" },
+  href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive",
+  status: { html: sensitiveStatusHtml }
+}) %}
+
+{# ✅ Append ONLY when completed + agreement #}
+{% if nonSensitiveCompleted and (not hasAnyDisagreement) %}
+  {% set _ = taskItems.push({
+    title: { html: '<a class="govuk-link" href="#">Sign and export the disclosure schedules</a>' },
+    status: { html: '<strong class="govuk-tag govuk-tag--blue">Not completed</strong>' }
+  }) %}
+{% endif %}
+
+{{ govukTaskList({
+  idPrefix: "assess-disclosure-tasks",
+  classes: "govuk-summary-list--no-border",
+  items: taskItems
+}) }}

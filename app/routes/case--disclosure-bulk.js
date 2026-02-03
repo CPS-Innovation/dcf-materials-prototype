@@ -1,10 +1,14 @@
-// routes/case--disclosure-bulk.js
+// app/routes/case--disclosure-bulk.js
 
 const _ = require('lodash')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
 module.exports = router => {
+
+  // ===========================================================================
+  // Data fetch
+  // ===========================================================================
 
   async function fetchCase(caseId) {
     return prisma.case.findUnique({
@@ -28,7 +32,9 @@ module.exports = router => {
     })
   }
 
-  /////////////////////////// Helpers //////////////////////////////////////
+  // ===========================================================================
+  // Helpers
+  // ===========================================================================
 
   function getCaseMaterialsForCase(req, _case) {
     const store = _.get(req, 'session.data.caseMaterials', null)
@@ -51,20 +57,37 @@ module.exports = router => {
     return {}
   }
 
+  /**
+   * Compute progress for NON-SENSITIVE disclosure
+   *
+   * BUSINESS RULE:
+   * - Items marked "No longer relevant" MUST NOT:
+   *   - count towards NS progress
+   *   - flip NS into "In progress"
+   */
   function computeNonSensitiveProgress(rows) {
-    const total = Array.isArray(rows) ? rows.length : 0
-    if (total === 0) return 'Not started yet'
+    const assessableRows = (rows || []).filter(r =>
+      r &&
+      r.cpsAssessment &&
+      r.cpsAssessment !== 'No longer relevant'
+    )
 
-    const assessedCount = rows.filter(r => {
-      const status = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
-      return status && status !== 'To be assessed'
-    }).length
+    if (assessableRows.length === 0) return 'Not started yet'
 
-    if (assessedCount === 0) return 'Not started yet'
-    if (assessedCount < total) return 'In progress'
+    const touchedRows = assessableRows.filter(r => r.cpsAssessment !== 'To be assessed')
+
+    if (touchedRows.length === 0) return 'Not started yet'
+    if (touchedRows.length < assessableRows.length) return 'In progress'
     return 'Completed'
   }
 
+  /**
+   * Sync CPS disclosure assessment status onto caseMaterials
+   *
+   * This is intentionally derived from session rows, NOT routes,
+   * because bulk NLR routes live under assess-non-sensitive for
+   * historical prototype reasons.
+   */
   function syncCpsDisclosureAssessment(req, _case) {
     const cm = getCaseMaterialsForCase(req, _case)
     if (!cm || !cm.cpsDisclosureAssessment) return
@@ -75,9 +98,6 @@ module.exports = router => {
     _.set(cm, 'cpsDisclosureAssessment.hasAssessedNonSensitive', progress)
   }
 
-
-  // Police assessment = Passes disclosure test AND CPS = Not disclosable or Clearly not disclosable
-  // Police assessment = Does not pass disclosure test AND CPS = Disclosable or Disclosable by inspection
   function computeCpsDisagreesWithPolice(policeAssessment, cpsAssessment) {
     const pol = (policeAssessment || '').toLowerCase().trim()
     const cps = (cpsAssessment || '').toLowerCase().trim()
@@ -95,7 +115,10 @@ module.exports = router => {
 
   function parseIdsParam(raw) {
     const idsParam = raw ? String(raw) : ''
-    return idsParam.split(',').map(s => s.trim()).filter(Boolean)
+    return idsParam
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
   }
 
   function resolveSelectedRows(req, selectedIds) {
@@ -120,14 +143,51 @@ module.exports = router => {
   }
 
   function redirectBack(res, returnUrl, focusId) {
-    const separator = returnUrl.includes('?') ? '&' : '?'
-    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(focusId)}`)
+    const sep = returnUrl.includes('?') ? '&' : '?'
+    return res.redirect(`${returnUrl}${sep}updatedRow=${encodeURIComponent(focusId)}`)
   }
 
-  /////////////////////////// BULK ROUTES //////////////////////////////////////
+  function setSuccessBanner(req, titleText, text) {
+    _.set(req, 'session.data.successBanner', { titleText, text })
+  }
 
-  // ✅ Bulk: assess as disclosable (GET)
-  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/disclosable', async (req, res) => {
+  /**
+   * Apply a simple CPS assessment + optional rationale to selected rows.
+   * Also recomputes cpsDisagreesWithPolice.
+   */
+  function applyBulkAssessment(req, selectedIds, opts = {}) {
+    const {
+      cpsAssessment,
+      cpsRationale,
+      setDisagreement = true
+    } = opts
+
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+
+    selectedIds.forEach(id => {
+      const idx = rows.findIndex(r => String(r.id) === String(id))
+      if (idx === -1) return
+
+      _.set(req, `${rowsPath}[${idx}].cpsAssessment`, cpsAssessment)
+
+      if (typeof cpsRationale !== 'undefined') {
+        _.set(req, `${rowsPath}[${idx}].cpsRationale`, cpsRationale)
+      }
+
+      if (setDisagreement) {
+        const policeAssessment = _.get(req, `${rowsPath}[${idx}].policeAssessment`, '')
+        const disagrees = computeCpsDisagreesWithPolice(policeAssessment, cpsAssessment)
+        _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, disagrees)
+      }
+    })
+  }
+
+  // ===========================================================================
+  // GET helper to render a bulk screen
+  // ===========================================================================
+
+  async function renderBulk(req, res, viewName) {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
@@ -136,195 +196,246 @@ module.exports = router => {
 
     const caseMaterials = getCaseMaterialsForCase(req, _case)
 
-    const idsParam = req.query?.ids ? String(req.query.ids) : ''
-    const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
+    const selectedIds = parseIdsParam(req.query?.ids)
     if (!selectedIds.length) return res.status(400).send('Missing ids')
 
-    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-    const selectedRows = selectedIds
-      .map(id => rows.find(r => String(r.id) === String(id)))
-      .filter(Boolean)
-
+    const { selectedRows } = resolveSelectedRows(req, selectedIds)
     if (!selectedRows.length) return res.status(404).send('No rows found')
 
-    // Precompute per-row disagreement for this proposed decision
-    selectedRows.forEach(r => {
-      r.cpsDisagreesWithPolice = computeCpsDisagreesWithPolice(r.policeAssessment, 'Disclosable')
-    })
-
-    const returnUrl = req.query?.returnUrl
-      ? String(req.query.returnUrl)
-      : `/cases/${caseId}/disclosure/assess-non-sensitive`
-
-    return res.render('cases/disclosure/assess-non-sensitive/bulk/disclosable', {
+    return res.render(viewName, {
       _case,
       caseMaterials,
       selectedIds,
       selectedRows,
-      returnUrl
+      returnUrl: getReturnUrl(req, caseId)
     })
+  }
+
+  // ===========================================================================
+  // BULK ROUTES (Assess non-sensitive)
+  // Folder: views/cases/disclosure/assess-non-sensitive/bulk/*.html
+  // ===========================================================================
+
+  // ---------------------------
+  // Disclosable
+  // ---------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/disclosable', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/disclosable')
   })
 
-  // ✅ Bulk: assess as disclosable (POST)
   router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/disclosable', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const idsParam = req.body?.ids ? String(req.body.ids) : ''
-    const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
     if (!selectedIds.length) return res.status(400).send('Missing ids')
 
-    const rationale = req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : ''
-
-    const rowsPath = 'session.data.disclosureNonSensitiveRows'
-    const rows = _.get(req, rowsPath, [])
-
-    selectedIds.forEach(id => {
-      const idx = rows.findIndex(r => String(r.id) === String(id))
-      if (idx === -1) return
-
-      _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Disclosable')
-      _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
-
-      const policeAssessment = _.get(req, `${rowsPath}[${idx}].policeAssessment`, '')
-      const disagrees = computeCpsDisagreesWithPolice(policeAssessment, 'Disclosable')
-      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, disagrees)
+    const rationale = req.body?.bulkRationale || req.body?.cpsRationale || ''
+    applyBulkAssessment(req, selectedIds, {
+      cpsAssessment: 'Disclosable',
+      cpsRationale: rationale
     })
 
     const _case = await fetchCase(caseId)
     if (_case) syncCpsDisclosureAssessment(req, _case)
 
-    _.set(req, 'session.data.successBanner', {
-      titleText: `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Disclosable`,
-      text: 'This update has been sent to the police.'
-    })
+    setSuccessBanner(
+      req,
+      `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Disclosable`,
+      'This update has been saved.'
+    )
 
-    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
-    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
-    const separator = returnUrl.includes('?') ? '&' : '?'
-
-    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedIds[0])}`)
+    return redirectBack(res, postReturnUrl(req, caseId), selectedIds[0])
   })
 
-
-
- // ✅ Bulk: assess as disclosable by inspection (GET)
-  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-    const idsParam = req.query?.ids ? String(req.query.ids) : ''
-    const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
-    if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-    const selectedRows = selectedIds
-      .map(id => rows.find(r => String(r.id) === String(id)))
-      .filter(Boolean)
-
-    if (!selectedRows.length) return res.status(404).send('No rows found')
-
-    // Precompute per-row disagreement for this proposed decision
-    selectedRows.forEach(r => {
-      r.cpsDisagreesWithPolice = computeCpsDisagreesWithPolice(r.policeAssessment, 'Disclosable by inspection')
-    })
-
-    const returnUrl = req.query?.returnUrl
-      ? String(req.query.returnUrl)
-      : `/cases/${caseId}/disclosure/assess-non-sensitive`
-
-    return res.render('cases/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection', {
-      _case,
-      caseMaterials,
-      selectedIds,
-      selectedRows,
-      returnUrl
-    })
+  // ---------------------------
+  // Disclosable by inspection
+  // ---------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection')
   })
 
-
-  // ✅ Bulk: assess as disclosable by inspection (POST)
   router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const idsParam = req.body?.ids ? String(req.body.ids) : ''
-    const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
     if (!selectedIds.length) return res.status(400).send('Missing ids')
 
-    const rationale = req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : ''
-
-    const rowsPath = 'session.data.disclosureNonSensitiveRows'
-    const rows = _.get(req, rowsPath, [])
-
-    selectedIds.forEach(id => {
-      const idx = rows.findIndex(r => String(r.id) === String(id))
-      if (idx === -1) return
-
-      _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Disclosable by inspection')
-      _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
-
-      const policeAssessment = _.get(req, `${rowsPath}[${idx}].policeAssessment`, '')
-      const disagrees = computeCpsDisagreesWithPolice(policeAssessment, 'Disclosable by inspection')
-      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, disagrees)
+    const rationale = req.body?.bulkRationale || req.body?.cpsRationale || ''
+    applyBulkAssessment(req, selectedIds, {
+      cpsAssessment: 'Disclosable by inspection',
+      cpsRationale: rationale
     })
 
     const _case = await fetchCase(caseId)
     if (_case) syncCpsDisclosureAssessment(req, _case)
 
-    _.set(req, 'session.data.successBanner', {
-      titleText: `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Disclosable by inspection`,
-      text: 'This update has been sent to the police.'
-    })
+    setSuccessBanner(
+      req,
+      `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Disclosable by inspection`,
+      'This update has been saved.'
+    )
 
-    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
-    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
-    const separator = returnUrl.includes('?') ? '&' : '?'
-
-    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedIds[0])}`)
+    return redirectBack(res, postReturnUrl(req, caseId), selectedIds[0])
   })
 
-
-
-  // ✅ Bulk: Clearly not disclosable (GET)
-  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-    const selectedIds = parseIdsParam(req.query?.ids)
-    if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-    const { selectedRows } = resolveSelectedRows(req, selectedIds)
-    if (!selectedRows.length) return res.status(404).send('No rows found')
-
-    return res.render('cases/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable', {
-      _case,
-      caseMaterials,
-      selectedIds,
-      selectedRows,
-      returnUrl: getReturnUrl(req, caseId)
-    })
+  // ---------------------------
+  // Clearly not disclosable
+  // ---------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable')
   })
 
-  // ✅ Bulk: Clearly not disclosable (POST)
   router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
     const selectedIds = parseIdsParam(req.body?.ids)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
     if (!selectedIds.length) return res.status(400).send('Missing ids')
 
-    const rationale = req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : ''
+    const rationale = req.body?.bulkRationale || req.body?.cpsRationale || ''
+    applyBulkAssessment(req, selectedIds, {
+      cpsAssessment: 'Clearly not disclosable',
+      cpsRationale: rationale
+    })
+
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsDisclosureAssessment(req, _case)
+
+    setSuccessBanner(
+      req,
+      `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Clearly not disclosable`,
+      'This update has been saved.'
+    )
+
+    return redirectBack(res, postReturnUrl(req, caseId), selectedIds[0])
+  })
+
+  // ---------------------------
+  // Not disclosable
+  // ---------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/not-disclosable', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/not-disclosable')
+  })
+
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/not-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    if (!selectedIds.length) return res.status(400).send('Missing ids')
+
+    const rationale = req.body?.bulkRationale || req.body?.cpsRationale || ''
+    applyBulkAssessment(req, selectedIds, {
+      cpsAssessment: 'Not disclosable',
+      cpsRationale: rationale
+    })
+
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsDisclosureAssessment(req, _case)
+
+    setSuccessBanner(
+      req,
+      `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Not disclosable`,
+      'This update has been saved.'
+    )
+
+    return redirectBack(res, postReturnUrl(req, caseId), selectedIds[0])
+  })
+
+  // ---------------------------
+  // Evidence
+  // ---------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/evidence', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/evidence')
+  })
+
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/evidence', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    if (!selectedIds.length) return res.status(400).send('Missing ids')
+
+    const rationale = req.body?.bulkRationale || req.body?.cpsRationale || ''
+    applyBulkAssessment(req, selectedIds, {
+      cpsAssessment: 'Evidence',
+      cpsRationale: rationale,
+      // Evidence doesn't map cleanly to "passes/does not pass" disagreement logic,
+      // so keep it false by default.
+      setDisagreement: false
+    })
+
+    selectedIds.forEach(id => {
+      const rowsPath = 'session.data.disclosureNonSensitiveRows'
+      const rows = _.get(req, rowsPath, [])
+      const idx = rows.findIndex(r => String(r.id) === String(id))
+      if (idx === -1) return
+      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, false)
+    })
+
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsDisclosureAssessment(req, _case)
+
+    setSuccessBanner(
+      req,
+      `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Evidence`,
+      'This update has been saved.'
+    )
+
+    return redirectBack(res, postReturnUrl(req, caseId), selectedIds[0])
+  })
+
+  // ---------------------------
+  // Request updated description
+  // ---------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-updated-description', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/request-updated-description')
+  })
+
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-updated-description', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    if (!selectedIds.length) return res.status(400).send('Missing ids')
+
+    const requestText =
+      (req.body?.bulkRationale || req.body?.bulkRequestText || req.body?.requestDetails || '').trim()
+
+    // This action doesn’t change CPS assessment; store request note against rows.
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+
+    selectedIds.forEach(id => {
+      const idx = rows.findIndex(r => String(r.id) === String(id))
+      if (idx === -1) return
+      _.set(req, `${rowsPath}[${idx}].requestUpdatedDescription`, true)
+      _.set(req, `${rowsPath}[${idx}].requestUpdatedDescriptionText`, requestText)
+    })
+
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsDisclosureAssessment(req, _case)
+
+    setSuccessBanner(
+      req,
+      `Requested updated descriptions for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
+      'This update has been saved.'
+    )
+
+    return redirectBack(res, postReturnUrl(req, caseId), selectedIds[0])
+  })
+
+  // ---------------------------
+  // Request material
+  // ---------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-material', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/request-material')
+  })
+
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-material', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    if (!selectedIds.length) return res.status(400).send('Missing ids')
+
+    const requestText =
+      (req.body?.bulkRationale || req.body?.bulkRequestText || req.body?.requestDetails || '').trim()
 
     const rowsPath = 'session.data.disclosureNonSensitiveRows'
     const rows = _.get(req, rowsPath, [])
@@ -332,356 +443,43 @@ module.exports = router => {
     selectedIds.forEach(id => {
       const idx = rows.findIndex(r => String(r.id) === String(id))
       if (idx === -1) return
-
-      _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Clearly not disclosable')
-      _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
-
-      const policeAssessment = _.get(req, `${rowsPath}[${idx}].policeAssessment`, '')
-      const disagrees = computeCpsDisagreesWithPolice(policeAssessment, 'Clearly not disclosable')
-      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, disagrees)
+      _.set(req, `${rowsPath}[${idx}].requestMaterial`, true)
+      _.set(req, `${rowsPath}[${idx}].requestMaterialText`, requestText)
+      // Typically "material not provided" is a police-side flag; keep your existing r.isProvided.
+      // But you can store that you requested it for UI playback.
     })
 
     const _case = await fetchCase(caseId)
     if (_case) syncCpsDisclosureAssessment(req, _case)
 
-    _.set(req, 'session.data.successBanner', {
-      titleText: `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Clearly not disclosable`,
-      text: 'This update has been sent to the police.'
-    })
+    setSuccessBanner(
+      req,
+      `Requested material for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
+      'This update has been saved.'
+    )
 
-    const returnUrl = postReturnUrl(req, caseId)
-    return redirectBack(res, returnUrl, selectedIds[0])
+    return redirectBack(res, postReturnUrl(req, caseId), selectedIds[0])
   })
 
-
-  // ✅ Bulk: Not disclosable (GET)
-  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/not-disclosable', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-    const selectedIds = parseIdsParam(req.query?.ids)
-    if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-    const { selectedRows } = resolveSelectedRows(req, selectedIds)
-    if (!selectedRows.length) return res.status(404).send('No rows found')
-
-    return res.render('cases/disclosure/assess-non-sensitive/bulk/not-disclosable', {
-      _case,
-      caseMaterials,
-      selectedIds,
-      selectedRows,
-      returnUrl: getReturnUrl(req, caseId)
-    })
+  // ---------------------------
+  // Change sensitivity dispute (bulk)
+  // ---------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute')
   })
 
-// ✅ Bulk: assess as not disclosable (GET)
-router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/not-disclosable', async (req, res) => {
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute', async (req, res) => {
   const caseId = parseInt(req.params.caseId, 10)
+  const selectedIds = parseIdsParam(req.body?.ids)
+
   if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-  const _case = await fetchCase(caseId)
-  if (!_case) return res.status(404).render('not-found')
-
-  const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-  const idsParam = req.query?.ids ? String(req.query.ids) : ''
-  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
   if (!selectedIds.length) return res.status(400).send('Missing ids')
 
-  const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-  const selectedRows = selectedIds
-    .map(id => rows.find(r => String(r.id) === String(id)))
-    .filter(Boolean)
-
-  if (!selectedRows.length) return res.status(404).send('No rows found')
-
-  // Precompute per-row disagreement for this proposed decision
-  selectedRows.forEach(r => {
-    r.cpsDisagreesWithPolice = computeCpsDisagreesWithPolice(r.policeAssessment, 'Not disclosable')
-  })
-
-  const returnUrl = req.query?.returnUrl
-    ? String(req.query.returnUrl)
-    : `/cases/${caseId}/disclosure/assess-non-sensitive`
-
-  return res.render('cases/disclosure/assess-non-sensitive/bulk/not-disclosable', {
-    _case,
-    caseMaterials,
-    selectedIds,
-    selectedRows,
-    returnUrl
-  })
-})
-
-
-// ✅ Bulk: assess as not disclosable (POST)
-router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/not-disclosable', async (req, res) => {
-  const caseId = parseInt(req.params.caseId, 10)
-  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-  const idsParam = req.body?.ids ? String(req.body.ids) : ''
-  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
-  if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-  const rationale = req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : ''
+  const option = String(req.body?.changeSensitivityDisputeOption || '').trim()
+  const bulkWording = String(req.body?.bulkWording || '').trim()
 
   const rowsPath = 'session.data.disclosureNonSensitiveRows'
   const rows = _.get(req, rowsPath, [])
-
-  selectedIds.forEach(id => {
-    const idx = rows.findIndex(r => String(r.id) === String(id))
-    if (idx === -1) return
-
-    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Not disclosable')
-    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
-
-    const policeAssessment = _.get(req, `${rowsPath}[${idx}].policeAssessment`, '')
-    const disagrees = computeCpsDisagreesWithPolice(policeAssessment, 'Not disclosable')
-    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, disagrees)
-  })
-
-  const _case = await fetchCase(caseId)
-  if (_case) syncCpsDisclosureAssessment(req, _case)
-
-  _.set(req, 'session.data.successBanner', {
-    titleText: `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Not disclosable`,
-    text: 'This update has been sent to the police.'
-  })
-
-  const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
-  const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
-  const separator = returnUrl.includes('?') ? '&' : '?'
-
-  return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedIds[0])}`)
-})
-
-
- // ✅ Bulk: assess as evidence (GET)
-router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/evidence', async (req, res) => {
-  const caseId = parseInt(req.params.caseId, 10)
-  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-  const _case = await fetchCase(caseId)
-  if (!_case) return res.status(404).render('not-found')
-
-  const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-  const idsParam = req.query?.ids ? String(req.query.ids) : ''
-  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
-  if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-  const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-  const selectedRows = selectedIds
-    .map(id => rows.find(r => String(r.id) === String(id)))
-    .filter(Boolean)
-
-  if (!selectedRows.length) return res.status(404).send('No rows found')
-
-  // Evidence isn't in the disagreement rule set, so don't auto-flag disagreement.
-  // Keep this false unless your product policy says otherwise.
-  selectedRows.forEach(r => {
-    r.cpsDisagreesWithPolice = false
-  })
-
-  const returnUrl = req.query?.returnUrl
-    ? String(req.query.returnUrl)
-    : `/cases/${caseId}/disclosure/assess-non-sensitive`
-
-  return res.render('cases/disclosure/assess-non-sensitive/bulk/evidence', {
-    _case,
-    caseMaterials,
-    selectedIds,
-    selectedRows,
-    returnUrl
-  })
-})
-
-
-// ✅ Bulk: assess as evidence (POST)
-router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/evidence', async (req, res) => {
-  const caseId = parseInt(req.params.caseId, 10)
-  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-  const idsParam = req.body?.ids ? String(req.body.ids) : ''
-  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
-  if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-  const rationale = req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : ''
-
-  const rowsPath = 'session.data.disclosureNonSensitiveRows'
-  const rows = _.get(req, rowsPath, [])
-
-  selectedIds.forEach(id => {
-    const idx = rows.findIndex(r => String(r.id) === String(id))
-    if (idx === -1) return
-
-    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Evidence')
-    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
-
-    // Evidence isn't part of your agree/disagree rules, so don't mark disagreement.
-    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, false)
-  })
-
-  const _case = await fetchCase(caseId)
-  if (_case) syncCpsDisclosureAssessment(req, _case)
-
-  _.set(req, 'session.data.successBanner', {
-    titleText: `Assessed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as Evidence`,
-    text: 'This update has been sent to the police.'
-  })
-
-  const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
-  const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
-  const separator = returnUrl.includes('?') ? '&' : '?'
-
-  return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedIds[0])}`)
-})
-
-
-
-// ✅ Bulk: dispute sensitivity (GET)
-router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/dispute-sensitivity', async (req, res) => {
-  const caseId = parseInt(req.params.caseId, 10)
-  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-  const _case = await fetchCase(caseId)
-  if (!_case) return res.status(404).render('not-found')
-
-  const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-  // ids comes from query string, e.g. ?ids=1,2,3
-  const idsParam = req.query?.ids ? String(req.query.ids) : ''
-  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
-  if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-  // Resolve selected rows from the same session dataset the table uses
-  const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-  const selectedRows = selectedIds
-    .map(id => rows.find(r => String(r.id) === String(id)))
-    .filter(Boolean)
-
-  if (!selectedRows.length) return res.status(404).send('No rows found')
-
-  const returnUrl = req.query?.returnUrl
-    ? String(req.query.returnUrl)
-    : `/cases/${caseId}/disclosure/assess-non-sensitive`
-
-  return res.render('cases/disclosure/assess-non-sensitive/bulk/dispute-sensitivity', {
-    _case,
-    caseMaterials,
-    selectedIds,
-    selectedRows,
-    returnUrl
-  })
-})
-
-
-// ✅ Bulk: dispute sensitivity (POST)
-router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/dispute-sensitivity', async (req, res) => {
-  const caseId = parseInt(req.params.caseId, 10)
-  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-  // ids comes from hidden input
-  const idsParam = req.body?.ids ? String(req.body.ids) : ''
-  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
-  if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-  const reason = req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : ''
-
-  const rowsPath = 'session.data.disclosureNonSensitiveRows'
-  const rows = _.get(req, rowsPath, [])
-
-  selectedIds.forEach(id => {
-    const idx = rows.findIndex(r => String(r.id) === String(id))
-    if (idx === -1) return
-
-    // Mirror your single-item dispute behaviour
-    _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, true)
-    _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, reason || null)
-    _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, new Date().toISOString())
-
-    // In your current single-item route, disputing sensitivity sets this true
-    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
-  })
-
-  const _case = await fetchCase(caseId)
-  if (_case) syncCpsDisclosureAssessment(req, _case)
-
-  _.set(req, 'session.data.successBanner', {
-    titleText: `Sensitivity disputed for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
-    text: 'This update has been sent to the police.'
-  })
-
-  const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
-  const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
-  const separator = returnUrl.includes('?') ? '&' : '?'
-
-  return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedIds[0])}`)
-})
-
-
-
- // ✅ Bulk: change sensitivity dispute (GET)
-router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute', async (req, res) => {
-  const caseId = parseInt(req.params.caseId, 10)
-  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-  const _case = await fetchCase(caseId)
-  if (!_case) return res.status(404).render('not-found')
-
-  const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-  const idsParam = req.query?.ids ? String(req.query.ids) : ''
-  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
-  if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-  const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-  const selectedRows = selectedIds
-    .map(id => rows.find(r => String(r.id) === String(id)))
-    .filter(Boolean)
-
-  if (!selectedRows.length) return res.status(404).send('No rows found')
-
-  const returnUrl = req.query?.returnUrl
-    ? String(req.query.returnUrl)
-    : `/cases/${caseId}/disclosure/assess-non-sensitive`
-
-  return res.render('cases/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute', {
-    _case,
-    caseMaterials,
-    selectedIds,
-    selectedRows,
-    returnUrl
-  })
-})
-
-
-// ✅ Bulk: change sensitivity dispute (POST)
-router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute', async (req, res) => {
-  const caseId = parseInt(req.params.caseId, 10)
-  if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-  const idsParam = req.body?.ids ? String(req.body.ids) : ''
-  const selectedIds = idsParam.split(',').map(s => s.trim()).filter(Boolean)
-  if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-  const option = req.body?.changeSensitivityDisputeOption
-    ? String(req.body.changeSensitivityDisputeOption)
-    : null
-
-  const wording = req.body?.bulkWording ? String(req.body.bulkWording).trim() : ''
-
-  const rowsPath = 'session.data.disclosureNonSensitiveRows'
-  const rows = _.get(req, rowsPath, [])
-
-  if (option !== 'agree' && option !== 'wording') {
-    return res.status(400).send('Missing option')
-  }
 
   selectedIds.forEach(id => {
     const idx = rows.findIndex(r => String(r.id) === String(id))
@@ -689,168 +487,147 @@ router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/change-sensitiv
 
     if (option === 'agree') {
       _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, false)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, null)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, null)
-
-      // Optional: if dispute was the ONLY reason for disagreement, this is safe to clear.
-      // If you prefer to keep any prior disagreement, delete this line.
-      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, false)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, '')
+      return
     }
 
     if (option === 'wording') {
       _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, true)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, wording || null)
-      _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, new Date().toISOString())
-
-      // Dispute implies disagreement
-      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, bulkWording)
+      return
     }
-  })
 
-  _.set(req, 'session.data.successBanner', {
-    titleText: option === 'agree'
-      ? `Sensitivity dispute removed for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`
-      : `Sensitivity dispute updated for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
-    text: option === 'agree'
-      ? 'The dispute has been removed from the selected items.'
-      : 'The dispute wording has been updated.'
+    // If option missing/unknown: leave row unchanged (safe no-op)
   })
 
   const _case = await fetchCase(caseId)
   if (_case) syncCpsDisclosureAssessment(req, _case)
 
-  const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
-  const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
-  const separator = returnUrl.includes('?') ? '&' : '?'
+  // Banner copy that reflects the chosen action
+  const titleText =
+    option === 'agree'
+      ? `Removed sensitivity dispute for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`
+      : option === 'wording'
+        ? `Updated sensitivity dispute wording for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`
+        : `Updated sensitivity dispute for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`
 
-  return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedIds[0])}`)
+  _.set(req, 'session.data.successBanner', {
+    titleText,
+    text: 'This update has been saved.'
+  })
+
+  return redirectBack(res, postReturnUrl(req, caseId), selectedIds[0])
 })
 
+  // ===========================================================================
+  // ✅ BULK: REQUEST ITEM REINSTATEMENT
+  // Renders: views/cases/disclosure/assess-non-sensitive/bulk/request-item-reinstatement.html
+  // POST: saves "reinstatement request" per selected row, then returns to NLR hub
+  // ===========================================================================
 
-
-  // ✅ Bulk: Request updated description (GET)
-  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-updated-description', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-    const selectedIds = parseIdsParam(req.query?.ids)
-    if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-    const { selectedRows } = resolveSelectedRows(req, selectedIds)
-    if (!selectedRows.length) return res.status(404).send('No rows found')
-
-    return res.render('cases/disclosure/assess-non-sensitive/bulk/request-updated-description', {
-      _case,
-      caseMaterials,
-      selectedIds,
-      selectedRows,
-      returnUrl: getReturnUrl(req, caseId)
-    })
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-item-reinstatement', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/request-item-reinstatement')
   })
 
-  // ✅ Bulk: Request updated description (POST)
-  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-updated-description', async (req, res) => {
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-item-reinstatement', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
     const selectedIds = parseIdsParam(req.body?.ids)
+
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
     if (!selectedIds.length) return res.status(400).send('Missing ids')
 
-    const requestText = req.body?.updatedDescriptionRequest
-      ? String(req.body.updatedDescriptionRequest).trim()
+    const reason = req.body?.reinstatementReason
+      ? String(req.body.reinstatementReason).trim()
       : ''
 
-    const rowsPath = 'session.data.disclosureNonSensitiveRows'
-    const rows = _.get(req, rowsPath, [])
+    const day = req.body?.['reinstatementNeededBy-day'] ? String(req.body['reinstatementNeededBy-day']).trim() : ''
+    const month = req.body?.['reinstatementNeededBy-month'] ? String(req.body['reinstatementNeededBy-month']).trim() : ''
+    const year = req.body?.['reinstatementNeededBy-year'] ? String(req.body['reinstatementNeededBy-year']).trim() : ''
 
-    selectedIds.forEach(id => {
-      const idx = rows.findIndex(r => String(r.id) === String(id))
-      if (idx === -1) return
-
-      _.set(req, `${rowsPath}[${idx}].updatedDescriptionRequest`, requestText || null)
-      _.set(req, `${rowsPath}[${idx}].updatedDescriptionRequestedAt`, new Date().toISOString())
-    })
-
-    _.set(req, 'session.data.successBanner', {
-      titleText: `Updated description requested for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
-      text: 'This request has been sent to the police.'
-    })
-
-    const returnUrl = postReturnUrl(req, caseId)
-    return redirectBack(res, returnUrl, selectedIds[0])
-  })
-
-
-  // ✅ Bulk: Request material (GET)
-  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-material', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
-
-    const selectedIds = parseIdsParam(req.query?.ids)
-    if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-    const { selectedRows } = resolveSelectedRows(req, selectedIds)
-    if (!selectedRows.length) return res.status(404).send('No rows found')
-
-    return res.render('cases/disclosure/assess-non-sensitive/bulk/request-material', {
-      _case,
-      caseMaterials,
-      selectedIds,
-      selectedRows,
-      returnUrl: getReturnUrl(req, caseId)
-    })
-  })
-
-  // ✅ Bulk: Request material (POST)
-  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/request-material', async (req, res) => {
-    const caseId = parseInt(req.params.caseId, 10)
-    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-
-    const selectedIds = parseIdsParam(req.body?.ids)
-    if (!selectedIds.length) return res.status(400).send('Missing ids')
-
-    const reason = req.body?.requestMaterialReason
-      ? String(req.body.requestMaterialReason).trim()
-      : ''
-
-    const day = req.body?.['materialNeededBy-day'] ? String(req.body['materialNeededBy-day']).trim() : ''
-    const month = req.body?.['materialNeededBy-month'] ? String(req.body['materialNeededBy-month']).trim() : ''
-    const year = req.body?.['materialNeededBy-year'] ? String(req.body['materialNeededBy-year']).trim() : ''
-
-    let materialNeededBy = null
+    let neededBy = null
     if (day && month && year) {
-      materialNeededBy = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      const dd = day.padStart(2, '0')
+      const mm = month.padStart(2, '0')
+      neededBy = `${year}-${mm}-${dd}`
     }
 
     const rowsPath = 'session.data.disclosureNonSensitiveRows'
     const rows = _.get(req, rowsPath, [])
 
+    // Save the request against each selected row (prototype-friendly)
     selectedIds.forEach(id => {
       const idx = rows.findIndex(r => String(r.id) === String(id))
       if (idx === -1) return
 
-      _.set(req, `${rowsPath}[${idx}].requestMaterialReason`, reason || null)
-      _.set(req, `${rowsPath}[${idx}].materialNeededBy`, materialNeededBy)
-      _.set(req, `${rowsPath}[${idx}].materialRequestedAt`, new Date().toISOString())
+      _.set(req, `${rowsPath}[${idx}].reinstatementRequested`, true)
+      _.set(req, `${rowsPath}[${idx}].reinstatementReason`, reason || null)
+      _.set(req, `${rowsPath}[${idx}].reinstatementNeededBy`, neededBy)
+      _.set(req, `${rowsPath}[${idx}].reinstatementRequestedAt`, new Date().toISOString())
+
+      // This is a disagreement in the NLR context (you’re asserting it should be reinstated)
+      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
     })
 
-    _.set(req, 'session.data.successBanner', {
-      titleText: `Material requested for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
-      text: 'This request has been sent to the police.'
-    })
+    // NLR requests should NOT move non-sensitive progress (same as your NLR rule)
+    // So we intentionally DO NOT call syncCpsDisclosureAssessment here.
 
-    const returnUrl = postReturnUrl(req, caseId)
+    setSuccessBanner(
+      req,
+      `Requested reinstatement for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`,
+      'This update has been sent to the police.'
+    )
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/no-longer-relevant`
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
+
     return redirectBack(res, returnUrl, selectedIds[0])
   })
+
+
+  // ===========================================================================
+  // ✅ BULK: AGREE NO LONGER RELEVANT
+  // (Lives under assess-non-sensitive for legacy reasons)
+  // Must redirect back to /disclosure/no-longer-relevant
+  // Must NOT influence NS progress
+  // ===========================================================================
+
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant', (req, res) => {
+    return renderBulk(req, res, 'cases/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant')
+  })
+
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    if (!selectedIds.length) return res.status(400).send('Missing ids')
+
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+
+    selectedIds.forEach(id => {
+      const idx = rows.findIndex(r => String(r.id) === String(id))
+      if (idx === -1) return
+      _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'No longer relevant')
+      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, false)
+    })
+
+    // IMPORTANT: Do not call syncCpsDisclosureAssessment here if you want
+    // NLR to never impact NS progress. (Your helper excludes NLR anyway,
+    // so calling it is safe, but leaving it out is even clearer.)
+    // const _case = await fetchCase(caseId)
+    // if (_case) syncCpsDisclosureAssessment(req, _case)
+
+    setSuccessBanner(
+      req,
+      `Agreed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as No longer relevant`,
+      'This update has been sent to the police.'
+    )
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/no-longer-relevant`
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallbackReturnUrl
+
+    return redirectBack(res, returnUrl, selectedIds[0])
+  })
+
 
 }

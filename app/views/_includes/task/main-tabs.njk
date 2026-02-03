@@ -132,20 +132,36 @@
             </a>
           {% endset %}
 
+
+          {# -----------------------------
+            Start task link - route is in case--materials.js
+            ----------------------------- #}
+          {% set startTaskLink %}
+            <a class="govuk-link govuk-link--no-visited-state govuk-!-margin-bottom-0"
+              href="/cases/{{ task.case.id }}/material/start-disclosure">
+              Start task
+            </a>
+          {% endset %}
+
           {{ govukSummaryList({
-            classes: 'govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text',
+            classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
             rows: [
               {
-                key:   { text: 'Case reference number' },
+                key: { text: "Task" },
+                value: { text: "Assess disclosure task" },
+                actions: {
+                  items: [
+                    { html: startTaskLink }
+                  ]
+                }
+              },
+              {
+                key: { text: "Case reference number" },
                 value: { html: caseRefLink }
               },
               {
-                key:   { text: 'Defendant' },
+                key: { text: "Defendant" },
                 value: { html: defendantsValue }
-              },
-              {
-                key:   { text: 'Due date' },
-                value: { html: dueDateValue }
               }
             ]
           }) }}

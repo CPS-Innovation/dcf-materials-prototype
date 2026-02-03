@@ -1,3 +1,5 @@
+// routes.js
+
 const govukPrototypeKit = require('govuk-prototype-kit')
 const router = govukPrototypeKit.requests.setupRouter()
 const fs = require('fs');
@@ -7,10 +9,6 @@ const checkSignedIn = require('./middleware/checkSignedIn')
 
 const flash = require('connect-flash')
 router.use(flash())
-
-
-
-
 
 router.all('*', (req, res, next) => {
   res.locals.referrer = req.query.referrer
@@ -66,8 +64,6 @@ router.get('/', (req, res) => {
   res.render("index")
 })
 
-
-
 require('./routes/static')(router)
 
 require('./routes/account')(router)
@@ -99,9 +95,12 @@ require('./routes/case--direction')(router)
 require('./routes/case--direction--complete')(router)
 require('./routes/case--documents')(router)
 require('./routes/case--details')(router)
+// ✅ Put this BEFORE case--disclosure / case--disclosure-bulk
+require('./routes/case--disclosure-assess-as-unused')(router)
 require('./routes/case--disclosure')(router)
 require('./routes/case--disclosure-bulk')(router)
 require('./routes/case--material')(router)
+require('./routes/case--material-actions')(router)
 require('./routes/case--witnesses')(router)
 require('./routes/case--witness')(router)
 require('./routes/case--defendants')(router)
@@ -122,3 +121,5 @@ require('./routes/paralegal-officers')(router)
 //       err
 //     })
 // })
+
+module.exports = router

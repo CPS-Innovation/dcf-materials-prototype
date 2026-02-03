@@ -1,4 +1,4 @@
-{# cases/disclosure/assess-non-sensitive/index.html #}
+{# /cases/disclosure/no-longer-relevant/index.html #}
 
 {% extends "layouts/main.html" %}
 {% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
@@ -8,21 +8,18 @@
 
 {% set cm = caseMaterials or {} %}
 {% set materials = cm.Material or [] %}
-{% set firstMaterial = materials | first %}
 
-{# Source all rows #}
+{# -------------------------
+   Build rows for this page
+   ONLY policeAssessment = "No longer relevant"
+   ------------------------- #}
 {% set allRows = data.disclosureNonSensitiveRows or [] %}
-
-{# Filter OUT policeAssessment = "No longer relevant" (handled on separate table) #}
 {% set rows = [] %}
 {% for r in allRows %}
-  {% if r and ((r.policeAssessment or '') | lower) != 'no longer relevant' %}
+  {% if r and ((r.policeAssessment or '') | lower) == 'no longer relevant' %}
     {% set _ = rows.push(r) %}
   {% endif %}
 {% endfor %}
-
-
-
 
 {# -------------------------
    Defendants display value
@@ -40,7 +37,7 @@
   {% endif %}
 {% endset %}
 
-{% set pageName = 'Assess non-sensitive materials' %}
+{% set pageName = 'Assess material that is no longer relevant' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -67,60 +64,26 @@
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {# Bulk actions – dynamic availability based on selected rows #}
+      {# Bulk actions – keep for now (you’ll probably replace with NLR-only actions later) #}
       {{ mojButtonMenu({
         classes: "govuk-!-margin-bottom-6",
         button: { text: "Assess multiple items" },
         items: [
-
-          { 
-            text: "Assess as disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
-          },
-          { 
-            text: "Assess as disclosable by inspection", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/disclosable-by-inspection?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
-          },
-          { 
-            text: "Assess as not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
-          },
-          { 
-            text: "Assess as clearly not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/clearly-not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
-          },
-          { 
-            text: "Assess as evidence", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/evidence?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
-          },
           {
-            text: "Assess as no longer relevant",
-            href: "/cases/" ~ _case.id ~
-              "/disclosure/assess-non-sensitive/bulk/assess-as-no-longer-relevant" ~ "?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode)
-          },
-          { 
-            text: "Dispute sensitivity", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/dispute-sensitivity?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
-          {
-            text: "Change sensitivity dispute",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/change-sensitivity-dispute?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode)
-          },
-          { 
-            text: "Request material", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-material?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
-          },
-          { 
-            text: "Request updated description", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-updated-description?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
-          },
-          { 
             text: "Agree no longer relevant",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode),
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" | urlencode),
             attributes: { "data-allow-nlr": "true" }
           },
-
-          { 
+          {
             text: "Request item is reinstated",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-item-reinstated?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode),
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-item-reinstatement?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" | urlencode),
             attributes: { "data-allow-nlr": "true" }
           }
         ]
       }) }}
 
-      {# Row-level table lives entirely in the include #}
-      {% set showItemColumn = true %}
+      {# ✅ This include will now render ONLY the filtered rows because `rows` exists in scope #}
+      {% set showItemColumn = false %}
       {% include "_includes/case/disclosure/disclosure-table.njk" %}
 
     </div>
@@ -133,7 +96,8 @@
       (function () {
 
         // Expose row data for bulk selection logic
-        window.__disclosureRows = {{ rows | dump | safe }};
+        
+        window.__disclosureRows = {{ (data.disclosureNonSensitiveRows or []) | dump | safe }};
 
         var bulkMenu = document.querySelector('.moj-button-menu');
         if (!bulkMenu) return;

@@ -1,10 +1,21 @@
-{# This file is a template for /disclosure/assess-non-sensitive/bulk/evidence #}
+{# /disclosure/assess-non-sensitive/bulk/assess-as-no-longer-relevant.html #}
+
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 
+{% set cm = caseMaterials or data.caseMaterials or {} %}
+
+{# Bulk pages use selectedIds + selectedRows passed from the route #}
+{% set selectedIds = selectedIds or (query.ids | split(',') if query and query.ids else []) %}
+{% set selectedRows = selectedRows or [] %}
+
+{# -------------------------
+   Defendants display value
+   ------------------------- #}
 {% set firstDefendant = (_case.defendants | first) %}
+
 {% set defendantsValue %}
   {% if firstDefendant %}
     {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
@@ -16,22 +27,28 @@
   {% endif %}
 {% endset %}
 
-{% set count = selectedRows.length %}
-{% set pageName = "Assess " ~ count ~ " item" ~ ("s" if count != 1) ~ " as evidence" %}
+{% set pageName = "Assess items as no longer relevant" %}
 
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
-    href: returnUrl or "javascript:window.history.back()"
+    href: (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()")
   }) }}
 {% endblock %}
 
 {% block content %}
+
+  {% include "_includes/success-banner.njk" %}
+
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ govukInsetText({
+        html: "<strong>Your assessment disagrees with the police.</strong><br>They will be notified so they can amend the item’s disclosure status."
+      }) }}
 
       <details class="govuk-details" data-module="govuk-details">
         <summary class="govuk-details__summary">
@@ -40,21 +57,18 @@
         <div class="govuk-details__text">
 
           {% for r in selectedRows %}
+            {% set disagrees = true %}
 
-            {# Reset per row to avoid leaking between loop iterations #}
-            {% set displayItem = r.item or r.Item or r.itemNumber or r.ItemNumber or r.displayItem %}
+            {# derive displayItem safely per row #}
+            {% set displayItem = r.item or r.Item or r.itemNumber or 'n/a' %}
 
-            {# If item is missing or is the placeholder, derive it from its position in the full dataset #}
-            {% if (not displayItem) or (displayItem == 'n/a') %}
+            {% if (displayItem == 'n/a') %}
               {% set displayItem = '' %}
-
               {% for rr in (data.disclosureNonSensitiveRows or []) %}
                 {% if (rr.id and r.id and (rr.id == r.id)) %}
-                  {# loop.index is 1-based #}
                   {% set displayItem = loop.index %}
                 {% endif %}
               {% endfor %}
-
               {% if not displayItem %}
                 {% set displayItem = 'n/a' %}
               {% endif %}
@@ -63,7 +77,13 @@
             {{ govukSummaryList({
               card: {
                 title: {
-                  html: "<strong>" ~ displayItem ~ " – " ~ r.title ~ "</strong>"
+                  html:
+                    ("<strong>" ~ displayItem ~ " – " ~ (r.title or 'Item') ~ "</strong>")
+                    ~ (
+                      ' <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Disagrees with police</strong>'
+                      if disagrees
+                      else ''
+                    )
                 }
               },
               classes: "govuk-!-margin-bottom-3",
@@ -91,21 +111,28 @@
         </div>
       </details>
 
-      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/evidence">
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/assess-as-no-longer-relevant">
+        {# Bulk routes expect ids in the body #}
         <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">
-        <input type="hidden" name="returnUrl" value="{{ returnUrl or '' }}">
+
+        {% if returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
+        {% elseif query and query.returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
+        {% endif %}
 
         {{ govukTextarea({
           name: "bulkRationale",
           id: "bulk-rationale",
           rows: 5,
           label: {
-            text: "Why are these items evidence?",
+            text: "Why is this material no longer relevant to this case?",
             classes: "govuk-label--m"
-          }
+          },
+          value: (data.bulkRationale or "")
         }) }}
 
-        {{ govukButton({ text: "Save and confirm" }) }}
+        {{ govukButton({ text: "Confirm" }) }}
       </form>
 
     </div>
