@@ -16,56 +16,58 @@
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      {# <span class="govuk-caption-m">{{ _case.reference }}</span> #}
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-       <div class="govuk-button-group">
-        <a href="/cases/{{_case.id}}/indictment/counts/date-and-charges" class="govuk-button">Draft count</a>
+      <div class="govuk-button-group">
+        <a href="/cases/{{ _case.id }}/indictment/counts/date-and-charges" class="govuk-button">
+          Draft count
+        </a>
+
         {{ govukButton({
           text: "xxxxxxxxxx",
-          classes: 'govuk-button--secondary'
+          classes: "govuk-button--secondary"
         }) }}
       </div>
 
-      {# --- Defendants display: "Name and X more" (Prisma) --- #}
-      {# --- Defendants display: list all full names --- #}
+      {# Defendants from Prisma (truth for names + ids) #}
       {% set defendantsValue %}
-        <ul class="govuk-list govuk-list--bullet">
+        <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
           {% for defendant in _case.defendants %}
             <li>{{ defendant.firstName }} {{ defendant.lastName }}</li>
           {% endfor %}
         </ul>
       {% endset %}
 
-     {# --- Charges display: charge code + description (Prisma) --- #}
+      {# Police charge bucket from countsData (story controlled) #}
       {% set chargesValue %}
-        {% for defendant in _case.defendants %}
-          {% if defendant.charges and defendant.charges.length %}
-            {% for charge in defendant.charges %}
-              {{ charge.chargeCode }}: {{ charge.description }}
-              {% if not (loop.last and loop.parent.last) %}
-                <br><br>
+        <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+          {% for c in chargeOptions %}
+            <li>
+              {% if c.chargeCode %}
+                {{ c.chargeCode }}: {{ c.label }}
+              {% else %}
+                {{ c.label }}
               {% endif %}
-            {% endfor %}
-          {% endif %}
-        {% endfor %}
+            </li>
+          {% endfor %}
+        </ul>
       {% endset %}
 
-      {# --- Indictment status tag class (session/route sets indictment.status) --- #}
+      {# Indictment status tag class #}
       {% set countsTagClass = "" %}
-        {% if indictment.status == "Completed" %}
-          {% set countsTagClass = "govuk-tag--green" %}
-        {% elif indictment.status == "In progress" %}
-          {% set countsTagClass = "govuk-tag--blue" %}
-        {% else %}
-          {% set countsTagClass = "govuk-tag--yellow" %}
+      {% if indictment.status == "Completed" %}
+        {% set countsTagClass = "govuk-tag--green" %}
+      {% elif indictment.status == "In progress" %}
+        {% set countsTagClass = "govuk-tag--blue" %}
+      {% else %}
+        {% set countsTagClass = "govuk-tag--yellow" %}
       {% endif %}
 
-      {# --- Set condtional link for View Indictment --- #}
+      {# Conditional link for View indictment #}
       {% if indictment.status == "In progress" %}
         {% set viewIndictmentLink %}
           <a class="govuk-link govuk-link--no-visited-state"
-            href="/cases/{{ _case.id }}/indictment/show">
+             href="/cases/{{ _case.id }}/indictment/show">
             View indictment
           </a>
         {% endset %}
@@ -73,7 +75,7 @@
         {% set viewIndictmentLink = null %}
       {% endif %}
 
-      {# Build the Indictment row with/without actions #}
+      {# Build status row #}
       {% if indictment.status == "In progress" %}
         {% set indictmentRow = {
           key: { text: "Indictment status" },
@@ -113,7 +115,7 @@
                 value: { html: defendantsValue }
               },
               {
-                key: { text: "Charge" },
+                key: { text: "Police charges" },
                 value: { html: chargesValue }
               }
             ]

@@ -1,9 +1,9 @@
-{# /cases/counts/date-and-charges.html #}
+{# /cases/indictment/counts/date-and-charges.html #}
 
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Date of offence' %}
+{% set pageName = 'Charges and Date' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -14,51 +14,103 @@
 
 {% block content %}
   {% include "_includes/success-banner.njk" %}
-  {# {% include "_includes/case/dcf-navigation.njk" %} #}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
       <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      <h3 class="govuk-heading-m">Date of offence between</h3>
-
       <form method="post">
 
-        {{ govukDateInput({
-          id: "date-of-offence-from",
-          namePrefix: "date-of-offence-from",
+        {# Radios are the SAME items that appear on /indictment/index #}
+        {% set radioItems = [] %}
+
+        {% for c in chargeOptions %}
+
+          {% set radioText %}
+            {% if c.chargeCode %}
+              {{ c.chargeCode }}: {{ c.label }}
+            {% else %}
+              {{ c.label }}
+            {% endif %}
+          {% endset %}
+
+          {% set hintText %}
+            {{ c.policeParticulars }}
+          {% endset %}
+
+          {% set _ = radioItems.push({
+            value: c.policeChargeId,
+            text: radioText | trim,
+            hint: { text: hintText | trim },
+            checked: draftCount.policeChargeId == c.policeChargeId
+          }) %}
+
+        {% endfor %}
+
+        {# Add divider + manual option #}
+        {% set _ = radioItems.push({ divider: "or" }) %}
+        {% set _ = radioItems.push({
+          value: "needEmptyCount",
+          text: "Add new count",
+          checked: draftCount.policeChargeId == "needEmptyCount"
+        }) %}
+
+        {{ govukRadios({
+          name: "policeChargeId",
           fieldset: {
             legend: {
-              text: "Offence committed from",
-              isPageHeading: false,
-              classes: "govuk-fieldset__legend--l govuk-visually-hidden"
+              text: "Select a police charge to base this count on",
+              classes: "govuk-fieldset__legend--m"
             }
-          }
+          },
+          items: radioItems
         }) }}
 
-        <p class="govuk-body">and</p>
+        <div class="govuk-form-group govuk-!-margin-top-4">
+          <fieldset class="govuk-fieldset" role="group">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+              Date offence committed
+            </legend>
 
-        {{ govukDateInput({
-          id: "date-of-offence-to",
-          namePrefix: "date-of-offence-to",
-          fieldset: {
-            legend: {
-              text: "Offence comitted to",
-              isPageHeading: false,
-              classes: "govuk-fieldset__legend--l govuk-visually-hidden"
-            }
-          }
-        }) }}
+            <div class="govuk-date-range">
+              <div class="govuk-date-range__item">
+                {{ govukDateInput({
+                  id: "date-of-offence-from",
+                  namePrefix: "date-of-offence-from",
+                  fieldset: {
+                    legend: {
+                      text: "From date",
+                      classes: "govuk-visually-hidden"
+                    }
+                  }
+                }) }}
+              </div>
+
+              <p class="govuk-date-range__and govuk-body">and</p>
+
+              <div class="govuk-date-range__item">
+                {{ govukDateInput({
+                  id: "date-of-offence-to",
+                  namePrefix: "date-of-offence-to",
+                  fieldset: {
+                    legend: {
+                      text: "To date",
+                      classes: "govuk-visually-hidden"
+                    }
+                  }
+                }) }}
+              </div>
+            </div>
+          </fieldset>
+        </div>
 
         {{ govukButton({
           text: "Continue",
           classes: "govuk-!-margin-top-6"
         }) }}
-      </form>
 
+      </form>
     </div>
   </div>
-    
-     
 {% endblock %}

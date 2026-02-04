@@ -2,7 +2,7 @@ const caseMaterials = require('./case-materials.json')
 const disclosureStatuses = require('./disclosure-statuses.json')
 const disclosureNonSensitiveRows = require('./disclosure-non-sensitive-rows.json')
 const countsData = require('./case-indictments.json')
-const countsData = require('./charge-library.json')
+const chargeLibrary = require('./charge-library.json')
 
 module.exports = {
   caseSort: 'Name',

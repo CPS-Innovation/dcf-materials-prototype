@@ -6,24 +6,26 @@
 {% set pageName = 'Precedent charges and offence' %}
 
 {% block beforeContent %}
-  {% include "_includes/case/identity-bar.njk" %}
+  {{ govukBackLink({
+    text: 'Back',
+    href: 'javascript:history.back()'
+  }) }}
 {% endblock %}
 
 {% block content %}
   {% include "_includes/success-banner.njk" %}
-  {% include "_includes/case/dcf-navigation.njk" %}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
+      <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+       {% include "_includes/case/indictment/search-form.njk" %}
 
     
 
     </div>
   </div>
-    <form method="post">
-    {{ govukButton({
-      text: "Continue",
-    }) }}
-  </form>
+    
+   
 {% endblock %}
