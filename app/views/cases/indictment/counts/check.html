@@ -1,7 +1,8 @@
-{# /cases/counts/check.html #}
+{# /cases/indictment/counts/check.html #}
 {% extends "layouts/main.html" %}
 
 {% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
 {% set pageName = "Check count details" %}
 
 {% block beforeContent %}
@@ -15,36 +16,160 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds-from-desktop">
 
-      <span class="govuk-caption-l">{{_case.reference}}</span>
-      <h1 class="govuk-heading-l">{{pageName}}</h1>
+      <span class="govuk-caption-l">{{ _case.reference }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {{ govukSummaryList({
-        rows: [
-          {
-            key: {
-              text: "Outcome"
+      {# ---------- Build display values ---------- #}
+
+      {% set chargeAndDateValue %}
+        {% if draftCount.chargeCode or draftCount.chargeDescription or draftCount.offenceDate %}
+          <p class="govuk-body govuk-!-margin-bottom-1">
+            <strong>{{ draftCount.chargeCode }}</strong>{% if draftCount.chargeDescription %}: {{ draftCount.chargeDescription }}{% endif %}
+          </p>
+          {% if draftCount.offenceDate %}
+            <p class="govuk-body govuk-!-margin-bottom-0">Date: {{ draftCount.offenceDate }}</p>
+          {% endif %}
+        {% else %}
+          <span class="govuk-hint">Not provided</span>
+        {% endif %}
+      {% endset %}
+
+      {% set defendantsValue %}
+        {% if draftCount.defendantIds and draftCount.defendantIds.length %}
+          <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+            {% for d in _case.defendants %}
+              {% if d.id in draftCount.defendantIds %}
+                <li>{{ d.firstName }} {{ d.lastName }}</li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span class="govuk-hint">Not selected</span>
+        {% endif %}
+      {% endset %}
+
+      {# Victims: if you have victims in Prisma, use _case.victims.
+         If not yet, you can use seedCase.victims while prototyping. #}
+      {% set victimsValue %}
+        {% if draftCount.victimIds and draftCount.victimIds.length %}
+          <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+            {% if _case.victims and _case.victims.length %}
+              {% for v in _case.victims %}
+                {% if v.id in draftCount.victimIds %}
+                  <li>{{ v.name or (v.firstName + " " + v.lastName) }}</li>
+                {% endif %}
+              {% endfor %}
+            {% elif seedCase and seedCase.victims %}
+              {% for v in seedCase.victims %}
+                {% if v.victimId in draftCount.victimIds %}
+                  <li>{{ v.victimName }}</li>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          </ul>
+        {% else %}
+          <span class="govuk-hint">Not selected</span>
+        {% endif %}
+      {% endset %}
+
+      {% set particularsValue %}
+        {% if draftCount.particulars %}
+          {{ draftCount.particulars | escape | nl2br }}
+        {% else %}
+          <span class="govuk-hint">Not provided</span>
+        {% endif %}
+      {% endset %}
+
+      {% set precedentsValue %}
+        {% if draftCount.selectedPrecedents and draftCount.selectedPrecedents.length %}
+          <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+            {% for p in draftCount.selectedPrecedents %}
+              <li>
+                {{ p.name }}{% if p.year %} ({{ p.year }}){% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span class="govuk-hint">None selected</span>
+        {% endif %}
+      {% endset %}
+
+      <form method="post" action="/cases/{{ _case.id }}/indictment/counts/check">
+        {{ govukSummaryList({
+          rows: [
+            {
+              key: { text: "Charge and date" },
+              value: { html: chargeAndDateValue },
+              actions: {
+                items: [
+                  {
+                    href: "/cases/" + _case.id + "/indictment/counts/date-and-charges",
+                    text: "Change",
+                    visuallyHiddenText: "charge and date"
+                  }
+                ]
+              }
             },
-            value: {
-              html: outcome
+            {
+              key: { text: "Defendants" },
+              value: { html: defendantsValue },
+              actions: {
+                items: [
+                  {
+                    href: "/cases/" + _case.id + "/indictment/counts/defendants-and-victims",
+                    text: "Change",
+                    visuallyHiddenText: "defendants"
+                  }
+                ]
+              }
             },
-            actions: {
-              items: [
-                {
-                  href: "/cases/:caseId/dga/new" | replace(':caseId', _case.id),
-                  text: "Change",
-                  visuallyHiddenText: "Outcome"
-                }
-              ]
+            {
+              key: { text: "Victims" },
+              value: { html: victimsValue },
+              actions: {
+                items: [
+                  {
+                    href: "/cases/" + _case.id + "/indictment/counts/defendants-and-victims",
+                    text: "Change",
+                    visuallyHiddenText: "victims"
+                  }
+                ]
+              }
+            },
+            {
+              key: { text: "Particulars" },
+              value: { html: particularsValue },
+              actions: {
+                items: [
+                  {
+                    href: "/cases/" + _case.id + "/indictment/counts/particulars",
+                    text: "Change",
+                    visuallyHiddenText: "particulars"
+                  }
+                ]
+              }
+            },
+            {
+              key: { text: "Precedents" },
+              value: { html: precedentsValue },
+              actions: {
+                items: [
+                  {
+                    href: "/cases/" + _case.id + "/indictment/counts/precedents",
+                    text: "Change",
+                    visuallyHiddenText: "precedents"
+                  }
+                ]
+              }
             }
-          }
-        ]
-      }) }}
+          ]
+        }) }}
 
-      <form method="post">
         {{ govukButton({
-          text: "Confirm and build count",
+          text: "Confirm and add count"
         }) }}
       </form>
+
     </div>
   </div>
 {% endblock %}
