@@ -1,0 +1,95 @@
+[
+  {
+    "chargeCode": "R01",
+    "label": "Robbery",
+    "category": "Offences against property",
+    "statute": {
+      "act": "Theft Act 1968",
+      "section": "s.8(1)"
+    },
+    "statementOfOffence": "Robbery, contrary to section 8(1) of the Theft Act 1968.",
+    "keywords": ["robbery", "steal", "theft", "force", "threats", "mugging"],
+    "precedents": [
+      {
+        "name": "R v Hale",
+        "year": 1979,
+        "principle": "Robbery may be a continuing act; force used during escape can suffice."
+      },
+      {
+        "name": "R v Dawson and James",
+        "year": 1976,
+        "principle": "Even minimal force may be sufficient for robbery."
+      },
+      {
+        "name": "R v Robinson",
+        "year": 1977,
+        "principle": "Force must be used in order to steal."
+      },
+      {
+        "name": "R v Jogee",
+        "year": 2016,
+        "principle": "Clarifies approach to joint enterprise liability."
+      }
+    ],
+    "templates": {
+      "particularsStarter": "On [date] at [place], the defendant robbed [victim] of [property], using [force or threats]."
+    }
+  },
+  {
+    "chargeCode": "DR01",
+    "label": "Possession of a controlled drug (Class A)",
+    "category": "Drug offences",
+    "statute": {
+      "act": "Misuse of Drugs Act 1971",
+      "section": "s.5(2)"
+    },
+    "statementOfOffence": "Possession of a controlled drug of Class A, contrary to section 5(2) of the Misuse of Drugs Act 1971.",
+    "keywords": ["possession", "class a", "cocaine", "heroin", "drugs"],
+    "precedents": [
+      {
+        "name": "R v Warner",
+        "year": 1969,
+        "principle": "Knowledge of the existence of the substance is required."
+      },
+      {
+        "name": "R v Boyesen",
+        "year": 1982,
+        "principle": "Possession requires custody or control together with knowledge."
+      },
+      {
+        "name": "R v Lambert",
+        "year": 2001,
+        "principle": "Reverse burden issues regarding lack of knowledge."
+      }
+    ],
+    "templates": {
+      "particularsStarter": "On [date] at [place], the defendant had in their possession [drug]."
+    }
+  },
+  {
+    "chargeCode": "DR02",
+    "label": "Possession of a controlled drug (Class B)",
+    "category": "Drug offences",
+    "statute": {
+      "act": "Misuse of Drugs Act 1971",
+      "section": "s.5(2)"
+    },
+    "statementOfOffence": "Possession of a controlled drug of Class B, contrary to section 5(2) of the Misuse of Drugs Act 1971.",
+    "keywords": ["possession", "class b", "cannabis", "drugs"],
+    "precedents": [
+      {
+        "name": "R v Warner",
+        "year": 1969,
+        "principle": "Knowledge of the existence of the substance is required."
+      },
+      {
+        "name": "R v Boyesen",
+        "year": 1982,
+        "principle": "Possession requires custody or control together with knowledge."
+      }
+    ],
+    "templates": {
+      "particularsStarter": "On [date] at [place], the defendant had in their possession [drug]."
+    }
+  }
+]
