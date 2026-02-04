@@ -1,13 +1,17 @@
+{# _includes/case/indictment/search-form.njk #}
 <div class="app-search-form">
-  <form>
+  <form method="get"
+        action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-and-offence"
+        novalidate>
+
     {{ govukInput({
-      id: "caseSearch[keywords]",
-      name: "caseSearch[keywords]",
+      id: "precedentSearchKeywords",
+      name: "precedentSearchKeywords",
       label: {
         text: "Search by IPP code, statute name or offence",
         classes: "govuk-label--s app-search-form__label"
       },
-      value: data.caseSearch.keywords
+      value: precedentSearchKeywords or ""
     }) }}
 
     {{ govukButton({
@@ -16,7 +20,12 @@
     }) }}
   </form>
 
-  {% if data.caseSearch.keywords %}
-    <p class="govuk-!-margin-top-2 govuk-!-margin-bottom-0"><a class="govuk-link--no-visited-state" href="/cases/clear-search">Clear search</a></p>
+  {% if precedentSearchKeywords %}
+    <p class="govuk-!-margin-top-2 govuk-!-margin-bottom-0">
+      <a class="govuk-link--no-visited-state"
+         href="/cases/{{ _case.id }}/indictment/counts/precedent-charges-and-offence">
+        Clear search
+      </a>
+    </p>
   {% endif %}
 </div>

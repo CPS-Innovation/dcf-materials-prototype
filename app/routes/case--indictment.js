@@ -1,3 +1,4 @@
+/// case--indictments.js
 const _ = require('lodash')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
@@ -65,6 +66,90 @@ module.exports = router => {
     }
 
     return options
+  }
+
+  // ============================================================
+  // SEARCH HELPERS: precedent charges / statute / offence
+  // ============================================================
+  // These helpers support the "Search by IPP code, statute name or offence" field
+  // on /counts/precedent-charges-and-offence.
+  //
+  // Design intent:
+  // - Search is "read-only" (does not mutate session) and returns results to render under the form.
+  // - Results are server-rendered (Nunjucks `{% for %}`) for accessibility and simplicity.
+  // - The "Continue" action is separate (POST) and stores the selected result in session.
+  // ============================================================
+
+  // Small normaliser so matching is consistent and forgiving
+  function normaliseQuery(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+  }
+
+  // Convert a charge option into a single searchable string
+  function buildSearchHaystack(option) {
+    return normaliseQuery([
+      option.chargeCode,
+      option.label,
+      option.statementOfOffence,
+      option.statute
+    ].filter(Boolean).join(' '))
+  }
+
+  // Search within the current case’s charge options + associated library enrichment
+  // NOTE: this intentionally does not hit Prisma — it searches the narrative JSON-backed options you already build.
+  // Search within the current case’s charge options + associated library enrichment
+  // NOTE: this intentionally does not hit Prisma — it searches the narrative JSON-backed options you already build.
+  function searchPrecedentsWithinCase(chargeOptions, keywords) {
+    const q = normaliseQuery(keywords)
+    if (!q) return []
+
+    const results = []
+
+    for (const option of (chargeOptions || [])) {
+      const haystack = buildSearchHaystack(option)
+
+      if (haystack.includes(q)) {
+        // ------------------------------------------------------------
+        // Extract a human-readable statute name
+        // ------------------------------------------------------------
+        // `option.statute` sometimes arrives as an object (e.g. { name: 'Theft Act 1968', section: '8(1)' }).
+        // If we concatenate an object into a string we end up with "[object Object]" in the UI.
+        //
+        // This normalises statute into a displayable string.
+        const statuteName =
+          typeof option.statute === 'string'
+            ? option.statute
+            : (option.statute && (option.statute.name || option.statute.title || option.statute.act)) || ''
+
+        // ------------------------------------------------------------
+        // Return structured fields for the "radio + summary list" UI
+        // ------------------------------------------------------------
+        // The template needs separate values for:
+        // - IPP code
+        // - Statute name
+        // - Offence text
+        //
+        // These are used to render each result as a summary list row-set.
+        results.push({
+          // Stable ID we’ll store/submit on "Continue"
+          id: option.policeChargeId,
+
+          // Summary list row: IPP code
+          ippCode: option.chargeCode || '',
+
+          // Summary list row: Statute name (string)
+          statuteName,
+
+          // Summary list row: Offence (prefer label, fallback to statement)
+          offence: option.label || option.statementOfOffence || ''
+        })
+      }
+    }
+
+    return results
   }
 
   // ============================================================
@@ -221,7 +306,6 @@ module.exports = router => {
     return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-and-offence`)
   })
 
-
   // ============================================================
   // /cases/:caseId/indictment/counts/precedent-charges-and-offence (GET + POST)
   // ============================================================
@@ -235,14 +319,50 @@ module.exports = router => {
 
     const countsCase = getCountsCaseFor(caseId)
     const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
-
     const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+    // ----------------------------
+    // SEARCH INPUT (GET)
+    // ----------------------------
+    // The search form uses method="get" and submits `precedentSearchKeywords`.
+    // We do NOT store the keywords in session by default — we simply reflect them back to the template.
+    // If you want the value to persist across navigation, you can choose to store it in session.
+    const precedentSearchKeywords = (req.query.precedentSearchKeywords || '').toString()
+
+    // Server-rendered results for the `{% for %}` loop beneath the form
+    const precedentResults = searchPrecedentsWithinCase(chargeOptions, precedentSearchKeywords)
 
     return res.render('cases/indictment/counts/precedent-charges-and-offence', {
       _case,
       countsCase,
       chargeOptions,
-      draftCount
+      draftCount,
+
+      // Pass these into Nunjucks so the form can retain input + show results
+      precedentSearchKeywords,
+      precedentResults
     })
+  })
+
+  router.post('/cases/:caseId/indictment/counts/precedent-charges-and-offence/continue', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    // ----------------------------
+    // SELECTION (POST)
+    // ----------------------------
+    // The results list should use radios with name="selectedPrecedentId".
+    // When the user clicks Continue, we store the selected ID against the current draft count.
+    const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString()
+
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
+
+    draftCount.selectedPrecedentId = selectedPrecedentId || null
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
+
+    // TODO: redirect to your next screen in the journey
+    return res.redirect(`/cases/${caseId}/indictment/counts/next-step`)
   })
 }

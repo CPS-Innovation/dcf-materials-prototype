@@ -17,15 +17,29 @@
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
+
+      {% set html %}
+        <p class="govuk-notification-banner__heading">
+          ** Example testing try searches on: R01, ABH, Theft Act 1968, section 8, robbery, assault, zebra ***
+      {% endset %}
+
+      {{ govukNotificationBanner({
+        html: html
+      }) }}
+
       <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-       {% include "_includes/case/indictment/search-form.njk" %}
+      {# Search form submits query + category #}
+      {% include "_includes/case/indictment/search-form.njk" %}
 
-    
+
+      {# Results render underneath #}
+      <form method="post" action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-and-offence/continue">
+        {% include "_includes/case/indictment/search-results.njk" %}
+        {{ govukButton({ text: "Continue" }) }}
+      </form>
 
     </div>
   </div>
-    
-   
 {% endblock %}

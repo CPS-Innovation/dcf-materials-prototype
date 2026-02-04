@@ -22,7 +22,9 @@
 @import "components/indictment-list.scss";
 
 //Indictments
-@import "components/date-range.scss";
+@import "components/indictment-date-range.scss";
+@import "components/indictment-list.scss";
+@import "components/indictment-search-results.scss";
 
 // Search
 @import "components/search-form.scss";
