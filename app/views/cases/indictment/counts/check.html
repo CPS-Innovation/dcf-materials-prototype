@@ -30,39 +30,33 @@
       Precedent charge or offence
       ---------------------------- #}
 
-    {% set precedentSelection = draftCount.precedentSelection or null %}
-    {% set hasPrecedent = false %}
-    {% if precedentSelection and precedentSelection.id %}
-      {% set hasPrecedent = true %}
-    {% endif %}
+{# ----------------------------
+   Precedent summary (from session)
+   ---------------------------- #}
 
-    {% set precedentRowValue = { text: "None added" } %}
+{% set precedentText = "" %}
+{% if draftCount.precedentSelection %}
+  {% set precedentText =
+    (draftCount.precedentSelection.ippCode or "—")
+    + " · " + (draftCount.precedentSelection.statuteName or "—")
+    + " · " + (draftCount.precedentSelection.offence or "—")
+  %}
+{% endif %}
 
-    {% if hasPrecedent %}
-      {% set precedentValueHtml %}
-        <p class="govuk-body govuk-!-margin-bottom-0">
-          {% if precedentSelection.ippCode %}
-            <strong>{{ precedentSelection.ippCode }}</strong> —
-          {% endif %}
-          {% if precedentSelection.offence %}
-            {{ precedentSelection.offence }}
-          {% endif %}
-          {% if precedentSelection.statuteName %}
-            <br>
-            <span class="govuk-hint govuk-!-margin-bottom-0">
-              {{ precedentSelection.statuteName }}
-            </span>
-          {% endif %}
-        </p>
-      {% endset %}
+{% set hasPrecedent = precedentText and (precedentText | trim) %}
 
-      {% set precedentRowValue = { html: precedentValueHtml } %}
-    {% endif %}
+{% set precedentRowValue = { text: "None added" } %}
 
-    {% set precedentActionText = "Add to count" %}
-    {% if hasPrecedent %}
-      {% set precedentActionText = "Change" %}
-    {% endif %}
+{% if hasPrecedent %}
+  {% set precedentRowValue = { text: precedentText } %}
+{% endif %}
+
+
+{% set precedentActionText = "Add to count" %}
+{% if hasPrecedent %}
+  {% set precedentActionText = "Change" %}
+{% endif %}
+
 
 
 
@@ -177,10 +171,11 @@
         actions: {
           items: [{
             text: precedentActionText,
-            href: "/cases/" + _case.id + "/indictment/counts/precedent-charges-or-offence?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+            href: "/cases/" + _case.id + "/indictment/counts/precedent-charges-or-offence?returnTo=" + ("/cases/" + _case.id + "/indictment/counts/check" | urlencode)
           }]
         }
       }) %}
+
 
 
       {# Date #}

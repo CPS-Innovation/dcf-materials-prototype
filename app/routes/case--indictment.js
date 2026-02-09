@@ -724,47 +724,52 @@ module.exports = router => {
       draftCount,
       precedentSearchKeywords,
       precedentResults,
-      returnTo // ✅ needed for your hidden input
+      returnTo // ✅ makes both GET + POST keep it
     })
-
   })
 
 
-  router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res) => {
-    const caseId = parseCaseId(req, res)
-    if (!caseId) return
 
-    const countsCase = getCountsCaseFor(caseId)
-    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res) => {
+  const caseId = parseCaseId(req, res)
+  if (!caseId) return
 
-    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-    const draftCount = _.get(req, basePath, {})
+  const countsCase = getCountsCaseFor(caseId)
+  const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
 
-    const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString()
-    draftCount.selectedPrecedentId = selectedPrecedentId || null
+  const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+  const draftCount = _.get(req, basePath, {})
 
-    // Optional: persist summary fields too (so check page doesn’t need to re-resolve)
-    if (selectedPrecedentId) {
-      const allResults = searchPrecedentsWithinCase(chargeOptions, ' ')
-      const picked = allResults.find(r => String(r.id) === String(selectedPrecedentId)) || null
-      draftCount.precedentSelection = picked ? {
-        id: String(picked.id),
-        ippCode: picked.ippCode || '',
-        statuteName: picked.statuteName || '',
-        offence: picked.offence || ''
-      } : null
-    } else {
-      draftCount.precedentSelection = null
-    }
+  const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString()
+  draftCount.selectedPrecedentId = selectedPrecedentId || null
 
-    draftCount.lastUpdatedAt = new Date().toISOString()
-    _.set(req, basePath, draftCount)
+  // ✅ Resolve details from chargeOptions (not from search)
+  if (selectedPrecedentId) {
+    const picked = chargeOptions.find(o => String(o.policeChargeId) === String(selectedPrecedentId)) || null
 
-    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
-    if (returnTo) return res.redirect(returnTo)
+    const statuteName =
+      typeof picked?.statute === 'string'
+        ? picked.statute
+        : (picked?.statute && (picked.statute.name || picked.statute.title || picked.statute.act)) || ''
 
-    return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
-  })
+    draftCount.precedentSelection = picked ? {
+      id: String(picked.policeChargeId),
+      ippCode: picked.chargeCode || '',
+      statuteName: statuteName || '',
+      offence: picked.label || picked.statementOfOffence || ''
+    } : null
+  } else {
+    draftCount.precedentSelection = null
+  }
+
+  draftCount.lastUpdatedAt = new Date().toISOString()
+  _.set(req, basePath, draftCount)
+
+  const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+  if (returnTo) return res.redirect(returnTo)
+
+  return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
+})
 
 
   // ============================================================
