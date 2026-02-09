@@ -22,6 +22,8 @@
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <form method="post" novalidate>
+        {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
+
 
         {# Build checkbox items for Prisma charge selection #}
         {% set checkboxItems = [] %}

@@ -21,6 +21,8 @@
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <form method="post" novalidate>
+          <input type="hidden" name="returnTo" value="{{ query.returnTo or '' }}">
+
 
         {# =========================
            CHARGES (radio + conditional checkboxes)

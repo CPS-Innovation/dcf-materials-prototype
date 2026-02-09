@@ -1,4 +1,4 @@
-/// case--indictments.js
+// app/routes/case--indictments.js
 const _ = require('lodash')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
@@ -24,6 +24,38 @@ module.exports = router => {
     return caseId
   }
 
+  // Only allow internal safe return paths
+  const safeReturnTo = (value) => {
+    const v = String(value || '')
+    if (!v) return ''
+    if (!v.startsWith('/')) return ''
+    // extra safety: keep it within this app's case routes
+    if (!v.startsWith('/cases/')) return ''
+    return v.startsWith('/') ? v : ''
+  }
+
+  async function fetchCase(caseId) {
+    return prisma.case.findUnique({
+      where: { id: caseId },
+      include: {
+        unit: true,
+        defendants: { include: { defenceLawyer: true, charges: true } },
+        witnesses: { include: { statements: true } },
+        victims: true,
+        hearings: true,
+        location: true
+      }
+    })
+  }
+
+  // Always return a narrative case, even if caseId isn't 1–5
+  function getCountsCaseFor(caseId) {
+    const direct = countsByCaseId[String(caseId)]
+    if (direct) return direct
+    const idx = Math.abs(Number(caseId)) % countsData.length
+    return countsData[idx]
+  }
+
   // Build charge options from Prisma (deduped by chargeCode + description)
   function buildChargeOptionsFromPrismaCase(_case) {
     const seen = new Set()
@@ -42,35 +74,11 @@ module.exports = router => {
       }
     }
 
-    // Sort by chargeCode for stable UI
     options.sort((a, b) => (a.chargeCode || '').localeCompare(b.chargeCode || ''))
     return options
   }
 
-
-  async function fetchCase(caseId) {
-    return prisma.case.findUnique({
-      where: { id: caseId },
-      include: {
-        unit: true,
-        defendants: { include: { defenceLawyer: true, charges: true } },
-        witnesses: { include: { statements: true } }, // ✅
-        victims: true,
-        hearings: true,
-        location: true
-      }
-    })
-  }
-
-  // Always return a narrative case, even if caseId isn't 1–5
-  function getCountsCaseFor(caseId) {
-    const direct = countsByCaseId[String(caseId)]
-    if (direct) return direct
-    const idx = Math.abs(Number(caseId)) % countsData.length
-    return countsData[idx]
-  }
-
-  // Build charge options (NO dedupe — keep multiple robbery entries if they exist)
+  // Build charge options from narrative JSON (NO dedupe)
   // Enrich from chargeLibrary via chargeCode.
   function buildChargeOptionsFromCountsCase(countsCase) {
     const options = []
@@ -94,18 +102,9 @@ module.exports = router => {
   }
 
   // ============================================================
-  // SEARCH HELPERS: precedent charges / statute / offence
-  // ============================================================
-  // These helpers support the "Search by IPP code, statute name or offence" field
-  // on /counts/precedent-charges-and-offence.
-  //
-  // Design intent:
-  // - Search is "read-only" (does not mutate session) and returns results to render under the form.
-  // - Results are server-rendered (Nunjucks `{% for %}`) for accessibility and simplicity.
-  // - The "Continue" action is separate (POST) and stores the selected result in session.
+  // SEARCH HELPERS (precedent)
   // ============================================================
 
-  // Small normaliser so matching is consistent and forgiving
   function normaliseQuery(value) {
     return String(value || '')
       .trim()
@@ -113,20 +112,19 @@ module.exports = router => {
       .replace(/\s+/g, ' ')
   }
 
-  // Convert a charge option into a single searchable string
   function buildSearchHaystack(option) {
     return normaliseQuery([
       option.chargeCode,
       option.label,
       option.statementOfOffence,
-      option.statute
+      // statute might be object
+      (typeof option.statute === 'string'
+        ? option.statute
+        : (option.statute && (option.statute.name || option.statute.title || option.statute.act)) || ''
+      )
     ].filter(Boolean).join(' '))
   }
 
-  // Search within the current case’s charge options + associated library enrichment
-  // NOTE: this intentionally does not hit Prisma — it searches the narrative JSON-backed options you already build.
-  // Search within the current case’s charge options + associated library enrichment
-  // NOTE: this intentionally does not hit Prisma — it searches the narrative JSON-backed options you already build.
   function searchPrecedentsWithinCase(chargeOptions, keywords) {
     const q = normaliseQuery(keywords)
     if (!q) return []
@@ -135,43 +133,19 @@ module.exports = router => {
 
     for (const option of (chargeOptions || [])) {
       const haystack = buildSearchHaystack(option)
+      if (!haystack.includes(q)) continue
 
-      if (haystack.includes(q)) {
-        // ------------------------------------------------------------
-        // Extract a human-readable statute name
-        // ------------------------------------------------------------
-        // `option.statute` sometimes arrives as an object (e.g. { name: 'Theft Act 1968', section: '8(1)' }).
-        // If we concatenate an object into a string we end up with "[object Object]" in the UI.
-        //
-        // This normalises statute into a displayable string.
-        const statuteName =
-          typeof option.statute === 'string'
-            ? option.statute
-            : (option.statute && (option.statute.name || option.statute.title || option.statute.act)) || ''
+      const statuteName =
+        typeof option.statute === 'string'
+          ? option.statute
+          : (option.statute && (option.statute.name || option.statute.title || option.statute.act)) || ''
 
-        // ------------------------------------------------------------
-        // Return structured fields for the "radio + summary list" UI
-        // ------------------------------------------------------------
-        // The template needs separate values for:
-        // - IPP code
-        // - Statute name
-        // - Offence text
-        //
-        // These are used to render each result as a summary list row-set.
-        results.push({
-          // Stable ID we’ll store/submit on "Continue"
-          id: option.policeChargeId,
-
-          // Summary list row: IPP code
-          ippCode: option.chargeCode || '',
-
-          // Summary list row: Statute name (string)
-          statuteName,
-
-          // Summary list row: Offence (prefer label, fallback to statement)
-          offence: option.label || option.statementOfOffence || ''
-        })
-      }
+      results.push({
+        id: option.policeChargeId,
+        ippCode: option.chargeCode || '',
+        statuteName,
+        offence: option.label || option.statementOfOffence || ''
+      })
     }
 
     return results
@@ -186,9 +160,7 @@ module.exports = router => {
     if (!caseId) return
 
     const _case = await fetchCase(caseId)
-    // ✅ Prisma-based charges (deduped)
-    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
-
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
     const countsCase = getCountsCaseFor(caseId)
 
@@ -198,6 +170,7 @@ module.exports = router => {
     })
 
     const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
     const successBanner = _.get(req, 'session.data.successBanner', null)
     _.unset(req, 'session.data.successBanner')
@@ -207,8 +180,8 @@ module.exports = router => {
       indictment,
       successBanner,
       countsCase,
-      chargeOptions,
-      caseChargeOptions, // ✅ added for Prisma-based charges
+      chargeOptions,      // narrative/library enriched
+      caseChargeOptions,  // prisma charges (deduped)
       chargeLibrary
     })
   })
@@ -247,7 +220,6 @@ module.exports = router => {
     if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
     const countsCase = getCountsCaseFor(caseId)
-
     const indictment = _.get(req, `session.data.indictments.${caseId}`, {
       status: countsCase.numberOfCounts || 'Not started',
       counts: []
@@ -280,8 +252,6 @@ module.exports = router => {
     if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
     const countsCase = getCountsCaseFor(caseId)
-
-    // ✅ Prisma-based charges (deduped)
     const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
     const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
@@ -293,7 +263,6 @@ module.exports = router => {
       draftCount
     })
   })
-
 
   router.post('/cases/:caseId/indictment/counts/charges', async (req, res) => {
     const caseId = parseCaseId(req, res)
@@ -309,7 +278,6 @@ module.exports = router => {
     const countBasis = (req.body.countBasis || '').toString() || null
     draftCount.countBasis = countBasis
 
-    // Prisma charge options (deduped)
     const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
     // Normalise checkbox values into an array of strings
@@ -319,21 +287,21 @@ module.exports = router => {
       : (rawSelected ? [rawSelected] : [])
 
     if (countBasis === 'newCount') {
-      // Clear selections if "Add a new count"
       draftCount.selectedChargeCodes = []
       draftCount.primaryChargeCode = null
       draftCount.chargeCode = null
       draftCount.chargeLabel = null
     } else {
-      // "existingCharge" (or not chosen yet, but they ticked boxes)
       draftCount.selectedChargeCodes = selectedChargeCodes
       draftCount.primaryChargeCode = selectedChargeCodes[0] || null
 
-      // Populate simple display fields from the first selected code
-      const primary = caseChargeOptions.find(o => o.chargeCode === draftCount.primaryChargeCode) || null
+      const primary = caseChargeOptions.find(o => String(o.chargeCode) === String(draftCount.primaryChargeCode)) || null
       if (primary) {
         draftCount.chargeCode = primary.chargeCode
         draftCount.chargeLabel = primary.description
+      } else {
+        draftCount.chargeCode = null
+        draftCount.chargeLabel = null
       }
     }
 
@@ -342,9 +310,14 @@ module.exports = router => {
 
     _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
 
+    // Flow control: if fewer than 2 defendants, skip ordering step
+    const defendantCount = Array.isArray(_case.defendants) ? _case.defendants.length : 0
+    if (defendantCount < 2) {
+      return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-or-offence`)
+    }
+
     return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-defendants`)
   })
-
 
   // ============================================================
   // /cases/:caseId/indictment/counts/select-and-order-defendants (GET + POST)
@@ -391,119 +364,97 @@ module.exports = router => {
     draftCount.lastUpdatedAt = new Date().toISOString()
     _.set(req, basePath, draftCount)
 
-    if (action === 'skip') {
-      return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
-    }
-
+    // (skip currently does same next step)
     return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
   })
 
+  // ============================================================
+  // /cases/:caseId/indictment/counts/select-and-order-witnesses (GET + POST)
+  // ============================================================
 
+  router.get('/cases/:caseId/indictment/counts/select-and-order-witnesses', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
 
-    // ============================================================
-    // /cases/:caseId/indictment/counts/select-and-order-witnesses (GET + POST)
-    // ============================================================
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-    router.get('/cases/:caseId/indictment/counts/select-and-order-witnesses', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
+    const countsCase = getCountsCaseFor(caseId)
+    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
 
-      const _case = await fetchCase(caseId)
-      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
-
-      const countsCase = getCountsCaseFor(caseId)
-      const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
-
-      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
-
-      return res.render('cases/indictment/counts/select-and-order-witnesses', {
-        _case,
-        countsCase,
-        chargeOptions,
-        draftCount
-      })
+    return res.render('cases/indictment/counts/select-and-order-witnesses', {
+      _case,
+      countsCase,
+      chargeOptions,
+      draftCount
     })
+  })
 
-    router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
+  router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
 
-      const action = (req.body.action || '').toString()
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
 
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-      const draftCount = _.get(req, basePath, {})
+    const rawSelected = req.body.selectedWitnessIds
+    const selectedWitnessIds = Array.isArray(rawSelected)
+      ? rawSelected
+      : (rawSelected ? [rawSelected] : [])
 
-      // Normalise checkbox values to an array of strings
-      const rawSelected = req.body.selectedWitnessIds
-      const selectedWitnessIds = Array.isArray(rawSelected)
-        ? rawSelected
-        : (rawSelected ? [rawSelected] : [])
+    const rawOrder = req.body.witnessOrder || {}
 
-      // witnessOrder arrives as an object map: { "12": "2", "15": "1" }
-      const rawOrder = req.body.witnessOrder || {}
+    draftCount.selectedWitnessIds = selectedWitnessIds
+    draftCount.witnessOrder = rawOrder
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
 
-      // Persist even if they skip (so partial progress is kept)
-      draftCount.selectedWitnessIds = selectedWitnessIds
-      draftCount.witnessOrder = rawOrder
-      draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
+  })
 
-      if (action === 'skip') {
-        // TODO: adjust to whatever your next step is
-        return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
-      }
+  // ============================================================
+  // /cases/:caseId/indictment/counts/select-and-order-victims (GET + POST)
+  // ============================================================
 
-      // TODO: adjust to whatever your next step is
-      return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
+  router.get('/cases/:caseId/indictment/counts/select-and-order-victims', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+    const countsCase = getCountsCaseFor(caseId)
+    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+    return res.render('cases/indictment/counts/select-and-order-victims', {
+      _case,
+      countsCase,
+      draftCount
     })
+  })
 
-    // ============================================================
-    // /cases/:caseId/indictment/counts/select-and-order-victims (GET + POST)
-    // ============================================================
+  router.post('/cases/:caseId/indictment/counts/select-and-order-victims', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
 
-    router.get('/cases/:caseId/indictment/counts/select-and-order-victims', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
 
-      const _case = await fetchCase(caseId)
-      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+    const rawSelected = req.body.selectedVictimIds
+    const selectedVictimIds = Array.isArray(rawSelected)
+      ? rawSelected
+      : (rawSelected ? [rawSelected] : [])
 
-      const countsCase = getCountsCaseFor(caseId)
-      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+    const rawOrder = req.body.victimOrder || {}
 
-      return res.render('cases/indictment/counts/select-and-order-victims', {
-        _case,
-        countsCase,
-        draftCount
-      })
-    })
+    draftCount.selectedVictimIds = selectedVictimIds
+    draftCount.victimOrder = rawOrder
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
 
-    router.post('/cases/:caseId/indictment/counts/select-and-order-victims', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
-
-      const action = (req.body.action || '').toString()
-
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-      const draftCount = _.get(req, basePath, {})
-
-      const rawSelected = req.body.selectedVictimIds
-      const selectedVictimIds = Array.isArray(rawSelected)
-        ? rawSelected
-        : (rawSelected ? [rawSelected] : [])
-
-      const rawOrder = req.body.victimOrder || {}
-
-      draftCount.selectedVictimIds = selectedVictimIds
-      draftCount.victimOrder = rawOrder
-      draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
-
-      // TODO: set this to your real next step after victims
-      return res.redirect(`/cases/${caseId}/indictment/counts/date-and-charges`)
-    })
-
-
+    return res.redirect(`/cases/${caseId}/indictment/counts/date-and-charges`)
+  })
 
   // ============================================================
   // /cases/:caseId/indictment/counts/date-and-charges (GET + POST)
@@ -517,20 +468,20 @@ module.exports = router => {
     if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
     const countsCase = getCountsCaseFor(caseId)
-
     const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
     const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+    const returnTo = safeReturnTo(req.query.returnTo)
 
     return res.render('cases/indictment/counts/date-and-charges', {
       _case,
       countsCase,
       caseChargeOptions,
-      draftCount
+      draftCount,
+      returnTo
     })
   })
-
-
 
   router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
     const caseId = parseCaseId(req, res)
@@ -544,9 +495,7 @@ module.exports = router => {
     const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
-    // ----------------------------
     // Charges: basis + selected codes
-    // ----------------------------
     const countBasis = (req.body.countBasis || '').toString()
     draftCount.countBasis = countBasis || null
 
@@ -558,24 +507,20 @@ module.exports = router => {
     if (draftCount.countBasis === 'existingCharge') {
       draftCount.selectedChargeCodes = selectedChargeCodes
 
-      // Optional: store a primary for convenience
       const primaryChargeCode = selectedChargeCodes[0] || null
       draftCount.chargeCode = primaryChargeCode
 
-      const selected = caseChargeOptions.find(o => o.chargeCode === primaryChargeCode) || null
+      const selected = caseChargeOptions.find(o => String(o.chargeCode) === String(primaryChargeCode)) || null
       draftCount.chargeLabel = selected ? selected.description : null
     } else if (draftCount.countBasis === 'newCount') {
       draftCount.selectedChargeCodes = []
       draftCount.chargeCode = null
       draftCount.chargeLabel = null
     } else {
-      // Nothing chosen
       draftCount.selectedChargeCodes = selectedChargeCodes
     }
 
-    // ----------------------------
     // Date: single vs range
-    // ----------------------------
     const dateType = (req.body.dateType || '').toString()
     draftCount.dateType = dateType || null
 
@@ -585,7 +530,6 @@ module.exports = router => {
         month: req.body['offence-date-month'] || '',
         year: req.body['offence-date-year'] || ''
       }
-      // Clear range fields to avoid conflicts
       draftCount.offenceDateFrom = null
       draftCount.offenceDateTo = null
     } else if (draftCount.dateType === 'range') {
@@ -599,148 +543,160 @@ module.exports = router => {
         month: req.body['offence-date-to-month'] || '',
         year: req.body['offence-date-to-year'] || ''
       }
-      // Clear single field
       draftCount.offenceDate = null
     }
 
     draftCount.lastUpdatedAt = new Date().toISOString()
     _.set(req, basePath, draftCount)
-
     _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
 
-    // ✅ next step
+    // returnTo support (prefer body hidden field)
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
+
     return res.redirect(`/cases/${caseId}/indictment/assign/defendants`)
   })
 
+  // ============================================================
+  // /cases/:caseId/indictment/assign/defendants (GET + POST)
+  // ============================================================
 
+  router.get('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
 
-    // ============================================================
-    // /cases/:caseId/indictment/assign/defendants (GET + POST)
-    // ============================================================
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-    router.get('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
+    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+    const returnTo = safeReturnTo(req.query.returnTo)
 
-      const _case = await fetchCase(caseId)
-      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
-
-      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
-
-      return res.render('cases/indictment/assign/defendants', {
-        _case,
-        draftCount
-      })
+    return res.render('cases/indictment/assign/defendants', {
+      _case,
+      draftCount,
+      returnTo
     })
+  })
+
+  router.post('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
+
+    const rawSelected = req.body.assignedDefendantIds
+    const assignedDefendantIds = Array.isArray(rawSelected)
+      ? rawSelected
+      : (rawSelected ? [rawSelected] : [])
+
+    // ✅ Normalise to strings so template membership checks work reliably
+    draftCount.assignedDefendantIds = assignedDefendantIds.map(String)
+
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
+
+    // ✅ Prefer body.returnTo (hidden input), fall back to query
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
+
+    return res.redirect(`/cases/${caseId}/indictment/assign/victims`)
+  })
 
 
-    router.post('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
+  // ============================================================
+  // /cases/:caseId/indictment/assign/victims (GET + POST)
+  // ============================================================
 
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-      const draftCount = _.get(req, basePath, {})
+  router.get('/cases/:caseId/indictment/assign/victims', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
 
-      const rawSelected = req.body.assignedDefendantIds
-      const assignedDefendantIds = Array.isArray(rawSelected)
-        ? rawSelected
-        : (rawSelected ? [rawSelected] : [])
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-      draftCount.assignedDefendantIds = assignedDefendantIds
-      draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
+    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+    const returnTo = safeReturnTo(req.query.returnTo)
 
-      return res.redirect(`/cases/${caseId}/indictment/assign/victims`)
+    return res.render('cases/indictment/assign/victims', {
+      _case,
+      draftCount,
+      returnTo
     })
+  })
+
+  router.post('/cases/:caseId/indictment/assign/victims', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
+
+    const rawSelected = req.body.assignedVictimIds
+    const assignedVictimIds = Array.isArray(rawSelected)
+      ? rawSelected
+      : (rawSelected ? [rawSelected] : [])
+
+    // ✅ Normalise to strings so `v.id in assignedVictimIds` works reliably
+    draftCount.assignedVictimIds = assignedVictimIds.map(String)
+
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
+
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
+
+    return res.redirect(`/cases/${caseId}/indictment/assign/witnesses`)
+  })
 
 
-    // ============================================================
-    // /cases/:caseId/indictment/assign/victims (GET + POST)
-    // ============================================================
+  // ============================================================
+  // /cases/:caseId/indictment/assign/witnesses (GET + POST)
+  // ============================================================
 
-    router.get('/cases/:caseId/indictment/assign/victims', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
+  router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
 
-      const _case = await fetchCase(caseId)
-      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+    const returnTo = safeReturnTo(req.query.returnTo)
 
-      // IMPORTANT: render path must match the folder name on disk
-      return res.render('cases/indictment/assign/victims', {
-        _case,
-        draftCount
-      })
+    return res.render('cases/indictment/assign/witnesses', {
+      _case,
+      draftCount,
+      returnTo
     })
+  })
 
-    router.post('/cases/:caseId/indictment/assign/victims', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
+  router.post('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
 
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-      const draftCount = _.get(req, basePath, {})
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
 
-      // Normalise checkbox values into an array
-      const rawSelected = req.body.assignedVictimIds
-      const assignedVictimIds = Array.isArray(rawSelected)
-        ? rawSelected
-        : (rawSelected ? [rawSelected] : [])
+    const rawSelected = req.body.assignedWitnessIds
+    const assignedWitnessIds = Array.isArray(rawSelected)
+      ? rawSelected
+      : (rawSelected ? [rawSelected] : [])
 
-      draftCount.assignedVictimIds = assignedVictimIds
-      draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
+    // ✅ Normalise to strings
+    draftCount.assignedWitnessIds = assignedWitnessIds.map(String)
 
-      // TODO: set your real next step
-      return res.redirect(`/cases/${caseId}/indictment/assign/witnesses`)
-    })
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
 
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
 
-
-    // ============================================================
-    // /cases/:caseId/indictment/assign/witnesses (GET + POST)
-    // ============================================================
-
-    router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
-
-      const _case = await fetchCase(caseId)
-      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
-
-      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
-
-      // IMPORTANT: render path must match the folder name on disk
-      return res.render('cases/indictment/assign/witnesses', {
-        _case,
-        draftCount
-      })
-    })
-
-    router.post('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
-
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-      const draftCount = _.get(req, basePath, {})
-
-      // Normalise checkbox values into an array
-      const rawSelected = req.body.assignedWitnessIds
-      const assignedWitnessIds = Array.isArray(rawSelected)
-        ? rawSelected
-        : (rawSelected ? [rawSelected] : [])
-
-      draftCount.assignedWitnessIds = assignedWitnessIds
-      draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
-
-      // TODO: set your real next step
-      return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-or-offence`)
-    })
+    return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
+  })
 
 
-
- // ============================================================
+  // ============================================================
   // /cases/:caseId/indictment/counts/precedent-charges-or-offence (GET + POST)
   // ============================================================
 
@@ -757,22 +713,22 @@ module.exports = router => {
     const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
-    // ----------------------------
-    // SEARCH INPUT (GET)
-    // ----------------------------
     const precedentSearchKeywords = (req.query.precedentSearchKeywords || '').toString()
-
-    // Results are server-rendered under the form
     const precedentResults = searchPrecedentsWithinCase(chargeOptions, precedentSearchKeywords)
+
+    const returnTo = safeReturnTo(req.query.returnTo)
 
     return res.render('cases/indictment/counts/precedent-charges-or-offence', {
       _case,
       countsCase,
-      draftCount,               // ✅ needed for "checked" state + form persistence
+      draftCount,
       precedentSearchKeywords,
-      precedentResults
+      precedentResults,
+      returnTo // ✅ needed for your hidden input
     })
+
   })
+
 
   router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res) => {
     const caseId = parseCaseId(req, res)
@@ -784,31 +740,19 @@ module.exports = router => {
     const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
-    // ----------------------------
-    // SELECTION (POST)
-    // ----------------------------
     const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString()
-
     draftCount.selectedPrecedentId = selectedPrecedentId || null
 
-    // ✅ Store the selected row details so later steps can use them without re-searching
+    // Optional: persist summary fields too (so check page doesn’t need to re-resolve)
     if (selectedPrecedentId) {
-      // Re-run a "full" result set for this case and find the row
-      // (we don’t rely on the GET query being present on POST)
       const allResults = searchPrecedentsWithinCase(chargeOptions, ' ')
       const picked = allResults.find(r => String(r.id) === String(selectedPrecedentId)) || null
-
-      if (picked) {
-        draftCount.precedentSelection = {
-          id: String(picked.id),
-          ippCode: picked.ippCode || '',
-          statuteName: picked.statuteName || '',
-          offence: picked.offence || ''
-        }
-      } else {
-        // If not found, at least clear the stored details
-        draftCount.precedentSelection = null
-      }
+      draftCount.precedentSelection = picked ? {
+        id: String(picked.id),
+        ippCode: picked.ippCode || '',
+        statuteName: picked.statuteName || '',
+        offence: picked.offence || ''
+      } : null
     } else {
       draftCount.precedentSelection = null
     }
@@ -816,8 +760,12 @@ module.exports = router => {
     draftCount.lastUpdatedAt = new Date().toISOString()
     _.set(req, basePath, draftCount)
 
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
+
     return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
   })
+
 
   // ============================================================
   // /cases/:caseId/indictment/counts/offence-and-particulars (GET + POST)
@@ -833,33 +781,24 @@ module.exports = router => {
     const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
-    // ------------------------------------------------------------
-    // Prisma charges: flatten all charges on the case
-    // ------------------------------------------------------------
-    const allCaseCharges = (_case.defendants || [])
-      .flatMap(d => (d.charges || []).map(ch => ({
+    // Flatten all charges on case (for details list)
+    const allCaseCharges = (_case.defendants || []).flatMap(d =>
+      (d.charges || []).map(ch => ({
         defendantId: d.id,
         defendantName: `${d.firstName || ''} ${d.lastName || ''}`.trim(),
         chargeCode: ch.chargeCode,
         description: ch.description,
         particulars: ch.particulars
-      })))
+      }))
+    )
 
-    // ------------------------------------------------------------
-    // Selected charge(s): use codes stored earlier in the journey
-    // (checkbox flow stores selectedChargeCodes; fallback to chargeCode)
-    // ------------------------------------------------------------
     const selectedCodes = Array.isArray(draftCount.selectedChargeCodes) && draftCount.selectedChargeCodes.length
       ? draftCount.selectedChargeCodes.map(String)
       : (draftCount.chargeCode ? [String(draftCount.chargeCode)] : [])
 
     const selectedCharges = allCaseCharges.filter(ch => selectedCodes.includes(String(ch.chargeCode)))
-
-    // A single "selected charge" summary (for the sidebar top block)
-    // If multiple selected, show the first as primary and keep the rest available for "related charges"
     const primarySelectedCharge = selectedCharges[0] || null
 
-    // Optional: defendants assigned to this count (from assign step)
     const assignedDefendantIds = Array.isArray(draftCount.assignedDefendantIds)
       ? draftCount.assignedDefendantIds.map(String)
       : []
@@ -869,19 +808,18 @@ module.exports = router => {
       .map(d => `${d.firstName || ''} ${d.lastName || ''}`.trim())
       .filter(Boolean)
 
+    const returnTo = safeReturnTo(req.query.returnTo)
+
     return res.render('cases/indictment/counts/offence-and-particulars', {
       _case,
       draftCount,
 
-      // Sidebar data
       assignedDefendants,
       primarySelectedCharge,
-
-      // Details component list (ALL charges for the case)
       allCaseCharges,
 
-      // If you want to show the precedent selection card
-      precedentSelection: draftCount.precedentSelection || null
+      precedentSelection: draftCount.precedentSelection || null,
+      returnTo
     })
   })
 
@@ -892,22 +830,15 @@ module.exports = router => {
     const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
-    // ------------------------------------------------------------
-    // Persist textarea content
-    // ------------------------------------------------------------
     draftCount.statementOfOffenceText = (req.body.statementOfOffenceText || '').toString()
     draftCount.particularsOfOffenceText = (req.body.particularsOfOffenceText || '').toString()
 
     draftCount.lastUpdatedAt = new Date().toISOString()
     _.set(req, basePath, draftCount)
 
-    // ------------------------------------------------------------
-    // Decide where to go next
-    // ------------------------------------------------------------
     const action = (req.body.action || 'continue').toString()
 
     if (action === 'saveForLater') {
-      // You can change this to wherever “come back later” should land
       _.set(req, 'session.data.successBanner', {
         titleText: 'Draft saved',
         text: 'You can come back and continue drafting this count later.'
@@ -915,9 +846,98 @@ module.exports = router => {
       return res.redirect(`/cases/${caseId}/indictment`)
     }
 
-    // TODO: set your real next step in the count journey
-    return res.redirect(`/cases/${caseId}/indictment/counts/next-step`)
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
+
+    return res.redirect(`/cases/${caseId}/indictment/counts/check`)
   })
 
+  // ============================================================
+  // /cases/:caseId/indictment/counts/check (GET + POST)
+  // ============================================================
 
+  router.get('/cases/:caseId/indictment/counts/check', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+    // Needed so check.html can resolve precedent selection against narrative charge options
+    const countsCase = getCountsCaseFor(caseId)
+    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+
+    return res.render('cases/indictment/counts/check', {
+      _case,
+      draftCount,
+      countsCase,
+      chargeOptions
+    })
+  })
+
+  router.post('/cases/:caseId/indictment/counts/check', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
+
+    draftCount.confirmedAt = new Date().toISOString()
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
+
+    _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+
+    const indictmentBasePath = `session.data.indictments.${caseId}`
+    const indictment = _.get(req, indictmentBasePath, { status: 'In progress', counts: [] })
+
+    const hasAnyContent =
+      (draftCount.chargeCode || (draftCount.selectedChargeCodes && draftCount.selectedChargeCodes.length)) ||
+      draftCount.statementOfOffenceText ||
+      draftCount.particularsOfOffenceText ||
+      draftCount.selectedPrecedentId
+
+    if (hasAnyContent) {
+      indictment.counts = indictment.counts || []
+      indictment.counts.push({
+        id: `count-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+
+        countBasis: draftCount.countBasis || null,
+        selectedChargeCodes: draftCount.selectedChargeCodes || [],
+        chargeCode: draftCount.chargeCode || null,
+        chargeLabel: draftCount.chargeLabel || null,
+
+        dateType: draftCount.dateType || null,
+        offenceDate: draftCount.offenceDate || null,
+        offenceDateFrom: draftCount.offenceDateFrom || null,
+        offenceDateTo: draftCount.offenceDateTo || null,
+
+        assignedDefendantIds: draftCount.assignedDefendantIds || [],
+        assignedVictimIds: draftCount.assignedVictimIds || [],
+        assignedWitnessIds: draftCount.assignedWitnessIds || [],
+
+        statementOfOffenceText: draftCount.statementOfOffenceText || null,
+        particularsOfOffenceText: draftCount.particularsOfOffenceText || null,
+
+        selectedPrecedentId: draftCount.selectedPrecedentId || null,
+        precedentSelection: draftCount.precedentSelection || null
+      })
+    }
+
+    indictment.lastSavedAt = new Date().toISOString()
+    _.set(req, indictmentBasePath, indictment)
+
+    // Clear the current draft count
+    _.unset(req, basePath)
+
+    _.set(req, 'session.data.successBanner', {
+      titleText: 'Count saved',
+      text: 'Your draft count has been added to the indictment.'
+    })
+
+    return res.redirect(`/cases/${caseId}/indictment`)
+  })
 }

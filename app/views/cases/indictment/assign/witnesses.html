@@ -24,6 +24,10 @@
       <h2 class="govuk-heading-m">Select all witnesses that apply to this count</h2>
 
       <form method="post" novalidate>
+        {% if returnTo %}
+          <input type="hidden" name="returnTo" value="{{ returnTo }}">
+        {% endif %}
+
 
         {% set witnessItems = [] %}
 
@@ -74,13 +78,13 @@
 
           {% set conditionalHtml %}
             <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
-              {{ metaHtml }}
-              {{ statementsHtml }}
+              {{ metaHtml | safe }}
+              {{ statementsHtml | safe }}
             </div>
           {% endset %}
 
           {% set _ = witnessItems.push({
-            value: w.id,
+            value: ( w.id | string),
             text: fullName,
             checked: isChecked,
             conditional: { html: conditionalHtml }

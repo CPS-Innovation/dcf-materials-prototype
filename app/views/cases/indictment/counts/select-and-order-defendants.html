@@ -16,7 +16,7 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-       <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <p class="govuk-body">
@@ -29,6 +29,7 @@
       <h2 class="govuk-heading-m">Select the defendant(s) that apply to this count</h2>
 
       <form method="post" novalidate>
+        {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
 
         {# Build checkbox items dynamically based on defendants #}
         {% set defendantItems = [] %}

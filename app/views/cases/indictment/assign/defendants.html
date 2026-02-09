@@ -24,6 +24,10 @@
       <h2 class="govuk-heading-m">Select all defendants that apply to this count</h2>
 
       <form method="post" novalidate>
+        {% if returnTo %}
+          <input type="hidden" name="returnTo" value="{{ returnTo }}">
+        {% endif %}
+
 
         {% set defendantItems = [] %}
 
@@ -60,12 +64,12 @@
           {# Details lives under the row as the conditional reveal content #}
           {% set conditionalHtml %}
             <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
-              {{ chargesHtml }}
+              {{ chargesHtml | safe }}
             </div>
           {% endset %}
 
           {% set _ = defendantItems.push({
-            value: d.id,
+            value: (d.id | string),
             text: fullName,
             checked: isChecked,
             conditional: { html: conditionalHtml }

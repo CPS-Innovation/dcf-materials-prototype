@@ -42,12 +42,15 @@
   {% endfor %}
 
   <div class="govuk-grid-row">
-    {# LEFT (3/4) — form content #}
-    <div class="govuk-grid-column-three-quarters">
+    {##############################################################################################}
+    {############################# RIGHT (3/4) — Statement of offence ###################}
+    {##############################################################################################}
+    <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-l">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <form method="post" novalidate>
+        {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
 
         {# =========================
            Statement of offence (editable)
@@ -113,16 +116,70 @@
         <h2 class="govuk-heading-m">Particulars of offence</h2>
         <p class="govuk-body">Edit to match case. View particulars in the sidebar.</p>
 
+
+        {# ------------------------------------------------------------
+        Suggested Particulars (only if user hasn't typed anything yet)
+        Format:
+        [DEFENDANT(S)], on [DATE] at [LOCATION], [OFFENCE] [VICTIM(S)] of [PROPERTY]
+        ------------------------------------------------------------ #}
+
+        {# Defendants (already computed earlier in your sidebar logic) #}
+        {% set defendantsText = "[DEFENDANT(S)]" %}
+        {% if defendantNames and defendantNames.length %}
+          {% set defendantsText = defendantNames | join(" and ") %}
+        {% endif %}
+
+        {# Victims (already computed earlier in your sidebar logic) #}
+        {% set victimsText = "[VICTIM(S)]" %}
+        {% if victimNames and victimNames.length %}
+          {% set victimsText = victimNames | join(" and ") %}
+        {% endif %}
+
+        {# Date: use your existing dateText (already computed) #}
+        {% set dateForTemplate = "[DATE]" %}
+        {% if dateText and dateText != "xx/xx/xx" %}
+          {% set dateForTemplate = dateText %}
+        {% endif %}
+
+        {# Location: use your existing locationText (already computed) #}
+        {% set locationForTemplate = "[LOCATION]" %}
+        {% if locationText and locationText != "High Street, Anytown" %}
+          {% set locationForTemplate = locationText %}
+        {% endif %}
+
+        {# Offence: prefer primaryChargeText, otherwise placeholder #}
+        {% set offenceForTemplate = "[OFFENCE]" %}
+        {% if primaryChargeText %}
+          {% set offenceForTemplate = primaryChargeText | lower %}
+        {% endif %}
+
+        {# Property: we don’t have it yet #}
+        {% set propertyForTemplate = "[PROPERTY]" %}
+
+        {% set suggestedParticulars =
+          defendantsText + ", on " + dateForTemplate + " at " + locationForTemplate + ", " +
+          offenceForTemplate + " " + victimsText + " of " + propertyForTemplate
+        %}
+
+        {# Final value: only prefill when empty #}
+        {% set particularsValue = draftCount.particularsOfOffenceText or "" %}
+        {% if not particularsValue %}
+          {% set particularsValue = suggestedParticulars %}
+        {% endif %}
+
+
+
         {{ govukTextarea({
           id: "particularsOfOffenceText",
           name: "particularsOfOffenceText",
-          value: (draftCount.particularsOfOffenceText or ""),
+          value: particularsValue,
           label: {
             text: "Particulars of offence",
             classes: "govuk-visually-hidden"
           },
           rows: 12
         }) }}
+
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({
@@ -142,8 +199,11 @@
       </form>
     </div>
 
-    {# RIGHT (1/4) — selected charge + details list #}
-    <div class="govuk-grid-column-one-quarter">
+
+    {##############################################################################################}
+    {############################# RIGHT (1/4) — selected charge + details list ###################}
+    {##############################################################################################}
+    <div class="govuk-grid-column-one-third govuk-!-padding-left-6">
 
       <h2 class="govuk-heading-m">Selected charge</h2>
 

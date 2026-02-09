@@ -29,6 +29,7 @@
       <h2 class="govuk-heading-m">Select the witness(es) that apply to this count</h2>
 
       <form method="post" novalidate>
+        {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
 
         {% set witnessItems = [] %}
 

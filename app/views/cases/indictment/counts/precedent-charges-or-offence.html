@@ -34,13 +34,26 @@
       {% include "_includes/case/indictment/search-form.njk" %}
 
 
-      {# Results render underneath #}
-      <form method="post" action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence/continue">
+      {# POST the form (Main page submit) #}
+        <form method="post"
+            action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence/continue">
+
+        {% if returnTo %}
+          <input type="hidden" name="returnTo" value="{{ returnTo }}">
+        {% endif %}
+
         {% include "_includes/case/indictment/search-results.njk" %}
-          {% if precedentSearchKeywords %}
-            {{ govukButton({ text: "Add and continue", classes: "govuk-!-margin-top-4" }) }}
-          {% endif %}
+
+        
+        {% if precedentSearchKeywords and precedentResults and precedentResults.length %}
+          {{ govukButton({
+            text: "Add and continue",
+            classes: "govuk-!-margin-top-4"
+          }) }}
+        {% endif %}
+
       </form>
+
 
     </div>
   </div>
