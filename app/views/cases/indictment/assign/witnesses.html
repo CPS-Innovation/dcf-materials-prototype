@@ -3,26 +3,109 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Assign witness(es)' %}
+{% set pageName = 'Assign witnesses' %}
 
-
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
 
 {% block content %}
   {% include "_includes/success-banner.njk" %}
-  
 
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-three-quarters">
+    <div class="govuk-grid-column-two-thirds">
+
+       <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-    
+      <h2 class="govuk-heading-m">Select all witnesses that apply to this count</h2>
+
+      <form method="post" novalidate>
+
+        {% set witnessItems = [] %}
+
+        {% for w in (_case.witnesses or []) %}
+
+          {% set fullName = ((w.firstName or "") + " " + (w.lastName or "")) | trim %}
+          {% if not fullName %}
+            {% set fullName = "Witness " + loop.index %}
+          {% endif %}
+
+          {# Checked state from session #}
+          {% set isChecked = false %}
+          {% if draftCount.assignedWitnessIds and (w.id in draftCount.assignedWitnessIds) %}
+            {% set isChecked = true %}
+          {% endif %}
+
+          {# Build witness statements list (no bullets) #}
+          {% set statementsHtml %}
+            {% if w.statements and w.statements.length %}
+              <ul class="govuk-list govuk-!-margin-bottom-0">
+                {% for s in w.statements %}
+                  <li>
+                    Statement {{ s.number }}
+                    {% if s.receivedDate %}
+                      – received {{ s.receivedDate | date("D MMMM YYYY") }}
+                    {% endif %}
+                    {% if s.isMarkedAsSection9 %}
+                      <strong class="govuk-tag govuk-!-margin-left-2">Section 9</strong>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="govuk-body govuk-!-margin-bottom-0">No statements recorded for this witness.</p>
+            {% endif %}
+          {% endset %}
+
+          {# Optional witness meta (handy later) #}
+          {% set metaHtml %}
+            <ul class="govuk-list govuk-!-margin-bottom-2">
+              <li><span class="govuk-!-font-weight-bold">Witness ID:</span> {{ w.id }}</li>
+              {% if w.isPolice %}<li><span class="govuk-!-font-weight-bold">Type:</span> Police witness</li>{% endif %}
+              {% if w.isExpert %}<li><span class="govuk-!-font-weight-bold">Type:</span> Expert witness</li>{% endif %}
+              {% if w.isKeyWitness %}<li><span class="govuk-!-font-weight-bold">Type:</span> Key witness</li>{% endif %}
+              {% if w.isVictim %}<li><span class="govuk-!-font-weight-bold">Type:</span> Victim witness</li>{% endif %}
+            </ul>
+          {% endset %}
+
+          {% set conditionalHtml %}
+            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
+              {{ metaHtml }}
+              {{ statementsHtml }}
+            </div>
+          {% endset %}
+
+          {% set _ = witnessItems.push({
+            value: w.id,
+            text: fullName,
+            checked: isChecked,
+            conditional: { html: conditionalHtml }
+          }) %}
+
+        {% endfor %}
+
+        {% if _case.witnesses and _case.witnesses.length %}
+          {{ govukCheckboxes({
+            name: "assignedWitnessIds",
+            classes: "app-checkboxes--dividers",
+            items: witnessItems
+          }) }}
+        {% else %}
+          <p class="govuk-body">No witnesses have been added to this case.</p>
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Save and continue"
+          }) }}
+        </div>
+
+      </form>
 
     </div>
   </div>
-
-  <form method="post">
-    {{ govukButton({
-      text: "Continue",
-    }) }}
-  </form>
 {% endblock %}

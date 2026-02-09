@@ -3,8 +3,8 @@
 {% if precedentSearchKeywords %}
   <div class="govuk-!-margin-top-6" id="precedentSearchResults" aria-live="polite">
     {% if precedentResults and precedentResults.length %}
-      <h2 class="govuk-heading-m">Search results</h2>
-      <p class="govuk-body">{{ precedentResults.length }} result{% if precedentResults.length != 1 %}s{% endif %}</p>
+      <h2 class="govuk-heading-s">Search results: {{ precedentResults.length }} {% if precedentResults.length != 1 %}{% endif %}</h2>
+
 
       <div class="govuk-radios" data-module="govuk-radios">
         {% for r in precedentResults %}
@@ -16,7 +16,7 @@
                    value="{{ r.id }}"
                    {% if draftCount.selectedPrecedentId and draftCount.selectedPrecedentId == r.id %}checked{% endif %}>
 
-            <label class="govuk-label govuk-radios__label"
+            <label class="govuk-label govuk-radios__label govuk-body-s"
                    for="selectedPrecedentId-{{ loop.index }}">
               {{ govukSummaryList({
                 classes: "govuk-summary-list--no-border app-precedent-summary",

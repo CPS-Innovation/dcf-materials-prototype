@@ -1,7 +1,7 @@
 {# _includes/case/indictment/search-form.njk #}
 <div class="app-search-form">
   <form method="get"
-        action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-and-offence"
+        action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence"
         novalidate>
 
     {{ govukInput({
@@ -23,7 +23,7 @@
   {% if precedentSearchKeywords %}
     <p class="govuk-!-margin-top-2 govuk-!-margin-bottom-0">
       <a class="govuk-link--no-visited-state"
-         href="/cases/{{ _case.id }}/indictment/counts/precedent-charges-and-offence">
+         href="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence">
         Clear search
       </a>
     </p>

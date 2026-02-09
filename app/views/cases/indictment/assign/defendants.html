@@ -1,4 +1,4 @@
-{# /cases/indictments/assign/defendants.html #}
+{# /cases/indictment/assign/defendants.html #}
 
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -18,7 +18,7 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <span class="govuk-caption-l">Draft count</span>
+       <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <h2 class="govuk-heading-m">Select all defendants that apply to this count</h2>
@@ -60,10 +60,7 @@
           {# Details lives under the row as the conditional reveal content #}
           {% set conditionalHtml %}
             <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
-              {{ govukDetails({
-                summaryText: "See charges for this defendant",
-                html: chargesHtml
-              }) }}
+              {{ chargesHtml }}
             </div>
           {% endset %}
 

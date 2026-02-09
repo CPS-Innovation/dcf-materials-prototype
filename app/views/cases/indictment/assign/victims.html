@@ -1,28 +1,86 @@
-{# /cases/indictments/assign/victims.html #}
+{# /cases/indictment/assign/victims.html #}
 
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Assign victim(s)' %}
+{% set pageName = 'Assign victims' %}
 
-
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
 
 {% block content %}
   {% include "_includes/success-banner.njk" %}
-  
 
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-three-quarters">
+    <div class="govuk-grid-column-two-thirds">
+
+       <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-    
+      <h2 class="govuk-heading-m">Select all victims that apply to this count</h2>
+
+      <form method="post" novalidate>
+
+        {% set victimItems = [] %}
+
+        {% for v in (_case.victims or []) %}
+
+          {% set fullName = (v.firstName or "") + " " + (v.lastName or "") %}
+          {% set fullName = fullName | trim %}
+          {% if not fullName %}
+            {% set fullName = "Victim " + loop.index %}
+          {% endif %}
+
+          {# Checked state from session #}
+          {% set isChecked = false %}
+          {% if draftCount.assignedVictimIds and (v.id in draftCount.assignedVictimIds) %}
+            {% set isChecked = true %}
+          {% endif %}
+
+          {# Optional details content (placeholder for future victim info) #}
+          {% set detailsHtml %}
+            <ul class="govuk-list govuk-!-margin-bottom-0">
+              <li><span class="govuk-!-font-weight-bold">Victim ID:</span> {{ v.id }}</li>
+            </ul>
+          {% endset %}
+
+          {% set conditionalHtml %}
+            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
+              {{ detailsHtml }}
+            </div>
+          {% endset %}
+
+          {% set _ = victimItems.push({
+            value: v.id,
+            text: fullName,
+            checked: isChecked,
+            conditional: { html: conditionalHtml }
+          }) %}
+
+        {% endfor %}
+
+        {% if _case.victims and _case.victims.length %}
+          {{ govukCheckboxes({
+            name: "assignedVictimIds",
+            classes: "app-checkboxes--dividers",
+            items: victimItems
+          }) }}
+        {% else %}
+          <p class="govuk-body">No victims have been added to this case.</p>
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Save and continue"
+          }) }}
+        </div>
+
+      </form>
 
     </div>
   </div>
-
-  <form method="post">
-    {{ govukButton({
-      text: "Continue",
-    }) }}
-  </form>
 {% endblock %}

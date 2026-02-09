@@ -627,11 +627,12 @@ module.exports = router => {
 
       const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
 
-      return res.render('cases/indictments/assign/defendants', {
+      return res.render('cases/indictment/assign/defendants', {
         _case,
         draftCount
       })
     })
+
 
     router.post('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
       const caseId = parseCaseId(req, res)
@@ -640,7 +641,6 @@ module.exports = router => {
       const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
       const draftCount = _.get(req, basePath, {})
 
-      // Normalise checkbox values into an array
       const rawSelected = req.body.assignedDefendantIds
       const assignedDefendantIds = Array.isArray(rawSelected)
         ? rawSelected
@@ -650,16 +650,101 @@ module.exports = router => {
       draftCount.lastUpdatedAt = new Date().toISOString()
       _.set(req, basePath, draftCount)
 
-      // TODO: set your real next step after assigning defendants
-      return res.redirect(`/cases/${caseId}/indictment/counts/next-step`)
+      return res.redirect(`/cases/${caseId}/indictment/assign/victims`)
     })
+
+
+    // ============================================================
+    // /cases/:caseId/indictment/assign/victims (GET + POST)
+    // ============================================================
+
+    router.get('/cases/:caseId/indictment/assign/victims', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+      // IMPORTANT: render path must match the folder name on disk
+      return res.render('cases/indictment/assign/victims', {
+        _case,
+        draftCount
+      })
+    })
+
+    router.post('/cases/:caseId/indictment/assign/victims', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+      const draftCount = _.get(req, basePath, {})
+
+      // Normalise checkbox values into an array
+      const rawSelected = req.body.assignedVictimIds
+      const assignedVictimIds = Array.isArray(rawSelected)
+        ? rawSelected
+        : (rawSelected ? [rawSelected] : [])
+
+      draftCount.assignedVictimIds = assignedVictimIds
+      draftCount.lastUpdatedAt = new Date().toISOString()
+      _.set(req, basePath, draftCount)
+
+      // TODO: set your real next step
+      return res.redirect(`/cases/${caseId}/indictment/assign/witnesses`)
+    })
+
+
+
+    // ============================================================
+    // /cases/:caseId/indictment/assign/witnesses (GET + POST)
+    // ============================================================
+
+    router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+      // IMPORTANT: render path must match the folder name on disk
+      return res.render('cases/indictment/assign/witnesses', {
+        _case,
+        draftCount
+      })
+    })
+
+    router.post('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+      const draftCount = _.get(req, basePath, {})
+
+      // Normalise checkbox values into an array
+      const rawSelected = req.body.assignedWitnessIds
+      const assignedWitnessIds = Array.isArray(rawSelected)
+        ? rawSelected
+        : (rawSelected ? [rawSelected] : [])
+
+      draftCount.assignedWitnessIds = assignedWitnessIds
+      draftCount.lastUpdatedAt = new Date().toISOString()
+      _.set(req, basePath, draftCount)
+
+      // TODO: set your real next step
+      return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-or-offence`)
+    })
+
 
 
   // ============================================================
   // /cases/:caseId/indictment/counts/precedent-charges-and-offence (GET + POST)
   // ============================================================
 
-  router.get('/cases/:caseId/indictment/counts/precedent-charges-and-offence', async (req, res) => {
+  router.get('/cases/:caseId/indictment/counts/precedent-charges-or-offence', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
@@ -681,11 +766,9 @@ module.exports = router => {
     // Server-rendered results for the `{% for %}` loop beneath the form
     const precedentResults = searchPrecedentsWithinCase(chargeOptions, precedentSearchKeywords)
 
-    return res.render('cases/indictment/counts/precedent-charges-and-offence', {
+    return res.render('cases/indictment/counts/precedent-charges-or-offence', {
       _case,
       countsCase,
-      chargeOptions,
-      draftCount,
 
       // Pass these into Nunjucks so the form can retain input + show results
       precedentSearchKeywords,
@@ -693,7 +776,7 @@ module.exports = router => {
     })
   })
 
-  router.post('/cases/:caseId/indictment/counts/precedent-charges-and-offence/continue', async (req, res) => {
+  router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
@@ -712,6 +795,6 @@ module.exports = router => {
     _.set(req, basePath, draftCount)
 
     // TODO: redirect to your next screen in the journey
-    return res.redirect(`/cases/${caseId}/indictment/counts/next-step`)
+    return res.redirect(`/cases/${caseId}/indictment/counts/build-count`)
   })
 }

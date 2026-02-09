@@ -17,7 +17,7 @@
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
-      <span class="govuk-caption-l">Draft count</span>
+       <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <form method="post" novalidate>
@@ -105,13 +105,17 @@
                 }
               },
               items: [
-                { name: "day", value: (draftCount.offenceDate.day if draftCount.offenceDate else "") },
-                { name: "month", value: (draftCount.offenceDate.month if draftCount.offenceDate else "") },
-                { name: "year", value: (draftCount.offenceDate.year if draftCount.offenceDate else "") }
+                { classes: "govuk-input--width-2",
+                  name: "day", value: (draftCount.offenceDate.day if draftCount.offenceDate else "") },
+                { classes: "govuk-input--width-2",
+                  name: "month", value: (draftCount.offenceDate.month if draftCount.offenceDate else "") },
+                { classes: "govuk-input--width-4",
+                  name: "year", value: (draftCount.offenceDate.year if draftCount.offenceDate else "") }
               ]
             }) }}
           </div>
         {% endset %}
+
 
         {% set rangeDateConditionalHtml %}
           <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
@@ -125,13 +129,13 @@
                 }
               },
               items: [
-                { name: "day", value: (draftCount.offenceDateFrom.day if draftCount.offenceDateFrom else "") },
-                { name: "month", value: (draftCount.offenceDateFrom.month if draftCount.offenceDateFrom else "") },
-                { name: "year", value: (draftCount.offenceDateFrom.year if draftCount.offenceDateFrom else "") }
+                { classes: "govuk-input--width-2",name: "day", value: (draftCount.offenceDateFrom.day if draftCount.offenceDateFrom else "") },
+                { classes: "govuk-input--width-2",name: "month", value: (draftCount.offenceDateFrom.month if draftCount.offenceDateFrom else "") },
+                { classes: "govuk-input--width-4",name: "year", value: (draftCount.offenceDateFrom.year if draftCount.offenceDateFrom else "") }
               ]
             }) }}
 
-            <p class="govuk-body govuk-!-margin-top-2 govuk-!-margin-bottom-2">to</p>
+            <p class="govuk-body govuk-!-margin-top-2 govuk-!-margin-bottom-2 govuk-!-font-weight-bold">to</p>
 
             {{ govukDateInput({
               id: "offence-date-to",
@@ -143,9 +147,9 @@
                 }
               },
               items: [
-                { name: "day", value: (draftCount.offenceDateTo.day if draftCount.offenceDateTo else "") },
-                { name: "month", value: (draftCount.offenceDateTo.month if draftCount.offenceDateTo else "") },
-                { name: "year", value: (draftCount.offenceDateTo.year if draftCount.offenceDateTo else "") }
+                { classes: "govuk-input--width-2",name: "day", value: (draftCount.offenceDateTo.day if draftCount.offenceDateTo else "") },
+                { classes: "govuk-input--width-2",name: "month", value: (draftCount.offenceDateTo.month if draftCount.offenceDateTo else "") },
+                { classes: "govuk-input--width-4",name: "year", value: (draftCount.offenceDateTo.year if draftCount.offenceDateTo else "") }
               ]
             }) }}
           </div>
