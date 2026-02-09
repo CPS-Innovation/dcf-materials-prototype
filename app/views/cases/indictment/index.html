@@ -19,7 +19,7 @@
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <div class="govuk-button-group">
-        <a href="/cases/{{ _case.id }}/indictment/counts/date-and-charges" class="govuk-button">
+        <a href="/cases/{{ _case.id }}/indictment/counts/charges" class="govuk-button">
           Draft count
         </a>
 
@@ -31,16 +31,59 @@
 
       {# Defendants from Prisma (truth for names + ids) #}
       {% set defendantsValue %}
-        <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+        <ul class="govuk-list govuk-!-margin-bottom-0">
           {% for defendant in _case.defendants %}
             <li>{{ defendant.firstName }} {{ defendant.lastName }}</li>
           {% endfor %}
         </ul>
       {% endset %}
 
+      {# Victims from Prisma #}
+      {% set victimsValue %}
+        {% if _case.victims and _case.victims.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for victim in _case.victims %}
+              <li>
+                {# Be defensive about field names #}
+                {% if victim.firstName or victim.lastName %}
+                  {{ victim.firstName }} {{ victim.lastName }}
+                {% elif victim.name %}
+                  {{ victim.name }}
+                {% else %}
+                  Victim {{ loop.index }}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">None added</p>
+        {% endif %}
+      {% endset %}
+
+      {# Witnesses (only if your case model includes them) #}
+      {% set witnessesValue %}
+        {% if _case.witnesses and _case.witnesses.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for witness in _case.witnesses %}
+              <li>
+                {% if witness.firstName or witness.lastName %}
+                  {{ witness.firstName }} {{ witness.lastName }}
+                {% elif witness.name %}
+                  {{ witness.name }}
+                {% else %}
+                  Witness {{ loop.index }}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">None added</p>
+        {% endif %}
+      {% endset %}
+
       {# Police charge bucket from countsData (story controlled) #}
       {% set chargesValue %}
-        <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+        <ul class="govuk-list govuk-!-margin-bottom-0">
           {% for c in chargeOptions %}
             <li>
               {% if c.chargeCode %}
@@ -113,6 +156,14 @@
               {
                 key: { text: "Defendant(s)" },
                 value: { html: defendantsValue }
+              },
+              {
+                key: { text: "Victim(s)" },
+                value: { html: victimsValue }
+              },
+              {
+                key: { text: "Witness(es)" },
+                value: { html: witnessesValue }
               },
               {
                 key: { text: "Police charges" },

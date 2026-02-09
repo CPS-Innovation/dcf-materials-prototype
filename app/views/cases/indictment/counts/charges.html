@@ -1,0 +1,98 @@
+{# /cases/indictment/counts/charges.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Charges' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: 'Back',
+    href: 'javascript:history.back()'
+  }) }}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+
+      <span class="govuk-caption-l">Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <form method="post" novalidate>
+
+        {# Build checkbox items for charge selection #}
+        {% set checkboxItems = [] %}
+
+        {% for c in chargeOptions %}
+          {% set checkboxLabel %}
+            {% if c.chargeCode %}
+              {{ c.chargeCode }}: {{ c.label }}
+            {% else %}
+              {{ c.label }}
+            {% endif %}
+          {% endset %}
+
+          {# draftCount.selectedPoliceChargeIds is the suggested saved shape (array) #}
+          {% set isChecked = (draftCount.selectedPoliceChargeIds and (c.policeChargeId in draftCount.selectedPoliceChargeIds)) %}
+
+          {% set _ = checkboxItems.push({
+            value: c.policeChargeId,
+            text: checkboxLabel | trim,
+            checked: isChecked
+          }) %}
+        {% endfor %}
+
+        {% set existingChargeConditionalHtml %}
+          <div class="govuk-!-margin-top-2">
+            {{ govukCheckboxes({
+              name: "selectedPoliceChargeIds",
+              classes: "govuk-checkboxes--small",
+              fieldset: {
+                legend: {
+                  text: "Select one or more charges",
+                  classes: "govuk-visually-hidden"
+                }
+              },
+              items: checkboxItems
+            }) }}
+          </div>
+        {% endset %}
+
+        {{ govukRadios({
+          name: "countBasis",
+          fieldset: {
+            legend: {
+              text: "How do you want to add charges to this count?",
+              classes: "govuk-visually-hidden"
+            }
+          },
+          items: [
+            {
+              value: "existingCharge",
+              text: "Select an existing charge",
+              checked: draftCount.countBasis == "existingCharge",
+              conditional: {
+                html: existingChargeConditionalHtml
+              }
+            },
+            {
+              value: "newCount",
+              text: "Add a new count (not related to a charge)",
+              checked: draftCount.countBasis == "newCount"
+            }
+          ]
+        }) }}
+
+
+        {{ govukButton({
+          text: "Save and continue",
+          classes: "govuk-!-margin-top-6"
+        }) }}
+
+      </form>
+    </div>
+  </div>
+{% endblock %}

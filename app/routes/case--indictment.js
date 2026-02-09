@@ -30,6 +30,7 @@ module.exports = router => {
       include: {
         unit: true,
         defendants: { include: { defenceLawyer: true, charges: true } },
+        witnesses: true, // ✅ add this
         victims: true,
         hearings: true,
         location: true
@@ -239,6 +240,93 @@ module.exports = router => {
       chargeLibrary
     })
   })
+
+  // ============================================================
+  // /cases/:caseId/indictment/counts/charges (GET + POST)
+  // ============================================================
+
+  router.get('/cases/:caseId/indictment/counts/charges', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+    const countsCase = getCountsCaseFor(caseId)
+    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+
+    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+    return res.render('cases/indictment/counts/charges', {
+      _case,
+      countsCase,
+      chargeOptions,
+      draftCount
+    })
+  })
+
+  router.post('/cases/:caseId/indictment/counts/charges', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const countsCase = getCountsCaseFor(caseId)
+    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
+
+    // ------------------------------------------------------------
+    // Persist the user's basis choice
+    // ------------------------------------------------------------
+    const countBasis = (req.body.countBasis || '').toString() || 'existingCharge'
+    draftCount.countBasis = countBasis
+
+    // ------------------------------------------------------------
+    // Normalise checkbox values into an array
+    // Express will give:
+    // - undefined if none checked
+    // - string if one checked
+    // - array if multiple checked
+    // ------------------------------------------------------------
+    const rawSelected = req.body.selectedPoliceChargeIds
+    const selectedPoliceChargeIds = Array.isArray(rawSelected)
+      ? rawSelected
+      : (rawSelected ? [rawSelected] : [])
+
+    // If they're adding a new count not related to a charge, clear selections
+    if (countBasis === 'newCount') {
+      draftCount.selectedPoliceChargeIds = []
+      draftCount.policeChargeId = null
+      draftCount.chargeCode = null
+      draftCount.chargeLabel = null
+      draftCount.policeParticulars = null
+      draftCount.statementOfOffence = null
+    } else {
+      draftCount.selectedPoliceChargeIds = selectedPoliceChargeIds
+
+      // Backward compatibility: keep a single "primary" policeChargeId
+      const primaryPoliceChargeId = selectedPoliceChargeIds[0] || null
+      draftCount.policeChargeId = primaryPoliceChargeId
+
+      const selected = chargeOptions.find(o => o.policeChargeId === primaryPoliceChargeId) || null
+      if (selected) {
+        draftCount.chargeCode = selected.chargeCode
+        draftCount.chargeLabel = selected.label
+        draftCount.policeParticulars = selected.policeParticulars
+        draftCount.statementOfOffence = selected.statementOfOffence
+      }
+    }
+
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
+
+    // Once saved, mark indictment as in progress (matches your existing behaviour)
+    _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+
+    // Next step in your journey (same as date-and-charges currently)
+    return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-and-offence`)
+  })
+
 
   // ============================================================
   // /cases/:caseId/indictment/counts/date-and-charges (GET + POST)
