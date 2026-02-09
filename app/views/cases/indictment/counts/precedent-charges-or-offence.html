@@ -1,4 +1,4 @@
-{# /cases/indictment/counts/precedent-charges-and-offence.html #}
+{# /cases/indictment/counts/precedent-charges-or-offence.html #}
 
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -37,8 +37,9 @@
       {# Results render underneath #}
       <form method="post" action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence/continue">
         {% include "_includes/case/indictment/search-results.njk" %}
-        {{ govukButton({ text: "Add and continue",
-          classes: "govuk-!-margin-top-4" }) }}
+          {% if precedentSearchKeywords %}
+            {{ govukButton({ text: "Add and continue", classes: "govuk-!-margin-top-4" }) }}
+          {% endif %}
       </form>
 
     </div>

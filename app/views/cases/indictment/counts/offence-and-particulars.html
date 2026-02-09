@@ -1,0 +1,243 @@
+{# /cases/indictment/counts/offence-and-particulars.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Offence and particulars' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+
+  {# ------------------------------------------------------------
+     Build a flat list of all charges on the case (Prisma)
+     and a deduped list by chargeCode for “Statement of offence” card
+     ------------------------------------------------------------ #}
+  {% set allCaseCharges = [] %}
+  {% for d in (_case.defendants or []) %}
+    {% for ch in (d.charges or []) %}
+      {% set _ = allCaseCharges.push({
+        defendantId: d.id,
+        defendantName: (((d.firstName or "") + " " + (d.lastName or "")) | trim),
+        chargeCode: ch.chargeCode,
+        description: ch.description,
+        particulars: ch.particulars
+      }) %}
+    {% endfor %}
+  {% endfor %}
+
+  {% set dedupedCharges = [] %}
+  {% set seenCodes = [] %}
+  {% for ch in allCaseCharges %}
+    {% if ch.chargeCode and (ch.chargeCode not in seenCodes) %}
+      {% set _ = seenCodes.push(ch.chargeCode) %}
+      {% set _ = dedupedCharges.push(ch) %}
+    {% endif %}
+  {% endfor %}
+
+  <div class="govuk-grid-row">
+    {# LEFT (3/4) — form content #}
+    <div class="govuk-grid-column-three-quarters">
+      <span class="govuk-caption-l">Indictment - Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <form method="post" novalidate>
+
+        {# =========================
+           Statement of offence (editable)
+           ========================= #}
+        {{ govukTextarea({
+          id: "statementOfOffenceText",
+          name: "statementOfOffenceText",
+          value: (draftCount.statementOfOffenceText or draftCount.chargeLabel or ""),
+          label: {
+            text: "Statement of Offence",
+            classes: "govuk-label--m"
+          },
+          rows: 8
+        }) }}
+
+        {# =========================
+           Read-only summary card (derived from selected charge(s))
+           ========================= #}
+
+        {# selected codes from session: prefer selectedChargeCodes, fallback to chargeCode #}
+        {% set selectedChargeCodes = [] %}
+        {% if draftCount.selectedChargeCodes and draftCount.selectedChargeCodes.length %}
+          {% for code in draftCount.selectedChargeCodes %}
+            {% set _ = selectedChargeCodes.push(code | string) %}
+          {% endfor %}
+        {% endif %}
+        {% if draftCount.chargeCode and ((draftCount.chargeCode | string) not in selectedChargeCodes) %}
+          {% set _ = selectedChargeCodes.push(draftCount.chargeCode | string) %}
+        {% endif %}
+
+        {% set selectedChargesForCard = [] %}
+        {% for ch in dedupedCharges %}
+          {% if (ch.chargeCode | string) in selectedChargeCodes %}
+            {% set _ = selectedChargesForCard.push(ch) %}
+          {% endif %}
+        {% endfor %}
+
+        <div class="govuk-summary-card govuk-!-margin-bottom-6">
+          <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Statement of Offence</h2>
+          </div>
+
+          <div class="govuk-summary-card__content">
+            {% if selectedChargesForCard.length %}
+              <ul class="govuk-list govuk-!-margin-bottom-0">
+                {% for sc in selectedChargesForCard %}
+                  <li>
+                    {% if sc.chargeCode %}{{ sc.chargeCode }}:{% endif %}
+                    {{ sc.description or "" }}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="govuk-body govuk-!-margin-bottom-0">No charge selected yet.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {# =========================
+           Particulars of offence (editable)
+           ========================= #}
+
+        <h2 class="govuk-heading-m">Particulars of offence</h2>
+        <p class="govuk-body">Edit to match case. View particulars in the sidebar.</p>
+
+        {{ govukTextarea({
+          id: "particularsOfOffenceText",
+          name: "particularsOfOffenceText",
+          value: (draftCount.particularsOfOffenceText or ""),
+          label: {
+            text: "Particulars of offence",
+            classes: "govuk-visually-hidden"
+          },
+          rows: 12
+        }) }}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Save and continue",
+            name: "action",
+            value: "continue"
+          }) }}
+
+          {{ govukButton({
+            text: "Save and come back later",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "saveForLater"
+          }) }}
+        </div>
+
+      </form>
+    </div>
+
+    {# RIGHT (1/4) — selected charge + details list #}
+    <div class="govuk-grid-column-one-quarter">
+
+      <h2 class="govuk-heading-m">Selected charge</h2>
+
+      {# Normalise ids to strings for comparisons #}
+      {% set assignedDefendantIds = [] %}
+      {% if draftCount.assignedDefendantIds and draftCount.assignedDefendantIds.length %}
+        {% for id in draftCount.assignedDefendantIds %}
+          {% set _ = assignedDefendantIds.push(id | string) %}
+        {% endfor %}
+      {% endif %}
+
+      {% set assignedVictimIds = [] %}
+      {% if draftCount.assignedVictimIds and draftCount.assignedVictimIds.length %}
+        {% for id in draftCount.assignedVictimIds %}
+          {% set _ = assignedVictimIds.push(id | string) %}
+        {% endfor %}
+      {% endif %}
+
+      {# defendants names #}
+      {% set defendantNames = [] %}
+      {% for d in (_case.defendants or []) %}
+        {% if (d.id | string) in assignedDefendantIds %}
+          {% set _ = defendantNames.push((((d.firstName or "") + " " + (d.lastName or "")) | trim)) %}
+        {% endif %}
+      {% endfor %}
+
+      {# victims names #}
+      {% set victimNames = [] %}
+      {% for v in (_case.victims or []) %}
+        {% if (v.id | string) in assignedVictimIds %}
+          {% set _ = victimNames.push((((v.firstName or "") + " " + (v.lastName or "")) | trim)) %}
+        {% endif %}
+      {% endfor %}
+
+      {# date string #}
+      {% set dateText = "xx/xx/xx" %}
+      {% if draftCount.dateType == "single" and draftCount.offenceDate %}
+        {% set dateText = (draftCount.offenceDate.day or "xx") + "/" + (draftCount.offenceDate.month or "xx") + "/" + (draftCount.offenceDate.year or "xx") %}
+      {% elif draftCount.dateType == "range" and draftCount.offenceDateFrom and draftCount.offenceDateTo %}
+        {% set fromText = (draftCount.offenceDateFrom.day or "xx") + "/" + (draftCount.offenceDateFrom.month or "xx") + "/" + (draftCount.offenceDateFrom.year or "xx") %}
+        {% set toText = (draftCount.offenceDateTo.day or "xx") + "/" + (draftCount.offenceDateTo.month or "xx") + "/" + (draftCount.offenceDateTo.year or "xx") %}
+        {% set dateText = fromText + " to " + toText %}
+      {% endif %}
+
+      {# location string #}
+      {% set locationText = "High Street, Anytown" %}
+      {% if _case.location and _case.location.line1 %}
+        {% set locationText = _case.location.line1 %}
+      {% endif %}
+
+      {# primary charge text: use draftCount.chargeLabel fallback to first selected card charge #}
+      {% set primaryChargeText = draftCount.chargeLabel or "" %}
+      {% if (not primaryChargeText) and selectedChargesForCard.length %}
+        {% set primaryChargeText = selectedChargesForCard[0].description or "" %}
+      {% endif %}
+
+      <p class="govuk-body">
+        {% if defendantNames.length %}
+          {{ defendantNames | join(" and ") }}
+        {% else %}
+          [DEFENDANT(S)]
+        {% endif %}
+        on {{ dateText }} at {{ locationText }}
+        {% if primaryChargeText %}
+          {{ primaryChargeText | lower }}
+        {% endif %}
+        {% if victimNames.length %}
+          {{ victimNames | join(" and ") }}
+        {% else %}
+          [VICTIM]
+        {% endif %}.
+      </p>
+
+      {# Details with ALL case charges (from Prisma) #}
+      {% set allChargesListHtml %}
+        {% if dedupedCharges.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for ch in dedupedCharges %}
+              <li>
+                {% if ch.chargeCode %}{{ ch.chargeCode }}:{% endif %}
+                {{ ch.description }}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">No charges recorded for this case.</p>
+        {% endif %}
+      {% endset %}
+
+      {{ govukDetails({
+        summaryText: "See related charges",
+        html: allChargesListHtml
+      }) }}
+
+    </div>
+  </div>
+{% endblock %}

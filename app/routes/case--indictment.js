@@ -740,8 +740,8 @@ module.exports = router => {
 
 
 
-  // ============================================================
-  // /cases/:caseId/indictment/counts/precedent-charges-and-offence (GET + POST)
+ // ============================================================
+  // /cases/:caseId/indictment/counts/precedent-charges-or-offence (GET + POST)
   // ============================================================
 
   router.get('/cases/:caseId/indictment/counts/precedent-charges-or-offence', async (req, res) => {
@@ -753,24 +753,22 @@ module.exports = router => {
 
     const countsCase = getCountsCaseFor(caseId)
     const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
-    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
 
     // ----------------------------
     // SEARCH INPUT (GET)
     // ----------------------------
-    // The search form uses method="get" and submits `precedentSearchKeywords`.
-    // We do NOT store the keywords in session by default — we simply reflect them back to the template.
-    // If you want the value to persist across navigation, you can choose to store it in session.
     const precedentSearchKeywords = (req.query.precedentSearchKeywords || '').toString()
 
-    // Server-rendered results for the `{% for %}` loop beneath the form
+    // Results are server-rendered under the form
     const precedentResults = searchPrecedentsWithinCase(chargeOptions, precedentSearchKeywords)
 
     return res.render('cases/indictment/counts/precedent-charges-or-offence', {
       _case,
       countsCase,
-
-      // Pass these into Nunjucks so the form can retain input + show results
+      draftCount,               // ✅ needed for "checked" state + form persistence
       precedentSearchKeywords,
       precedentResults
     })
@@ -780,21 +778,146 @@ module.exports = router => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
-    // ----------------------------
-    // SELECTION (POST)
-    // ----------------------------
-    // The results list should use radios with name="selectedPrecedentId".
-    // When the user clicks Continue, we store the selected ID against the current draft count.
-    const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString()
+    const countsCase = getCountsCaseFor(caseId)
+    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
 
     const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
+    // ----------------------------
+    // SELECTION (POST)
+    // ----------------------------
+    const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString()
+
     draftCount.selectedPrecedentId = selectedPrecedentId || null
+
+    // ✅ Store the selected row details so later steps can use them without re-searching
+    if (selectedPrecedentId) {
+      // Re-run a "full" result set for this case and find the row
+      // (we don’t rely on the GET query being present on POST)
+      const allResults = searchPrecedentsWithinCase(chargeOptions, ' ')
+      const picked = allResults.find(r => String(r.id) === String(selectedPrecedentId)) || null
+
+      if (picked) {
+        draftCount.precedentSelection = {
+          id: String(picked.id),
+          ippCode: picked.ippCode || '',
+          statuteName: picked.statuteName || '',
+          offence: picked.offence || ''
+        }
+      } else {
+        // If not found, at least clear the stored details
+        draftCount.precedentSelection = null
+      }
+    } else {
+      draftCount.precedentSelection = null
+    }
+
     draftCount.lastUpdatedAt = new Date().toISOString()
     _.set(req, basePath, draftCount)
 
-    // TODO: redirect to your next screen in the journey
-    return res.redirect(`/cases/${caseId}/indictment/counts/build-count`)
+    return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
   })
+
+  // ============================================================
+  // /cases/:caseId/indictment/counts/offence-and-particulars (GET + POST)
+  // ============================================================
+
+  router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
+
+    // ------------------------------------------------------------
+    // Prisma charges: flatten all charges on the case
+    // ------------------------------------------------------------
+    const allCaseCharges = (_case.defendants || [])
+      .flatMap(d => (d.charges || []).map(ch => ({
+        defendantId: d.id,
+        defendantName: `${d.firstName || ''} ${d.lastName || ''}`.trim(),
+        chargeCode: ch.chargeCode,
+        description: ch.description,
+        particulars: ch.particulars
+      })))
+
+    // ------------------------------------------------------------
+    // Selected charge(s): use codes stored earlier in the journey
+    // (checkbox flow stores selectedChargeCodes; fallback to chargeCode)
+    // ------------------------------------------------------------
+    const selectedCodes = Array.isArray(draftCount.selectedChargeCodes) && draftCount.selectedChargeCodes.length
+      ? draftCount.selectedChargeCodes.map(String)
+      : (draftCount.chargeCode ? [String(draftCount.chargeCode)] : [])
+
+    const selectedCharges = allCaseCharges.filter(ch => selectedCodes.includes(String(ch.chargeCode)))
+
+    // A single "selected charge" summary (for the sidebar top block)
+    // If multiple selected, show the first as primary and keep the rest available for "related charges"
+    const primarySelectedCharge = selectedCharges[0] || null
+
+    // Optional: defendants assigned to this count (from assign step)
+    const assignedDefendantIds = Array.isArray(draftCount.assignedDefendantIds)
+      ? draftCount.assignedDefendantIds.map(String)
+      : []
+
+    const assignedDefendants = (_case.defendants || [])
+      .filter(d => assignedDefendantIds.includes(String(d.id)))
+      .map(d => `${d.firstName || ''} ${d.lastName || ''}`.trim())
+      .filter(Boolean)
+
+    return res.render('cases/indictment/counts/offence-and-particulars', {
+      _case,
+      draftCount,
+
+      // Sidebar data
+      assignedDefendants,
+      primarySelectedCharge,
+
+      // Details component list (ALL charges for the case)
+      allCaseCharges,
+
+      // If you want to show the precedent selection card
+      precedentSelection: draftCount.precedentSelection || null
+    })
+  })
+
+  router.post('/cases/:caseId/indictment/counts/offence-and-particulars', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
+
+    // ------------------------------------------------------------
+    // Persist textarea content
+    // ------------------------------------------------------------
+    draftCount.statementOfOffenceText = (req.body.statementOfOffenceText || '').toString()
+    draftCount.particularsOfOffenceText = (req.body.particularsOfOffenceText || '').toString()
+
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
+
+    // ------------------------------------------------------------
+    // Decide where to go next
+    // ------------------------------------------------------------
+    const action = (req.body.action || 'continue').toString()
+
+    if (action === 'saveForLater') {
+      // You can change this to wherever “come back later” should land
+      _.set(req, 'session.data.successBanner', {
+        titleText: 'Draft saved',
+        text: 'You can come back and continue drafting this count later.'
+      })
+      return res.redirect(`/cases/${caseId}/indictment`)
+    }
+
+    // TODO: set your real next step in the count journey
+    return res.redirect(`/cases/${caseId}/indictment/counts/next-step`)
+  })
+
+
 }
