@@ -23,32 +23,31 @@
 
       <form method="post" novalidate>
 
-        {# Build checkbox items for charge selection #}
+        {# Build checkbox items for Prisma charge selection #}
         {% set checkboxItems = [] %}
 
-        {% for c in chargeOptions %}
-          {% set checkboxLabel %}
+        {% for c in (caseChargeOptions or []) %}
+          {% set isChecked = (draftCount.selectedChargeCodes and (c.chargeCode in draftCount.selectedChargeCodes)) %}
+
+          {% set chargeText = "" %}
+
             {% if c.chargeCode %}
-              {{ c.chargeCode }}: {{ c.label }}
-            {% else %}
-              {{ c.label }}
+              {% set chargeText = c.chargeCode + ": " %}
             {% endif %}
-          {% endset %}
 
-          {# draftCount.selectedPoliceChargeIds is the suggested saved shape (array) #}
-          {% set isChecked = (draftCount.selectedPoliceChargeIds and (c.policeChargeId in draftCount.selectedPoliceChargeIds)) %}
+            {% set chargeText = chargeText + (c.description or "") %}
 
-          {% set _ = checkboxItems.push({
-            value: c.policeChargeId,
-            text: checkboxLabel | trim,
-            checked: isChecked
-          }) %}
+            {% set _ = checkboxItems.push({
+              value: c.chargeCode,
+              text: chargeText,
+              checked: isChecked
+            }) %}
         {% endfor %}
 
         {% set existingChargeConditionalHtml %}
           <div class="govuk-!-margin-top-2">
             {{ govukCheckboxes({
-              name: "selectedPoliceChargeIds",
+              name: "selectedChargeCodes",
               classes: "govuk-checkboxes--small",
               fieldset: {
                 legend: {
@@ -61,30 +60,29 @@
           </div>
         {% endset %}
 
-        {{ govukRadios({
-          name: "countBasis",
-          fieldset: {
-            legend: {
-              text: "How do you want to add charges to this count?",
-              classes: "govuk-visually-hidden"
-            }
-          },
-          items: [
-            {
-              value: "existingCharge",
-              text: "Select an existing charge",
-              checked: draftCount.countBasis == "existingCharge",
-              conditional: {
-                html: existingChargeConditionalHtml
+
+          {{ govukRadios({
+            name: "countBasis",
+            fieldset: {
+              legend: {
+                text: "How do you want to add charges to this count?",
+                classes: "govuk-visually-hidden"
               }
             },
-            {
-              value: "newCount",
-              text: "Add a new count (not related to a charge)",
-              checked: draftCount.countBasis == "newCount"
-            }
-          ]
-        }) }}
+            items: [
+              {
+                value: "existingCharge",
+                text: "Select an existing charge",
+                checked: draftCount.countBasis == "existingCharge",
+                conditional: { html: existingChargeConditionalHtml }
+              },
+              {
+                value: "newCount",
+                text: "Add a new count (not related to a charge)",
+                checked: draftCount.countBasis == "newCount"
+              }
+            ]
+          }) }}
 
 
         {{ govukButton({

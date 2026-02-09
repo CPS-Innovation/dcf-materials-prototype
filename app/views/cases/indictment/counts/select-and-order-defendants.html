@@ -1,30 +1,127 @@
-{# /cases/counts/defendants.html #}
+{# /cases/indictment/counts/select-and-order-defendants.html #}
 
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Defendants' %}
+{% set pageName = 'Select and order defendants' %}
 
 {% block beforeContent %}
-  {% include "_includes/case/identity-bar.njk" %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
 {% endblock %}
 
 {% block content %}
-  {% include "_includes/success-banner.njk" %}
-  {% include "_includes/case/dcf-navigation.njk" %}
-
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-three-quarters">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-l">Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-    
+      <p class="govuk-body">
+        Enter a new number for defendants you want to move to a new position.
+      </p>
+      <p class="govuk-body">
+        Defendants will move up or down to accommodate the new order when you save your changes.
+      </p>
+
+      <h2 class="govuk-heading-m">Select the defendant(s) that apply to this count</h2>
+
+      <form method="post" novalidate>
+
+        {# Build checkbox items dynamically based on defendants #}
+        {% set defendantItems = [] %}
+
+        {% for d in _case.defendants %}
+
+          {# Charges list for this defendant (no bullets) #}
+          {% set defendantChargesHtml %}
+            {% if d.charges and d.charges.length %}
+              <ul class="govuk-list govuk-!-margin-bottom-0">
+                {% for ch in d.charges %}
+                  <li>
+                    {% if ch.chargeCode %}
+                      {{ ch.chargeCode }}: {{ ch.description }}
+                    {% else %}
+                      {{ ch.description }}
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="govuk-body govuk-!-margin-bottom-0">No charges added</p>
+            {% endif %}
+          {% endset %}
+
+          {# Optional position input value (stored as a map keyed by defendant id) #}
+          {% set orderValue = '' %}
+          {% if draftCount.defendantOrder and draftCount.defendantOrder[d.id] %}
+            {% set orderValue = draftCount.defendantOrder[d.id] %}
+          {% endif %}
+
+          {% set conditionalHtml %}
+            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
+
+              {{ govukInput({
+                id: "defendantOrder-" + d.id,
+                name: "defendantOrder[" + d.id + "]",
+                value: orderValue,
+                classes: "govuk-input--width-3",
+                inputmode: "numeric",
+                type: "text",
+                label: {
+                  text: "Move " + d.firstName + " " + d.lastName + " to position (optional)",
+                  classes: "govuk-label--s"
+                }
+              }) }}
+
+              {{ govukSummaryList({
+                classes: "govuk-summary-list--no-border app-summary-list--compact",
+                rows: [
+                  {
+                    key: { text: "Charges" },
+                    value: { html: defendantChargesHtml }
+                  }
+                ]
+              }) }}
+
+            </div>
+          {% endset %}
+
+          {# Previously selected defendants (array of ids) #}
+          {% set isChecked = (draftCount.selectedDefendantIds and (d.id in draftCount.selectedDefendantIds)) %}
+
+          {% set _ = defendantItems.push({
+            value: d.id,
+            text: d.firstName + " " + d.lastName,
+            checked: isChecked,
+            conditional: { html: conditionalHtml }
+          }) %}
+
+        {% endfor %}
+
+        {{ govukCheckboxes({
+          name: "selectedDefendantIds",
+          classes: "app-checkboxes--dividers",
+          items: defendantItems
+        }) }}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Save and continue"
+          }) }}
+
+          {{ govukButton({
+            text: "Skip and do later",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "skip"
+          }) }}
+        </div>
+
+      </form>
 
     </div>
   </div>
-
-  <form method="post">
-    {{ govukButton({
-      text: "Continue"
-    }) }}
-  </form>
 {% endblock %}

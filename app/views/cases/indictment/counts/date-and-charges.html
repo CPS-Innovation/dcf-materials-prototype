@@ -22,50 +22,46 @@
 
       <form method="post">
 
-        {# Radios are the SAME items that appear on /indictment/index #}
-        {% set radioItems = [] %}
+          {# Radios now use Prisma charge codes (deduped in route helper) #}
+          {% set radioItems = [] %}
 
-        {% for c in chargeOptions %}
+          {% for c in (caseChargeOptions or []) %}
 
-          {% set radioText %}
-            {% if c.chargeCode %}
-              {{ c.chargeCode }}: {{ c.label }}
-            {% else %}
-              {{ c.label }}
-            {% endif %}
-          {% endset %}
+            {% set radioText %}
+              {% if c.chargeCode %}
+                {{ c.chargeCode }}: {{ c.description }}
+              {% else %}
+                {{ c.description }}
+              {% endif %}
+            {% endset %}
 
-          {% set hintText %}
-            {{ c.policeParticulars }}
-          {% endset %}
+            {% set _ = radioItems.push({
+              value: c.chargeCode,
+              text: radioText | trim,
+              checked: draftCount.chargeCode == c.chargeCode
+            }) %}
 
+          {% endfor %}
+
+          {# Add divider + manual option #}
+          {% set _ = radioItems.push({ divider: "or" }) %}
           {% set _ = radioItems.push({
-            value: c.policeChargeId,
-            text: radioText | trim,
-            hint: { text: hintText | trim },
-            checked: draftCount.policeChargeId == c.policeChargeId
+            value: "needEmptyCount",
+            text: "Add new count",
+            checked: draftCount.chargeCode == "needEmptyCount"
           }) %}
 
-        {% endfor %}
+          {{ govukRadios({
+            name: "chargeCode",
+            fieldset: {
+              legend: {
+                text: "Select a charge to base this count on",
+                classes: "govuk-fieldset__legend--m"
+              }
+            },
+            items: radioItems
+          }) }}
 
-        {# Add divider + manual option #}
-        {% set _ = radioItems.push({ divider: "or" }) %}
-        {% set _ = radioItems.push({
-          value: "needEmptyCount",
-          text: "Add new count",
-          checked: draftCount.policeChargeId == "needEmptyCount"
-        }) %}
-
-        {{ govukRadios({
-          name: "policeChargeId",
-          fieldset: {
-            legend: {
-              text: "Select a police charge to base this count on",
-              classes: "govuk-fieldset__legend--m"
-            }
-          },
-          items: radioItems
-        }) }}
 
         <div class="govuk-form-group govuk-!-margin-top-4">
           <fieldset class="govuk-fieldset" role="group">

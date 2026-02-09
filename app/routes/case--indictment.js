@@ -24,13 +24,37 @@ module.exports = router => {
     return caseId
   }
 
+  // Build charge options from Prisma (deduped by chargeCode + description)
+  function buildChargeOptionsFromPrismaCase(_case) {
+    const seen = new Set()
+    const options = []
+
+    for (const d of (_case.defendants || [])) {
+      for (const ch of (d.charges || [])) {
+        const key = `${ch.chargeCode}||${ch.description}`
+        if (seen.has(key)) continue
+        seen.add(key)
+
+        options.push({
+          chargeCode: ch.chargeCode,
+          description: ch.description
+        })
+      }
+    }
+
+    // Sort by chargeCode for stable UI
+    options.sort((a, b) => (a.chargeCode || '').localeCompare(b.chargeCode || ''))
+    return options
+  }
+
+
   async function fetchCase(caseId) {
     return prisma.case.findUnique({
       where: { id: caseId },
       include: {
         unit: true,
         defendants: { include: { defenceLawyer: true, charges: true } },
-        witnesses: true, // ✅ add this
+        witnesses: { include: { statements: true } }, // ✅
         victims: true,
         hearings: true,
         location: true
@@ -162,7 +186,9 @@ module.exports = router => {
     if (!caseId) return
 
     const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+    // ✅ Prisma-based charges (deduped)
+    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
+
 
     const countsCase = getCountsCaseFor(caseId)
 
@@ -182,6 +208,7 @@ module.exports = router => {
       successBanner,
       countsCase,
       chargeOptions,
+      caseChargeOptions, // ✅ added for Prisma-based charges
       chargeLibrary
     })
   })
@@ -253,86 +280,77 @@ module.exports = router => {
     if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
     const countsCase = getCountsCaseFor(caseId)
-    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+
+    // ✅ Prisma-based charges (deduped)
+    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
     const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
 
     return res.render('cases/indictment/counts/charges', {
       _case,
       countsCase,
-      chargeOptions,
+      caseChargeOptions,
       draftCount
     })
   })
+
 
   router.post('/cases/:caseId/indictment/counts/charges', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
-    const countsCase = getCountsCaseFor(caseId)
-    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
     const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
-    // ------------------------------------------------------------
-    // Persist the user's basis choice
-    // ------------------------------------------------------------
-    const countBasis = (req.body.countBasis || '').toString() || 'existingCharge'
+    // No default selection in the UI, so allow null here
+    const countBasis = (req.body.countBasis || '').toString() || null
     draftCount.countBasis = countBasis
 
-    // ------------------------------------------------------------
-    // Normalise checkbox values into an array
-    // Express will give:
-    // - undefined if none checked
-    // - string if one checked
-    // - array if multiple checked
-    // ------------------------------------------------------------
-    const rawSelected = req.body.selectedPoliceChargeIds
-    const selectedPoliceChargeIds = Array.isArray(rawSelected)
+    // Prisma charge options (deduped)
+    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
+
+    // Normalise checkbox values into an array of strings
+    const rawSelected = req.body.selectedChargeCodes
+    const selectedChargeCodes = Array.isArray(rawSelected)
       ? rawSelected
       : (rawSelected ? [rawSelected] : [])
 
-    // If they're adding a new count not related to a charge, clear selections
     if (countBasis === 'newCount') {
-      draftCount.selectedPoliceChargeIds = []
-      draftCount.policeChargeId = null
+      // Clear selections if "Add a new count"
+      draftCount.selectedChargeCodes = []
+      draftCount.primaryChargeCode = null
       draftCount.chargeCode = null
       draftCount.chargeLabel = null
-      draftCount.policeParticulars = null
-      draftCount.statementOfOffence = null
     } else {
-      draftCount.selectedPoliceChargeIds = selectedPoliceChargeIds
+      // "existingCharge" (or not chosen yet, but they ticked boxes)
+      draftCount.selectedChargeCodes = selectedChargeCodes
+      draftCount.primaryChargeCode = selectedChargeCodes[0] || null
 
-      // Backward compatibility: keep a single "primary" policeChargeId
-      const primaryPoliceChargeId = selectedPoliceChargeIds[0] || null
-      draftCount.policeChargeId = primaryPoliceChargeId
-
-      const selected = chargeOptions.find(o => o.policeChargeId === primaryPoliceChargeId) || null
-      if (selected) {
-        draftCount.chargeCode = selected.chargeCode
-        draftCount.chargeLabel = selected.label
-        draftCount.policeParticulars = selected.policeParticulars
-        draftCount.statementOfOffence = selected.statementOfOffence
+      // Populate simple display fields from the first selected code
+      const primary = caseChargeOptions.find(o => o.chargeCode === draftCount.primaryChargeCode) || null
+      if (primary) {
+        draftCount.chargeCode = primary.chargeCode
+        draftCount.chargeLabel = primary.description
       }
     }
 
     draftCount.lastUpdatedAt = new Date().toISOString()
     _.set(req, basePath, draftCount)
 
-    // Once saved, mark indictment as in progress (matches your existing behaviour)
     _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
 
-    // Next step in your journey (same as date-and-charges currently)
-    return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-and-offence`)
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-defendants`)
   })
 
 
   // ============================================================
-  // /cases/:caseId/indictment/counts/date-and-charges (GET + POST)
+  // /cases/:caseId/indictment/counts/select-and-order-defendants (GET + POST)
   // ============================================================
 
-  router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+  router.get('/cases/:caseId/indictment/counts/select-and-order-defendants', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
@@ -344,7 +362,7 @@ module.exports = router => {
 
     const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
 
-    return res.render('cases/indictment/counts/date-and-charges', {
+    return res.render('cases/indictment/counts/select-and-order-defendants', {
       _case,
       countsCase,
       chargeOptions,
@@ -352,47 +370,256 @@ module.exports = router => {
     })
   })
 
-  router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+  router.post('/cases/:caseId/indictment/counts/select-and-order-defendants', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
-    const countsCase = getCountsCaseFor(caseId)
-    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+    const action = (req.body.action || '').toString()
 
     const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
-    // Radios return the selected policeChargeId
-    draftCount.policeChargeId = req.body.policeChargeId || null
+    const rawSelected = req.body.selectedDefendantIds
+    const selectedDefendantIds = Array.isArray(rawSelected)
+      ? rawSelected
+      : (rawSelected ? [rawSelected] : [])
 
-    const selected = chargeOptions.find(o => o.policeChargeId === draftCount.policeChargeId) || null
-    if (selected) {
-      draftCount.chargeCode = selected.chargeCode
-      draftCount.chargeLabel = selected.label
-      draftCount.policeParticulars = selected.policeParticulars
-      draftCount.statementOfOffence = selected.statementOfOffence
-    }
+    const rawOrder = req.body.defendantOrder || {}
 
-    draftCount.offenceDateFrom = {
-      day: req.body['date-of-offence-from-day'] || '',
-      month: req.body['date-of-offence-from-month'] || '',
-      year: req.body['date-of-offence-from-year'] || ''
-    }
-
-    draftCount.offenceDateTo = {
-      day: req.body['date-of-offence-to-day'] || '',
-      month: req.body['date-of-offence-to-month'] || '',
-      year: req.body['date-of-offence-to-year'] || ''
-    }
-
+    draftCount.selectedDefendantIds = selectedDefendantIds
+    draftCount.defendantOrder = rawOrder
     draftCount.lastUpdatedAt = new Date().toISOString()
     _.set(req, basePath, draftCount)
 
-    // Once a charge has been selected and saved, mark indictment as in progress
-    _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+    if (action === 'skip') {
+      return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
+    }
 
-    return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-and-offence`)
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
   })
+
+
+
+    // ============================================================
+    // /cases/:caseId/indictment/counts/select-and-order-witnesses (GET + POST)
+    // ============================================================
+
+    router.get('/cases/:caseId/indictment/counts/select-and-order-witnesses', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      const countsCase = getCountsCaseFor(caseId)
+      const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+
+      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+      return res.render('cases/indictment/counts/select-and-order-witnesses', {
+        _case,
+        countsCase,
+        chargeOptions,
+        draftCount
+      })
+    })
+
+    router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const action = (req.body.action || '').toString()
+
+      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+      const draftCount = _.get(req, basePath, {})
+
+      // Normalise checkbox values to an array of strings
+      const rawSelected = req.body.selectedWitnessIds
+      const selectedWitnessIds = Array.isArray(rawSelected)
+        ? rawSelected
+        : (rawSelected ? [rawSelected] : [])
+
+      // witnessOrder arrives as an object map: { "12": "2", "15": "1" }
+      const rawOrder = req.body.witnessOrder || {}
+
+      // Persist even if they skip (so partial progress is kept)
+      draftCount.selectedWitnessIds = selectedWitnessIds
+      draftCount.witnessOrder = rawOrder
+      draftCount.lastUpdatedAt = new Date().toISOString()
+      _.set(req, basePath, draftCount)
+
+      if (action === 'skip') {
+        // TODO: adjust to whatever your next step is
+        return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
+      }
+
+      // TODO: adjust to whatever your next step is
+      return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
+    })
+
+    // ============================================================
+    // /cases/:caseId/indictment/counts/select-and-order-victims (GET + POST)
+    // ============================================================
+
+    router.get('/cases/:caseId/indictment/counts/select-and-order-victims', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      const countsCase = getCountsCaseFor(caseId)
+      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+      return res.render('cases/indictment/counts/select-and-order-victims', {
+        _case,
+        countsCase,
+        draftCount
+      })
+    })
+
+    router.post('/cases/:caseId/indictment/counts/select-and-order-victims', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const action = (req.body.action || '').toString()
+
+      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+      const draftCount = _.get(req, basePath, {})
+
+      const rawSelected = req.body.selectedVictimIds
+      const selectedVictimIds = Array.isArray(rawSelected)
+        ? rawSelected
+        : (rawSelected ? [rawSelected] : [])
+
+      const rawOrder = req.body.victimOrder || {}
+
+      draftCount.selectedVictimIds = selectedVictimIds
+      draftCount.victimOrder = rawOrder
+      draftCount.lastUpdatedAt = new Date().toISOString()
+      _.set(req, basePath, draftCount)
+
+      // TODO: set this to your real next step after victims
+      return res.redirect(`/cases/${caseId}/indictment/counts/date-and-charges`)
+    })
+
+
+
+  // ============================================================
+  // /cases/:caseId/indictment/counts/date-and-charges (GET + POST)
+  // ============================================================
+
+    router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      const countsCase = getCountsCaseFor(caseId)
+
+      // ✅ Prisma-based charges (deduped)
+      const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
+
+      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+      return res.render('cases/indictment/counts/date-and-charges', {
+        _case,
+        countsCase,
+        caseChargeOptions,
+        draftCount
+      })
+    })
+
+
+    router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
+
+      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+      const draftCount = _.get(req, basePath, {})
+
+      // Radios return the selected chargeCode
+      draftCount.chargeCode = (req.body.chargeCode || '').toString() || null
+
+      if (draftCount.chargeCode && draftCount.chargeCode !== 'needEmptyCount') {
+        const selected = caseChargeOptions.find(o => o.chargeCode === draftCount.chargeCode) || null
+        if (selected) {
+          draftCount.chargeLabel = selected.description
+        }
+      } else {
+        // Manual count option
+        draftCount.chargeLabel = null
+      }
+
+      // Dates (unchanged)
+      draftCount.offenceDateFrom = {
+        day: req.body['date-of-offence-from-day'] || '',
+        month: req.body['date-of-offence-from-month'] || '',
+        year: req.body['date-of-offence-from-year'] || ''
+      }
+
+      draftCount.offenceDateTo = {
+        day: req.body['date-of-offence-to-day'] || '',
+        month: req.body['date-of-offence-to-month'] || '',
+        year: req.body['date-of-offence-to-year'] || ''
+      }
+
+      draftCount.lastUpdatedAt = new Date().toISOString()
+      _.set(req, basePath, draftCount)
+
+      _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+
+      // ✅ next step
+      return res.redirect(`/cases/${caseId}/indictment/assign/defendants`)
+    })
+
+
+    // ============================================================
+    // /cases/:caseId/indictment/assign/defendants (GET + POST)
+    // ============================================================
+
+    router.get('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
+      return res.render('cases/indictments/assign/defendants', {
+        _case,
+        draftCount
+      })
+    })
+
+    router.post('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+      const draftCount = _.get(req, basePath, {})
+
+      // Normalise checkbox values into an array
+      const rawSelected = req.body.assignedDefendantIds
+      const assignedDefendantIds = Array.isArray(rawSelected)
+        ? rawSelected
+        : (rawSelected ? [rawSelected] : [])
+
+      draftCount.assignedDefendantIds = assignedDefendantIds
+      draftCount.lastUpdatedAt = new Date().toISOString()
+      _.set(req, basePath, draftCount)
+
+      // TODO: set your real next step after assigning defendants
+      return res.redirect(`/cases/${caseId}/indictment/counts/next-step`)
+    })
+
 
   // ============================================================
   // /cases/:caseId/indictment/counts/precedent-charges-and-offence (GET + POST)

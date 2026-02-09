@@ -1,0 +1,122 @@
+{# /cases/indictment/counts/select-and-order-witnesses.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Select and order witnesses' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-l">Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <p class="govuk-body">
+        Enter a new number for witnesses you want to move to a new position.
+      </p>
+      <p class="govuk-body">
+        Witnesses will move up or down to accommodate the new order when you save your changes.
+      </p>
+
+      <h2 class="govuk-heading-m">Select the witness(es) that apply to this count</h2>
+
+      <form method="post" novalidate>
+
+        {% set witnessItems = [] %}
+
+        {% for w in _case.witnesses %}
+
+          {# A simple, relevant summary for witnesses: statement count (and optionally “appearing in court”) #}
+          {% set statementCount = 0 %}
+          {% if w.statements and w.statements.length %}
+            {% set statementCount = w.statements.length %}
+          {% endif %}
+
+          {% set witnessSummaryHtml %}
+            {{ govukSummaryList({
+              classes: "govuk-summary-list--no-border app-summary-list--compact",
+              rows: [
+                {
+                  key: { text: "Statements" },
+                  value: { text: statementCount + " statement" + ("s" if statementCount != 1 else "") }
+                },
+                {
+                  key: { text: "Appearing in court" },
+                  value: { text: "Yes" if w.isAppearingInCourt else "No / not set" }
+                }
+              ]
+            }) }}
+          {% endset %}
+
+          {# Optional position input value (stored as a map keyed by witness id) #}
+          {% set orderValue = '' %}
+          {% if draftCount.witnessOrder and draftCount.witnessOrder[w.id] %}
+            {% set orderValue = draftCount.witnessOrder[w.id] %}
+          {% endif %}
+
+            {% set conditionalHtml %}
+              <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
+                {{ govukInput({
+                  id: "witnessOrder-" + w.id,
+                  name: "witnessOrder[" + w.id + "]",
+                  value: orderValue,
+                  classes: "govuk-input--width-3",
+                  inputmode: "numeric",
+                  type: "text",
+                  label: {
+                    text: "Move " + w.firstName + " " + w.lastName + " to position (optional)",
+                    classes: "govuk-label--s"
+                  }
+                }) }}
+
+                {{ govukSummaryList({
+                  classes: "govuk-summary-list--no-border app-summary-list--compact",
+                  rows: [
+                    { key: { text: "Statements" }, value: { text: statementCount + " statement" + ("s" if statementCount != 1 else "") } },
+                    { key: { text: "Appearing in court" }, value: { text: "Yes" if w.isAppearingInCourt else "No / not set" } }
+                  ]
+                }) }}
+              </div>
+            {% endset %}
+
+            {% set _ = witnessItems.push({
+              value: w.id,
+              text: w.firstName + " " + w.lastName,
+              checked: isChecked,
+              conditional: { html: conditionalHtml }
+            }) %}
+
+        {% endfor %}
+
+        {{ govukCheckboxes({
+          name: "selectedWitnessIds",
+          classes: "app-checkboxes--dividers",
+          items: witnessItems
+        }) }}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Save and continue"
+          }) }}
+
+          {{ govukButton({
+            text: "Skip and do later",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "skip"
+          }) }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

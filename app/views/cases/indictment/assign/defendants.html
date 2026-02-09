@@ -1,0 +1,99 @@
+{# /cases/indictments/assign/defendants.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Assign defendants' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-l">Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <h2 class="govuk-heading-m">Select all defendants that apply to this count</h2>
+
+      <form method="post" novalidate>
+
+        {% set defendantItems = [] %}
+
+        {% for d in (_case.defendants or []) %}
+
+          {% set fullName = (d.firstName or "") + " " + (d.lastName or "") %}
+          {% set fullName = fullName | trim %}
+
+          {# Checked state from session (store ids as strings for safety) #}
+          {% set isChecked = false %}
+          {% if draftCount.assignedDefendantIds and (d.id in draftCount.assignedDefendantIds) %}
+            {% set isChecked = true %}
+          {% endif %}
+
+          {# Build charges list HTML (no bullets) #}
+          {% set chargesHtml %}
+            {% if d.charges and d.charges.length %}
+              <ul class="govuk-list govuk-!-margin-bottom-0">
+                {% for ch in d.charges %}
+                  <li>
+                    {% if ch.chargeCode %}
+                      {{ ch.chargeCode }}: {{ ch.description }}
+                    {% else %}
+                      {{ ch.description }}
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="govuk-body govuk-!-margin-bottom-0">No charges recorded for this defendant.</p>
+            {% endif %}
+          {% endset %}
+
+          {# Details lives under the row as the conditional reveal content #}
+          {% set conditionalHtml %}
+            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
+              {{ govukDetails({
+                summaryText: "See charges for this defendant",
+                html: chargesHtml
+              }) }}
+            </div>
+          {% endset %}
+
+          {% set _ = defendantItems.push({
+            value: d.id,
+            text: fullName,
+            checked: isChecked,
+            conditional: { html: conditionalHtml }
+          }) %}
+
+        {% endfor %}
+
+        {% if _case.defendants and _case.defendants.length %}
+          {{ govukCheckboxes({
+            name: "assignedDefendantIds",
+            classes: "app-checkboxes--dividers",
+            items: defendantItems
+          }) }}
+        {% else %}
+          <p class="govuk-body">No defendants have been added to this case.</p>
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Save and continue"
+          }) }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

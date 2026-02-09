@@ -81,20 +81,25 @@
         {% endif %}
       {% endset %}
 
-      {# Police charge bucket from countsData (story controlled) #}
+      {# Charges from Prisma (deduped in route helper) #}
       {% set chargesValue %}
-        <ul class="govuk-list govuk-!-margin-bottom-0">
-          {% for c in chargeOptions %}
-            <li>
-              {% if c.chargeCode %}
-                {{ c.chargeCode }}: {{ c.label }}
-              {% else %}
-                {{ c.label }}
-              {% endif %}
-            </li>
-          {% endfor %}
-        </ul>
+        {% if caseChargeOptions and caseChargeOptions.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for c in caseChargeOptions %}
+              <li>
+                {% if c.chargeCode %}
+                  {{ c.chargeCode }}: {{ c.description }}
+                {% else %}
+                  {{ c.description }}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">None added</p>
+        {% endif %}
       {% endset %}
+
 
       {# Indictment status tag class #}
       {% set countsTagClass = "" %}

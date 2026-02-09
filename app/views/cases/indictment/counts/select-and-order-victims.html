@@ -1,0 +1,111 @@
+{# /cases/indictment/counts/select-and-order-victims.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Select and order victims' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-l">Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <p class="govuk-body">
+        Enter a new number for victims you want to move to a new position.
+      </p>
+      <p class="govuk-body">
+        Victims will move up or down to accommodate the new order when you save your changes.
+      </p>
+
+      <h2 class="govuk-heading-m">Select the victim(s) that apply to this count</h2>
+
+      <form method="post" novalidate>
+
+        {% set victimItems = [] %}
+
+        {% for v in _case.victims %}
+
+          {# Optional position input value (stored as a map keyed by victim id) #}
+          {% set orderValue = '' %}
+          {% if draftCount.victimOrder and draftCount.victimOrder[v.id] %}
+            {% set orderValue = draftCount.victimOrder[v.id] %}
+          {% endif %}
+
+          {# Previously selected victims (array of ids) #}
+          {% set isChecked = (draftCount.selectedVictimIds and (v.id in draftCount.selectedVictimIds)) %}
+
+          {% set conditionalHtml %}
+            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
+
+              {{ govukInput({
+                id: "victimOrder-" + v.id,
+                name: "victimOrder[" + v.id + "]",
+                value: orderValue,
+                classes: "govuk-input--width-3",
+                inputmode: "numeric",
+                type: "text",
+                label: {
+                  text: "Move " + v.firstName + " " + v.lastName + " to position (optional)",
+                  classes: "govuk-label--s"
+                }
+              }) }}
+
+              {{ govukSummaryList({
+                classes: "govuk-summary-list--no-border app-summary-list--compact",
+                rows: [
+                  {
+                    key: { text: "Role" },
+                    value: { text: "Victim" }
+                  }
+                ]
+              }) }}
+
+            </div>
+          {% endset %}
+
+          {% set _ = victimItems.push({
+            value: v.id,
+            text: v.firstName + " " + v.lastName,
+            checked: isChecked,
+            conditional: { html: conditionalHtml }
+          }) %}
+
+        {% endfor %}
+
+        {% if _case.victims and _case.victims.length %}
+          {{ govukCheckboxes({
+            name: "selectedVictimIds",
+            classes: "app-checkboxes--dividers",
+            items: victimItems
+          }) }}
+        {% else %}
+          <p class="govuk-body">No victims have been added to this case.</p>
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Save and continue"
+          }) }}
+
+          {{ govukButton({
+            text: "Skip and do later",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "skip"
+          }) }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
