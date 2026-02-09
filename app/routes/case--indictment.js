@@ -509,75 +509,109 @@ module.exports = router => {
   // /cases/:caseId/indictment/counts/date-and-charges (GET + POST)
   // ============================================================
 
-    router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
+  router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
 
-      const _case = await fetchCase(caseId)
-      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-      const countsCase = getCountsCaseFor(caseId)
+    const countsCase = getCountsCaseFor(caseId)
 
-      // ✅ Prisma-based charges (deduped)
-      const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
+    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
-      const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
 
-      return res.render('cases/indictment/counts/date-and-charges', {
-        _case,
-        countsCase,
-        caseChargeOptions,
-        draftCount
-      })
+    return res.render('cases/indictment/counts/date-and-charges', {
+      _case,
+      countsCase,
+      caseChargeOptions,
+      draftCount
     })
+  })
 
 
-    router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
 
-      const _case = await fetchCase(caseId)
-      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+  router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
 
-      const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-      const draftCount = _.get(req, basePath, {})
+    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
-      // Radios return the selected chargeCode
-      draftCount.chargeCode = (req.body.chargeCode || '').toString() || null
+    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftCount = _.get(req, basePath, {})
 
-      if (draftCount.chargeCode && draftCount.chargeCode !== 'needEmptyCount') {
-        const selected = caseChargeOptions.find(o => o.chargeCode === draftCount.chargeCode) || null
-        if (selected) {
-          draftCount.chargeLabel = selected.description
-        }
-      } else {
-        // Manual count option
-        draftCount.chargeLabel = null
+    // ----------------------------
+    // Charges: basis + selected codes
+    // ----------------------------
+    const countBasis = (req.body.countBasis || '').toString()
+    draftCount.countBasis = countBasis || null
+
+    const rawSelected = req.body.selectedChargeCodes
+    const selectedChargeCodes = Array.isArray(rawSelected)
+      ? rawSelected
+      : (rawSelected ? [rawSelected] : [])
+
+    if (draftCount.countBasis === 'existingCharge') {
+      draftCount.selectedChargeCodes = selectedChargeCodes
+
+      // Optional: store a primary for convenience
+      const primaryChargeCode = selectedChargeCodes[0] || null
+      draftCount.chargeCode = primaryChargeCode
+
+      const selected = caseChargeOptions.find(o => o.chargeCode === primaryChargeCode) || null
+      draftCount.chargeLabel = selected ? selected.description : null
+    } else if (draftCount.countBasis === 'newCount') {
+      draftCount.selectedChargeCodes = []
+      draftCount.chargeCode = null
+      draftCount.chargeLabel = null
+    } else {
+      // Nothing chosen
+      draftCount.selectedChargeCodes = selectedChargeCodes
+    }
+
+    // ----------------------------
+    // Date: single vs range
+    // ----------------------------
+    const dateType = (req.body.dateType || '').toString()
+    draftCount.dateType = dateType || null
+
+    if (draftCount.dateType === 'single') {
+      draftCount.offenceDate = {
+        day: req.body['offence-date-day'] || '',
+        month: req.body['offence-date-month'] || '',
+        year: req.body['offence-date-year'] || ''
       }
-
-      // Dates (unchanged)
+      // Clear range fields to avoid conflicts
+      draftCount.offenceDateFrom = null
+      draftCount.offenceDateTo = null
+    } else if (draftCount.dateType === 'range') {
       draftCount.offenceDateFrom = {
-        day: req.body['date-of-offence-from-day'] || '',
-        month: req.body['date-of-offence-from-month'] || '',
-        year: req.body['date-of-offence-from-year'] || ''
+        day: req.body['offence-date-from-day'] || '',
+        month: req.body['offence-date-from-month'] || '',
+        year: req.body['offence-date-from-year'] || ''
       }
-
       draftCount.offenceDateTo = {
-        day: req.body['date-of-offence-to-day'] || '',
-        month: req.body['date-of-offence-to-month'] || '',
-        year: req.body['date-of-offence-to-year'] || ''
+        day: req.body['offence-date-to-day'] || '',
+        month: req.body['offence-date-to-month'] || '',
+        year: req.body['offence-date-to-year'] || ''
       }
+      // Clear single field
+      draftCount.offenceDate = null
+    }
 
-      draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, basePath, draftCount)
 
-      _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+    _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
 
-      // ✅ next step
-      return res.redirect(`/cases/${caseId}/indictment/assign/defendants`)
-    })
+    // ✅ next step
+    return res.redirect(`/cases/${caseId}/indictment/assign/defendants`)
+  })
+
 
 
     // ============================================================
