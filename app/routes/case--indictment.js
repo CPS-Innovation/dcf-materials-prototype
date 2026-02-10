@@ -1068,79 +1068,91 @@ router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res)
 })
 
 
-  router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
-    const caseId = parseCaseId(req, res)
-    if (!caseId) return
+ router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+  const caseId = parseCaseId(req, res)
+  if (!caseId) return
 
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
+  const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
-    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-    const draftCount = _.get(req, basePath, {})
+  const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+  const draftCount = _.get(req, basePath, {})
 
-    // Charges: basis + selected codes
-    const countBasis = (req.body.countBasis || '').toString()
-    draftCount.countBasis = countBasis || null
+  // ============================================================
+  // Charges: ONE radios group (chargeSelection)
+  // - value is either a chargeCode OR "newCount"
+  // - selectedChargeCodes already live in session from /counts/charges
+  // ============================================================
 
-    const rawSelected = req.body.selectedChargeCodes
-    const selectedChargeCodes = Array.isArray(rawSelected)
-      ? rawSelected
-      : (rawSelected ? [rawSelected] : [])
+  const chargeSelection = (req.body.chargeSelection || '').toString()
 
-    if (draftCount.countBasis === 'existingCharge') {
-      draftCount.selectedChargeCodes = selectedChargeCodes
+  // Session truth: what they checked earlier (do NOT rely on POSTing these again)
+  const selectedChargeCodes = (draftCount.selectedChargeCodes || []).map(String)
 
-      const primaryChargeCode = selectedChargeCodes[0] || null
-      draftCount.chargeCode = primaryChargeCode
+  if (chargeSelection === 'newCount') {
+    draftCount.countBasis = 'newCount'
+    draftCount.primaryChargeCode = null
+    draftCount.selectedChargeCodes = [] // clear charge linkage
+    draftCount.chargeCode = null
+    draftCount.chargeLabel = null
+  } else {
+    // They picked an existing charge (chargeSelection = chargeCode)
+    draftCount.countBasis = 'existingCharge'
 
-      const selected = caseChargeOptions.find(o => String(o.chargeCode) === String(primaryChargeCode)) || null
-      draftCount.chargeLabel = selected ? selected.description : null
-    } else if (draftCount.countBasis === 'newCount') {
-      draftCount.selectedChargeCodes = []
-      draftCount.chargeCode = null
-      draftCount.chargeLabel = null
-    } else {
-      draftCount.selectedChargeCodes = selectedChargeCodes
+    // Ensure it’s one of the earlier selected codes; if not, fall back safely
+    const primaryChargeCode = selectedChargeCodes.includes(String(chargeSelection))
+      ? String(chargeSelection)
+      : (selectedChargeCodes[0] || null)
+
+    draftCount.primaryChargeCode = primaryChargeCode
+    draftCount.selectedChargeCodes = selectedChargeCodes
+
+    const selected = caseChargeOptions.find(o => String(o.chargeCode) === String(primaryChargeCode)) || null
+    draftCount.chargeCode = selected ? selected.chargeCode : null
+    draftCount.chargeLabel = selected ? selected.description : null
+  }
+
+  // ============================================================
+  // Date: single vs range (unchanged)
+  // ============================================================
+
+  const dateType = (req.body.dateType || '').toString()
+  draftCount.dateType = dateType || null
+
+  if (draftCount.dateType === 'single') {
+    draftCount.offenceDate = {
+      day: req.body['offence-date-day'] || '',
+      month: req.body['offence-date-month'] || '',
+      year: req.body['offence-date-year'] || ''
     }
-
-    // Date: single vs range
-    const dateType = (req.body.dateType || '').toString()
-    draftCount.dateType = dateType || null
-
-    if (draftCount.dateType === 'single') {
-      draftCount.offenceDate = {
-        day: req.body['offence-date-day'] || '',
-        month: req.body['offence-date-month'] || '',
-        year: req.body['offence-date-year'] || ''
-      }
-      draftCount.offenceDateFrom = null
-      draftCount.offenceDateTo = null
-    } else if (draftCount.dateType === 'range') {
-      draftCount.offenceDateFrom = {
-        day: req.body['offence-date-from-day'] || '',
-        month: req.body['offence-date-from-month'] || '',
-        year: req.body['offence-date-from-year'] || ''
-      }
-      draftCount.offenceDateTo = {
-        day: req.body['offence-date-to-day'] || '',
-        month: req.body['offence-date-to-month'] || '',
-        year: req.body['offence-date-to-year'] || ''
-      }
-      draftCount.offenceDate = null
+    draftCount.offenceDateFrom = null
+    draftCount.offenceDateTo = null
+  } else if (draftCount.dateType === 'range') {
+    draftCount.offenceDateFrom = {
+      day: req.body['offence-date-from-day'] || '',
+      month: req.body['offence-date-from-month'] || '',
+      year: req.body['offence-date-from-year'] || ''
     }
+    draftCount.offenceDateTo = {
+      day: req.body['offence-date-to-day'] || '',
+      month: req.body['offence-date-to-month'] || '',
+      year: req.body['offence-date-to-year'] || ''
+    }
+    draftCount.offenceDate = null
+  }
 
-    draftCount.lastUpdatedAt = new Date().toISOString()
-    _.set(req, basePath, draftCount)
-    _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+  draftCount.lastUpdatedAt = new Date().toISOString()
+  _.set(req, basePath, draftCount)
+  _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
 
-    // returnTo support (prefer body hidden field)
-    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
-    if (returnTo) return res.redirect(returnTo)
+  const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+  if (returnTo) return res.redirect(returnTo)
 
-    return res.redirect(`/cases/${caseId}/indictment/assign/defendants`)
-  })
+  return res.redirect(`/cases/${caseId}/indictment/assign/defendants`)
+})
+
 
   // ============================================================
   // /cases/:caseId/indictment/assign/defendants (GET + POST)

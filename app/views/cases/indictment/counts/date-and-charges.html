@@ -24,64 +24,48 @@
           <input type="hidden" name="returnTo" value="{{ query.returnTo or '' }}">
 
 
-        {# =========================
-          CHARGES
-          ========================= #}
+      {# =========================
+        CHARGES
+        ========================= #}
 
-        <fieldset class="govuk-fieldset">
-          <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-            Select an existing charge
-          </legend>
+      {% set chargeSelectionItems = [] %}
 
-          {% set chargeRadioItems = [] %}
-
-          {% for c in (selectedChargeOptions or []) %}
-            {% set isChecked = false %}
-            {% if draftCount.primaryChargeCode and (c.chargeCode == draftCount.primaryChargeCode) %}
-              {% set isChecked = true %}
-            {% endif %}
-
-            {% set chargeText %}
-              {% if c.chargeCode %}
-                {{ c.chargeCode }}: {{ c.description }}
-              {% else %}
-                {{ c.description }}
-              {% endif %}
-            {% endset %}
-
-            {% set _ = chargeRadioItems.push({
-              value: c.chargeCode,
-              text: chargeText | trim,
-              checked: isChecked
-            }) %}
-          {% endfor %}
-
-         
-          {% if draftCount.countBasis != "newCount" and (selectedChargeOptions or []).length %}
-              {{ govukRadios({
-              name: "primaryChargeCode",
-              items: chargeRadioItems
-            }) }}
+      {# Existing selected charges first #}
+      {% for c in (selectedChargeOptions or []) %}
+        {% set chargeText %}
+          {% if c.chargeCode %}
+            {{ c.chargeCode }}: {{ c.description }}
+          {% else %}
+            {{ c.description }}
           {% endif %}
+        {% endset %}
 
-        </fieldset>
+        {% set _ = chargeSelectionItems.push({
+          value: (c.chargeCode | string),
+          text: chargeText | trim,
+          checked: (draftCount.countBasis != "newCount" and draftCount.primaryChargeCode and (c.chargeCode | string) == (draftCount.primaryChargeCode | string))
+        }) %}
+      {% endfor %}
 
-        {# OR divider #}
-        <div class="govuk-body govuk-!-margin-top-4 govuk-!-margin-bottom-4 govuk-!-font-weight-bold">
-          or
-        </div>
+      {# Divider + new count option #}
+      {% set _ = chargeSelectionItems.push({ divider: "or" }) %}
+      {% set _ = chargeSelectionItems.push({
+        value: "newCount",
+        text: "Add a new count (not related to a charge)",
+        checked: draftCount.countBasis == "newCount"
+      }) %}
 
-        {# Add new count option #}
-        {{ govukRadios({
-          name: "countBasis",
-          items: [
-            {
-              value: "newCount",
-              text: "Add a new count (not related to a charge)",
-              checked: draftCount.countBasis == "newCount"
-            }
-          ]
-        }) }}
+      {{ govukRadios({
+        name: "chargeSelection",
+        fieldset: {
+          legend: {
+            text: "Select an existing charge",
+            classes: "govuk-fieldset__legend--m"
+          }
+        },
+        items: chargeSelectionItems
+      }) }}
+
 
         {# =========================
            DATE TYPE (radio + conditional date inputs)
