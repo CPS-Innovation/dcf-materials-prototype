@@ -16,6 +16,13 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
+      {% if showReorderSuccess %}
+        {{ govukNotificationBanner({
+          type: "success",
+          text: "Defendants reordered"
+        }) }}
+      {% endif %}
+
       <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
@@ -113,12 +120,21 @@
             text: "Save and continue"
           }) }}
 
+
+          {{ govukButton({
+            text: "Refresh and reorder",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "reorder"
+          }) }}
+
           {{ govukButton({
             text: "Skip and do later",
             classes: "govuk-button--secondary",
             name: "action",
             value: "skip"
           }) }}
+
         </div>
 
       </form>
