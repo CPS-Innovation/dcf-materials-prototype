@@ -1,5 +1,3 @@
-{# /cases/indictment/counts/select-and-order-witnesses.html #}
-
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
@@ -16,8 +14,15 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-       <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% if showWitnessReorderSuccess %}
+        {{ govukNotificationBanner({
+          type: "success",
+          text: "Witnesses reordered"
+        }) }}
+      {% endif %}
 
       <p class="govuk-body">
         Enter a new number for witnesses you want to move to a new position.
@@ -29,71 +34,50 @@
       <h2 class="govuk-heading-m">Select the witness(es) that apply to this count</h2>
 
       <form method="post" novalidate>
-        {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
+        {% if returnTo %}
+          <input type="hidden" name="returnTo" value="{{ returnTo }}">
+        {% endif %}
 
         {% set witnessItems = [] %}
 
         {% for w in _case.witnesses %}
 
-          {# A simple, relevant summary for witnesses: statement count (and optionally “appearing in court”) #}
-          {% set statementCount = 0 %}
-          {% if w.statements and w.statements.length %}
-            {% set statementCount = w.statements.length %}
-          {% endif %}
+          {% set wid = w.id | string %}
 
-          {% set witnessSummaryHtml %}
-            {{ govukSummaryList({
-              classes: "govuk-summary-list--no-border app-summary-list--compact",
-              rows: [
-                {
-                  key: { text: "Statements" },
-                  value: { text: statementCount + " statement" + ("s" if statementCount != 1 else "") }
-                },
-                {
-                  key: { text: "Appearing in court" },
-                  value: { text: "Yes" if w.isAppearingInCourt else "No / not set" }
-                }
-              ]
-            }) }}
-          {% endset %}
+          {# Checked state from session (string-safe) #}
+          {% set isChecked = (draftCount.selectedWitnessIds and (wid in draftCount.selectedWitnessIds)) %}
 
           {# Optional position input value (stored as a map keyed by witness id) #}
           {% set orderValue = '' %}
-          {% if draftCount.witnessOrder and draftCount.witnessOrder[w.id] %}
-            {% set orderValue = draftCount.witnessOrder[w.id] %}
+          {% if draftCount.witnessOrder and draftCount.witnessOrder[wid] %}
+            {% set orderValue = draftCount.witnessOrder[wid] %}
           {% endif %}
 
-            {% set conditionalHtml %}
-              <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
-                {{ govukInput({
-                  id: "witnessOrder-" + w.id,
-                  name: "witnessOrder[" + w.id + "]",
-                  value: orderValue,
-                  classes: "govuk-input--width-3",
-                  inputmode: "numeric",
-                  type: "text",
-                  label: {
-                    text: "Move " + w.firstName + " " + w.lastName + " to position (optional)",
-                    classes: "govuk-label--s"
-                  }
-                }) }}
+          {% set conditionalHtml %}
+            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
 
-                {{ govukSummaryList({
-                  classes: "govuk-summary-list--no-border app-summary-list--compact",
-                  rows: [
-                    { key: { text: "Statements" }, value: { text: statementCount + " statement" + ("s" if statementCount != 1 else "") } },
-                    { key: { text: "Appearing in court" }, value: { text: "Yes" if w.isAppearingInCourt else "No / not set" } }
-                  ]
-                }) }}
-              </div>
-            {% endset %}
+              {{ govukInput({
+                id: "witnessOrder-" + wid,
+                name: "witnessOrder[" + wid + "]",
+                value: orderValue,
+                classes: "govuk-input--width-3",
+                inputmode: "numeric",
+                type: "text",
+                label: {
+                  text: "Move " + w.firstName + " " + w.lastName + " to position (optional)",
+                  classes: "govuk-label--s"
+                }
+              }) }}
 
-            {% set _ = witnessItems.push({
-              value: w.id,
-              text: w.firstName + " " + w.lastName,
-              checked: isChecked,
-              conditional: { html: conditionalHtml }
-            }) %}
+            </div>
+          {% endset %}
+
+          {% set _ = witnessItems.push({
+            value: wid,
+            text: w.firstName + " " + w.lastName,
+            checked: isChecked,
+            conditional: { html: conditionalHtml }
+          }) %}
 
         {% endfor %}
 
@@ -103,9 +87,28 @@
           items: witnessItems
         }) }}
 
+        {% if showLeftOffInset and leftOffPreview.length %}
+          <div class="govuk-inset-text">
+            <p class="govuk-body govuk-!-margin-bottom-2">
+              If you save now, these witnesses will be left off this count:
+            </p>
+
+            <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+              {% for name in leftOffPreview %}
+                <li>{{ name }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
         <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Save and continue" }) }}
+
           {{ govukButton({
-            text: "Save and continue"
+            text: "Refresh and reorder",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "reorder"
           }) }}
 
           {{ govukButton({

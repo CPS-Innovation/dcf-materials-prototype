@@ -4,7 +4,7 @@
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Indictment' %}
+{% set pageName = 'Indictments' %}
 
 {% block beforeContent %}
   {% include "_includes/case/identity-bar.njk" %}
@@ -20,13 +20,9 @@
 
       <div class="govuk-button-group">
         <a href="/cases/{{ _case.id }}/indictment/counts/charges" class="govuk-button">
-          Draft count
+          Start indictment
         </a>
 
-        {{ govukButton({
-          text: "xxxxxxxxxx",
-          classes: "govuk-button--secondary"
-        }) }}
       </div>
 
       {# Defendants from Prisma (truth for names + ids) #}
