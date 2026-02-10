@@ -123,11 +123,13 @@
     {% set locationText = _case.location.line1 %}
   {% endif %}
 
-  {# ------------------------------------------------------------
-     Single selected charge (from /date-and-charges POST)
-     Summary card must ONLY reflect this charge
-     ------------------------------------------------------------ #}
+  {# Canonical statement: what the summary card shows #}
   {% set statementCardText = draftCount.statementOfOffence or draftCount.chargeLabel or "" %}
+
+  {# Textarea value: user edit wins, otherwise mirror the card exactly #}
+  {% set statementTextareaValue = draftCount.statementOfOffenceText or statementCardText %}
+
+
 
   {# For sidebar sentence, use the offence label if present, else statement, else blank #}
   {% set primaryChargeText = draftCount.chargeLabel or statementCardText %}
@@ -150,7 +152,7 @@
         {{ govukTextarea({
           id: "statementOfOffenceText",
           name: "statementOfOffenceText",
-          value: (draftCount.statementOfOffenceText or draftCount.statementOfOffence or draftCount.chargeLabel or ""),
+         value: statementTextareaValue,
           label: {
             text: "Statement of Offence",
             classes: "govuk-label--m"

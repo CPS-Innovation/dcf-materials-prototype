@@ -10,14 +10,14 @@
         {% for r in precedentResults %}
           <div class="govuk-radios__item app-precedent-result">
             <input class="govuk-radios__input"
-                   id="selectedPrecedentId-{{ loop.index }}"
-                   name="selectedPrecedentId"
+                   id="selectedParticularsChargeCode-{{ loop.index }}"
+                   name="selectedParticularsChargeCode"
                    type="radio"
                    value="{{ r.id }}"
-                   {% if draftCount.selectedPrecedentId and draftCount.selectedPrecedentId == r.id %}checked{% endif %}>
+                   {% if draftCount.selectedParticularsChargeCode and draftCount.selectedParticularsChargeCode == r.id %}checked{% endif %}>
 
             <label class="govuk-label govuk-radios__label govuk-body-s"
-                   for="selectedPrecedentId-{{ loop.index }}">
+                   for="selectedParticularsChargeCode-{{ loop.index }}">
               {{ govukSummaryList({
                 classes: "govuk-summary-list--no-border app-precedent-summary",
                 rows: [

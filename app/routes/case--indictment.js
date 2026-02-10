@@ -1142,8 +1142,11 @@ router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res)
     draftCount.countBasis = 'newCount'
     draftCount.primaryChargeCode = null
     draftCount.selectedChargeCodes = [] // clear charge linkage
+
+    // Selected charge fields (used later by offence-and-particulars)
     draftCount.chargeCode = null
     draftCount.chargeLabel = null
+    draftCount.statementOfOffence = null
   } else {
     // They picked an existing charge (chargeSelection = chargeCode)
     draftCount.countBasis = 'existingCharge'
@@ -1156,13 +1159,25 @@ router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res)
     draftCount.primaryChargeCode = primaryChargeCode
     draftCount.selectedChargeCodes = selectedChargeCodes
 
+    // Resolve full charge details from the case options
     const selected = caseChargeOptions.find(o => String(o.chargeCode) === String(primaryChargeCode)) || null
+
+    // Selected charge fields (used by the Statement of Offence card + textarea)
     draftCount.chargeCode = selected ? selected.chargeCode : null
     draftCount.chargeLabel = selected ? selected.description : null
+
+    // IMPORTANT: ensure buildChargeOptionsFromPrismaCase includes statementOfOffence.
+    // If it does not, this will be null and your summary card will be weak.
+    draftCount.statementOfOffence = selected ? (selected.statementOfOffence || null) : null
+
+    // Optional: if user had typed a custom statement earlier, keep it.
+    // If you want date-and-charges to always reset it, remove this.
+    // if (!draftCount.statementOfOffenceText) draftCount.statementOfOffenceText = draftCount.statementOfOffence
   }
 
   // ============================================================
-  // Date: single vs range (unchanged)
+  // Date: single vs range (SOURCE OF TRUTH)
+  // Use ONE naming scheme in your form: offence-date-*
   // ============================================================
 
   const dateType = (req.body.dateType || '').toString()
@@ -1199,6 +1214,7 @@ router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res)
 
   return res.redirect(`/cases/${caseId}/indictment/assign/defendants`)
 })
+
 
 
   // ============================================================
@@ -1451,28 +1467,92 @@ router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
   })
 
 
+// ------------------------------------------------------------
+// Particulars template helpers
+// ------------------------------------------------------------
+function ordinal(n) {
+  const s = ["th", "st", "nd", "rd"]
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
+function formatNarrativeDateSingle(offenceDate) {
+  const day = parseInt(offenceDate?.day, 10)
+  const month = parseInt(offenceDate?.month, 10)
+  const year = offenceDate?.year || ''
+
+  const months = ["", "January","February","March","April","May","June","July","August","September","October","November","December"]
+
+  if (!day || !month || !year) return "[date]"
+  return `${ordinal(day)} day of ${months[month] || "[month]"} ${year}`
+}
+
+// Keeps range working by falling back to your existing numeric dateText style
+function formatDateForTemplate(draftCount) {
+  if (draftCount?.dateType === 'single') {
+    return formatNarrativeDateSingle(draftCount.offenceDate)
+  }
+
+  if (draftCount?.dateType === 'range' && draftCount.offenceDateFrom && draftCount.offenceDateTo) {
+    const f = draftCount.offenceDateFrom
+    const t = draftCount.offenceDateTo
+    const fromText = `${f.day || 'xx'}/${f.month || 'xx'}/${f.year || 'xx'}`
+    const toText = `${t.day || 'xx'}/${t.month || 'xx'}/${t.year || 'xx'}`
+    return `${fromText} to ${toText}`
+  }
+
+  return "[date]"
+}
+
+function injectTokens(template, map) {
+  let out = String(template || '')
+
+  // Your agreed tokens are exact-cased, so do exact replacements.
+  // If you want case-insensitive later, we can adjust.
+  for (const [token, value] of Object.entries(map)) {
+    out = out.split(`[${token}]`).join(value || `[${token}]`)
+  }
+
+  return out
+}
+
 router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res) => {
   const caseId = parseCaseId(req, res)
   if (!caseId) return
 
-  // Needed to build particulars using actors + location
   const _case = await fetchCase(caseId)
   if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
   const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
   const draftCount = _.get(req, basePath, {})
 
-  const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString()
-  draftCount.selectedPrecedentId = selectedPrecedentId || null
+  // ------------------------------------------------------------
+  // Helpers (local to this route)
+  // ------------------------------------------------------------
+  function ordinal(n) {
+    const s = ["th", "st", "nd", "rd"]
+    const v = n % 100
+    return n + (s[(v - 20) % 10] || s[v] || s[0])
+  }
 
-  // Helper: format date range like your template does
-  const formatDateText = () => {
-    if (draftCount.dateType === 'single' && draftCount.offenceDate) {
-      const d = draftCount.offenceDate
-      return `${d.day || 'xx'}/${d.month || 'xx'}/${d.year || 'xx'}`
+  function formatNarrativeDateSingle(offenceDate) {
+    const day = parseInt(offenceDate?.day, 10)
+    const month = parseInt(offenceDate?.month, 10)
+    const year = offenceDate?.year || ''
+
+    const months = ["", "January","February","March","April","May","June","July","August","September","October","November","December"]
+
+    if (!day || !month || !year) return "[date]"
+    return `${ordinal(day)} day of ${months[month] || "[month]"} ${year}`
+  }
+
+  // Keep range working (falls back to numeric "dd/mm/yyyy to dd/mm/yyyy")
+  function formatDateForTemplate(draftCount) {
+    if (draftCount?.dateType === 'single') {
+      return formatNarrativeDateSingle(draftCount.offenceDate)
     }
 
-    if (draftCount.dateType === 'range' && draftCount.offenceDateFrom && draftCount.offenceDateTo) {
+    if (draftCount?.dateType === 'range' && draftCount.offenceDateFrom && draftCount.offenceDateTo) {
       const f = draftCount.offenceDateFrom
       const t = draftCount.offenceDateTo
       const fromText = `${f.day || 'xx'}/${f.month || 'xx'}/${f.year || 'xx'}`
@@ -1480,84 +1560,101 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
       return `${fromText} to ${toText}`
     }
 
-    return 'xx/xx/xx'
+    return "[date]"
   }
 
-  // Helper: token replacement for library template strings
-  const applyTemplate = (template, tokens) => {
+  // Token replacement using the agreed tokens:
+  // [Defendant(s)] on [date] at [place] [victim(s)]
+  function injectTokens(template, map) {
     let out = String(template || '')
-    for (const [key, value] of Object.entries(tokens)) {
-      const re = new RegExp(`\\[${key}\\]`, 'gi')
-      const replacement = (value && String(value).trim()) ? String(value).trim() : `[${key}]`
-      out = out.replace(re, replacement)
+    for (const [token, value] of Object.entries(map)) {
+      out = out.split(`[${token}]`).join(value || `[${token}]`)
     }
     return out
   }
 
-  if (selectedPrecedentId) {
-    // ✅ Resolve from chargeLibrary by chargeCode
-    const picked = chargeLibrary.find(c => String(c.chargeCode) === String(selectedPrecedentId)) || null
+  // ------------------------------------------------------------
+  // Read selection from POST (library chargeCode)
+  // (Keep backward compatibility with the old name too)
+  // ------------------------------------------------------------
+  const selectedCode = (req.body.selectedParticularsChargeCode || req.body.selectedPrecedentId || '')
+    .toString()
+    .trim()
 
-    const statuteName = picked?.statute?.act || ''
+  // Persist selection id (for checked radio + audit)
+  draftCount.selectedParticularsChargeCode = selectedCode || null
 
-    // Persist a small "selection snapshot" for UI / audit
-    draftCount.precedentSelection = picked ? {
-      id: String(picked.chargeCode),
-      ippCode: picked.chargeCode || '',
-      statuteName,
-      offence: picked.label || picked.statementOfOffence || ''
-    } : null
+  if (selectedCode) {
+    // Resolve from charge library by chargeCode (e.g. "PO01", "F02")
+    const picked = (chargeLibrary || []).find(c => String(c.chargeCode) === String(selectedCode)) || null
 
-    // Keep draftCount charge fields aligned (used elsewhere in your templates)
+    // ----------------------------
+    // Persist summary-friendly selection for CYA
+    // (This is what /counts/check expects)
+    // ----------------------------
     if (picked) {
-      draftCount.chargeCode = picked.chargeCode || draftCount.chargeCode || null
-      draftCount.chargeLabel = picked.label || draftCount.chargeLabel || ''
-      draftCount.statementOfOffence = picked.statementOfOffence || draftCount.statementOfOffence || null
+      draftCount.precedentSelection = {
+        ippCode: picked.chargeCode || '',
+        statuteName: picked.statute?.act || '',
+        offence: picked.label || picked.statementOfOffence || ''
+      }
+    } else {
+      draftCount.precedentSelection = null
     }
 
-    // ✅ Populate Statement of Offence textarea (only if user hasn't started typing)
-    if (!draftCount.statementOfOffenceText) {
-      draftCount.statementOfOffenceText = picked?.statementOfOffence || ''
-    }
+    // ----------------------------
+    // Store template source (useful for debug/audit)
+    // ----------------------------
+    const starter = picked?.templates?.particularsStarter || ''
+    draftCount.particularsStarter = starter
 
-    // ✅ Populate Particulars textarea from library template + persisted actors (only if empty)
-    if (!draftCount.particularsOfOffenceText) {
-      const assignedDefendantIds = Array.isArray(draftCount.assignedDefendantIds)
-        ? draftCount.assignedDefendantIds.map(String)
-        : []
-      const defendantNames = assignedDefendantIds
-        .map(id => (_case.defendants || []).find(d => String(d.id) === id))
-        .filter(Boolean)
-        .map(d => `${d.firstName || ''} ${d.lastName || ''}`.trim())
-        .filter(Boolean)
+    // ----------------------------
+    // Build injected values from already-assigned actors + case location + date
+    // ----------------------------
+    const assignedDefendantIds = Array.isArray(draftCount.assignedDefendantIds)
+      ? draftCount.assignedDefendantIds.map(String)
+      : []
+    const defendantNames = assignedDefendantIds
+      .map(id => (_case.defendants || []).find(d => String(d.id) === id))
+      .filter(Boolean)
+      .map(d => `${d.firstName || ''} ${d.lastName || ''}`.trim())
+      .filter(Boolean)
 
-      const assignedVictimIds = Array.isArray(draftCount.assignedVictimIds)
-        ? draftCount.assignedVictimIds.map(String)
-        : []
-      const victimNames = assignedVictimIds
-        .map(id => (_case.victims || []).find(v => String(v.id) === id))
-        .filter(Boolean)
-        .map(v => `${v.firstName || ''} ${v.lastName || ''}`.trim())
-        .filter(Boolean)
+    const assignedVictimIds = Array.isArray(draftCount.assignedVictimIds)
+      ? draftCount.assignedVictimIds.map(String)
+      : []
+    const victimNames = assignedVictimIds
+      .map(id => (_case.victims || []).find(v => String(v.id) === id))
+      .filter(Boolean)
+      .map(v => `${v.firstName || ''} ${v.lastName || ''}`.trim())
+      .filter(Boolean)
 
-      const dateText = formatDateText()
-      const placeText = _case.location?.line1 || 'High Street, Anytown'
+    // ALL CAPS requirement
+    const defendantsText = defendantNames.length
+      ? defendantNames.join(' and ').toUpperCase()
+      : '[DEFENDANT(S)]'
 
-      const starter = picked?.templates?.particularsStarter || ''
+    const victimsText = victimNames.length
+      ? victimNames.join(' and ').toUpperCase()
+      : '[VICTIM(S)]'
 
-      // Supports your example: "On [date] at [place]..."
-      draftCount.particularsOfOffenceText = applyTemplate(starter, {
-        date: dateText,
-        place: placeText,
-        defendant: defendantNames.length ? defendantNames.join(' and ') : '',
-        defendants: defendantNames.length ? defendantNames.join(' and ') : '',
-        victim: victimNames.length ? victimNames.join(' and ') : '',
-        victims: victimNames.length ? victimNames.join(' and ') : '',
-        property: '' // leaves [property] token intact if present
-      })
-    }
+    const placeText = _case.location?.line1 || '[place]'
+    const dateText = formatDateForTemplate(draftCount)
+
+    // ----------------------------
+    // OVERWRITE particulars (your requirement: usually changes)
+    // ----------------------------
+    draftCount.particularsOfOffenceText = injectTokens(starter, {
+      "Defendant(s)": defendantsText,
+      "victim(s)": victimsText,
+      "place": placeText,
+      "date": dateText
+    })
   } else {
+    // Nothing selected: clear precedent + template
     draftCount.precedentSelection = null
+    draftCount.particularsStarter = null
+    // (Do NOT clear particularsOfOffenceText here; leaving it preserves any typed content)
   }
 
   draftCount.lastUpdatedAt = new Date().toISOString()
@@ -1568,6 +1665,8 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
 
   return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
 })
+
+
 
 
 
