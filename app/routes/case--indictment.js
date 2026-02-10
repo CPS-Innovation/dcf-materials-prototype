@@ -129,55 +129,102 @@ module.exports = router => {
     return options
   }
 
-  // ============================================================
-  // SEARCH HELPERS (precedent)
-  // ============================================================
+ // ============================================================
+// SEARCH HELPERS (precedent)
+// ============================================================
 
-  function normaliseQuery(value) {
-    return String(value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, ' ')
-  }
+function normaliseQuery(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+}
 
-  function buildSearchHaystack(option) {
-    return normaliseQuery([
-      option.chargeCode,
-      option.label,
-      option.statementOfOffence,
-      // statute might be object
-      (typeof option.statute === 'string'
+// Build a searchable text blob for one option
+function buildSearchHaystack(option) {
+  const statuteText =
+    option.statute
+      ? [
+          option.statute.act,
+          option.statute.section
+        ].filter(Boolean).join(' ')
+      : ''
+
+  const keywordsText =
+    Array.isArray(option.keywords)
+      ? option.keywords.join(' ')
+      : ''
+
+  return normaliseQuery([
+    option.chargeCode,
+    option.label,
+    option.statementOfOffence,
+    statuteText,
+    keywordsText
+  ].filter(Boolean).join(' '))
+}
+
+function searchPrecedentsWithinCase(chargeOptions, keywords) {
+  const q = normaliseQuery(keywords)
+  if (!q) return []
+
+  const results = []
+
+  for (const option of (chargeOptions || [])) {
+    const haystack = buildSearchHaystack(option)
+
+    // Allow prefix matches: "threat" should match "threats", "threatening"
+    const words = haystack.split(' ')
+    const matches =
+      haystack.includes(q) ||
+      words.some(w => w.startsWith(q))
+
+    if (!matches) continue
+
+    const statuteName =
+      typeof option.statute === 'string'
         ? option.statute
-        : (option.statute && (option.statute.name || option.statute.title || option.statute.act)) || ''
-      )
-    ].filter(Boolean).join(' '))
+        : (option.statute && (option.statute.act || option.statute.name || option.statute.title)) || ''
+
+    results.push({
+      id: option.policeChargeId,
+      ippCode: option.chargeCode || '',
+      statuteName,
+      offence: option.label || option.statementOfOffence || ''
+    })
   }
 
-  function searchPrecedentsWithinCase(chargeOptions, keywords) {
-    const q = normaliseQuery(keywords)
-    if (!q) return []
+  return results
+}
 
-    const results = []
+function searchChargeLibrary(chargeLibrary, keywords) {
+  const q = normaliseQuery(keywords)
+  if (!q) return []
 
-    for (const option of (chargeOptions || [])) {
-      const haystack = buildSearchHaystack(option)
-      if (!haystack.includes(q)) continue
+  const results = []
 
-      const statuteName =
-        typeof option.statute === 'string'
-          ? option.statute
-          : (option.statute && (option.statute.name || option.statute.title || option.statute.act)) || ''
+  for (const entry of chargeLibrary) {
+    const haystack = buildSearchHaystack(entry)
 
-      results.push({
-        id: option.policeChargeId,
-        ippCode: option.chargeCode || '',
-        statuteName,
-        offence: option.label || option.statementOfOffence || ''
-      })
-    }
+    const words = haystack.split(' ')
+    const matches =
+      haystack.includes(q) ||
+      words.some(w => w.startsWith(q))
 
-    return results
+    if (!matches) continue
+
+    results.push({
+      id: entry.chargeCode,          // stable ID
+      ippCode: entry.chargeCode || '',
+      statuteName: entry?.statute?.act || '',
+      offence: entry.label || entry.statementOfOffence || ''
+    })
   }
+
+  return results
+}
+
+
 
   // ============================================================
   // /cases/:caseId/indictment (GET + POST)
@@ -1167,13 +1214,10 @@ router.get('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
 
   const draftBasePath = `session.data.indictmentDrafts.${caseId}`
   const countPath = `${draftBasePath}.currentCount`
-
   const draftCount = _.get(req, countPath, {})
   const returnTo = safeReturnTo(req.query.returnTo)
 
-  // ------------------------------------------------------------
-  // 1) Determine the "story order" IDs for THIS count (best first)
-  // ------------------------------------------------------------
+  // Story order ids from the order step
   const orderedSelectedIds =
     (draftCount.orderedSelectedDefendantIds && draftCount.orderedSelectedDefendantIds.length)
       ? draftCount.orderedSelectedDefendantIds
@@ -1181,57 +1225,17 @@ router.get('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
 
   const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String)
 
-  // ------------------------------------------------------------
-  // 2) Seed assign selections from earlier step (first-time only)
-  //    (so the assign screen reflects what they already picked)
-  // ------------------------------------------------------------
-  if (!draftCount.assignedDefendantIds || !draftCount.assignedDefendantIds.length) {
-    draftCount.assignedDefendantIds = orderedSelectedIdsStr
-    _.set(req, countPath, draftCount)
-  } else {
-    // Keep strings for reliable membership checks
-    draftCount.assignedDefendantIds = (draftCount.assignedDefendantIds || []).map(String)
-  }
+  // ✅ Never pre-check on assign (clear any old session state)
+  draftCount.assignedDefendantIds = []
+  _.set(req, countPath, draftCount)
 
-  // ------------------------------------------------------------
-  // 3) Order the list for display:
-  //    - selected (in story order) first
-  //    - then remaining, in case default order (if present), else original order
-  // ------------------------------------------------------------
+  // ✅ Only show defendants that were selected earlier, in that exact order
   const allDefendants = _case.defendants || []
+  const byId = new Map(allDefendants.map(d => [String(d.id), d]))
 
-  const defaultCaseOrderIds = (_.get(req, `${draftBasePath}.defaultDefendantOrderIds`, []) || []).map(String)
-
-  function orderByIdsFirst(entities = [], firstIds = [], defaultIds = []) {
-    const byId = new Map(entities.map(e => [String(e.id), e]))
-
-    // Selected first, in the exact order given
-    const first = firstIds.map(id => byId.get(String(id))).filter(Boolean)
-
-    const firstSet = new Set(firstIds.map(String))
-    let remaining = entities.filter(e => !firstSet.has(String(e.id)))
-
-    // If we have a case default, use it to order the remaining
-    if (defaultIds.length) {
-      const remainingById = new Map(remaining.map(e => [String(e.id), e]))
-      const orderedRemaining = defaultIds
-        .map(id => remainingById.get(String(id)))
-        .filter(Boolean)
-
-      const orderedSet = new Set(orderedRemaining.map(e => String(e.id)))
-      const leftover = remaining.filter(e => !orderedSet.has(String(e.id)))
-
-      remaining = [...orderedRemaining, ...leftover]
-    }
-
-    return [...first, ...remaining]
-  }
-
-  const orderedDefendantsForDisplay = orderByIdsFirst(
-    allDefendants,
-    orderedSelectedIdsStr,
-    defaultCaseOrderIds
-  )
+  const orderedDefendantsForDisplay = orderedSelectedIdsStr
+    .map(id => byId.get(id))
+    .filter(Boolean)
 
   return res.render('cases/indictment/assign/defendants', {
     _case: { ..._case, defendants: orderedDefendantsForDisplay },
@@ -1241,8 +1245,7 @@ router.get('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
 })
 
 
-
-  //////// GET /////////////////////////////////////////////////////////////////
+  //////// POST /////////////////////////////////////////////////////////////////
 
   router.post('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
     const caseId = parseCaseId(req, res)
@@ -1287,9 +1290,7 @@ router.get('/cases/:caseId/indictment/assign/victims', async (req, res) => {
   const draftCount = _.get(req, countPath, {})
   const returnTo = safeReturnTo(req.query.returnTo)
 
-  // ------------------------------------------------------------
-  // 1) Determine the "story order" IDs for THIS count (best first)
-  // ------------------------------------------------------------
+  // 1) Story order ids from the order step
   const orderedSelectedIds =
     (draftCount.orderedSelectedVictimIds && draftCount.orderedSelectedVictimIds.length)
       ? draftCount.orderedSelectedVictimIds
@@ -1297,52 +1298,17 @@ router.get('/cases/:caseId/indictment/assign/victims', async (req, res) => {
 
   const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String)
 
-  // ------------------------------------------------------------
-  // 2) Seed assign selections from earlier step (first-time only)
-  // ------------------------------------------------------------
-  if (!draftCount.assignedVictimIds || !draftCount.assignedVictimIds.length) {
-    draftCount.assignedVictimIds = orderedSelectedIdsStr
-    _.set(req, countPath, draftCount)
-  } else {
-    draftCount.assignedVictimIds = (draftCount.assignedVictimIds || []).map(String)
-  }
+  // ✅ 2) Never pre-check on assign (clear any old session state)
+  draftCount.assignedVictimIds = []
+  _.set(req, countPath, draftCount)
 
-  // ------------------------------------------------------------
-  // 3) Order list for display:
-  //    - selected (in story order) first
-  //    - then remaining, in case default order (if present), else original order
-  // ------------------------------------------------------------
+  // ✅ 3) Only show victims selected earlier, in that exact order
   const allVictims = _case.victims || []
-  const defaultCaseOrderIds = (_.get(req, `${draftBasePath}.defaultVictimOrderIds`, []) || []).map(String)
+  const byId = new Map(allVictims.map(v => [String(v.id), v]))
 
-  function orderByIdsFirst(entities = [], firstIds = [], defaultIds = []) {
-    const byId = new Map(entities.map(e => [String(e.id), e]))
-
-    const first = firstIds.map(id => byId.get(String(id))).filter(Boolean)
-
-    const firstSet = new Set(firstIds.map(String))
-    let remaining = entities.filter(e => !firstSet.has(String(e.id)))
-
-    if (defaultIds.length) {
-      const remainingById = new Map(remaining.map(e => [String(e.id), e]))
-      const orderedRemaining = defaultIds
-        .map(id => remainingById.get(String(id)))
-        .filter(Boolean)
-
-      const orderedSet = new Set(orderedRemaining.map(e => String(e.id)))
-      const leftover = remaining.filter(e => !orderedSet.has(String(e.id)))
-
-      remaining = [...orderedRemaining, ...leftover]
-    }
-
-    return [...first, ...remaining]
-  }
-
-  const orderedVictimsForDisplay = orderByIdsFirst(
-    allVictims,
-    orderedSelectedIdsStr,
-    defaultCaseOrderIds
-  )
+  const orderedVictimsForDisplay = orderedSelectedIdsStr
+    .map(id => byId.get(id))
+    .filter(Boolean)
 
   return res.render('cases/indictment/assign/victims', {
     _case: { ..._case, victims: orderedVictimsForDisplay },
@@ -1350,6 +1316,7 @@ router.get('/cases/:caseId/indictment/assign/victims', async (req, res) => {
     returnTo
   })
 })
+
 
   ////////// POST /////////////////////////////////////////////////////////////////
 
@@ -1395,9 +1362,7 @@ router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
   const draftCount = _.get(req, countPath, {})
   const returnTo = safeReturnTo(req.query.returnTo)
 
-  // ------------------------------------------------------------
-  // 1) Determine the "story order" IDs for THIS count (best first)
-  // ------------------------------------------------------------
+  // 1) Story order ids from the order step
   const orderedSelectedIds =
     (draftCount.orderedSelectedWitnessIds && draftCount.orderedSelectedWitnessIds.length)
       ? draftCount.orderedSelectedWitnessIds
@@ -1405,52 +1370,17 @@ router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
 
   const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String)
 
-  // ------------------------------------------------------------
-  // 2) Seed assign selections from earlier step (first-time only)
-  // ------------------------------------------------------------
-  if (!draftCount.assignedWitnessIds || !draftCount.assignedWitnessIds.length) {
-    draftCount.assignedWitnessIds = orderedSelectedIdsStr
-    _.set(req, countPath, draftCount)
-  } else {
-    draftCount.assignedWitnessIds = (draftCount.assignedWitnessIds || []).map(String)
-  }
+  // ✅ 2) Never pre-check on assign (clear any old session state)
+  draftCount.assignedWitnessIds = []
+  _.set(req, countPath, draftCount)
 
-  // ------------------------------------------------------------
-  // 3) Order list for display:
-  //    - selected (in story order) first
-  //    - then remaining, in case default order (if present), else original order
-  // ------------------------------------------------------------
+  // ✅ 3) Only show witnesses selected earlier, in that exact order
   const allWitnesses = _case.witnesses || []
-  const defaultCaseOrderIds = (_.get(req, `${draftBasePath}.defaultWitnessOrderIds`, []) || []).map(String)
+  const byId = new Map(allWitnesses.map(w => [String(w.id), w]))
 
-  function orderByIdsFirst(entities = [], firstIds = [], defaultIds = []) {
-    const byId = new Map(entities.map(e => [String(e.id), e]))
-
-    const first = firstIds.map(id => byId.get(String(id))).filter(Boolean)
-
-    const firstSet = new Set(firstIds.map(String))
-    let remaining = entities.filter(e => !firstSet.has(String(e.id)))
-
-    if (defaultIds.length) {
-      const remainingById = new Map(remaining.map(e => [String(e.id), e]))
-      const orderedRemaining = defaultIds
-        .map(id => remainingById.get(String(id)))
-        .filter(Boolean)
-
-      const orderedSet = new Set(orderedRemaining.map(e => String(e.id)))
-      const leftover = remaining.filter(e => !orderedSet.has(String(e.id)))
-
-      remaining = [...orderedRemaining, ...leftover]
-    }
-
-    return [...first, ...remaining]
-  }
-
-  const orderedWitnessesForDisplay = orderByIdsFirst(
-    allWitnesses,
-    orderedSelectedIdsStr,
-    defaultCaseOrderIds
-  )
+  const orderedWitnessesForDisplay = orderedSelectedIdsStr
+    .map(id => byId.get(id))
+    .filter(Boolean)
 
   return res.render('cases/indictment/assign/witnesses', {
     _case: { ..._case, witnesses: orderedWitnessesForDisplay },
@@ -1481,7 +1411,7 @@ router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
     const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
     if (returnTo) return res.redirect(returnTo)
 
-    return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
+    return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-or-offence`)
   })
 
 
@@ -1503,7 +1433,10 @@ router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
     const draftCount = _.get(req, basePath, {})
 
     const precedentSearchKeywords = (req.query.precedentSearchKeywords || '').toString()
-    const precedentResults = searchPrecedentsWithinCase(chargeOptions, precedentSearchKeywords)
+
+    // 👇 THIS LINE IS THE FIX
+    const precedentResults =
+      searchChargeLibrary(chargeLibrary, precedentSearchKeywords)
 
     const returnTo = safeReturnTo(req.query.returnTo)
 
@@ -1513,18 +1446,18 @@ router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
       draftCount,
       precedentSearchKeywords,
       precedentResults,
-      returnTo // ✅ makes both GET + POST keep it
+      returnTo
     })
   })
-
 
 
 router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res) => {
   const caseId = parseCaseId(req, res)
   if (!caseId) return
 
-  const countsCase = getCountsCaseFor(caseId)
-  const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+  // Needed to build particulars using actors + location
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
   const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
   const draftCount = _.get(req, basePath, {})
@@ -1532,21 +1465,97 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
   const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString()
   draftCount.selectedPrecedentId = selectedPrecedentId || null
 
-  // ✅ Resolve details from chargeOptions (not from search)
+  // Helper: format date range like your template does
+  const formatDateText = () => {
+    if (draftCount.dateType === 'single' && draftCount.offenceDate) {
+      const d = draftCount.offenceDate
+      return `${d.day || 'xx'}/${d.month || 'xx'}/${d.year || 'xx'}`
+    }
+
+    if (draftCount.dateType === 'range' && draftCount.offenceDateFrom && draftCount.offenceDateTo) {
+      const f = draftCount.offenceDateFrom
+      const t = draftCount.offenceDateTo
+      const fromText = `${f.day || 'xx'}/${f.month || 'xx'}/${f.year || 'xx'}`
+      const toText = `${t.day || 'xx'}/${t.month || 'xx'}/${t.year || 'xx'}`
+      return `${fromText} to ${toText}`
+    }
+
+    return 'xx/xx/xx'
+  }
+
+  // Helper: token replacement for library template strings
+  const applyTemplate = (template, tokens) => {
+    let out = String(template || '')
+    for (const [key, value] of Object.entries(tokens)) {
+      const re = new RegExp(`\\[${key}\\]`, 'gi')
+      const replacement = (value && String(value).trim()) ? String(value).trim() : `[${key}]`
+      out = out.replace(re, replacement)
+    }
+    return out
+  }
+
   if (selectedPrecedentId) {
-    const picked = chargeOptions.find(o => String(o.policeChargeId) === String(selectedPrecedentId)) || null
+    // ✅ Resolve from chargeLibrary by chargeCode
+    const picked = chargeLibrary.find(c => String(c.chargeCode) === String(selectedPrecedentId)) || null
 
-    const statuteName =
-      typeof picked?.statute === 'string'
-        ? picked.statute
-        : (picked?.statute && (picked.statute.name || picked.statute.title || picked.statute.act)) || ''
+    const statuteName = picked?.statute?.act || ''
 
+    // Persist a small "selection snapshot" for UI / audit
     draftCount.precedentSelection = picked ? {
-      id: String(picked.policeChargeId),
+      id: String(picked.chargeCode),
       ippCode: picked.chargeCode || '',
-      statuteName: statuteName || '',
+      statuteName,
       offence: picked.label || picked.statementOfOffence || ''
     } : null
+
+    // Keep draftCount charge fields aligned (used elsewhere in your templates)
+    if (picked) {
+      draftCount.chargeCode = picked.chargeCode || draftCount.chargeCode || null
+      draftCount.chargeLabel = picked.label || draftCount.chargeLabel || ''
+      draftCount.statementOfOffence = picked.statementOfOffence || draftCount.statementOfOffence || null
+    }
+
+    // ✅ Populate Statement of Offence textarea (only if user hasn't started typing)
+    if (!draftCount.statementOfOffenceText) {
+      draftCount.statementOfOffenceText = picked?.statementOfOffence || ''
+    }
+
+    // ✅ Populate Particulars textarea from library template + persisted actors (only if empty)
+    if (!draftCount.particularsOfOffenceText) {
+      const assignedDefendantIds = Array.isArray(draftCount.assignedDefendantIds)
+        ? draftCount.assignedDefendantIds.map(String)
+        : []
+      const defendantNames = assignedDefendantIds
+        .map(id => (_case.defendants || []).find(d => String(d.id) === id))
+        .filter(Boolean)
+        .map(d => `${d.firstName || ''} ${d.lastName || ''}`.trim())
+        .filter(Boolean)
+
+      const assignedVictimIds = Array.isArray(draftCount.assignedVictimIds)
+        ? draftCount.assignedVictimIds.map(String)
+        : []
+      const victimNames = assignedVictimIds
+        .map(id => (_case.victims || []).find(v => String(v.id) === id))
+        .filter(Boolean)
+        .map(v => `${v.firstName || ''} ${v.lastName || ''}`.trim())
+        .filter(Boolean)
+
+      const dateText = formatDateText()
+      const placeText = _case.location?.line1 || 'High Street, Anytown'
+
+      const starter = picked?.templates?.particularsStarter || ''
+
+      // Supports your example: "On [date] at [place]..."
+      draftCount.particularsOfOffenceText = applyTemplate(starter, {
+        date: dateText,
+        place: placeText,
+        defendant: defendantNames.length ? defendantNames.join(' and ') : '',
+        defendants: defendantNames.length ? defendantNames.join(' and ') : '',
+        victim: victimNames.length ? victimNames.join(' and ') : '',
+        victims: victimNames.length ? victimNames.join(' and ') : '',
+        property: '' // leaves [property] token intact if present
+      })
+    }
   } else {
     draftCount.precedentSelection = null
   }
@@ -1559,6 +1568,7 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
 
   return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
 })
+
 
 
   // ============================================================
