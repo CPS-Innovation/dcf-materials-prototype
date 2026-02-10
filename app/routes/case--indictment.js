@@ -27,26 +27,29 @@ module.exports = router => {
   // Accept both:
   //  - req.body.defendantOrder = { "123": "2" }   (extended: true)
   //  - req.body["defendantOrder[123]"] = "2"     (extended: false)
-  function extractBracketMap(body = {}, prefix = '') {
-    const map = {}
+ function extractBracketMap(body = {}, prefix = '') {
+  const map = {}
 
-    // Case 1: already parsed as object
-    if (body && typeof body[prefix] === 'object' && body[prefix] !== null) {
-      for (const [k, v] of Object.entries(body[prefix])) {
-        map[String(k)] = String(v ?? '')
-      }
+  // Case 1: already parsed as object (but NOT an array)
+  if (body && typeof body[prefix] === 'object' && body[prefix] !== null && !Array.isArray(body[prefix])) {
+    for (const [k, v] of Object.entries(body[prefix])) {
+      const key = String(k).replace(/^id-/, '')
+      map[key] = String(v ?? '')
     }
-
-    // Case 2: bracket keys at top level
-    const re = new RegExp(`^${prefix}\\[(.+)\\]$`)
-    for (const [k, v] of Object.entries(body || {})) {
-      const m = k.match(re)
-      if (!m) continue
-      map[String(m[1])] = String(v ?? '')
-    }
-
-    return map
   }
+
+  // Case 2: bracket keys at top level
+  const re = new RegExp(`^${prefix}\\[(.+)\\]$`)
+  for (const [k, v] of Object.entries(body || {})) {
+    const m = String(k).match(re)
+    if (!m) continue
+    const key = String(m[1]).replace(/^id-/, '')
+    map[key] = String(v ?? '')
+  }
+
+  return map
+}
+
 
 
   // Only allow internal safe return paths
@@ -344,8 +347,9 @@ module.exports = router => {
     return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-defendants`)
   })
 
-  // ============================================================
+// ============================================================
 // /cases/:caseId/indictment/counts/select-and-order-defendants (GET + POST)
+// Matches working Witnesses pattern
 // ============================================================
 
 router.get('/cases/:caseId/indictment/counts/select-and-order-defendants', async (req, res) => {
@@ -370,17 +374,269 @@ router.get('/cases/:caseId/indictment/counts/select-and-order-defendants', async
   // Case-level default “story order”
   const defaultDefendantOrderIds = (_.get(req, `${draftBasePath}.defaultDefendantOrderIds`, []) || []).map(String)
 
-  // True if the user has started ordering within THIS count (count-level override wins)
+  // Count-level override wins
   const hasCountOverride =
     (draftCount?.orderedSelectedDefendantIds?.length > 0) ||
     (draftCount?.defendantOrder && Object.keys(draftCount.defendantOrder).length > 0)
 
-  function applyCaseDefaultOrder(defendants = [], defaultIds = []) {
-    if (!defaultIds.length) return defendants
-    const byId = new Map(defendants.map(d => [String(d.id), d]))
+  function applyCaseDefaultOrder(entities = [], defaultIds = []) {
+    if (!defaultIds.length) return entities
+    const byId = new Map(entities.map(e => [String(e.id), e]))
 
     const ordered = defaultIds.map(id => byId.get(String(id))).filter(Boolean)
-    const remaining = defendants.filter(d => !defaultIds.includes(String(d.id)))
+    const remaining = entities.filter(e => !defaultIds.includes(String(e.id)))
+
+    return [...ordered, ...remaining]
+  }
+
+  function orderByIdsFirst(entities = [], idsFirst = []) {
+    if (!idsFirst.length) return entities
+    const byId = new Map(entities.map(e => [String(e.id), e]))
+
+    const first = idsFirst.map(id => byId.get(String(id))).filter(Boolean)
+    const firstSet = new Set(idsFirst.map(String))
+    const remaining = entities.filter(e => !firstSet.has(String(e.id)))
+
+    return [...first, ...remaining]
+  }
+
+  function reorderEntities(entities = [], orderMap = {}) {
+    const indexed = entities.map((e, index) => ({ e, index }))
+
+    const moves = indexed
+      .map(({ e, index }) => {
+        const raw = orderMap[String(e.id)]
+        const pos = Number.parseInt(String(raw || ''), 10)
+        if (!Number.isFinite(pos) || pos <= 0) return null
+        return { id: String(e.id), pos, index }
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.pos - b.pos || a.index - b.index)
+
+    const result = indexed.map(x => x.e)
+
+    for (const move of moves) {
+      const fromIndex = result.findIndex(e => String(e.id) === move.id)
+      if (fromIndex === -1) continue
+
+      const [item] = result.splice(fromIndex, 1)
+      const toIndex = Math.max(0, Math.min(result.length, move.pos - 1))
+      result.splice(toIndex, 0, item)
+    }
+
+    return result
+  }
+
+  const defendants = _case.defendants || []
+
+  const baseDefendants = hasCountOverride
+    ? defendants
+    : applyCaseDefaultOrder(defendants, defaultDefendantOrderIds)
+
+  const baseWithCanonicalFirst = orderByIdsFirst(
+    baseDefendants,
+    (draftCount.orderedSelectedDefendantIds || []).map(String)
+  )
+
+  const orderedDefendantsForDisplay = reorderEntities(
+    baseWithCanonicalFirst,
+    draftCount.defendantOrder || {}
+  )
+
+  const selectedDefendantIds = (draftCount.selectedDefendantIds || []).map(String)
+
+  const showLeftOffInset =
+    (orderedDefendantsForDisplay.length > 0) &&
+    (Boolean(draftCount.lastUpdatedAt) || selectedDefendantIds.length > 0)
+
+  const leftOffPreview = orderedDefendantsForDisplay
+    .filter(d => !selectedDefendantIds.includes(String(d.id)))
+    .map(d => {
+      const fullName = `${(d.firstName || '').trim()} ${(d.lastName || '').trim()}`.trim()
+      return fullName || `Defendant ${d.id}`
+    })
+
+    console.log('DEF GET defendantOrder:', draftCount.defendantOrder)
+    console.log('DEF GET ordered ids:', draftCount.orderedSelectedDefendantIds)
+    console.log('DEF GET final display ids:', orderedDefendantsForDisplay.map(d => String(d.id)))
+
+
+  return res.render('cases/indictment/counts/select-and-order-defendants', {
+    _case: { ..._case, defendants: orderedDefendantsForDisplay },
+    countsCase,
+    chargeOptions,
+    draftCount,
+    showReorderSuccess,
+    showLeftOffInset,
+    leftOffPreview
+  })
+})
+
+router.post('/cases/:caseId/indictment/counts/select-and-order-defendants', async (req, res) => {
+  const caseId = parseCaseId(req, res)
+  if (!caseId) return
+
+  const action = (req.body.action || '').toString()
+
+  const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+  const countPath = `${draftBasePath}.currentCount`
+  const draftCount = _.get(req, countPath, {})
+
+  // Selected defendant IDs (checkboxes) — normalise and remove Prototype Kit sentinel
+  const rawSelected = req.body.selectedDefendantIds
+  const selectedDefendantIds = (Array.isArray(rawSelected) ? rawSelected : (rawSelected ? [rawSelected] : []))
+    .map(String)
+    .filter(v => v && v !== '_unchecked')
+
+  // Robust extraction (works with extended:true OR extended:false)
+  const rawOrder = extractBracketMap(req.body, 'defendantOrder')
+
+
+  // ✅ If keys look like 0..n indices (like your logs), remap to real IDs in current display order
+  // This makes the feature work even if the template names are wrong.
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+  const defendants = _case.defendants || []
+  const defendantIds = defendants.map(d => String(d.id))
+
+  const rawOrderKeys = Object.keys(rawOrder).map(String)
+  const noneMatchRealIds = rawOrderKeys.length > 0 && rawOrderKeys.every(k => !defendantIds.includes(k))
+  const allLookLikeIndices = rawOrderKeys.length > 0 && rawOrderKeys.every(k => /^\d+$/.test(k))
+
+  if (noneMatchRealIds && allLookLikeIndices) {
+    const remapped = {}
+    for (const [k, v] of Object.entries(rawOrder)) {
+      const idx = Number.parseInt(String(k), 10)
+      if (!Number.isFinite(idx)) continue
+      const id = defendantIds[idx]
+      if (!id) continue
+      remapped[id] = String(v ?? '')
+    }
+    rawOrder = remapped
+  }
+
+  // Always persist what they entered
+  draftCount.selectedDefendantIds = selectedDefendantIds
+  draftCount.defendantOrder = rawOrder
+  draftCount.lastUpdatedAt = new Date().toISOString()
+
+  function buildOrderedIds(selectedIds = [], orderMap = {}, entities = []) {
+    const base = (entities || [])
+      .map(e => String(e.id))
+      .filter(id => selectedIds.includes(id))
+
+    const moves = base
+      .map((id, idx) => {
+        const pos = Number.parseInt(String(orderMap?.[id] || ''), 10)
+        return Number.isFinite(pos) && pos > 0 ? { id, pos, idx } : null
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.pos - b.pos || a.idx - b.idx)
+
+    const result = [...base]
+
+    for (const m of moves) {
+      const from = result.indexOf(m.id)
+      if (from === -1) continue
+      const [item] = result.splice(from, 1)
+      const to = Math.max(0, Math.min(result.length, m.pos - 1))
+      result.splice(to, 0, item)
+    }
+
+    return result
+  }
+
+  // Reorder-only (PRG)
+  if (action === 'reorder') {
+    const movedIds = Object.entries(rawOrder)
+      .filter(([_, v]) => {
+        const pos = Number.parseInt(String(v || ''), 10)
+        return Number.isFinite(pos) && pos > 0
+      })
+      .map(([id]) => String(id))
+
+    // auto-check moved
+    draftCount.selectedDefendantIds = Array.from(new Set([
+      ...(draftCount.selectedDefendantIds || []).map(String).filter(v => v && v !== '_unchecked'),
+      ...movedIds
+    ]))
+
+    // update canonical order so GET can use it as a stable base
+    draftCount.orderedSelectedDefendantIds = buildOrderedIds(
+      draftCount.selectedDefendantIds,
+      rawOrder,
+      defendants
+    )
+
+    _.set(req, countPath, draftCount)
+    _.set(req, `${draftBasePath}.reorderSuccess`, true)
+
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-defendants`)
+  }
+
+  // persist for other actions too
+  _.set(req, countPath, draftCount)
+
+  if (action === 'skip') {
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
+  }
+
+  // Save and continue
+  draftCount.orderedSelectedDefendantIds = buildOrderedIds(
+    draftCount.selectedDefendantIds || [],
+    rawOrder,
+    defendants
+  )
+  _.set(req, countPath, draftCount)
+
+  _.set(req, `${draftBasePath}.defaultDefendantOrderIds`, draftCount.orderedSelectedDefendantIds)
+
+  return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
+})
+
+
+
+
+/// ============================================================
+// /cases/:caseId/indictment/counts/select-and-order-witnesses (GET + POST)
+// Matches Defendants behaviour (robust bracket parsing + DOM reordering)
+// ============================================================
+
+router.get('/cases/:caseId/indictment/counts/select-and-order-witnesses', async (req, res) => {
+  const caseId = parseCaseId(req, res)
+  if (!caseId) return
+
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+  const countsCase = getCountsCaseFor(caseId)
+  const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+
+  const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+  const countPath = `${draftBasePath}.currentCount`
+  const draftCount = _.get(req, countPath, {})
+
+  // One-time success banner (flash behaviour)
+  const successKey = `${draftBasePath}.reorderWitnessSuccess`
+  const showWitnessReorderSuccess = _.get(req, successKey, false)
+  _.unset(req, successKey)
+
+  // Case-level default “story order” for witnesses
+  const defaultWitnessOrderIds =
+    (_.get(req, `${draftBasePath}.defaultWitnessOrderIds`, []) || []).map(String)
+
+  // True if the user has started ordering within THIS count (count-level override wins)
+  const hasCountOverride =
+    (draftCount?.orderedSelectedWitnessIds?.length > 0) ||
+    (draftCount?.witnessOrder && Object.keys(draftCount.witnessOrder).length > 0)
+
+  function applyCaseDefaultOrder(entities = [], defaultIds = []) {
+    if (!defaultIds.length) return entities
+    const byId = new Map(entities.map(e => [String(e.id), e]))
+
+    const ordered = defaultIds.map(id => byId.get(String(id))).filter(Boolean)
+    const remaining = entities.filter(e => !defaultIds.includes(String(e.id)))
 
     return [...ordered, ...remaining]
   }
@@ -425,247 +681,35 @@ router.get('/cases/:caseId/indictment/counts/select-and-order-defendants', async
     return result
   }
 
-  const defendants = _case.defendants || []
+  const witnesses = _case.witnesses || []
 
   // Base ordering:
   // - If count has overrides: start from current case order
   // - Else: start from case-level default story order
-  const baseDefendants = hasCountOverride
-    ? defendants
-    : applyCaseDefaultOrder(defendants, defaultDefendantOrderIds)
-
-  // If we already have a canonical story order for this count, use it as a stable base
-  const baseWithCanonicalFirst = orderByIdsFirst(
-    baseDefendants,
-    (draftCount.orderedSelectedDefendantIds || []).map(String)
-  )
-
-  // Then apply "move to position" map on top
-  const orderedDefendantsForDisplay = reorderEntities(
-    baseWithCanonicalFirst,
-    draftCount.defendantOrder || {}
-  )
-
-  // Left-off inset (unchecked only)
-  const selectedDefendantIds = (draftCount.selectedDefendantIds || []).map(String)
-
-  const showLeftOffInset =
-    (orderedDefendantsForDisplay.length > 0) &&
-    (Boolean(draftCount.lastUpdatedAt) || selectedDefendantIds.length > 0)
-
-  const leftOffPreview = orderedDefendantsForDisplay
-    .filter(d => !selectedDefendantIds.includes(String(d.id)))
-    .map(d => {
-      const fullName = `${(d.firstName || '').trim()} ${(d.lastName || '').trim()}`.trim()
-      return fullName || `Defendant ${d.id}`
-    })
-
-  return res.render('cases/indictment/counts/select-and-order-defendants', {
-    _case: { ..._case, defendants: orderedDefendantsForDisplay },
-    countsCase,
-    chargeOptions,
-    draftCount,
-    showReorderSuccess,
-    showLeftOffInset,
-    leftOffPreview
-  })
-})
-
-router.post('/cases/:caseId/indictment/counts/select-and-order-defendants', async (req, res) => {
-  const caseId = parseCaseId(req, res)
-  if (!caseId) return
-
-  const action = (req.body.action || '').toString()
-
-  const draftBasePath = `session.data.indictmentDrafts.${caseId}`
-  const countPath = `${draftBasePath}.currentCount`
-  const draftCount = _.get(req, countPath, {})
-
-  // Selected defendant IDs (checkboxes) — normalise to strings
-  const rawSelected = req.body.selectedDefendantIds
-  const selectedDefendantIds = Array.isArray(rawSelected)
-    ? rawSelected.map(String)
-    : (rawSelected ? [String(rawSelected)] : [])
-
-  // ✅ Robust extraction (works with extended:true OR extended:false)
-  const rawOrder = extractBracketMap(req.body, 'defendantOrder')
-
-  // Always persist what they entered
-  draftCount.selectedDefendantIds = selectedDefendantIds
-  draftCount.defendantOrder = rawOrder
-  draftCount.lastUpdatedAt = new Date().toISOString()
-
-  async function buildOrderedIdsForCount(selectedIds = [], orderMap = {}) {
-    const _case = await fetchCase(caseId)
-    if (!_case) return []
-
-    const base = (_case.defendants || [])
-      .map(d => String(d.id))
-      .filter(id => selectedIds.includes(id))
-
-    const moves = base
-      .map((id, idx) => {
-        const pos = Number.parseInt(String(orderMap?.[id] || ''), 10)
-        return Number.isFinite(pos) && pos > 0 ? { id, pos, idx } : null
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.pos - b.pos || a.idx - b.idx)
-
-    const result = [...base]
-
-    for (const m of moves) {
-      const from = result.indexOf(m.id)
-      if (from === -1) continue
-      const [item] = result.splice(from, 1)
-      const to = Math.max(0, Math.min(result.length, m.pos - 1))
-      result.splice(to, 0, item)
-    }
-
-    return result
-  }
-
-  if (action === 'reorder') {
-    const movedIds = Object.entries(rawOrder)
-      .filter(([_, v]) => {
-        const pos = Number.parseInt(String(v || ''), 10)
-        return Number.isFinite(pos) && pos > 0
-      })
-      .map(([id]) => String(id))
-
-    draftCount.selectedDefendantIds = Array.from(new Set([
-      ...draftCount.selectedDefendantIds,
-      ...movedIds
-    ]))
-
-    // Canonical order updated on reorder
-    draftCount.orderedSelectedDefendantIds = await buildOrderedIdsForCount(
-      draftCount.selectedDefendantIds,
-      rawOrder
-    )
-
-    _.set(req, countPath, draftCount)
-    _.set(req, `${draftBasePath}.reorderSuccess`, true)
-
-    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-defendants`)
-  }
-
-  _.set(req, countPath, draftCount)
-
-  if (action === 'skip') {
-    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
-  }
-
-  draftCount.orderedSelectedDefendantIds = await buildOrderedIdsForCount(
-    draftCount.selectedDefendantIds || [],
-    rawOrder
-  )
-  _.set(req, countPath, draftCount)
-
-  _.set(req, `${draftBasePath}.defaultDefendantOrderIds`, draftCount.orderedSelectedDefendantIds)
-
-  return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
-})
-
-
-
-
-// ============================================================
-// /cases/:caseId/indictment/counts/select-and-order-witnesses (GET + POST)
-// Pattern matches Defendants: case default order + count overrides + PRG reorder
-// ============================================================
-
-router.get('/cases/:caseId/indictment/counts/select-and-order-witnesses', async (req, res) => {
-  const caseId = parseCaseId(req, res)
-  if (!caseId) return
-
-  const _case = await fetchCase(caseId)
-  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
-
-  const countsCase = getCountsCaseFor(caseId)
-  const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
-
-  const draftBasePath = `session.data.indictmentDrafts.${caseId}`
-  const countPath = `${draftBasePath}.currentCount`
-  const draftCount = _.get(req, countPath, {})
-
-  // One-time success banner (flash behaviour)
-  const successKey = `${draftBasePath}.reorderWitnessSuccess`
-  const showWitnessReorderSuccess = _.get(req, successKey, false)
-  _.unset(req, successKey)
-
-  // Case-level default “story order” for witnesses
-  const defaultWitnessOrderIds = (_.get(req, `${draftBasePath}.defaultWitnessOrderIds`, []) || []).map(String)
-
-  // Count-level override wins
-  const hasCountOverride =
-    (draftCount?.orderedSelectedWitnessIds?.length > 0) ||
-    (draftCount?.witnessOrder && Object.keys(draftCount.witnessOrder).length > 0)
-
-  function applyCaseDefaultOrder(entities = [], defaultIds = []) {
-    if (!defaultIds.length) return entities
-
-    const byId = new Map(entities.map(e => [String(e.id), e]))
-
-    const ordered = defaultIds
-      .map(id => byId.get(String(id)))
-      .filter(Boolean)
-
-    const remaining = entities.filter(e => !defaultIds.includes(String(e.id)))
-
-    return [...ordered, ...remaining]
-  }
-
-  // Apply the current count’s "move to position" map (stable)
-  function reorderEntities(entities = [], orderMap = {}) {
-    const indexed = entities.map((e, index) => ({ e, index }))
-
-    const moves = indexed
-      .map(({ e, index }) => {
-        const raw = orderMap[String(e.id)]
-        const pos = Number.parseInt(String(raw || ''), 10)
-        if (!Number.isFinite(pos) || pos <= 0) return null
-        return { id: String(e.id), pos, index }
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.pos - b.pos || a.index - b.index)
-
-    const result = indexed.map(x => x.e)
-
-    for (const move of moves) {
-      const fromIndex = result.findIndex(e => String(e.id) === move.id)
-      if (fromIndex === -1) continue
-
-      const [item] = result.splice(fromIndex, 1)
-      const toIndex = Math.max(0, Math.min(result.length, move.pos - 1))
-      result.splice(toIndex, 0, item)
-    }
-
-    return result
-  }
-
-  const witnesses = _case.witnesses || []
-
-  // Base ordering:
-  // - If this count has overrides: start from current case order
-  // - Else: start from case-level default witness story order
   const baseWitnesses = hasCountOverride
     ? witnesses
     : applyCaseDefaultOrder(witnesses, defaultWitnessOrderIds)
 
-  const orderedWitnessesForDisplay = reorderEntities(
+  // Anchor the display list on the canonical story order (if present),
+  // then apply position moves on top.
+  const baseWithCanonicalFirst = orderByIdsFirst(
     baseWitnesses,
+    (draftCount.orderedSelectedWitnessIds || []).map(String)
+  )
+
+  const orderedWitnessesForDisplay = reorderEntities(
+    baseWithCanonicalFirst,
     draftCount.witnessOrder || {}
   )
 
-  // "Left off this count" inset: list ONLY unchecked witnesses
+  // Left-off inset (unchecked only)
   const selectedWitnessIds = (draftCount.selectedWitnessIds || []).map(String)
 
-  // Only show once user has started (prevents “you’re leaving everyone off” on first load)
   const showLeftOffInset =
     (orderedWitnessesForDisplay.length > 0) &&
     (Boolean(draftCount.lastUpdatedAt) || selectedWitnessIds.length > 0)
 
-  const leftOffWitnessNames = orderedWitnessesForDisplay
+  const leftOffPreview = orderedWitnessesForDisplay
     .filter(w => !selectedWitnessIds.includes(String(w.id)))
     .map(w => {
       const fullName = `${(w.firstName || '').trim()} ${(w.lastName || '').trim()}`.trim()
@@ -678,12 +722,9 @@ router.get('/cases/:caseId/indictment/counts/select-and-order-witnesses', async 
     chargeOptions,
     draftCount,
     showWitnessReorderSuccess,
-
-    // inset data
     showLeftOffInset,
-    leftOffPreview: leftOffWitnessNames
+    leftOffPreview
   })
-
 })
 
 router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async (req, res) => {
@@ -696,58 +737,27 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async
   const countPath = `${draftBasePath}.currentCount`
   const draftCount = _.get(req, countPath, {})
 
-  // Selected witness IDs (checkboxes)
+  // Selected witness IDs (checkboxes) — normalise to strings
   const rawSelected = req.body.selectedWitnessIds
   const selectedWitnessIds = Array.isArray(rawSelected)
     ? rawSelected.map(String)
     : (rawSelected ? [String(rawSelected)] : [])
 
-  // Position map: { [witnessId]: "position" }
-  const rawOrder = req.body.witnessOrder || {}
+  // ✅ Robust extraction (works with extended:true OR extended:false)
+  const rawOrder = extractBracketMap(req.body, 'witnessOrder')
 
   // Always persist what they entered
   draftCount.selectedWitnessIds = selectedWitnessIds
   draftCount.witnessOrder = rawOrder
   draftCount.lastUpdatedAt = new Date().toISOString()
-  _.set(req, countPath, draftCount)
 
-  // Reorder-only:
-  // - treat any witness with a valid position number as "included" (auto-check on reload)
-  // - flash success
-  // - redirect back (PRG)
-  if (action === 'reorder') {
-    const movedIds = Object.entries(rawOrder)
-      .filter(([_, v]) => {
-        const pos = Number.parseInt(String(v || ''), 10)
-        return Number.isFinite(pos) && pos > 0
-      })
-      .map(([id]) => String(id))
+  // Helper: compute canonical ordered selected IDs for this count (stable)
+  async function buildOrderedIdsForCount(selectedIds = [], orderMap = {}) {
+    const _case = await fetchCase(caseId)
+    if (!_case) return []
 
-    draftCount.selectedWitnessIds = Array.from(new Set([
-      ...(draftCount.selectedWitnessIds || []).map(String),
-      ...movedIds
-    ]))
-
-    _.set(req, countPath, draftCount)
-    _.set(req, `${draftBasePath}.reorderWitnessSuccess`, true)
-
-    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
-  }
-
-  // Skip
-  if (action === 'skip') {
-    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
-  }
-
-  // Save and continue:
-  // - compute canonical ordered selected IDs for this count
-  // - update case-level default witness order for new counts
-  const _case = await fetchCase(caseId)
-  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
-
-  function buildOrderedIds(selectedIds = [], orderMap = {}, entities = []) {
-    const base = (entities || [])
-      .map(e => String(e.id))
+    const base = (_case.witnesses || [])
+      .map(w => String(w.id))
       .filter(id => selectedIds.includes(id))
 
     const moves = base
@@ -763,7 +773,6 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async
     for (const m of moves) {
       const from = result.indexOf(m.id)
       if (from === -1) continue
-
       const [item] = result.splice(from, 1)
       const to = Math.max(0, Math.min(result.length, m.pos - 1))
       result.splice(to, 0, item)
@@ -772,17 +781,48 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async
     return result
   }
 
-  const orderedSelectedWitnessIds = buildOrderedIds(
-    draftCount.selectedWitnessIds || [],
-    rawOrder,
-    _case.witnesses || []
-  )
+  // Reorder-only: auto-check moved, compute canonical order NOW, flash success, redirect back
+  if (action === 'reorder') {
+    const movedIds = Object.entries(rawOrder)
+      .filter(([_, v]) => {
+        const pos = Number.parseInt(String(v || ''), 10)
+        return Number.isFinite(pos) && pos > 0
+      })
+      .map(([id]) => String(id))
 
-  draftCount.orderedSelectedWitnessIds = orderedSelectedWitnessIds
+    draftCount.selectedWitnessIds = Array.from(new Set([
+      ...draftCount.selectedWitnessIds,
+      ...movedIds
+    ]))
+
+    // ✅ compute canonical order immediately so the next GET reflects it
+    draftCount.orderedSelectedWitnessIds = await buildOrderedIdsForCount(
+      draftCount.selectedWitnessIds,
+      rawOrder
+    )
+
+    _.set(req, countPath, draftCount)
+    _.set(req, `${draftBasePath}.reorderWitnessSuccess`, true)
+
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
+  }
+
+  // Persist draftCount for other actions too
   _.set(req, countPath, draftCount)
 
-  // Case-level default “story order”
-  _.set(req, `${draftBasePath}.defaultWitnessOrderIds`, orderedSelectedWitnessIds)
+  // Skip
+  if (action === 'skip') {
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
+  }
+
+  // Save and continue: compute canonical ordered selection + update case default
+  draftCount.orderedSelectedWitnessIds = await buildOrderedIdsForCount(
+    draftCount.selectedWitnessIds || [],
+    rawOrder
+  )
+  _.set(req, countPath, draftCount)
+
+  _.set(req, `${draftBasePath}.defaultWitnessOrderIds`, draftCount.orderedSelectedWitnessIds)
 
   return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
 })
@@ -909,8 +949,8 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-victims', async (
     ? rawSelected.map(String)
     : (rawSelected ? [String(rawSelected)] : [])
 
-  // Position map: { [victimId]: "position" }
-  const rawOrder = req.body.victimOrder || {}
+  // ✅ Robust extraction (prevents numeric keys becoming 0,1,2…)
+  const rawOrder = extractBracketMap(req.body, 'victimOrder')
 
   // Always persist what they entered
   draftCount.selectedVictimIds = selectedVictimIds
@@ -918,7 +958,6 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-victims', async (
   draftCount.lastUpdatedAt = new Date().toISOString()
   _.set(req, countPath, draftCount)
 
-  // Reorder-only: auto-check any victim with a valid position number, flash success, redirect back
   if (action === 'reorder') {
     const movedIds = Object.entries(rawOrder)
       .filter(([_, v]) => {
