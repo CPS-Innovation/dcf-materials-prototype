@@ -1,5 +1,3 @@
-{# /cases/indictment/counts/select-and-order-victims.html #}
-
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
@@ -16,8 +14,15 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-       <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% if showVictimReorderSuccess %}
+        {{ govukNotificationBanner({
+          type: "success",
+          text: "Victims reordered"
+        }) }}
+      {% endif %}
 
       <p class="govuk-body">
         Enter a new number for victims you want to move to a new position.
@@ -33,23 +38,25 @@
 
         {% set victimItems = [] %}
 
-        {% for v in _case.victims %}
+        {% for v in (_case.victims or []) %}
 
-          {# Optional position input value (stored as a map keyed by victim id) #}
+          {% set vid = v.id | string %}
+
+          {# Checked state from session (string-safe) #}
+          {% set isChecked = (draftCount.selectedVictimIds and (vid in draftCount.selectedVictimIds)) %}
+
+          {# Optional position input value (stored as a map keyed by victim id string) #}
           {% set orderValue = '' %}
-          {% if draftCount.victimOrder and draftCount.victimOrder[v.id] %}
-            {% set orderValue = draftCount.victimOrder[v.id] %}
+          {% if draftCount.victimOrder and draftCount.victimOrder[vid] %}
+            {% set orderValue = draftCount.victimOrder[vid] %}
           {% endif %}
-
-          {# Previously selected victims (array of ids) #}
-          {% set isChecked = (draftCount.selectedVictimIds and (v.id in draftCount.selectedVictimIds)) %}
 
           {% set conditionalHtml %}
             <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
 
               {{ govukInput({
-                id: "victimOrder-" + v.id,
-                name: "victimOrder[" + v.id + "]",
+                id: "victimOrder-" + vid,
+                name: "victimOrder[" + vid + "]",
                 value: orderValue,
                 classes: "govuk-input--width-3",
                 inputmode: "numeric",
@@ -60,21 +67,11 @@
                 }
               }) }}
 
-              {{ govukSummaryList({
-                classes: "govuk-summary-list--no-border app-summary-list--compact",
-                rows: [
-                  {
-                    key: { text: "Role" },
-                    value: { text: "Victim" }
-                  }
-                ]
-              }) }}
-
             </div>
           {% endset %}
 
           {% set _ = victimItems.push({
-            value: v.id,
+            value: vid,
             text: v.firstName + " " + v.lastName,
             checked: isChecked,
             conditional: { html: conditionalHtml }
@@ -92,9 +89,29 @@
           <p class="govuk-body">No victims have been added to this case.</p>
         {% endif %}
 
+        {# Tiny friction: list those who will be left off the count (unchecked) #}
+        {% if showLeftOffInset and leftOffPreview.length %}
+          <div class="govuk-inset-text">
+            <p class="govuk-body govuk-!-margin-bottom-2">
+              If you save now, these victims will be left off this count:
+            </p>
+
+            <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+              {% for name in leftOffPreview %}
+                <li>{{ name }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
         <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Save and continue" }) }}
+
           {{ govukButton({
-            text: "Save and continue"
+            text: "Refresh and reorder",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "reorder"
           }) }}
 
           {{ govukButton({

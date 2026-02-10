@@ -1,5 +1,3 @@
-{# /cases/indictment/counts/select-and-order-defendants.html #}
-
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
@@ -16,15 +14,15 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
+      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
       {% if showReorderSuccess %}
         {{ govukNotificationBanner({
           type: "success",
           text: "Defendants reordered"
         }) }}
       {% endif %}
-
-      <span class="govuk-caption-m">Indictment - Draft count</span>
-      <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <p class="govuk-body">
         Enter a new number for defendants you want to move to a new position.
@@ -38,42 +36,27 @@
       <form method="post" novalidate>
         {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
 
-        {# Build checkbox items dynamically based on defendants #}
         {% set defendantItems = [] %}
 
         {% for d in _case.defendants %}
 
-          {# Charges list for this defendant (no bullets) #}
-          {% set defendantChargesHtml %}
-            {% if d.charges and d.charges.length %}
-              <ul class="govuk-list govuk-!-margin-bottom-0">
-                {% for ch in d.charges %}
-                  <li>
-                    {% if ch.chargeCode %}
-                      {{ ch.chargeCode }}: {{ ch.description }}
-                    {% else %}
-                      {{ ch.description }}
-                    {% endif %}
-                  </li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              <p class="govuk-body govuk-!-margin-bottom-0">No charges added</p>
-            {% endif %}
-          {% endset %}
+          {% set did = d.id | string %}
 
-          {# Optional position input value (stored as a map keyed by defendant id) #}
+          {# Checked state from session (string-safe) #}
+          {% set isChecked = (draftCount.selectedDefendantIds and (did in draftCount.selectedDefendantIds)) %}
+
+          {# Optional position input value (stored as a map keyed by defendant id string) #}
           {% set orderValue = '' %}
-          {% if draftCount.defendantOrder and draftCount.defendantOrder[d.id] %}
-            {% set orderValue = draftCount.defendantOrder[d.id] %}
+          {% if draftCount.defendantOrder and draftCount.defendantOrder[did] %}
+            {% set orderValue = draftCount.defendantOrder[did] %}
           {% endif %}
 
           {% set conditionalHtml %}
             <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
 
               {{ govukInput({
-                id: "defendantOrder-" + d.id,
-                name: "defendantOrder[" + d.id + "]",
+                id: "defendantOrder-" + did,
+                name: "defendantOrder[" + did + "]",
                 value: orderValue,
                 classes: "govuk-input--width-3",
                 inputmode: "numeric",
@@ -84,24 +67,11 @@
                 }
               }) }}
 
-              {{ govukSummaryList({
-                classes: "govuk-summary-list--no-border app-summary-list--compact",
-                rows: [
-                  {
-                    key: { text: "Charges" },
-                    value: { html: defendantChargesHtml }
-                  }
-                ]
-              }) }}
-
             </div>
           {% endset %}
 
-          {# Previously selected defendants (array of ids) #}
-          {% set isChecked = (draftCount.selectedDefendantIds and (d.id in draftCount.selectedDefendantIds)) %}
-
           {% set _ = defendantItems.push({
-            value: d.id,
+            value: did,
             text: d.firstName + " " + d.lastName,
             checked: isChecked,
             conditional: { html: conditionalHtml }
@@ -115,11 +85,23 @@
           items: defendantItems
         }) }}
 
-        <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({
-            text: "Save and continue"
-          }) }}
+        {# Tiny friction: list those who will be left off the count (unchecked) #}
+        {% if showLeftOffInset and leftOffPreview.length %}
+          <div class="govuk-inset-text">
+            <p class="govuk-body govuk-!-margin-bottom-2">
+              If you save now, these defendants will be left off this count:
+            </p>
 
+            <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+              {% for name in leftOffPreview %}
+                <li>{{ name }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Save and continue" }) }}
 
           {{ govukButton({
             text: "Refresh and reorder",
@@ -134,7 +116,6 @@
             name: "action",
             value: "skip"
           }) }}
-
         </div>
 
       </form>
