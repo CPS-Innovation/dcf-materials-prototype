@@ -1,9 +1,9 @@
-{# /cases/indictment/counts/select-and-order-witnesses.html #}
+{# /cases/indictment/assign/witnesses.html #}
 
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Select and order witnesses' %}
+{% set pageName = 'Assign witnesses' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -13,8 +13,6 @@
 {% endblock %}
 
 {% block content %}
-  {# Use your existing banner include OR render directly like defendants.
-     If you're using the include, ensure it keys off showWitnessReorderSuccess. #}
   {% include "_includes/success-banner.njk" %}
 
   <div class="govuk-grid-row">
@@ -23,99 +21,31 @@
       <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      <p class="govuk-body">
-        Enter a new number for witnesses you want to move to a new position.
-      </p>
-      <p class="govuk-body">
-        Witnesses will move up or down to accommodate the new order when you save your changes.
-      </p>
-
-      <h2 class="govuk-heading-m">Select the witness(es) that apply to this count</h2>
+      <h2 class="govuk-heading-m">Select all witnesses that apply to this count</h2>
 
       <form method="post" novalidate>
         {% if returnTo %}
           <input type="hidden" name="returnTo" value="{{ returnTo }}">
         {% endif %}
 
-        {# Build checkbox items dynamically based on witnesses #}
         {% set witnessItems = [] %}
 
         {% for w in (_case.witnesses or []) %}
+
+          {% set wid = w.id | string %}
 
           {% set fullName = ((w.firstName or "") + " " + (w.lastName or "")) | trim %}
           {% if not fullName %}
             {% set fullName = "Witness " + loop.index %}
           {% endif %}
 
-          {# Checked state from session #}
-          {% set isChecked = (draftCount.assignedWitnessIds and (w.id in draftCount.assignedWitnessIds)) %}
-
-          {# Position input value (stored as map keyed by witness id) #}
-          {% set orderValue = '' %}
-          {% if draftCount.witnessOrder and draftCount.witnessOrder[w.id] %}
-            {% set orderValue = draftCount.witnessOrder[w.id] %}
-          {% endif %}
-
-          {# Build witness statements list (no bullets) #}
-          {% set statementsHtml %}
-            {% if w.statements and w.statements.length %}
-              <ul class="govuk-list govuk-!-margin-bottom-0">
-                {% for s in w.statements %}
-                  <li>
-                    Statement {{ s.number }}
-                    {% if s.receivedDate %}
-                      – received {{ s.receivedDate | date("D MMMM YYYY") }}
-                    {% endif %}
-                    {% if s.isMarkedAsSection9 %}
-                      <strong class="govuk-tag govuk-!-margin-left-2">Section 9</strong>
-                    {% endif %}
-                  </li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              <p class="govuk-body govuk-!-margin-bottom-0">No statements recorded for this witness.</p>
-            {% endif %}
-          {% endset %}
-
-          {# Optional witness meta (handy later) #}
-          {% set metaHtml %}
-            <ul class="govuk-list govuk-!-margin-bottom-2">
-              <li><span class="govuk-!-font-weight-bold">Witness ID:</span> {{ w.id }}</li>
-              {% if w.isPolice %}<li><span class="govuk-!-font-weight-bold">Type:</span> Police witness</li>{% endif %}
-              {% if w.isExpert %}<li><span class="govuk-!-font-weight-bold">Type:</span> Expert witness</li>{% endif %}
-              {% if w.isKeyWitness %}<li><span class="govuk-!-font-weight-bold">Type:</span> Key witness</li>{% endif %}
-              {% if w.isVictim %}<li><span class="govuk-!-font-weight-bold">Type:</span> Victim witness</li>{% endif %}
-            </ul>
-          {% endset %}
-
-          {# Conditional reveal content (matches defendants pattern) #}
-          {% set conditionalHtml %}
-            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
-
-              {{ govukInput({
-                id: "witnessOrder-" + (w.id | string),
-                name: "witnessOrder[" + (w.id | string) + "]",
-                value: orderValue,
-                classes: "govuk-input--width-3",
-                inputmode: "numeric",
-                type: "text",
-                label: {
-                  text: "Move " + fullName + " to position (optional)",
-                  classes: "govuk-label--s"
-                }
-              }) }}
-
-              {{ metaHtml | safe }}
-              {{ statementsHtml | safe }}
-
-            </div>
-          {% endset %}
+          {# Checked state from session (string-safe) #}
+          {% set isChecked = (draftCount.assignedWitnessIds and (wid in draftCount.assignedWitnessIds)) %}
 
           {% set _ = witnessItems.push({
-            value: (w.id | string),
+            value: wid,
             text: fullName,
-            checked: isChecked,
-            conditional: { html: conditionalHtml }
+            checked: isChecked
           }) %}
 
         {% endfor %}
@@ -132,22 +62,6 @@
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Save and continue" }) }}
-
-          {# Optional skip if you want parity with defendants #}
-          {{ govukButton({
-            text: "Skip and do later",
-            classes: "govuk-button--secondary",
-            name: "action",
-            value: "skip"
-          }) }}
-
-          {# Reorder action (submit, PRG, success banner) #}
-          <button type="submit"
-                  class="govuk-link"
-                  name="action"
-                  value="reorder">
-            Refresh and reorder
-          </button>
         </div>
 
       </form>

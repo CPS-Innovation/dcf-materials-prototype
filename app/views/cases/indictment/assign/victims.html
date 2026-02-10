@@ -1,5 +1,4 @@
 {# /cases/indictment/assign/victims.html #}
-
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
@@ -18,7 +17,7 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-       <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <h2 class="govuk-heading-m">Select all victims that apply to this count</h2>
@@ -28,41 +27,24 @@
           <input type="hidden" name="returnTo" value="{{ returnTo }}">
         {% endif %}
 
-
         {% set victimItems = [] %}
 
         {% for v in (_case.victims or []) %}
 
-          {% set fullName = (v.firstName or "") + " " + (v.lastName or "") %}
-          {% set fullName = fullName | trim %}
+          {% set vid = v.id | string %}
+
+          {% set fullName = ((v.firstName or "") + " " + (v.lastName or "")) | trim %}
           {% if not fullName %}
             {% set fullName = "Victim " + loop.index %}
           {% endif %}
 
-          {# Checked state from session #}
-          {% set isChecked = false %}
-          {% if draftCount.assignedVictimIds and (v.id in draftCount.assignedVictimIds) %}
-            {% set isChecked = true %}
-          {% endif %}
-
-          {# Optional details content (placeholder for future victim info) #}
-          {% set detailsHtml %}
-            <ul class="govuk-list govuk-!-margin-bottom-0">
-              <li><span class="govuk-!-font-weight-bold">Victim ID:</span> {{ v.id }}</li>
-            </ul>
-          {% endset %}
-
-          {% set conditionalHtml %}
-            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
-              {{ detailsHtml | safe }}
-            </div>
-          {% endset %}
+          {# Checked state from session (string-safe) #}
+          {% set isChecked = (draftCount.assignedVictimIds and (vid in draftCount.assignedVictimIds)) %}
 
           {% set _ = victimItems.push({
-            value: (v.id | string),
+            value: vid,
             text: fullName,
-            checked: isChecked,
-            conditional: { html: conditionalHtml }
+            checked: isChecked
           }) %}
 
         {% endfor %}
@@ -78,9 +60,7 @@
         {% endif %}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({
-            text: "Save and continue"
-          }) }}
+          {{ govukButton({ text: "Save and continue" }) }}
         </div>
 
       </form>

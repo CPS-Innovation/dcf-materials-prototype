@@ -18,7 +18,7 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-       <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">Indictment - Draft count</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <h2 class="govuk-heading-m">Select all defendants that apply to this count</h2>
@@ -28,51 +28,20 @@
           <input type="hidden" name="returnTo" value="{{ returnTo }}">
         {% endif %}
 
-
         {% set defendantItems = [] %}
 
         {% for d in (_case.defendants or []) %}
 
-          {% set fullName = (d.firstName or "") + " " + (d.lastName or "") %}
-          {% set fullName = fullName | trim %}
+          {% set did = d.id | string %}
+          {% set fullName = ((d.firstName or "") + " " + (d.lastName or "")) | trim %}
 
-          {# Checked state from session (store ids as strings for safety) #}
-          {% set isChecked = false %}
-          {% if draftCount.assignedDefendantIds and (d.id in draftCount.assignedDefendantIds) %}
-            {% set isChecked = true %}
-          {% endif %}
-
-          {# Build charges list HTML (no bullets) #}
-          {% set chargesHtml %}
-            {% if d.charges and d.charges.length %}
-              <ul class="govuk-list govuk-!-margin-bottom-0">
-                {% for ch in d.charges %}
-                  <li>
-                    {% if ch.chargeCode %}
-                      {{ ch.chargeCode }}: {{ ch.description }}
-                    {% else %}
-                      {{ ch.description }}
-                    {% endif %}
-                  </li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              <p class="govuk-body govuk-!-margin-bottom-0">No charges recorded for this defendant.</p>
-            {% endif %}
-          {% endset %}
-
-          {# Details lives under the row as the conditional reveal content #}
-          {% set conditionalHtml %}
-            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
-              {{ chargesHtml | safe }}
-            </div>
-          {% endset %}
+          {# Checked state from session (string-safe) #}
+          {% set isChecked = (draftCount.assignedDefendantIds and (did in draftCount.assignedDefendantIds)) %}
 
           {% set _ = defendantItems.push({
-            value: (d.id | string),
+            value: did,
             text: fullName,
-            checked: isChecked,
-            conditional: { html: conditionalHtml }
+            checked: isChecked
           }) %}
 
         {% endfor %}
@@ -88,9 +57,7 @@
         {% endif %}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({
-            text: "Save and continue"
-          }) }}
+          {{ govukButton({ text: "Save and continue" }) }}
         </div>
 
       </form>
