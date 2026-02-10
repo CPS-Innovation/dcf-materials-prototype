@@ -25,68 +25,62 @@
 
 
         {# =========================
-           CHARGES (radio + conditional checkboxes)
-           ========================= #}
+          CHARGES
+          ========================= #}
 
-        {% set chargeCheckboxItems = [] %}
+        <fieldset class="govuk-fieldset">
+          <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+            Select an existing charge
+          </legend>
 
-        {% for c in (caseChargeOptions or []) %}
-          {% set isChecked = false %}
-          {% if draftCount.selectedChargeCodes and (c.chargeCode in draftCount.selectedChargeCodes) %}
-            {% set isChecked = true %}
+          {% set chargeRadioItems = [] %}
+
+          {% for c in (selectedChargeOptions or []) %}
+            {% set isChecked = false %}
+            {% if draftCount.primaryChargeCode and (c.chargeCode == draftCount.primaryChargeCode) %}
+              {% set isChecked = true %}
+            {% endif %}
+
+            {% set chargeText %}
+              {% if c.chargeCode %}
+                {{ c.chargeCode }}: {{ c.description }}
+              {% else %}
+                {{ c.description }}
+              {% endif %}
+            {% endset %}
+
+            {% set _ = chargeRadioItems.push({
+              value: c.chargeCode,
+              text: chargeText | trim,
+              checked: isChecked
+            }) %}
+          {% endfor %}
+
+         
+          {% if draftCount.countBasis != "newCount" and (selectedChargeOptions or []).length %}
+              {{ govukRadios({
+              name: "primaryChargeCode",
+              items: chargeRadioItems
+            }) }}
           {% endif %}
 
-          {% set chargeText %}
-            {% if c.chargeCode %}
-              {{ c.chargeCode }}: {{ c.description }}
-            {% else %}
-              {{ c.description }}
-            {% endif %}
-          {% endset %}
+        </fieldset>
 
-          {% set _ = chargeCheckboxItems.push({
-            value: c.chargeCode,
-            text: chargeText | trim,
-            checked: isChecked
-          }) %}
-        {% endfor %}
+        {# OR divider #}
+        <div class="govuk-body govuk-!-margin-top-4 govuk-!-margin-bottom-4 govuk-!-font-weight-bold">
+          or
+        </div>
 
-        {% set selectChargeConditionalHtml %}
-          <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
-            {{ govukCheckboxes({
-              idPrefix: "selectedChargeCodes",
-              classes: "govuk-checkboxes--small",
-              name: "selectedChargeCodes",
-              items: chargeCheckboxItems
-            }) }}
-          </div>
-        {% endset %}
-
-        {% set chargeBasisItems = [] %}
-
-        {# No default checked. Only check if session has value #}
-        {% set _ = chargeBasisItems.push({
-          value: "existingCharge",
-          text: "Select An Existing Charge",
-          checked: draftCount.countBasis == "existingCharge",
-          conditional: { html: selectChargeConditionalHtml }
-        }) %}
-
-        {% set _ = chargeBasisItems.push({
-          value: "newCount",
-          text: "Add a New count (not related to a charge)",
-          checked: draftCount.countBasis == "newCount"
-        }) %}
-
+        {# Add new count option #}
         {{ govukRadios({
           name: "countBasis",
-          fieldset: {
-            legend: {
-              text: "",
-              classes: "govuk-fieldset__legend--m govuk-visually-hidden"
+          items: [
+            {
+              value: "newCount",
+              text: "Add a new count (not related to a charge)",
+              checked: draftCount.countBasis == "newCount"
             }
-          },
-          items: chargeBasisItems
+          ]
         }) }}
 
         {# =========================

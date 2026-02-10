@@ -1034,28 +1034,39 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-victims', async (
   // /cases/:caseId/indictment/counts/date-and-charges (GET + POST)
   // ============================================================
 
-  router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
-    const caseId = parseCaseId(req, res)
-    if (!caseId) return
+router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+  const caseId = parseCaseId(req, res)
+  if (!caseId) return
 
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-    const countsCase = getCountsCaseFor(caseId)
-    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
+  const countsCase = getCountsCaseFor(caseId)
+  const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
-    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+  const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
 
-    const returnTo = safeReturnTo(req.query.returnTo)
+  // ✅ Only the charges selected earlier
+  const selectedChargeCodes = (draftCount.selectedChargeCodes || []).map(String)
+  const selectedChargeOptions = caseChargeOptions.filter(c =>
+    selectedChargeCodes.includes(String(c.chargeCode))
+  )
 
-    return res.render('cases/indictment/counts/date-and-charges', {
-      _case,
-      countsCase,
-      caseChargeOptions,
-      draftCount,
-      returnTo
-    })
+  const returnTo = safeReturnTo(req.query.returnTo)
+
+  return res.render('cases/indictment/counts/date-and-charges', {
+    _case,
+    countsCase,
+
+    // ✅ Use this in the template instead of caseChargeOptions
+    selectedChargeOptions,
+
+    caseChargeOptions, // keep if you still need it elsewhere, otherwise remove
+    draftCount,
+    returnTo
   })
+})
+
 
   router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
     const caseId = parseCaseId(req, res)
