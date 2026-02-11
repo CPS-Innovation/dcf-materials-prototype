@@ -102,6 +102,8 @@ require('./routes/case--disclosure-bulk')(router)
 require('./routes/case--indictment')(router)
 require('./routes/case--indictment-count-added')(router)
 require('./routes/case--indictment-preview')(router)
+require('./routes/indictment/multiple')(router)
+
 require('./routes/case--material')(router)
 require('./routes/case--material-actions')(router)
 require('./routes/case--witnesses')(router)
