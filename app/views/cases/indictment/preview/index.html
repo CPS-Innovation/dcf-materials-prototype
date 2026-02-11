@@ -79,12 +79,14 @@
         {% for c in counts %}
           <h2 class="govuk-heading-m govuk-!-margin-top-7">Count {{ loop.index }}</h2>
 
-          <p class="govuk-body govuk-!-margin-bottom-4">
-            <a class="govuk-link"
-              href="/cases/{{ _case.id }}/indictment/counts/check?countId={{ c.id }}">
-              Edit count
+          <div class="govuk-!-margin-bottom-4">
+            <a class="govuk-button govuk-button--secondary"
+              href="/cases/{{ _case.id }}/indictment/counts/added?countId={{ c.id }}"
+              data-module="govuk-button">
+              View count
             </a>
-          </p>
+          </div>
+
 
           <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-2" style="letter-spacing: 0.03em;">
             STATEMENT OF OFFENCE

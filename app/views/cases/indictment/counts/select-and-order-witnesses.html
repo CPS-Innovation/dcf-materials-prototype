@@ -103,7 +103,12 @@
         {% endif %}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({ text: "Save and continue" }) }}
+
+          {{ govukButton({
+            text: "Save and continue",
+            name: "action",
+            value: "continue"
+          }) }}
 
           {{ govukButton({
             text: "Refresh and reorder",
