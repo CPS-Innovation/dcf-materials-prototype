@@ -1467,54 +1467,7 @@ router.get('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
   })
 
 
-// ------------------------------------------------------------
-// Particulars template helpers
-// ------------------------------------------------------------
-function ordinal(n) {
-  const s = ["th", "st", "nd", "rd"]
-  const v = n % 100
-  return n + (s[(v - 20) % 10] || s[v] || s[0])
-}
 
-function formatNarrativeDateSingle(offenceDate) {
-  const day = parseInt(offenceDate?.day, 10)
-  const month = parseInt(offenceDate?.month, 10)
-  const year = offenceDate?.year || ''
-
-  const months = ["", "January","February","March","April","May","June","July","August","September","October","November","December"]
-
-  if (!day || !month || !year) return "[date]"
-  return `${ordinal(day)} day of ${months[month] || "[month]"} ${year}`
-}
-
-// Keeps range working by falling back to your existing numeric dateText style
-function formatDateForTemplate(draftCount) {
-  if (draftCount?.dateType === 'single') {
-    return formatNarrativeDateSingle(draftCount.offenceDate)
-  }
-
-  if (draftCount?.dateType === 'range' && draftCount.offenceDateFrom && draftCount.offenceDateTo) {
-    const f = draftCount.offenceDateFrom
-    const t = draftCount.offenceDateTo
-    const fromText = `${f.day || 'xx'}/${f.month || 'xx'}/${f.year || 'xx'}`
-    const toText = `${t.day || 'xx'}/${t.month || 'xx'}/${t.year || 'xx'}`
-    return `${fromText} to ${toText}`
-  }
-
-  return "[date]"
-}
-
-function injectTokens(template, map) {
-  let out = String(template || '')
-
-  // Your agreed tokens are exact-cased, so do exact replacements.
-  // If you want case-insensitive later, we can adjust.
-  for (const [token, value] of Object.entries(map)) {
-    out = out.split(`[${token}]`).join(value || `[${token}]`)
-  }
-
-  return out
-}
 
 router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res) => {
   const caseId = parseCaseId(req, res)
@@ -1644,12 +1597,36 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
     // ----------------------------
     // OVERWRITE particulars (your requirement: usually changes)
     // ----------------------------
-    draftCount.particularsOfOffenceText = injectTokens(starter, {
-      "Defendant(s)": defendantsText,
-      "victim(s)": victimsText,
-      "place": placeText,
-      "date": dateText
-    })
+      draftCount.particularsOfOffenceText = injectTokens(starter, {
+
+        // DEFENDANT tokens (all common variants)
+        "Defendant(s)": defendantsText,
+        "defendant(s)": defendantsText,
+        "Defendant": defendantsText,
+        "defendant": defendantsText,
+
+        // VICTIM tokens (all common variants)
+        "Victim(s)": victimsText,
+        "victim(s)": victimsText,
+        "Victim": victimsText,
+        "victim": victimsText,
+
+        // DATE tokens
+        "date": dateText,
+        "Date": dateText,
+
+        // PLACE tokens
+        "place": placeText,
+        "Place": placeText,
+
+        // MONTH fallback (only used if template literally contains [month])
+        "month": (() => {
+          const m = parseInt(draftCount?.offenceDate?.month, 10)
+          const months = ["", "January","February","March","April","May","June","July","August","September","October","November","December"]
+          return months[m] ? months[m].toUpperCase() : "MONTH"
+        })()
+      })
+
   } else {
     // Nothing selected: clear precedent + template
     draftCount.precedentSelection = null
