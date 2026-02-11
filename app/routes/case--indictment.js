@@ -339,60 +339,114 @@ function searchChargeLibrary(chargeLibrary, keywords) {
     })
   })
 
-  router.post('/cases/:caseId/indictment/counts/charges', async (req, res) => {
-    const caseId = parseCaseId(req, res)
-    if (!caseId) return
+router.post('/cases/:caseId/indictment/counts/charges', async (req, res) => {
+  const caseId = parseCaseId(req, res)
+  if (!caseId) return
 
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-    const draftCount = _.get(req, basePath, {})
+  const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+  const draftCount = _.get(req, basePath, {})
 
-    // No default selection in the UI, so allow null here
-    const countBasis = (req.body.countBasis || '').toString() || null
-    draftCount.countBasis = countBasis
+  // No default selection in the UI, so allow null here
+  const countBasis = (req.body.countBasis || '').toString() || null
+  draftCount.countBasis = countBasis
 
-    const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
+  const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
-    // Normalise checkbox values into an array of strings
-    const rawSelected = req.body.selectedChargeCodes
-    const selectedChargeCodes = Array.isArray(rawSelected)
-      ? rawSelected
-      : (rawSelected ? [rawSelected] : [])
+  // Normalise checkbox values into an array of strings
+  const rawSelected = req.body.selectedChargeCodes
+  const selectedChargeCodes = Array.isArray(rawSelected)
+    ? rawSelected
+    : (rawSelected ? [rawSelected] : [])
 
-    if (countBasis === 'newCount') {
-      draftCount.selectedChargeCodes = []
-      draftCount.primaryChargeCode = null
+  if (countBasis === 'newCount') {
+    draftCount.selectedChargeCodes = []
+    draftCount.primaryChargeCode = null
+    draftCount.chargeCode = null
+    draftCount.chargeLabel = null
+  } else {
+    draftCount.selectedChargeCodes = selectedChargeCodes
+    draftCount.primaryChargeCode = selectedChargeCodes[0] || null
+
+    const primary = caseChargeOptions.find(o => String(o.chargeCode) === String(draftCount.primaryChargeCode)) || null
+    if (primary) {
+      draftCount.chargeCode = primary.chargeCode
+      draftCount.chargeLabel = primary.description
+    } else {
       draftCount.chargeCode = null
       draftCount.chargeLabel = null
-    } else {
-      draftCount.selectedChargeCodes = selectedChargeCodes
-      draftCount.primaryChargeCode = selectedChargeCodes[0] || null
-
-      const primary = caseChargeOptions.find(o => String(o.chargeCode) === String(draftCount.primaryChargeCode)) || null
-      if (primary) {
-        draftCount.chargeCode = primary.chargeCode
-        draftCount.chargeLabel = primary.description
-      } else {
-        draftCount.chargeCode = null
-        draftCount.chargeLabel = null
-      }
     }
+  }
 
-    draftCount.lastUpdatedAt = new Date().toISOString()
-    _.set(req, basePath, draftCount)
+  // ------------------------------------------------------------
+  // Auto-seed assignments when there's nothing to reorder (0/1)
+  // This ensures assign pages have data even if we skip reorder screens.
+  // ------------------------------------------------------------
+  const defendants = Array.isArray(_case.defendants) ? _case.defendants : []
+  const victims = Array.isArray(_case.victims) ? _case.victims : []
+  const witnesses = Array.isArray(_case.witnesses) ? _case.witnesses : []
 
-    _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+  if (defendants.length === 0) {
+    draftCount.assignedDefendantIds = []
+    draftCount.selectedDefendantIds = []
+    draftCount.orderedSelectedDefendantIds = []
+  } else if (defendants.length === 1) {
+    const id = String(defendants[0].id)
+    draftCount.assignedDefendantIds = [id]
+    draftCount.selectedDefendantIds = [id]
+    draftCount.orderedSelectedDefendantIds = [id]
+  }
 
-    // Flow control: if fewer than 2 defendants, skip ordering step
-    const defendantCount = Array.isArray(_case.defendants) ? _case.defendants.length : 0
-    if (defendantCount < 2) {
-      return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-or-offence`)
-    }
+  if (victims.length === 0) {
+    draftCount.assignedVictimIds = []
+    draftCount.selectedVictimIds = []
+    draftCount.orderedSelectedVictimIds = []
+  } else if (victims.length === 1) {
+    const id = String(victims[0].id)
+    draftCount.assignedVictimIds = [id]
+    draftCount.selectedVictimIds = [id]
+    draftCount.orderedSelectedVictimIds = [id]
+  }
 
+  if (witnesses.length === 0) {
+    draftCount.assignedWitnessIds = []
+    draftCount.selectedWitnessIds = []
+    draftCount.orderedSelectedWitnessIds = []
+  } else if (witnesses.length === 1) {
+    const id = String(witnesses[0].id)
+    draftCount.assignedWitnessIds = [id]
+    draftCount.selectedWitnessIds = [id]
+    draftCount.orderedSelectedWitnessIds = [id]
+  }
+
+  draftCount.lastUpdatedAt = new Date().toISOString()
+  _.set(req, basePath, draftCount)
+
+  _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+
+  // Flow control: go to the first ordering step that actually needs ordering.
+  // If none need ordering, go straight to date-and-charges.
+  const defendantCount = defendants.length
+  const victimCount = victims.length
+  const witnessCount = witnesses.length
+
+  if (defendantCount >= 2) {
     return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-defendants`)
-  })
+  }
+
+  if (victimCount >= 2) {
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
+  }
+
+  if (witnessCount >= 2) {
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
+  }
+
+  return res.redirect(`/cases/${caseId}/indictment/counts/date-and-charges`)
+})
+
 
 // ============================================================
 // /cases/:caseId/indictment/counts/select-and-order-defendants (GET + POST)
@@ -625,8 +679,20 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-defendants', asyn
   // persist for other actions too
   _.set(req, countPath, draftCount)
 
+    // Helper: pick the next step based on counts
+  const pickNextAfterDefendants = (_case) => {
+    const witnessCount = Array.isArray(_case.witnesses) ? _case.witnesses.length : 0
+    const victimCount = Array.isArray(_case.victims) ? _case.victims.length : 0
+
+    if (witnessCount >= 2) return 'select-and-order-witnesses'
+    if (victimCount >= 2) return 'select-and-order-victims'
+    return 'date-and-charges'
+  }
+
+  // Skip
   if (action === 'skip') {
-    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
+    const next = pickNextAfterDefendants(_case)
+    return res.redirect(`/cases/${caseId}/indictment/counts/${next}`)
   }
 
   // Save and continue
@@ -639,7 +705,9 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-defendants', asyn
 
   _.set(req, `${draftBasePath}.defaultDefendantOrderIds`, draftCount.orderedSelectedDefendantIds)
 
-  return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-witnesses`)
+  const next = pickNextAfterDefendants(_case)
+  return res.redirect(`/cases/${caseId}/indictment/counts/${next}`)
+
 })
 
 
@@ -828,6 +896,17 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async
     return result
   }
 
+    const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      const pickNextAfterWitnesses = (_case) => {
+        const victimCount = Array.isArray(_case.victims) ? _case.victims.length : 0
+
+        if (victimCount >= 2) return 'select-and-order-victims'
+        return 'date-and-charges'
+      }
+
+
   // Reorder-only: auto-check moved, compute canonical order NOW, flash success, redirect back
   if (action === 'reorder') {
     const movedIds = Object.entries(rawOrder)
@@ -859,8 +938,10 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async
 
   // Skip
   if (action === 'skip') {
-    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
+    const next = pickNextAfterWitnesses(_case)
+    return res.redirect(`/cases/${caseId}/indictment/counts/${next}`)
   }
+
 
   // Save and continue: compute canonical ordered selection + update case default
   draftCount.orderedSelectedWitnessIds = await buildOrderedIdsForCount(
@@ -871,7 +952,9 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-witnesses', async
 
   _.set(req, `${draftBasePath}.defaultWitnessOrderIds`, draftCount.orderedSelectedWitnessIds)
 
-  return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
+  const next = pickNextAfterWitnesses(_case)
+  return res.redirect(`/cases/${caseId}/indictment/counts/${next}`)
+
 })
 
 
@@ -990,6 +1073,11 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-victims', async (
   const countPath = `${draftBasePath}.currentCount`
   const draftCount = _.get(req, countPath, {})
 
+  // Fetch case once (so reorder + save can compute canonical order consistently)
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+  const victims = _case.victims || []
+
   // Selected victim IDs — normalise to strings
   const rawSelected = req.body.selectedVictimIds
   const selectedVictimIds = Array.isArray(rawSelected)
@@ -998,40 +1086,6 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-victims', async (
 
   // ✅ Robust extraction (prevents numeric keys becoming 0,1,2…)
   const rawOrder = extractBracketMap(req.body, 'victimOrder')
-
-  // Always persist what they entered
-  draftCount.selectedVictimIds = selectedVictimIds
-  draftCount.victimOrder = rawOrder
-  draftCount.lastUpdatedAt = new Date().toISOString()
-  _.set(req, countPath, draftCount)
-
-  if (action === 'reorder') {
-    const movedIds = Object.entries(rawOrder)
-      .filter(([_, v]) => {
-        const pos = Number.parseInt(String(v || ''), 10)
-        return Number.isFinite(pos) && pos > 0
-      })
-      .map(([id]) => String(id))
-
-    draftCount.selectedVictimIds = Array.from(new Set([
-      ...(draftCount.selectedVictimIds || []).map(String),
-      ...movedIds
-    ]))
-
-    _.set(req, countPath, draftCount)
-    _.set(req, `${draftBasePath}.reorderVictimSuccess`, true)
-
-    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
-  }
-
-  // Skip: move on
-  if (action === 'skip') {
-    return res.redirect(`/cases/${caseId}/indictment/counts/date-and-charges`)
-  }
-
-  // Save and continue: compute canonical ordered selection for this count + update case default
-  const _case = await fetchCase(caseId)
-  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
   function buildOrderedIds(selectedIds = [], orderMap = {}, entities = []) {
     const base = (entities || [])
@@ -1060,10 +1114,49 @@ router.post('/cases/:caseId/indictment/counts/select-and-order-victims', async (
     return result
   }
 
+  // Always persist what they entered
+  draftCount.selectedVictimIds = selectedVictimIds
+  draftCount.victimOrder = rawOrder
+  draftCount.lastUpdatedAt = new Date().toISOString()
+  _.set(req, countPath, draftCount)
+
+  if (action === 'reorder') {
+    const movedIds = Object.entries(rawOrder)
+      .filter(([_, v]) => {
+        const pos = Number.parseInt(String(v || ''), 10)
+        return Number.isFinite(pos) && pos > 0
+      })
+      .map(([id]) => String(id))
+
+    // auto-check moved
+    draftCount.selectedVictimIds = Array.from(new Set([
+      ...(draftCount.selectedVictimIds || []).map(String),
+      ...movedIds
+    ]))
+
+    // ✅ compute canonical order immediately so GET reflects it (like defendants/witnesses)
+    draftCount.orderedSelectedVictimIds = buildOrderedIds(
+      draftCount.selectedVictimIds || [],
+      rawOrder,
+      victims
+    )
+
+    _.set(req, countPath, draftCount)
+    _.set(req, `${draftBasePath}.reorderVictimSuccess`, true)
+
+    return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-victims`)
+  }
+
+  // Skip: move on
+  if (action === 'skip') {
+    return res.redirect(`/cases/${caseId}/indictment/counts/date-and-charges`)
+  }
+
+  // Save and continue: compute canonical ordered selection for this count + update case default
   const orderedSelectedVictimIds = buildOrderedIds(
     draftCount.selectedVictimIds || [],
     rawOrder,
-    _case.victims || []
+    victims
   )
 
   draftCount.orderedSelectedVictimIds = orderedSelectedVictimIds
@@ -1818,6 +1911,7 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
       text: 'Your draft count has been added to the indictment.'
     })
 
-    return res.redirect(`/cases/${caseId}/indictment`)
+    return res.redirect(`/cases/${caseId}/indictment/counts/added`)
+
   })
 }

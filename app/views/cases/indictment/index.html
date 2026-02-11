@@ -1,4 +1,4 @@
-{# /cases/indictment/index.html #}
+{# app/views/cases/indictment/index.html #}
 
 {% extends "layouts/main.html" %}
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -22,10 +22,13 @@
         <a href="/cases/{{ _case.id }}/indictment/counts/charges" class="govuk-button">
           Build indictment
         </a>
-
       </div>
 
-      {# Defendants from Prisma (truth for names + ids) #}
+      {# ------------------------------------------------------------
+         Values for summary list
+         ------------------------------------------------------------ #}
+
+      {# Defendants #}
       {% set defendantsValue %}
         <ul class="govuk-list govuk-!-margin-bottom-0">
           {% for defendant in _case.defendants %}
@@ -34,13 +37,12 @@
         </ul>
       {% endset %}
 
-      {# Victims from Prisma #}
+      {# Victims #}
       {% set victimsValue %}
         {% if _case.victims and _case.victims.length %}
           <ul class="govuk-list govuk-!-margin-bottom-0">
             {% for victim in _case.victims %}
               <li>
-                {# Be defensive about field names #}
                 {% if victim.firstName or victim.lastName %}
                   {{ victim.firstName }} {{ victim.lastName }}
                 {% elif victim.name %}
@@ -56,7 +58,7 @@
         {% endif %}
       {% endset %}
 
-      {# Witnesses (only if your case model includes them) #}
+      {# Witnesses #}
       {% set witnessesValue %}
         {% if _case.witnesses and _case.witnesses.length %}
           <ul class="govuk-list govuk-!-margin-bottom-0">
@@ -77,7 +79,7 @@
         {% endif %}
       {% endset %}
 
-      {# Charges from Prisma (deduped in route helper) #}
+      {# Police charges #}
       {% set chargesValue %}
         {% if caseChargeOptions and caseChargeOptions.length %}
           <ul class="govuk-list govuk-!-margin-bottom-0">
@@ -96,8 +98,9 @@
         {% endif %}
       {% endset %}
 
-
-      {# Indictment status tag class #}
+      {# ------------------------------------------------------------
+         Indictment status tag class
+         ------------------------------------------------------------ #}
       {% set countsTagClass = "" %}
       {% if indictment.status == "Completed" %}
         {% set countsTagClass = "govuk-tag--green" %}
@@ -107,20 +110,18 @@
         {% set countsTagClass = "govuk-tag--yellow" %}
       {% endif %}
 
-      {# Conditional link for View indictment #}
+      {# ------------------------------------------------------------
+         Indictment row (conditional action)
+         ------------------------------------------------------------ #}
       {% if indictment.status == "In progress" %}
+
         {% set viewIndictmentLink %}
           <a class="govuk-link govuk-link--no-visited-state"
-             href="/cases/{{ _case.id }}/indictment/show">
+             href="/cases/{{ _case.id }}/indictment/preview">
             View indictment
           </a>
         {% endset %}
-      {% else %}
-        {% set viewIndictmentLink = null %}
-      {% endif %}
 
-      {# Build status row #}
-      {% if indictment.status == "In progress" %}
         {% set indictmentRow = {
           key: { text: "Indictment status" },
           value: {
@@ -135,7 +136,9 @@
             ]
           }
         } %}
+
       {% else %}
+
         {% set indictmentRow = {
           key: { text: "Indictment status" },
           value: {
@@ -145,32 +148,81 @@
             })
           }
         } %}
+
       {% endif %}
+
+      {# ------------------------------------------------------------
+         Counts row (ONLY when In progress)
+         - value = counts.length (defensive)
+         - action link = View counts -> /indictment/counts/added
+         ------------------------------------------------------------ #}
+
+
+        {# Counts length from indictment (defensive) #}
+        {% set countsLength = 0 %}
+        {% if indictment and indictment.counts and indictment.counts.length %}
+          {% set countsLength = indictment.counts.length %}
+        {% endif %}
+
+
+      {% if indictment.status == "In progress" %}
+
+        {% set viewCountsLink %}
+          <a class="govuk-link govuk-link--no-visited-state"
+             href="/cases/{{ _case.id }}/indictment/counts/added">
+            View counts
+          </a>
+        {% endset %}
+
+        {% set countsRow = {
+          key: { text: "Counts" },
+          value: { text: countsLength },
+          actions: {
+            items: [
+              { html: viewCountsLink }
+            ]
+          }
+        } %}
+
+      {% endif %}
+
+      {# ------------------------------------------------------------
+         Build rows array (avoid inline {% if %} inside rows: [ ])
+         ------------------------------------------------------------ #}
+      {% set summaryRows = [] %}
+
+      {% set _ = summaryRows.push(indictmentRow) %}
+
+      {% if indictment.status == "In progress" %}
+        {% set _ = summaryRows.push(countsRow) %}
+      {% endif %}
+
+      {% set _ = summaryRows.push({
+        key: { text: "Defendant(s)" },
+        value: { html: defendantsValue }
+      }) %}
+
+      {% set _ = summaryRows.push({
+        key: { text: "Victim(s)" },
+        value: { html: victimsValue }
+      }) %}
+
+      {% set _ = summaryRows.push({
+        key: { text: "Witness(es)" },
+        value: { html: witnessesValue }
+      }) %}
+
+      {% set _ = summaryRows.push({
+        key: { text: "Police charges" },
+        value: { html: chargesValue }
+      }) %}
 
       <div class="app-list">
         <div class="app-list__item">
 
           {{ govukSummaryList({
             classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
-            rows: [
-              indictmentRow,
-              {
-                key: { text: "Defendant(s)" },
-                value: { html: defendantsValue }
-              },
-              {
-                key: { text: "Victim(s)" },
-                value: { html: victimsValue }
-              },
-              {
-                key: { text: "Witness(es)" },
-                value: { html: witnessesValue }
-              },
-              {
-                key: { text: "Police charges" },
-                value: { html: chargesValue }
-              }
-            ]
+            rows: summaryRows
           }) }}
 
         </div>
