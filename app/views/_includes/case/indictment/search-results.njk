@@ -11,10 +11,10 @@
           <div class="govuk-radios__item app-precedent-result">
             <input class="govuk-radios__input"
                    id="selectedParticularsChargeCode-{{ loop.index }}"
-                   name="selectedParticularsChargeCode"
+                   name="selectedPrecedentId"
                    type="radio"
                    value="{{ r.id }}"
-                   {% if draftCount.selectedParticularsChargeCode and draftCount.selectedParticularsChargeCode == r.id %}checked{% endif %}>
+                   {% if draftCount.selectedPrecedentId and draftCount.selectedPrecedentId == r.id %}checked{% endif %}>
 
             <label class="govuk-label govuk-radios__label govuk-body-s"
                    for="selectedParticularsChargeCode-{{ loop.index }}">

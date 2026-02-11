@@ -22,44 +22,48 @@
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       {# ----------------------------
-         Helpers for display values
-         ---------------------------- #}
+        Precedent summary (from session)
+        - precedentSelection is a chargeLibrary entry
+        ---------------------------- #}
 
+      {% set precedentText = "" %}
 
-     {# ----------------------------
-      Precedent charge or offence
-      ---------------------------- #}
+      {% if draftCount.precedentSelection %}
 
-{# ----------------------------
-   Precedent summary (from session)
-   ---------------------------- #}
+        {# IPP code = chargeCode in library #}
+        {% set precedentIpp = draftCount.precedentSelection.chargeCode or "—" %}
 
-{% set precedentText = "" %}
-{% if draftCount.precedentSelection %}
-  {% set precedentText =
-    (draftCount.precedentSelection.ippCode or "—")
-    + " · " + (draftCount.precedentSelection.statuteName or "—")
-    + " · " + (draftCount.precedentSelection.offence or "—")
-  %}
-{% endif %}
+        {# Statute name = statute.act (fallback to statute.name/title if your JSON differs) #}
+        {% set precedentStatute = "—" %}
+        {% if draftCount.precedentSelection.statute %}
+          {% set precedentStatute = draftCount.precedentSelection.statute.act
+            or draftCount.precedentSelection.statute.name
+            or draftCount.precedentSelection.statute.title
+            or "—"
+          %}
+        {% endif %}
 
-{% set hasPrecedent = precedentText and (precedentText | trim) %}
+        {# Offence = label (fallback to statementOfOffence) #}
+        {% set precedentOffence = draftCount.precedentSelection.label
+          or draftCount.precedentSelection.statementOfOffence
+          or "—"
+        %}
 
-{% set precedentRowValue = { text: "None added" } %}
+        {% set precedentText = precedentIpp + " · " + precedentStatute + " · " + precedentOffence %}
 
-{% if hasPrecedent %}
-  {% set precedentRowValue = { text: precedentText } %}
-{% endif %}
+      {% endif %}
 
+      {% set hasPrecedent = precedentText and (precedentText | trim) %}
 
-{% set precedentActionText = "Add to count" %}
-{% if hasPrecedent %}
-  {% set precedentActionText = "Change" %}
-{% endif %}
+      {% set precedentRowValue = { text: "None added" } %}
+      {% if hasPrecedent %}
+        {% set precedentRowValue = { text: precedentText } %}
+      {% endif %}
 
-
-
-
+      {% set precedentActionText = "Add to count" %}
+      {% if hasPrecedent %}
+        {% set precedentActionText = "Change" %}
+      {% endif %}
 
 
 
