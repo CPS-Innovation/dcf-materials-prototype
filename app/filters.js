@@ -1,4 +1,4 @@
-//
+// filters.js
 // For guidance on how to create filters see:
 // https://prototype-kit.service.gov.uk/docs/filters
 //
@@ -52,6 +52,84 @@ addFilter('capitalize', str => {
 addFilter('isoDateString', date => {
   return date.toISOString()
 })
+
+addFilter('govukDate', value => {
+  if (!value) return ''
+  const d = (value instanceof Date) ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(d)
+})
+
+addFilter('govukDateTime', value => {
+  if (!value) return ''
+  const d = (value instanceof Date) ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+
+  const datePart = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(d)
+
+  const hours = d.getHours()
+  const mins = d.getMinutes()
+
+  // Don’t show time if it’s midnight
+  if (hours === 0 && mins === 0) return datePart
+
+  const timePart = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(d)
+
+  return `${datePart} at ${timePart}`
+})
+
+
+addFilter('isoDateString', value => {
+  if (!value) return ''
+  const d = (value instanceof Date) ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toISOString()
+})
+
+
+// Replacement for the missing govukDateTime filter
+// Outputs e.g. "11 February 2026 at 14:30" or just "11 February 2026" if midnight
+addFilter('govukDateTime', value => {
+  if (!value) return ''
+  const d = (value instanceof Date) ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+
+  const datePart = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(d)
+
+  const hours = d.getHours()
+  const mins = d.getMinutes()
+
+  // If time is exactly midnight, don't show time
+  if (hours === 0 && mins === 0) {
+    return datePart
+  }
+
+  const timePart = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(d)
+
+  return `${datePart} at ${timePart}`
+})
+
 
 addFilter('formatNumber', number => {
   return Number(number).toLocaleString('en-GB')

@@ -13,7 +13,6 @@
     "@ministryofjustice/frontend": "^6.0.0",
     "@prisma/client": "^6.16.2",
     "@x-govuk/govuk-prototype-components": "^5.0.2",
-    "@x-govuk/govuk-prototype-filters": "^2.0.0",
     "bcrypt": "^6.0.0",
     "connect-flash": "^0.1.1",
     "exceljs": "^4.4.0",
