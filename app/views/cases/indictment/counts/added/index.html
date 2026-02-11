@@ -1,0 +1,85 @@
+{# /cases/indictment/counts/added/index.html #}
+{% extends "layouts/main.html" %}
+
+{% set pageName = "Counts (" + (counts | length) + ")" %}
+
+{% block beforeContent %}
+  {{ govukBreadcrumbs({
+    items: [
+      {
+        text: "Indictments",
+        href: "/cases/" + _case.id + "/indictment"
+      },
+      {
+        text: "Counts"
+      }
+    ]
+  }) }}
+{% endblock %}
+
+
+{% block content %}
+
+  <div class="govuk-grid-row">
+  <div class="govuk-grid-column-full">
+
+
+    {{ govukNotificationBanner({
+      type: "success",
+      titleText: "Success",
+      html: "<p class='govuk-notification-banner__heading'>Draft count added to Indictment</p>"
+    }) }}
+
+      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <div class="govuk-button-group">
+        {{ govukButton({
+          text: "Add another count",
+          href: "/cases/" + _case.id + "/indictment/counts/date-and-charges"
+        }) }}
+
+        <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ _case.id }}/indictment/preview">
+          Preview indictment
+        </a>
+      </div>
+
+
+
+        {% if addedCount %}
+
+        {{ govukSummaryList({
+          card: {
+            title: {
+              text: "Count " + (counts | length)
+            },
+            actions: {
+              items: [
+                { href: "#", text: "Edit", visuallyHiddenText: "count" },
+                { href: "#", text: "Remove", visuallyHiddenText: "count" },
+                { href: "#", text: "Duplicate", visuallyHiddenText: "count" }
+              ]
+            }
+          },
+          rows: [
+            {
+              key: { text: "Statement of offence" },
+              value: { html: addedCount.statementOfOffenceText or "—" }
+            },
+            {
+              key: { text: "Particulars of offence" },
+              value: { html: addedCount.particularsOfOffenceText or "—" }
+            }
+          ]
+        }) }}
+
+      {% else %}
+        <p class="govuk-body">No count has been added yet.</p>
+      {% endif %}
+
+
+    
+    </div>
+  </div>
+
+{% endblock %}

@@ -1818,6 +1818,7 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
       text: 'Your draft count has been added to the indictment.'
     })
 
-    return res.redirect(`/cases/${caseId}/indictment`)
+    return res.redirect(`/cases/${caseId}/indictment/counts/added`)
+
   })
 }
