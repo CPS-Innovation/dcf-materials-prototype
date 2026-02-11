@@ -9,9 +9,15 @@
     text: "Materials",
     href: "/cases/:caseId/material" | replace(':caseId', _case.id),
     current: secondaryNavId == 'materials'
+  },{
+    text: "Indictments",
+    href: "/cases/:caseId/indictment" | replace(':caseId', _case.id),
+    current: secondaryNavId == 'indictment'
   }, {
     text: "Reviews",
     href: "/cases/:caseId/reviews" | replace(':caseId', _case.id),
     current: secondaryNavId == 'reviews'
   }]
 })}}
+
+

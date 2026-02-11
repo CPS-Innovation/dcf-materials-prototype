@@ -1,0 +1,17 @@
+.app-precedent-result {
+  align-items: flex-start;
+}
+
+.app-precedent-summary {
+  margin: 0;
+}
+
+.app-precedent-summary .govuk-summary-list__key {
+  width: 10em; /* keeps keys aligned like your example */
+}
+
+.app-precedent-summary .govuk-summary-list__key,
+.app-precedent-summary .govuk-summary-list__value {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}

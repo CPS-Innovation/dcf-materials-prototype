@@ -1,0 +1,35 @@
+{# _includes/case/indictment/search-form.njk #}
+<div class="app-search-form">
+  <form method="get"
+        action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence"
+        novalidate>
+
+    {% if returnTo %}
+      <input type="hidden" name="returnTo" value="{{ returnTo }}">
+    {% endif %}
+
+    {{ govukInput({
+      id: "precedentSearchKeywords",
+      name: "precedentSearchKeywords",
+      label: {
+        text: "Search by IPP code, statute name or offence",
+        classes: "govuk-label--s app-search-form__label"
+      },
+      value: precedentSearchKeywords or ""
+    }) }}
+
+    {{ govukButton({
+      text: "Search",
+      classes: "app-search-form__button"
+    }) }}
+  </form>
+
+  {% if precedentSearchKeywords %}
+    <p class="govuk-!-margin-top-2 govuk-!-margin-bottom-0">
+      <a class="govuk-link--no-visited-state"
+         href="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence{% if returnTo %}?returnTo={{ returnTo | urlencode }}{% endif %}">
+        Clear search
+      </a>
+    </p>
+  {% endif %}
+</div>

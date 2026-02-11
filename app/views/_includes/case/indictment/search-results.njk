@@ -1,0 +1,52 @@
+{# _includes/case/indictment/search-results.njk #}
+
+{% if precedentSearchKeywords %}
+  <div class="govuk-!-margin-top-6" id="precedentSearchResults" aria-live="polite">
+    {% if precedentResults and precedentResults.length %}
+      <h2 class="govuk-heading-s">Search results: {{ precedentResults.length }} {% if precedentResults.length != 1 %}{% endif %}</h2>
+
+
+      <div class="govuk-radios" data-module="govuk-radios">
+        {% for r in precedentResults %}
+          <div class="govuk-radios__item app-precedent-result">
+            <input class="govuk-radios__input"
+                   id="selectedParticularsChargeCode-{{ loop.index }}"
+                   name="selectedParticularsChargeCode"
+                   type="radio"
+                   value="{{ r.id }}"
+                   {% if draftCount.selectedParticularsChargeCode and draftCount.selectedParticularsChargeCode == r.id %}checked{% endif %}>
+
+            <label class="govuk-label govuk-radios__label govuk-body-s"
+                   for="selectedParticularsChargeCode-{{ loop.index }}">
+              {{ govukSummaryList({
+                classes: "govuk-summary-list--no-border app-precedent-summary",
+                rows: [
+                  {
+                    key: { text: "IPP code" },
+                    value: { text: r.ippCode or "—" }
+                  },
+                  {
+                    key: { text: "Statute name" },
+                    value: { text: r.statuteName or "—" }
+                  },
+                  {
+                    key: { text: "Offence" },
+                    value: { text: r.offence or "—" }
+                  }
+                ]
+              }) }}
+            </label>
+          </div>
+
+          {% if not loop.last %}
+            <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+          {% endif %}
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <h2 class="govuk-heading-m">No results found</h2>
+      <p class="govuk-body">Try a different search term, or check the spelling.</p>
+    {% endif %}
+  </div>
+{% endif %}
