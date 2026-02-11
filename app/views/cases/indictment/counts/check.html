@@ -1,0 +1,305 @@
+{# /app/views/cases/indictment/counts/check.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Check and edit count' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {# ----------------------------
+         Helpers for display values
+         ---------------------------- #}
+
+
+     {# ----------------------------
+      Precedent charge or offence
+      ---------------------------- #}
+
+{# ----------------------------
+   Precedent summary (from session)
+   ---------------------------- #}
+
+{% set precedentText = "" %}
+{% if draftCount.precedentSelection %}
+  {% set precedentText =
+    (draftCount.precedentSelection.ippCode or "—")
+    + " · " + (draftCount.precedentSelection.statuteName or "—")
+    + " · " + (draftCount.precedentSelection.offence or "—")
+  %}
+{% endif %}
+
+{% set hasPrecedent = precedentText and (precedentText | trim) %}
+
+{% set precedentRowValue = { text: "None added" } %}
+
+{% if hasPrecedent %}
+  {% set precedentRowValue = { text: precedentText } %}
+{% endif %}
+
+
+{% set precedentActionText = "Add to count" %}
+{% if hasPrecedent %}
+  {% set precedentActionText = "Change" %}
+{% endif %}
+
+
+
+
+
+
+
+      {# Date display: single vs range #}
+      {% set dateDisplay = "" %}
+      {% if draftCount.dateType == "single" and draftCount.offenceDate %}
+        {% set dateDisplay = (draftCount.offenceDate.day or "xx") + " - " + (draftCount.offenceDate.month or "xx") + " - " + (draftCount.offenceDate.year or "xx") %}
+      {% elif draftCount.dateType == "range" and draftCount.offenceDateFrom and draftCount.offenceDateTo %}
+        {% set fromDisplay = (draftCount.offenceDateFrom.day or "xx") + " - " + (draftCount.offenceDateFrom.month or "xx") + " - " + (draftCount.offenceDateFrom.year or "xx") %}
+        {% set toDisplay = (draftCount.offenceDateTo.day or "xx") + " - " + (draftCount.offenceDateTo.month or "xx") + " - " + (draftCount.offenceDateTo.year or "xx") %}
+        {% set dateDisplay = fromDisplay + " to " + toDisplay %}
+      {% else %}
+        {% set dateDisplay = "Not provided" %}
+      {% endif %}
+
+      {# Statement of offence: prefer user-edited text, else charge label #}
+      {% set statementDisplay = (draftCount.statementOfOffenceText or draftCount.chargeLabel or "Not provided") %}
+
+      {# Particulars: user text #}
+      {% set particularsDisplay = (draftCount.particularsOfOffenceText or "Not provided") %}
+
+      {# ------------------------------------------------------------
+        Assigned ids (normalise to strings so `in` checks work)
+        Form POSTs store strings; Prisma ids are usually numbers.
+        ------------------------------------------------------------ #}
+
+      {# Nunjucks `map("string")` may not exist in your setup, so do it manually #}
+
+      {% set assignedDefendantIdsRaw = draftCount.assignedDefendantIds or [] %}
+      {% set assignedDefendantIds = [] %}
+      {% for id in assignedDefendantIdsRaw %}
+        {% set _ = assignedDefendantIds.push(id | string) %}
+      {% endfor %}
+
+      {% set assignedVictimIdsRaw = draftCount.assignedVictimIds or [] %}
+      {% set assignedVictimIds = [] %}
+      {% for id in assignedVictimIdsRaw %}
+        {% set _ = assignedVictimIds.push(id | string) %}
+      {% endfor %}
+
+      {% set assignedWitnessIdsRaw = draftCount.assignedWitnessIds or [] %}
+      {% set assignedWitnessIds = [] %}
+      {% for id in assignedWitnessIdsRaw %}
+        {% set _ = assignedWitnessIds.push(id | string) %}
+      {% endfor %}
+
+      {# ------------------------------------------------------------
+        Resolve names using string comparisons
+        ------------------------------------------------------------ #}
+
+      {% set assignedDefendantNames = [] %}
+      {% for d in (_case.defendants or []) %}
+        {% if (d.id | string) in assignedDefendantIds %}
+          {% set _ = assignedDefendantNames.push((((d.firstName or "") + " " + (d.lastName or "")) | trim)) %}
+        {% endif %}
+      {% endfor %}
+
+      {% set assignedVictimNames = [] %}
+      {% for v in (_case.victims or []) %}
+        {% if (v.id | string) in assignedVictimIds %}
+          {% set _ = assignedVictimNames.push((((v.firstName or "") + " " + (v.lastName or "")) | trim)) %}
+        {% endif %}
+      {% endfor %}
+
+      {% set assignedWitnessNames = [] %}
+      {% for w in (_case.witnesses or []) %}
+        {% if (w.id | string) in assignedWitnessIds %}
+          {% set _ = assignedWitnessNames.push((((w.firstName or "") + " " + (w.lastName or "")) | trim)) %}
+        {% endif %}
+      {% endfor %}
+
+
+
+      {# Build HTML lists (no bullets) #}
+      {% set defendantsHtml %}
+        <ul class="govuk-list govuk-!-margin-bottom-0">
+          {% for n in assignedDefendantNames %}
+            <li>{{ n }}</li>
+          {% endfor %}
+        </ul>
+      {% endset %}
+
+      {% set victimsHtml %}
+        <ul class="govuk-list govuk-!-margin-bottom-0">
+          {% for n in assignedVictimNames %}
+            <li>{{ n }}</li>
+          {% endfor %}
+        </ul>
+      {% endset %}
+
+      {% set witnessesHtml %}
+        <ul class="govuk-list govuk-!-margin-bottom-0">
+          {% for n in assignedWitnessNames %}
+            <li>{{ n }}</li>
+          {% endfor %}
+        </ul>
+      {% endset %}
+
+      {# ----------------------------
+         Summary list rows
+         ---------------------------- #}
+
+      {% set rows = [] %}
+
+
+      {% set _ = rows.push({
+        key: { text: "Precedent charge or offence" },
+        value: precedentRowValue,
+        actions: {
+          items: [{
+            text: precedentActionText,
+            href: "/cases/" + _case.id + "/indictment/counts/precedent-charges-or-offence?returnTo=" + ("/cases/" + _case.id + "/indictment/counts/check" | urlencode)
+          }]
+        }
+      }) %}
+
+
+
+      {# Date #}
+      {% set _ = rows.push({
+        key: { text: "Date" },
+        value: { text: dateDisplay },
+        actions: {
+          items: [{
+            text: "Change",
+            href: "/cases/" + _case.id + "/indictment/counts/date-and-charges?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+          }]
+        }
+      }) %}
+
+      {# Statement of offence #}
+      {% set _ = rows.push({
+        key: { text: "Statement of offence" },
+        value: { text: statementDisplay },
+        actions: {
+          items: [{
+            text: "Change",
+            href: "/cases/" + _case.id + "/indictment/counts/offence-and-particulars?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+          }]
+        }
+      }) %}
+
+      {# Particulars #}
+      {% set _ = rows.push({
+        key: { text: "Particulars" },
+        value: { text: particularsDisplay },
+        actions: {
+          items: [{
+            text: "Change",
+            href: "/cases/" + _case.id + "/indictment/counts/offence-and-particulars?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+          }]
+        }
+      }) %}
+
+      {# Defendants (only if they submitted something) #}
+      {# Defendants #}
+      {% set hasDefendants = assignedDefendantIds and assignedDefendantIds.length %}
+
+      {% set defendantsRowValue = { text: "None added" } %}
+      {% set defendantsActionText = "Add to count" %}
+
+      {% if hasDefendants %}
+        {% set defendantsRowValue = { html: defendantsHtml } %}
+        {% set defendantsActionText = "Change" %}
+      {% endif %}
+
+      {% set _ = rows.push({
+        key: { text: "Defendants" },
+        value: defendantsRowValue,
+        actions: {
+          items: [{
+            text: defendantsActionText,
+            href: "/cases/" + _case.id + "/indictment/assign/defendants?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+          }]
+        }
+      }) %}
+
+
+
+      {# Victim (only if they submitted something) #}
+      {# Victims #}
+      {% set hasVictims = assignedVictimIds and assignedVictimIds.length %}
+
+      {% set victimsRowValue = { text: "None added" } %}
+      {% set victimsActionText = "Add to count" %}
+
+      {% if hasVictims %}
+        {% set victimsRowValue = { html: victimsHtml } %}
+        {% set victimsActionText = "Change" %}
+      {% endif %}
+
+      {% set _ = rows.push({
+        key: { text: "Victim" },
+        value: victimsRowValue,
+        actions: {
+          items: [{
+            text: victimsActionText,
+            href: "/cases/" + _case.id + "/indictment/assign/victims?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+          }]
+        }
+      }) %}
+
+
+
+      {# Witnesses (only if they submitted something) #}
+      {# Witnesses #}
+      {% set hasWitnesses = assignedWitnessIds and assignedWitnessIds.length %}
+
+      {% set witnessesRowValue = { text: "None added" } %}
+      {% set witnessesActionText = "Add to count" %}
+
+      {% if hasWitnesses %}
+        {% set witnessesRowValue = { html: witnessesHtml } %}
+        {% set witnessesActionText = "Change" %}
+      {% endif %}
+
+      {% set _ = rows.push({
+        key: { text: "Witnesses" },
+        value: witnessesRowValue,
+        actions: {
+          items: [{
+            text: witnessesActionText,
+            href: "/cases/" + _case.id + "/indictment/assign/witnesses?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+          }]
+        }
+      }) %}
+
+
+
+      {{ govukSummaryList({
+        classes: "",
+        rows: rows
+      }) }}
+
+      <form method="post" novalidate class="govuk-!-margin-top-6">
+        {{ govukButton({
+          text: "Save and continue"
+        }) }}
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

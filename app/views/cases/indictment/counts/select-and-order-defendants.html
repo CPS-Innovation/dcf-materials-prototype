@@ -1,0 +1,127 @@
+{# /cases/indictment/counts/select-and-order-defendants.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Select and order defendants' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% if showReorderSuccess %}
+        {{ govukNotificationBanner({
+          type: "success",
+          text: "Defendants reordered"
+        }) }}
+      {% endif %}
+
+      <p class="govuk-body">
+        Enter a new number for defendants you want to move to a new position.
+      </p>
+      <p class="govuk-body">
+        Defendants will move up or down to accommodate the new order when you save your changes.
+      </p>
+
+      <h2 class="govuk-heading-m">Select the defendant(s) that apply to this count</h2>
+
+      <form method="post" novalidate>
+        {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
+
+        {% set defendantItems = [] %}
+
+        {% for d in _case.defendants %}
+
+          {% set did = d.id | string %}
+
+          {# Checked state from session (string-safe) #}
+          {% set isChecked = (draftCount.selectedDefendantIds and (did in draftCount.selectedDefendantIds)) %}
+
+          {# Optional position input value (stored as a map keyed by defendant id string) #}
+          {% set orderValue = '' %}
+          {% if draftCount.defendantOrder and draftCount.defendantOrder[did] %}
+            {% set orderValue = draftCount.defendantOrder[did] %}
+          {% endif %}
+
+          {% set conditionalHtml %}
+            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
+
+              {{ govukInput({
+                id: "defendantOrder-" + did,
+                name: "defendantOrder[id-" + did + "]",
+                value: orderValue,
+                classes: "govuk-input--width-3",
+                inputmode: "numeric",
+                type: "text",
+                label: {
+                  text: "Move " + d.firstName + " " + d.lastName + " to position (optional)",
+                  classes: "govuk-label--s"
+                }
+              }) }}
+
+            </div>
+          {% endset %}
+
+          {% set _ = defendantItems.push({
+            value: did,
+            text: d.firstName + " " + d.lastName,
+            checked: isChecked,
+            conditional: { html: conditionalHtml }
+          }) %}
+
+        {% endfor %}
+
+        {{ govukCheckboxes({
+          name: "selectedDefendantIds",
+          classes: "app-checkboxes--dividers",
+          items: defendantItems
+        }) }}
+
+        {# Tiny friction: list those who will be left off the count (unchecked) #}
+        {% if showLeftOffInset and leftOffPreview.length %}
+          <div class="govuk-inset-text">
+            <p class="govuk-body govuk-!-margin-bottom-2">
+              If you save now, these defendants will be left off this count:
+            </p>
+
+            <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+              {% for name in leftOffPreview %}
+                <li>{{ name }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Save and continue" }) }}
+
+          {{ govukButton({
+            text: "Refresh and reorder",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "reorder"
+          }) }}
+
+          {{ govukButton({
+            text: "Skip and do later",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "skip"
+          }) }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

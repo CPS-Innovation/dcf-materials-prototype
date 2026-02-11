@@ -1,0 +1,71 @@
+{# /cases/indictment/assign/witnesses.html #}
+
+{% extends "layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Assign witnesses' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <h2 class="govuk-heading-m">Select all witnesses that apply to this count</h2>
+
+      <form method="post" novalidate>
+        {% if returnTo %}
+          <input type="hidden" name="returnTo" value="{{ returnTo }}">
+        {% endif %}
+
+        {% set witnessItems = [] %}
+
+        {% for w in (_case.witnesses or []) %}
+
+          {% set wid = w.id | string %}
+
+          {% set fullName = ((w.firstName or "") + " " + (w.lastName or "")) | trim %}
+          {% if not fullName %}
+            {% set fullName = "Witness " + loop.index %}
+          {% endif %}
+
+          {# Checked state from session (string-safe) #}
+          {% set isChecked = (draftCount.assignedWitnessIds and (wid in draftCount.assignedWitnessIds)) %}
+
+          {% set _ = witnessItems.push({
+            value: wid,
+            text: fullName,
+            checked: isChecked
+          }) %}
+
+        {% endfor %}
+
+        {% if _case.witnesses and _case.witnesses.length %}
+          {{ govukCheckboxes({
+            name: "assignedWitnessIds",
+            classes: "app-checkboxes--dividers",
+            items: witnessItems
+          }) }}
+        {% else %}
+          <p class="govuk-body">No witnesses have been added to this case.</p>
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Save and continue" }) }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

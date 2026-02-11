@@ -1,0 +1,181 @@
+{# /cases/indictment/index.html #}
+
+{% extends "layouts/main.html" %}
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Indictments' %}
+
+{% block beforeContent %}
+  {% include "_includes/case/identity-bar.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% include "_includes/success-banner.njk" %}
+  {% include "_includes/case/dcf-navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <div class="govuk-button-group">
+        <a href="/cases/{{ _case.id }}/indictment/counts/charges" class="govuk-button">
+          Build indictment
+        </a>
+
+      </div>
+
+      {# Defendants from Prisma (truth for names + ids) #}
+      {% set defendantsValue %}
+        <ul class="govuk-list govuk-!-margin-bottom-0">
+          {% for defendant in _case.defendants %}
+            <li>{{ defendant.firstName }} {{ defendant.lastName }}</li>
+          {% endfor %}
+        </ul>
+      {% endset %}
+
+      {# Victims from Prisma #}
+      {% set victimsValue %}
+        {% if _case.victims and _case.victims.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for victim in _case.victims %}
+              <li>
+                {# Be defensive about field names #}
+                {% if victim.firstName or victim.lastName %}
+                  {{ victim.firstName }} {{ victim.lastName }}
+                {% elif victim.name %}
+                  {{ victim.name }}
+                {% else %}
+                  Victim {{ loop.index }}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">None added</p>
+        {% endif %}
+      {% endset %}
+
+      {# Witnesses (only if your case model includes them) #}
+      {% set witnessesValue %}
+        {% if _case.witnesses and _case.witnesses.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for witness in _case.witnesses %}
+              <li>
+                {% if witness.firstName or witness.lastName %}
+                  {{ witness.firstName }} {{ witness.lastName }}
+                {% elif witness.name %}
+                  {{ witness.name }}
+                {% else %}
+                  Witness {{ loop.index }}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">None added</p>
+        {% endif %}
+      {% endset %}
+
+      {# Charges from Prisma (deduped in route helper) #}
+      {% set chargesValue %}
+        {% if caseChargeOptions and caseChargeOptions.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for c in caseChargeOptions %}
+              <li>
+                {% if c.chargeCode %}
+                  {{ c.chargeCode }}: {{ c.description }}
+                {% else %}
+                  {{ c.description }}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">None added</p>
+        {% endif %}
+      {% endset %}
+
+
+      {# Indictment status tag class #}
+      {% set countsTagClass = "" %}
+      {% if indictment.status == "Completed" %}
+        {% set countsTagClass = "govuk-tag--green" %}
+      {% elif indictment.status == "In progress" %}
+        {% set countsTagClass = "govuk-tag--blue" %}
+      {% else %}
+        {% set countsTagClass = "govuk-tag--yellow" %}
+      {% endif %}
+
+      {# Conditional link for View indictment #}
+      {% if indictment.status == "In progress" %}
+        {% set viewIndictmentLink %}
+          <a class="govuk-link govuk-link--no-visited-state"
+             href="/cases/{{ _case.id }}/indictment/show">
+            View indictment
+          </a>
+        {% endset %}
+      {% else %}
+        {% set viewIndictmentLink = null %}
+      {% endif %}
+
+      {# Build status row #}
+      {% if indictment.status == "In progress" %}
+        {% set indictmentRow = {
+          key: { text: "Indictment status" },
+          value: {
+            html: govukTag({
+              text: indictment.status,
+              classes: countsTagClass + " govuk-!-font-size-16"
+            })
+          },
+          actions: {
+            items: [
+              { html: viewIndictmentLink }
+            ]
+          }
+        } %}
+      {% else %}
+        {% set indictmentRow = {
+          key: { text: "Indictment status" },
+          value: {
+            html: govukTag({
+              text: indictment.status,
+              classes: countsTagClass + " govuk-!-font-size-16"
+            })
+          }
+        } %}
+      {% endif %}
+
+      <div class="app-list">
+        <div class="app-list__item">
+
+          {{ govukSummaryList({
+            classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+            rows: [
+              indictmentRow,
+              {
+                key: { text: "Defendant(s)" },
+                value: { html: defendantsValue }
+              },
+              {
+                key: { text: "Victim(s)" },
+                value: { html: victimsValue }
+              },
+              {
+                key: { text: "Witness(es)" },
+                value: { html: witnessesValue }
+              },
+              {
+                key: { text: "Police charges" },
+                value: { html: chargesValue }
+              }
+            ]
+          }) }}
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+{% endblock %}
