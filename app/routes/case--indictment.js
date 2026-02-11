@@ -388,7 +388,7 @@ function searchChargeLibrary(chargeLibrary, keywords) {
     // Flow control: if fewer than 2 defendants, skip ordering step
     const defendantCount = Array.isArray(_case.defendants) ? _case.defendants.length : 0
     if (defendantCount < 2) {
-      return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-or-offence`)
+      return res.redirect(`/cases/${caseId}/indictment/counts/date-and-charges`)
     }
 
     return res.redirect(`/cases/${caseId}/indictment/counts/select-and-order-defendants`)
