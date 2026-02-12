@@ -9,7 +9,7 @@
 
       <p><a href="/account/password/reset">Reset your password</a> if you’ve forgotten it.</p>
 
-      <form method="post" novalidate>
+      <form method="post" action="/account/sign-in" novalidate>
 
         {{ govukInput({
           id: "signIn[emailAddress]",

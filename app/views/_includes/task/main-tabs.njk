@@ -70,6 +70,57 @@
     </div>
   </div>
 
+  {# ------------------------------------
+     Hard-coded “jump to indictments” row
+     ------------------------------------ #}
+
+  {% set pinnedCaseId = 1 %}
+  {% set pinnedCaseReference = "99AA000001/1" %}
+  {% set pinnedDefendant = "Victor Danvers and 1 more" %}
+
+  <div class="app-list">
+    <div class="app-list__item">
+
+      {% set pinnedCaseRefLink %}
+        <a href="/cases/{{ pinnedCaseId }}/details"
+          class="govuk-link govuk-link--no-visited-state">
+          {{ pinnedCaseReference }}
+        </a>
+      {% endset %}
+
+      {% set pinnedStartLink %}
+        <a class="govuk-link govuk-link--no-visited-state govuk-!-margin-bottom-0"
+          href="/cases/{{ pinnedCaseId }}/indictment">
+          Start task
+        </a>
+      {% endset %}
+
+      {{ govukSummaryList({
+        classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+        rows: [
+          {
+            key: { text: "Task" },
+            value: { text: "Indictments" },
+            actions: {
+              items: [
+                { html: pinnedStartLink }
+              ]
+            }
+          },
+          {
+            key: { text: "Case reference number" },
+            value: { html: pinnedCaseRefLink }
+          },
+          {
+            key: { text: "Defendant" },
+            value: { text: pinnedDefendant }
+          }
+        ]
+      }) }}
+
+    </div>
+  </div>
+
   {# Task list beneath filters #}
   {% if tasks.length %}
     <div class="app-list">
@@ -88,15 +139,12 @@
             {% endif %}
           {% endset %}
 
-      
-
-            <div class="app-list__tag">
-              {# {{ govukTag({ text: task.severity, classes: task.severity | severityTagClass })}} #}
-              {# {% if task.isUrgent %}
-                {{ govukTag({ text: 'Urgent', classes: 'govuk-tag--red govuk-!-margin-left-' })}}
-              {% endif %} #}
-            </div>
-          
+          <div class="app-list__tag">
+            {# {{ govukTag({ text: task.severity, classes: task.severity | severityTagClass })}} #}
+            {# {% if task.isUrgent %}
+              {{ govukTag({ text: 'Urgent', classes: 'govuk-tag--red govuk-!-margin-left-' })}}
+            {% endif %} #}
+          </div>
 
           {% set defendantsValue %}
             {{task.case.defendants[0].firstName}} {{task.case.defendants[0].lastName}}
@@ -132,7 +180,6 @@
             </a>
           {% endset %}
 
-
           {# -----------------------------
             Start task link - route is in case--materials.js
             ----------------------------- #}
@@ -165,7 +212,6 @@
               }
             ]
           }) }}
-
 
         </div>
       {% endfor %}

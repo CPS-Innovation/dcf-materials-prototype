@@ -1,4 +1,8 @@
 // app/routes/indictment/root.js
+
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
+
 const {
   _,
   fetchCase,
@@ -79,5 +83,16 @@ module.exports = router => {
           indictment
         })
       })
+
+      ///cases/:caseId/indictment/save (POST)
+      router.post('/cases/:caseId/indictment/complete', async (req, res) => {
+        const caseId = Number(req.params.caseId)
+        if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+
+        return res.redirect(`/cases/${caseId}/indictment`)
+      })
+
+
 
 }
