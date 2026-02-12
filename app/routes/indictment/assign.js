@@ -28,6 +28,10 @@ module.exports = router => {
       const byId = new Map(allDefendants.map(d => [String(d.id), d]))
 
       // Count-level selection (if present)
+      const allDefendants = Array.isArray(_case.defendants) ? _case.defendants : []
+      const byId = new Map(allDefendants.map(d => [String(d.id), d]))
+
+      // Count-level selection (if present)
       const orderedSelectedIds =
         (draftCount.orderedSelectedDefendantIds && draftCount.orderedSelectedDefendantIds.length)
           ? draftCount.orderedSelectedDefendantIds
@@ -69,6 +73,7 @@ module.exports = router => {
 
 
 
+
     // ============================================================
     // /cases/:caseId/indictment/assign/defendants (POST)
     // ============================================================
@@ -87,11 +92,11 @@ module.exports = router => {
         ? rawAssigned
         : (rawAssigned ? [rawAssigned] : [])
 
-      draftCount.assignedDefendantIds = assignedDefendantIds.map(String).filter(Boolean)
-      draftCount.lastUpdatedAt = new Date().toISOString()
+      // ✅ Normalise to strings so template membership checks work reliably
+      draftCount.assignedDefendantIds = assignedDefendantIds.map(String)
 
-      // Persist
-      _.set(req, countPath, draftCount)
+      draftCount.lastUpdatedAt = new Date().toISOString()
+      _.set(req, basePath, draftCount)
 
       // Optional: store as a draft-level default for later use
       // (does not auto-preselect unless you seed it on GET)
@@ -99,6 +104,9 @@ module.exports = router => {
 
       const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
       if (returnTo) return res.redirect(returnTo)
+
+      // Persist as the new default for the next count
+      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
 
       return res.redirect(`/cases/${caseId}/indictment/assign/victims`)
     })
