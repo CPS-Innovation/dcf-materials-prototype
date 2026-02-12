@@ -31,9 +31,16 @@ module.exports = router => {
 
       const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String)
 
-      // ✅ Never pre-check on assign (clear any old session state)
-      draftCount.assignedDefendantIds = []
-      _.set(req, countPath, draftCount)
+      // If we have a case-level default, seed a fresh count from it
+      const defaultAssignedDefendantIds =
+        (_.get(req, `${draftBasePath}.defaultAssignedDefendantIds`, []) || []).map(String)
+
+      // Only seed when the count hasn’t set anything yet
+      if (!Array.isArray(draftCount.assignedDefendantIds) || !draftCount.assignedDefendantIds.length) {
+        draftCount.assignedDefendantIds = defaultAssignedDefendantIds
+        _.set(req, countPath, draftCount)
+      }
+
 
       // ✅ Only show defendants that were selected earlier, in that exact order
       const allDefendants = _case.defendants || []
@@ -67,6 +74,11 @@ module.exports = router => {
 
       // ✅ Normalise to strings so template membership checks work reliably
       draftCount.assignedDefendantIds = assignedDefendantIds.map(String)
+
+      // Persist as the new default for the next count
+      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+      _.set(req, `${draftBasePath}.defaultAssignedDefendantIds`, draftCount.assignedDefendantIds)
+
 
       draftCount.lastUpdatedAt = new Date().toISOString()
       _.set(req, basePath, draftCount)
