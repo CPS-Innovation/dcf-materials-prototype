@@ -14,6 +14,7 @@ const {
 } = require('./_shared')
 
 module.exports = router => {
+
     // ============================================================
     // /cases/:caseId/indictment/counts/charges (GET + POST)
     // ============================================================
@@ -45,8 +46,11 @@ module.exports = router => {
       const _case = await fetchCase(caseId)
       if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+      const basePath = `${draftBasePath}.currentCount`
+
       const draftCount = _.get(req, basePath, {})
+
 
       // No default selection in the UI, so allow null here
       const countBasis = (req.body.countBasis || '').toString() || null
@@ -61,15 +65,25 @@ module.exports = router => {
         : (rawSelected ? [rawSelected] : [])
 
       if (countBasis === 'newCount') {
+        // Clear shared pool if explicitly choosing newCount
+        _.set(req, `${draftBasePath}.selectedChargeCodes`, [])
+
         draftCount.selectedChargeCodes = []
         draftCount.primaryChargeCode = null
         draftCount.chargeCode = null
         draftCount.chargeLabel = null
       } else {
+
+        // 🔥 SAVE SHARED CHARGE POOL AT INDICTMENT LEVEL
+        _.set(req, `${draftBasePath}.selectedChargeCodes`, selectedChargeCodes)
+
         draftCount.selectedChargeCodes = selectedChargeCodes
         draftCount.primaryChargeCode = selectedChargeCodes[0] || null
 
-        const primary = caseChargeOptions.find(o => String(o.chargeCode) === String(draftCount.primaryChargeCode)) || null
+        const primary = caseChargeOptions.find(o =>
+          String(o.chargeCode) === String(draftCount.primaryChargeCode)
+        ) || null
+
         if (primary) {
           draftCount.chargeCode = primary.chargeCode
           draftCount.chargeLabel = primary.description
@@ -78,6 +92,7 @@ module.exports = router => {
           draftCount.chargeLabel = null
         }
       }
+
 
       // ------------------------------------------------------------
       // Auto-seed assignments when there's nothing to reorder (0/1)
@@ -793,8 +808,19 @@ router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res)
 
   const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
 
+  const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+  // 🔥 Read shared charge pool instead of relying on currentCount
+  const sharedSelectedChargeCodes =
+    (_.get(req, `${draftBasePath}.selectedChargeCodes`, []) || []).map(String)
+
+  // If this is a fresh count (no selection yet), seed it
+  if (!draftCount.selectedChargeCodes || !draftCount.selectedChargeCodes.length) {
+    draftCount.selectedChargeCodes = sharedSelectedChargeCodes
+  }
+
+
   // ✅ Only the charges selected earlier
-  const selectedChargeCodes = (draftCount.selectedChargeCodes || []).map(String)
+  const selectedChargeCodes = sharedSelectedChargeCodes
   const selectedChargeOptions = caseChargeOptions.filter(c =>
     selectedChargeCodes.includes(String(c.chargeCode))
   )
@@ -1258,7 +1284,7 @@ router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (re
       draftCount.particularsOfOffenceText ||
       draftCount.selectedPrecedentId
 
-    if (hasAnyContent) {
+      // ✅ Always add the count on CYA submit (user explicitly confirmed save)
       indictment.counts = indictment.counts || []
       indictment.counts.push({
         createdAt: new Date().toISOString(),
@@ -1282,7 +1308,6 @@ router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (re
         selectedPrecedentId: draftCount.selectedPrecedentId || null,
         precedentSelection: draftCount.precedentSelection || null
       })
-    }
 
     indictment.lastSavedAt = new Date().toISOString()
     _.set(req, indictmentBasePath, indictment)
@@ -1298,4 +1323,67 @@ router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (re
     return res.redirect(`/cases/${caseId}/indictment/counts/added`)
 
   })
+
+  // ------------------------------------------------------------
+  // Counts home / "added" page
+  // GET + POST
+  // ------------------------------------------------------------
+
+  // Shows the counts home page (where newly created counts live)
+  router.get('/cases/:caseId/indictment/counts/added', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+    const indictmentBasePath = `session.data.indictments.${caseId}`
+    const indictment = _.get(req, indictmentBasePath, { status: 'In progress', counts: [] })
+
+    const counts = indictment.counts || []
+    const addedCount = counts.length ? counts[counts.length - 1] : null
+
+    // Pull + clear banner so it behaves like a one-time confirmation
+    const successBanner = _.get(req, 'session.data.successBanner', null)
+    _.unset(req, 'session.data.successBanner')
+
+    // ✅ IMPORTANT: render the template you uploaded
+    // Your file is "cases/indictment/counts/added/index.html"
+    return res.render('cases/indictment/counts/added/index', {
+      _case,
+      counts,
+      addedCount,
+      successBanner
+    })
+  })
+
+  /**
+   * Optional POST handler.
+   * You don’t strictly need this if your page only uses links,
+   * but having it means you can switch to buttons/forms later
+   * (e.g. “Add another count”, “Preview indictment”, “Reorder counts”).
+   */
+  router.post('/cases/:caseId/indictment/counts/added', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    // If you add a form later, post an "action" value.
+    const action = (req.body.action || '').toString()
+
+    if (action === 'preview') {
+      return res.redirect(`/cases/${caseId}/indictment/preview`)
+    }
+
+    if (action === 'reorder') {
+      return res.redirect(`/cases/${caseId}/indictment/counts/reorder`)
+    }
+
+    if (action === 'addAnother') {
+      return res.redirect(`/cases/${caseId}/indictment/counts/date-and-charges`)
+    }
+
+    // Default: just go to the counts home again
+    return res.redirect(`/cases/${caseId}/indictment/counts/added`)
+  })
+
 }
