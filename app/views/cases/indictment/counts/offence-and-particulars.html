@@ -198,14 +198,16 @@
         {# ------------------------------------------------------------
            Build tokens (actors, date, place) for template injection
            ------------------------------------------------------------ #}
-        {% set defendantsText = "[Defendant(s)]" %}
-        {% if defendantNames and defendantNames.length %}
-          {% set defendantsText = defendantNames | join(" and ") %}
-        {% endif %}
+          {% set defendantsText = "[DEFENDANT(S)]" %}
+          {% if defendantNames and defendantNames.length %}
+            {% set defendantsText = (defendantNames | join(" and ")) | upper %}
+          {% endif %}
+
+
 
         {% set victimsText = "[victim(s)]" %}
         {% if victimNames and victimNames.length %}
-          {% set victimsText = victimNames | join(" and ") %}
+          {% set victimsText = ( victimNames | join(" and ")) | upper %}
         {% endif %}
 
         {% set placeForTemplate = locationText or "[place]" %}
@@ -223,16 +225,20 @@
           {% set particularsFromStarter = particularsFromStarter | replace("[Defendant(s)]", defendantsText) %}
           {% set particularsFromStarter = particularsFromStarter | replace("[defendant(s)]", defendantsText) %}
 
+          {# Fallback: starter text often says “the defendant” instead of using tokens #}
+          {% set particularsFromStarter = particularsFromStarter | replace("the defendant", defendantsText) %}
+          {% set particularsFromStarter = particularsFromStarter | replace("The defendant", defendantsText) %}
+
           {% set particularsFromStarter = particularsFromStarter | replace("[Victim(s)]", victimsText) %}
           {% set particularsFromStarter = particularsFromStarter | replace("[victim(s)]", victimsText) %}
 
           {% set particularsFromStarter = particularsFromStarter | replace("[Place]", placeForTemplate) %}
           {% set particularsFromStarter = particularsFromStarter | replace("[place]", placeForTemplate) %}
 
-          {# Replace [date] with narrative date (single date) when available #}
           {% set particularsFromStarter = particularsFromStarter | replace("[Date]", dateNarrative) %}
           {% set particularsFromStarter = particularsFromStarter | replace("[date]", dateNarrative) %}
         {% endif %}
+
 
         {# ------------------------------------------------------------
            Fallback suggested particulars if no library template selected
