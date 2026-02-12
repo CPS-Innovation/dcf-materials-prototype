@@ -153,7 +153,53 @@
   "templates": {
     "particularsStarter": "[Defendant(s)] [date] at [place], used threatening behaviour with intent to cause [victim(s)] to fear immediate unlawful violence."
   }
+},
+{
+  "chargeCode": "A01",
+  "label": "Assault by beating (common assault)",
+  "category": "Offences against the person",
+  "statute": {
+    "act": "Criminal Justice Act 1988",
+    "section": "s.39"
+  },
+  "statementOfOffence": "Assault by beating, contrary to section 39 of the Criminal Justice Act 1988.",
+  "keywords": ["assault", "common assault", "battery", "beating", "violence"],
+  "precedents": [],
+  "templates": {
+    "particularsStarter": "On [date] at [place], the defendant assaulted [victim] by beating."
+  }
+},
+{
+  "chargeCode": "A02",
+  "label": "Assault occasioning actual bodily harm (ABH)",
+  "category": "Offences against the person",
+  "statute": {
+    "act": "Offences Against the Person Act 1861",
+    "section": "s.47"
+  },
+  "statementOfOffence": "Assault occasioning actual bodily harm, contrary to section 47 of the Offences Against the Person Act 1861.",
+  "keywords": ["assault", "abh", "actual bodily harm", "injury", "violence"],
+  "precedents": [],
+  "templates": {
+    "particularsStarter": "On [date] at [place], the defendant assaulted [victim], thereby occasioning actual bodily harm."
+  }
+},
+{
+  "chargeCode": "T01",
+  "label": "Threatening behaviour",
+  "category": "Public order offences",
+  "statute": {
+    "act": "Public Order Act 1986",
+    "section": "s.4"
+  },
+  "statementOfOffence": "Threatening behaviour, contrary to section 4 of the Public Order Act 1986.",
+  "keywords": ["threatening", "violence", "fear", "public order", "threats", "intimidation"],
+  "precedents": [],
+  "templates": {
+    "particularsStarter": "On [date] at [place], the defendant used threatening behaviour with intent to cause [victim] to fear immediate unlawful violence."
+  }
 }
+
 
 
 ]

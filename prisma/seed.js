@@ -287,6 +287,309 @@ const manualTaskNamesLong = [
   "Arrange and prepare for a case conference with counsel to discuss trial strategy, potential witnesses, and any legal issues that may arise during proceedings"
 ];
 
+async function seedShowcaseIndictmentCase(prisma, opts = {}) {
+  const {
+    caseReference = '99AA000001/1',
+    unitName = 'Wessex Crown Court',
+    createOnlyThisCase = false, // if true you can "return" after calling this
+  } = opts
+
+  // Helper: get today at 23:59:59.999 UTC (matches your seed helpers style)
+  const endOfTodayUtc = () => {
+    const d = new Date()
+    d.setUTCHours(23, 59, 59, 999)
+    return d
+  }
+
+  const endOfTomorrowUtc = () => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    d.setUTCHours(23, 59, 59, 999)
+    return d
+  }
+
+  // Helper: find-or-create by name (Victim has no unique fields)
+  async function getOrCreateVictim(tx, firstName, lastName) {
+    const existing = await tx.victim.findFirst({
+      where: { firstName, lastName }
+    })
+    if (existing) return existing
+    return tx.victim.create({ data: { firstName, lastName } })
+  }
+
+  // Helper: defendants also have no unique constraint; minimise duplication via name + dob
+  async function getOrCreateDefendant(tx, data) {
+    const existing = await tx.defendant.findFirst({
+      where: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        dateOfBirth: data.dateOfBirth ?? null
+      },
+      include: { charges: true }
+    })
+    if (existing) return existing
+    return tx.defendant.create({ data })
+  }
+
+  // Helper: witnesses are case-bound but still no uniqueness; minimise duplication via name + caseId
+  async function getOrCreateWitness(tx, data) {
+    const existing = await tx.witness.findFirst({
+      where: {
+        caseId: data.caseId,
+        firstName: data.firstName,
+        lastName: data.lastName
+      }
+    })
+    if (existing) return existing
+    return tx.witness.create({ data })
+  }
+
+  console.log(`🎯 Seeding SHOWCASE indictment case: ${caseReference}`)
+
+  const result = await prisma.$transaction(async (tx) => {
+    // --- Unit (must exist from earlier seed step) ---
+    const unit = await tx.unit.findFirst({ where: { name: unitName } })
+    if (!unit) {
+      throw new Error(`Showcase seed failed: unit not found: "${unitName}"`)
+    }
+
+    // --- Defence lawyer (reuse one if present, otherwise create) ---
+    const defenceLawyer =
+      (await tx.defenceLawyer.findFirst({
+        where: {
+          firstName: 'Harvey',
+          lastName: 'Specter',
+          organisation: 'Specter Litt'
+        }
+      })) ||
+      (await tx.defenceLawyer.create({
+        data: {
+          firstName: 'Harvey',
+          lastName: 'Specter',
+          organisation: 'Specter Litt'
+        }
+      }))
+
+    // --- Defendants (fixed) ---
+    const victorDanvers = await getOrCreateDefendant(tx, {
+      firstName: 'Victor',
+      lastName: 'Danvers',
+      gender: 'Male',
+      religion: 'Not stated',
+      occupation: 'Self-employed',
+      dateOfBirth: new Date('1988-02-14'),
+      remandStatus: 'CONDITIONAL_BAIL',
+      paceTimeLimit: null,
+      defenceLawyerId: defenceLawyer.id
+    })
+
+    const lucasStark = await getOrCreateDefendant(tx, {
+      firstName: 'Lucas',
+      lastName: 'Stark',
+      gender: 'Male',
+      religion: 'Not stated',
+      occupation: 'Unemployed',
+      dateOfBirth: new Date('1990-09-21'),
+      remandStatus: 'CONDITIONAL_BAIL',
+      paceTimeLimit: null,
+      defenceLawyerId: defenceLawyer.id
+    })
+
+    // --- Victims (fixed) ---
+    const eddieDanvers = await getOrCreateVictim(tx, 'Eddie', 'Danvers')
+    const andrewThomas = await getOrCreateVictim(tx, 'Andrew', 'Thomas')
+    const victorMaximoff = await getOrCreateVictim(tx, 'Victor', 'Maximoff')
+
+    // --- Case (upsert by unique reference) ---
+    // Indictment status "Not started": reportStatus = null (per your schema comment)
+    const showcaseCase = await tx.case.upsert({
+      where: { reference: caseReference },
+      update: {
+        unitId: unit.id,
+        // keep "Not started"
+        reportStatus: null
+      },
+      create: {
+        reference: caseReference,
+        type: 'Crown Court',
+        complexity: 'Level 3',
+        unit: { connect: { id: unit.id } },
+        // keep "Not started"
+        reportStatus: null,
+
+        location: {
+          create: {
+            name: 'City centre bar (showcase)',
+            line1: '1 High Street',
+            line2: 'City Centre',
+            town: 'Glasgow',
+            postcode: 'G1 1AA'
+          }
+        },
+
+        defendants: {
+          connect: [{ id: victorDanvers.id }, { id: lucasStark.id }]
+        },
+
+        victims: {
+          connect: [
+            { id: eddieDanvers.id },
+            { id: andrewThomas.id },
+            { id: victorMaximoff.id }
+          ]
+        },
+
+        // 1 guaranteed task so it appears in Tasks list
+        tasks: {
+          create: {
+            name: 'Assess disclosure task',
+            reminderType: null,
+            reminderDate: endOfTodayUtc(),
+            dueDate: endOfTomorrowUtc(),
+            escalationDate: endOfTomorrowUtc(),
+            completedDate: null,
+            isUrgent: true,
+            urgentNote: 'Showcase research scenario'
+          }
+        }
+      }
+    })
+
+    // --- Witnesses (fixed; case-bound) ---
+    await getOrCreateWitness(tx, {
+      caseId: showcaseCase.id,
+      title: 'Ms',
+      firstName: 'Emily',
+      lastName: 'Danvers',
+      dcf: true,
+      preferredLanguage: 'English',
+      isCpsContactAllowed: true,
+      isKeyWitness: true,
+      isRelevant: true,
+      wasWarned: true
+    })
+
+    await getOrCreateWitness(tx, {
+      caseId: showcaseCase.id,
+      title: 'Mr',
+      firstName: 'Alexander',
+      lastName: 'Howlett',
+      dcf: true,
+      preferredLanguage: 'English',
+      isCpsContactAllowed: true,
+      isKeyWitness: false,
+      isRelevant: true,
+      wasWarned: true
+    })
+
+    await getOrCreateWitness(tx, {
+      caseId: showcaseCase.id,
+      title: 'Mr',
+      firstName: 'Logan',
+      lastName: 'Howlett',
+      dcf: true,
+      preferredLanguage: 'English',
+      isCpsContactAllowed: true,
+      isKeyWitness: false,
+      isRelevant: true,
+      wasWarned: true
+    })
+
+    // --- Charges (refresh to exact set) ---
+    // Remove any existing charges for these two defendants to keep the demo deterministic
+    await tx.charge.deleteMany({
+      where: { defendantId: { in: [victorDanvers.id, lucasStark.id] } }
+    })
+
+    const offenceDate = new Date('2025-11-18T22:15:00.000Z')
+    const offenceDateLong = offenceDate.toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'long', year: 'numeric'
+    })
+
+    // Split charges coherently:
+    // - Victor Danvers: Fraud + ABH (represents the fraud + participates in violence)
+    // - Lucas Stark: Threatening behaviour + ABH
+    await tx.charge.createMany({
+      data: [
+        // Fraud (victim: Eddie Danvers)
+        {
+          defendantId: victorDanvers.id,
+          chargeCode: 'F02',
+          // Use whichever description your prototype expects — keep consistent with your seed list
+          description: 'FRAUD BY FALSE REPRESENTATION, contrary to section 2 of the Fraud Act 2006',
+          status: 'Charged',
+          offenceDate,
+          plea: 'NO_PLEA',
+          particulars:
+            `On ${offenceDateLong} outside a city centre bar, dishonestly made a false representation to Eddie Danvers intending to make a gain, namely by offering fake football finals tickets for money.`,
+          custodyTimeLimit: null,
+          statutoryTimeLimit: null,
+          isCount: true
+        },
+
+        // Threatening behaviour (victim: Eddie Danvers)
+        {
+          defendantId: lucasStark.id,
+          chargeCode: 'T01',
+          description: 'THREATENING BEHAVIOUR, contrary to section 4 of the Public Order Act 1986',
+          status: 'Charged',
+          offenceDate,
+          plea: 'NO_PLEA',
+          particulars:
+            `On ${offenceDateLong} outside a city centre bar, used threatening words and behaviour towards Eddie Danvers, intending that he would believe immediate unlawful violence would be used against him.`,
+          custodyTimeLimit: null,
+          statutoryTimeLimit: null,
+          isCount: true
+        },
+
+        // Physical injury 1 (victim: Andrew Thomas)
+        {
+          defendantId: victorDanvers.id,
+          chargeCode: 'A02',
+          description: 'ACTUAL BODILY HARM, contrary to section 47 of the Offences Against the Person Act 1861',
+          status: 'Charged',
+          offenceDate,
+          plea: 'NO_PLEA',
+          particulars:
+            `On ${offenceDateLong} outside a city centre bar, assaulted Andrew Thomas thereby occasioning actual bodily harm.`,
+          custodyTimeLimit: null,
+          statutoryTimeLimit: null,
+          isCount: true
+        },
+
+        // Physical injury 2 (victim: Victor Maximoff)
+        {
+          defendantId: lucasStark.id,
+          chargeCode: 'A01',
+          description: 'ASSAULT BY BEATING, contrary to section 39 of the Criminal Justice Act 1988',
+          status: 'Charged',
+          offenceDate,
+          plea: 'NO_PLEA',
+          particulars:
+            `On ${offenceDateLong} outside a city centre bar, assaulted Victor Maximoff by beating.`,
+          custodyTimeLimit: null,
+          statutoryTimeLimit: null,
+          isCount: true
+        }
+      ]
+    })
+
+    return {
+      caseId: showcaseCase.id,
+      reference: showcaseCase.reference
+    }
+  })
+
+  console.log(`✅ Showcase case ready: ${result.reference} (id ${result.caseId})`)
+
+  if (createOnlyThisCase) {
+    console.log('🧠 Note: createOnlyThisCase=true — you can return early in main() after calling this.')
+  }
+
+  return result
+}
+
+
 async function main() {
   console.log("🌱 Starting seed...");
 
@@ -580,6 +883,19 @@ async function main() {
     data: defenceLawyerData,
   });
   console.log("✅ Defence lawyers seeded");
+
+
+console.log("✅ Defence lawyers seeded");
+
+
+// -------------------- SHOWCASE INDICTMENT CASE --------------------
+await seedShowcaseIndictmentCase(prisma, {
+  caseReference: '99AA000001/1',
+  unitName: 'Wessex Crown Court',
+  createOnlyThisCase: true
+});
+// return; // Uncomment this line to stop after creating the showcase case, if you want to "return" early in main()
+
 
   // -------------------- Defendants with Charges --------------------
   // Step 1: Batch create all defendants with time limit distribution

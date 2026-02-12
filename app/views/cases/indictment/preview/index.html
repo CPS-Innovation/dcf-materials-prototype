@@ -118,13 +118,19 @@
 
       <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
 
-        <div class="govuk-button-group">
-          {{ govukButton({
-            text: "Save indictment"
-          }) }}
-    
-          <a href="#" class="govuk-link">Cancel</a>
-        </div>
+        <form method="post" action="/cases/{{ _case.id }}/indictment">
+          <input type="hidden" name="action" value="complete">
+
+          <div class="govuk-button-group">
+            {{ govukButton({
+              text: "Save indictment"
+            }) }}
+
+            <a href="/cases/{{ _case.id }}/indictment" class="govuk-link">Cancel</a>
+          </div>
+        </form>
+
+
 
     </div>
 
