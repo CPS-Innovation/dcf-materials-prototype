@@ -15,6 +15,7 @@ const {
 
 module.exports = router => {
 
+
     // ============================================================
     // /cases/:caseId/indictment/counts/charges (GET + POST)
     // ============================================================
@@ -841,7 +842,11 @@ router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res)
 })
 
 
- router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
+//////============================================================
+// POST handler for date-and-charges: updates the shared selectedChargeCodes and the count-level currentCount based on the user's charge selection and date input. Then redirects to the next step.
+////============================================================
+
+router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
   const caseId = parseCaseId(req, res)
   if (!caseId) return
 
@@ -850,29 +855,39 @@ router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res)
 
   const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
-  const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+  const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+  const basePath = `${draftBasePath}.currentCount`
   const draftCount = _.get(req, basePath, {})
 
   // ============================================================
   // Charges: ONE radios group (chargeSelection)
   // - value is either a chargeCode OR "newCount"
-  // - selectedChargeCodes already live in session from /counts/charges
+  // - selectedChargeCodes live at draft level (from /counts/charges)
   // ============================================================
 
   const chargeSelection = (req.body.chargeSelection || '').toString()
 
   // Session truth: what they checked earlier (do NOT rely on POSTing these again)
-  const selectedChargeCodes = (draftCount.selectedChargeCodes || []).map(String)
+  const selectedChargeCodes =
+    (_.get(req, `${draftBasePath}.selectedChargeCodes`, []) || []).map(String)
+
+  // Keep currentCount in sync too (useful for older code paths)
+  draftCount.selectedChargeCodes = selectedChargeCodes
 
   if (chargeSelection === 'newCount') {
     draftCount.countBasis = 'newCount'
     draftCount.primaryChargeCode = null
-    draftCount.selectedChargeCodes = [] // clear charge linkage
+
+    // Clear charge linkage
+    draftCount.selectedChargeCodes = []
 
     // Selected charge fields (used later by offence-and-particulars)
     draftCount.chargeCode = null
     draftCount.chargeLabel = null
-    draftCount.statementOfOffence = null
+
+    // ✅ This is the only statement field we actually use across the journey
+    draftCount.statementOfOffenceText = null
+
   } else {
     // They picked an existing charge (chargeSelection = chargeCode)
     draftCount.countBasis = 'existingCharge'
@@ -883,27 +898,26 @@ router.get('/cases/:caseId/indictment/counts/date-and-charges', async (req, res)
       : (selectedChargeCodes[0] || null)
 
     draftCount.primaryChargeCode = primaryChargeCode
-    draftCount.selectedChargeCodes = selectedChargeCodes
 
     // Resolve full charge details from the case options
     const selected = caseChargeOptions.find(o => String(o.chargeCode) === String(primaryChargeCode)) || null
 
-    // Selected charge fields (used by the Statement of Offence card + textarea)
+    // Selected charge fields (used by the Statement of Offence card + sidebar)
     draftCount.chargeCode = selected ? selected.chargeCode : null
-    draftCount.chargeLabel = selected ? selected.description : null
+    draftCount.chargeLabel = selected ? (selected.description || selected.label || null) : null
 
-    // IMPORTANT: ensure buildChargeOptionsFromPrismaCase includes statementOfOffence.
-    // If it does not, this will be null and your summary card will be weak.
-    draftCount.statementOfOffence = selected ? (selected.statementOfOffence || null) : null
-
-    // Optional: if user had typed a custom statement earlier, keep it.
-    // If you want date-and-charges to always reset it, remove this.
-    // if (!draftCount.statementOfOffenceText) draftCount.statementOfOffenceText = draftCount.statementOfOffence
+    // ✅ Seed statementOfOffenceText ONLY if the user hasn't already typed one
+    if (!draftCount.statementOfOffenceText) {
+      if (draftCount.chargeCode && draftCount.chargeLabel) {
+        draftCount.statementOfOffenceText = `${draftCount.chargeCode}: ${draftCount.chargeLabel}`
+      } else {
+        draftCount.statementOfOffenceText = draftCount.chargeLabel || null
+      }
+    }
   }
 
   // ============================================================
   // Date: single vs range (SOURCE OF TRUTH)
-  // Use ONE naming scheme in your form: offence-date-*
   // ============================================================
 
   const dateType = (req.body.dateType || '').toString()
@@ -996,6 +1010,11 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
   const draftCount = _.get(req, basePath, {})
 
   // ------------------------------------------------------------
+  // DEBUG: confirm what the form is actually posting
+  // ------------------------------------------------------------
+  console.log('[precedent POST] selectedPrecedentId=', req.body.selectedPrecedentId)
+
+  // ------------------------------------------------------------
   // Helpers (local to this route)
   // ------------------------------------------------------------
   function ordinal(n) {
@@ -1056,6 +1075,16 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
   draftCount.particularsStarter = starter || null
 
   // ------------------------------------------------------------
+  // DEBUG: confirm what we ended up saving to session
+  // ------------------------------------------------------------
+  console.log(
+    '[precedent POST] saved selectedPrecedentId=',
+    draftCount.selectedPrecedentId,
+    'has precedentSelection=',
+    Boolean(draftCount.precedentSelection)
+  )
+
+  // ------------------------------------------------------------
   // 3) Token injection helper
   // ------------------------------------------------------------
   function injectTokens(text, tokenMap) {
@@ -1108,35 +1137,35 @@ router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/conti
     // ----------------------------
     // OVERWRITE particulars (your requirement: usually changes)
     // ----------------------------
-      draftCount.particularsOfOffenceText = injectTokens(starter, {
+    draftCount.particularsOfOffenceText = injectTokens(starter, {
 
-        // DEFENDANT tokens (all common variants)
-        "Defendant(s)": defendantsText,
-        "defendant(s)": defendantsText,
-        "Defendant": defendantsText,
-        "defendant": defendantsText,
+      // DEFENDANT tokens (all common variants)
+      "Defendant(s)": defendantsText,
+      "defendant(s)": defendantsText,
+      "Defendant": defendantsText,
+      "defendant": defendantsText,
 
-        // VICTIM tokens (all common variants)
-        "Victim(s)": victimsText,
-        "victim(s)": victimsText,
-        "Victim": victimsText,
-        "victim": victimsText,
+      // VICTIM tokens (all common variants)
+      "Victim(s)": victimsText,
+      "victim(s)": victimsText,
+      "Victim": victimsText,
+      "victim": victimsText,
 
-        // DATE tokens
-        "date": dateText,
-        "Date": dateText,
+      // DATE tokens
+      "date": dateText,
+      "Date": dateText,
 
-        // PLACE tokens
-        "place": placeText,
-        "Place": placeText,
+      // PLACE tokens
+      "place": placeText,
+      "Place": placeText,
 
-        // MONTH fallback (only used if template literally contains [month])
-        "month": (() => {
-          const m = parseInt(draftCount?.offenceDate?.month, 10)
-          const months = ["", "January","February","March","April","May","June","July","August","September","October","November","December"]
-          return months[m] ? months[m].toUpperCase() : "MONTH"
-        })()
-      })
+      // MONTH fallback (only used if template literally contains [month])
+      "month": (() => {
+        const m = parseInt(draftCount?.offenceDate?.month, 10)
+        const months = ["", "January","February","March","April","May","June","July","August","September","October","November","December"]
+        return months[m] ? months[m].toUpperCase() : "MONTH"
+      })()
+    })
 
   } else {
     // Nothing selected: clear precedent + template
@@ -1284,10 +1313,14 @@ router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (re
       draftCount.particularsOfOffenceText ||
       draftCount.selectedPrecedentId
 
-      // ✅ Always add the count on CYA submit (user explicitly confirmed save)
+      // ✅ Conditionally add to indictment if there’s any content (prevents blank counts from spamming the indictment)if (hasAnyContent)
       indictment.counts = indictment.counts || []
-      indictment.counts.push({
-        createdAt: new Date().toISOString(),
+
+      const editingIndex = Number.parseInt(String(draftCount.editingIndex ?? ''), 10)
+      const isEditing = Number.isFinite(editingIndex) && editingIndex >= 0
+
+      const savedCount = {
+        createdAt: draftCount.createdAt || new Date().toISOString(),
 
         countBasis: draftCount.countBasis || null,
         chargeCode: draftCount.chargeCode || null,
@@ -1307,7 +1340,28 @@ router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (re
 
         selectedPrecedentId: draftCount.selectedPrecedentId || null,
         precedentSelection: draftCount.precedentSelection || null
-      })
+      }
+
+      if (isEditing && indictment.counts[editingIndex]) {
+        indictment.counts[editingIndex] = savedCount
+
+        // ✅ Updated banner
+        _.set(req, 'session.data.successBanner', {
+          titleText: `Count ${editingIndex + 1} updated`,
+          text: 'Your changes have been saved.'
+        })
+
+      } else {
+        indictment.counts.push(savedCount)
+
+        // ✅ Added banner
+        _.set(req, 'session.data.successBanner', {
+          titleText: 'Count saved',
+          text: 'Your draft count has been added to the indictment.'
+        })
+      }
+
+
 
     indictment.lastSavedAt = new Date().toISOString()
     _.set(req, indictmentBasePath, indictment)

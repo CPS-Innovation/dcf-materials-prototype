@@ -1,4 +1,4 @@
-{# /cases/indictment/counts/offence-and-particulars.html #}
+{# /cases/indictment/counts/offence-and-particulars #}
 
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -123,13 +123,23 @@
     {% set locationText = _case.location.line1 %}
   {% endif %}
 
-  {# Canonical statement: what the summary card shows #}
-  {% set statementCardText = draftCount.statementOfOffence or draftCount.chargeLabel or "" %}
+  {# ------------------------------------------------------------
+     Canonical statement + charge text
+     - We do NOT use draftCount.statementOfOffence (it isn't set in routes)
+     - Prefer user-edited text, else fall back to chargeCode + chargeLabel, else chargeLabel
+     ------------------------------------------------------------ #}
 
-  {# Textarea value: user edit wins, otherwise mirror the card exactly #}
-  {% set statementTextareaValue = draftCount.statementOfOffenceText or statementCardText %}
+  {% set chargeSummaryText = "" %}
+  {% if draftCount.chargeCode and draftCount.chargeLabel %}
+    {% set chargeSummaryText = (draftCount.chargeCode + ": " + draftCount.chargeLabel) %}
+  {% elif draftCount.chargeLabel %}
+    {% set chargeSummaryText = draftCount.chargeLabel %}
+  {% endif %}
 
+  {% set statementTextareaValue = draftCount.statementOfOffenceText or chargeSummaryText %}
 
+  {# Summary card should mirror what the user sees/edits (but fallback to charge if empty) #}
+  {% set statementCardText = statementTextareaValue or chargeSummaryText %}
 
   {# For sidebar sentence, use the offence label if present, else statement, else blank #}
   {% set primaryChargeText = draftCount.chargeLabel or statementCardText %}
@@ -152,7 +162,7 @@
         {{ govukTextarea({
           id: "statementOfOffenceText",
           name: "statementOfOffenceText",
-         value: statementTextareaValue,
+          value: statementTextareaValue,
           label: {
             text: "Statement of Offence",
             classes: "govuk-label--m"
@@ -169,12 +179,9 @@
           </div>
 
           <div class="govuk-summary-card__content">
-            {% if draftCount.chargeCode or statementCardText %}
+            {% if statementCardText %}
               <ul class="govuk-list govuk-!-margin-bottom-0">
-                <li>
-                  {% if draftCount.chargeCode %}{{ draftCount.chargeCode }}:{% endif %}
-                  {{ statementCardText }}
-                </li>
+                <li>{{ statementCardText }}</li>
               </ul>
             {% else %}
               <p class="govuk-body govuk-!-margin-bottom-0">No charge selected yet.</p>
