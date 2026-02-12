@@ -69,39 +69,40 @@ module.exports = router => {
 
 
 
-    //////// POST /////////////////////////////////////////////////////////////////
+    // ============================================================
+    // /cases/:caseId/indictment/assign/defendants (POST)
+    // ============================================================
 
     router.post('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
       const caseId = parseCaseId(req, res)
       if (!caseId) return
 
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-      const draftCount = _.get(req, basePath, {})
+      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+      const countPath = `${draftBasePath}.currentCount`
+      const draftCount = _.get(req, countPath, {})
 
-      const rawSelected = req.body.assignedDefendantIds
-      const assignedDefendantIds = Array.isArray(rawSelected)
-        ? rawSelected
-        : (rawSelected ? [rawSelected] : [])
+      // Normalise selected IDs
+      const rawAssigned = req.body.assignedDefendantIds
+      const assignedDefendantIds = Array.isArray(rawAssigned)
+        ? rawAssigned
+        : (rawAssigned ? [rawAssigned] : [])
 
-      // ✅ Normalise to strings so template membership checks work reliably
-      draftCount.assignedDefendantIds = assignedDefendantIds.map(String)
-
-
+      draftCount.assignedDefendantIds = assignedDefendantIds.map(String).filter(Boolean)
       draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
 
-      // Persist as the new default for the next count (this never runs if returnTo)
+      // Persist
+      _.set(req, countPath, draftCount)
+
+      // Optional: store as a draft-level default for later use
+      // (does not auto-preselect unless you seed it on GET)
       _.set(req, `${draftBasePath}.defaultAssignedDefendantIds`, draftCount.assignedDefendantIds)
 
-      // ✅ Prefer body.returnTo (hidden input), fall back to query
       const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
       if (returnTo) return res.redirect(returnTo)
 
-      // Persist as the new default for the next count
-      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
-
       return res.redirect(`/cases/${caseId}/indictment/assign/victims`)
     })
+
 
 
     // ============================================================
