@@ -112,15 +112,10 @@
 
       {# ------------------------------------------------------------
          Indictment row (conditional action)
+         Use isCompleted to drive Completed state (stable)
          ------------------------------------------------------------ #}
-      {% if indictment.status == "In progress" %}
 
-        {% set viewIndictmentLink %}
-          <a class="govuk-link govuk-link--no-visited-state"
-             href="/cases/{{ _case.id }}/indictment/preview">
-            View indictment
-          </a>
-        {% endset %}
+      {% if indictment.status == "In progress" %}
 
         {% set indictmentRow = {
           key: { text: "Indictment status" },
@@ -132,7 +127,30 @@
           },
           actions: {
             items: [
-              { html: viewIndictmentLink }
+              {
+                href: "/cases/" + _case.id + "/indictment/preview",
+                text: "Edit"
+              }
+            ]
+          }
+        } %}
+
+      {% elif isCompleted %}
+
+        {% set indictmentRow = {
+          key: { text: "Indictment status" },
+          value: {
+            html: govukTag({
+              text: "Completed",
+              classes: "govuk-tag--green govuk-!-font-size-19"
+            })
+          },
+          actions: {
+            items: [
+              {
+                href: readOnlyUrl,
+                text: "View"
+              }
             ]
           }
         } %}
@@ -144,7 +162,7 @@
           value: {
             html: govukTag({
               text: indictment.status,
-              classes: countsTagClass + " govuk-!-font-size-16"
+              classes: countsTagClass + " govuk-!-font-size-19"
             })
           }
         } %}
@@ -153,39 +171,28 @@
 
       {# ------------------------------------------------------------
          Counts row (ONLY when In progress)
-         - value = counts.length (defensive)
-         - action link = View counts -> /indictment/counts/added
          ------------------------------------------------------------ #}
 
-
-        {# Counts length from indictment (defensive) #}
-        {% set countsLength = 0 %}
-        {% if indictment and indictment.counts and indictment.counts.length %}
-          {% set countsLength = indictment.counts.length %}
-        {% endif %}
-
+      {% set countsLength = 0 %}
+      {% if indictment and indictment.counts and indictment.counts.length %}
+        {% set countsLength = indictment.counts.length %}
+      {% endif %}
 
       {% if indictment.status == "In progress" %}
-
-      {% set viewCountsLink %}
-        <a class="govuk-link govuk-link--no-visited-state"
-          href="/cases/{{ _case.id }}/indictment/counts/added">
-          View counts
-        </a>
-        <span aria-hidden="true"> | </span>
-        <a class="govuk-link govuk-link--no-visited-state"
-          href="/cases/{{ _case.id }}/indictment/counts/date-and-charges">
-          Add another count
-        </a>
-      {% endset %}
-
 
         {% set countsRow = {
           key: { text: "Counts" },
           value: { text: countsLength },
           actions: {
             items: [
-              { html: viewCountsLink }
+              {
+                href: "/cases/" + _case.id + "/indictment/counts/added",
+                text: "View counts"
+              },
+              {
+                href: "/cases/" + _case.id + "/indictment/counts/date-and-charges",
+                text: "Add another count"
+              }
             ]
           }
         } %}
@@ -193,7 +200,7 @@
       {% endif %}
 
       {# ------------------------------------------------------------
-         Build rows array (avoid inline {% if %} inside rows: [ ])
+         Build rows array
          ------------------------------------------------------------ #}
       {% set summaryRows = [] %}
 
@@ -225,12 +232,10 @@
 
       <div class="app-list">
         <div class="app-list__item">
-
           {{ govukSummaryList({
-            classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+            classes: "govuk-summary-list--no-border app-summary-list--compact",
             rows: summaryRows
           }) }}
-
         </div>
       </div>
 
