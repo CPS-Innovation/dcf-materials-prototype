@@ -63,35 +63,21 @@ module.exports = router => {
       return res.redirect(`/cases/${caseId}/indictment`)
     })
 
-    // ============================================================
-    // /cases/:caseId/indictment/show (GET)
-    // ============================================================
 
-    router.get('/cases/:caseId/indictment/show', async (req, res) => {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
+      // /cases/:caseId/indictment/preview (GET)
+      router.get('/cases/:caseId/indictment/preview', async (req, res) => {
+        const caseId = parseCaseId(req, res)
+        if (!caseId) return
 
-      const _case = await fetchCase(caseId)
-      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+        const _case = await fetchCase(caseId)
+        if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-      const countsCase = getCountsCaseFor(caseId)
-      const indictment = _.get(req, `session.data.indictments.${caseId}`, {
-        status: countsCase.numberOfCounts || 'Not started',
-        counts: []
+        const indictment = _.get(req, `session.data.indictments.${caseId}`, { status: 'In progress', counts: [] })
+
+        return res.render('cases/indictment/preview/index', {
+          _case,
+          indictment
+        })
       })
 
-      const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
-
-      const successBanner = _.get(req, 'session.data.successBanner', null)
-      _.unset(req, 'session.data.successBanner')
-
-      return res.render('cases/indictment/show', {
-        _case,
-        countsCase,
-        indictment,
-        chargeOptions,
-        successBanner,
-        chargeLibrary
-      })
-    })
 }

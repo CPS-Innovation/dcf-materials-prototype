@@ -1,4 +1,4 @@
-{# app/views/cases/indictment/index.html #}
+{# app/views/cases/indictment/index #}
 
 {% extends "layouts/main.html" %}
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -167,12 +167,18 @@
 
       {% if indictment.status == "In progress" %}
 
-        {% set viewCountsLink %}
-          <a class="govuk-link govuk-link--no-visited-state"
-             href="/cases/{{ _case.id }}/indictment/counts/added">
-            View counts
-          </a>
-        {% endset %}
+      {% set viewCountsLink %}
+        <a class="govuk-link govuk-link--no-visited-state"
+          href="/cases/{{ _case.id }}/indictment/counts/added">
+          View counts
+        </a>
+        <span aria-hidden="true"> | </span>
+        <a class="govuk-link govuk-link--no-visited-state"
+          href="/cases/{{ _case.id }}/indictment/counts/date-and-charges">
+          Add another count
+        </a>
+      {% endset %}
+
 
         {% set countsRow = {
           key: { text: "Counts" },
