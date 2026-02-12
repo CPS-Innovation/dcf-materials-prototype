@@ -7,6 +7,7 @@ const {
 } = require('./_shared')
 
 module.exports = router => {
+
     // ============================================================
     // /cases/:caseId/indictment/assign/defendants (GET + POST)
     // ============================================================
@@ -53,9 +54,6 @@ module.exports = router => {
         ? orderedSelectedIdsStr.map(id => byId.get(id)).filter(Boolean)
         : applyCaseDefaultOrder(allDefendants, defaultOrderIds)
 
-      // ✅ Seed checkboxes for a new count from a case-level default assignment list (optional)
-      const defaultAssignedDefendantIds =
-        (_.get(req, `${draftBasePath}.defaultAssignedDefendantIds`, []) || []).map(String)
 
       // if (!Array.isArray(draftCount.assignedDefendantIds) || !draftCount.assignedDefendantIds.length) {
       //   draftCount.assignedDefendantIds = defaultAssignedDefendantIds
@@ -92,13 +90,15 @@ module.exports = router => {
       draftCount.lastUpdatedAt = new Date().toISOString()
       _.set(req, basePath, draftCount)
 
+      // Persist as the new default for the next count (this never runs if returnTo)
+      _.set(req, `${draftBasePath}.defaultAssignedDefendantIds`, draftCount.assignedDefendantIds)
+
       // ✅ Prefer body.returnTo (hidden input), fall back to query
       const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
       if (returnTo) return res.redirect(returnTo)
 
       // Persist as the new default for the next count
       const draftBasePath = `session.data.indictmentDrafts.${caseId}`
-      _.set(req, `${draftBasePath}.defaultAssignedDefendantIds`, draftCount.assignedDefendantIds)
 
       return res.redirect(`/cases/${caseId}/indictment/assign/victims`)
     })
@@ -163,32 +163,35 @@ module.exports = router => {
 
 
 
-    ////////// POST /////////////////////////////////////////////////////////////////
+    // ============================================================
+    // /cases/:caseId/indictment/assign/victims (POST)
+    // ============================================================
 
     router.post('/cases/:caseId/indictment/assign/victims', async (req, res) => {
       const caseId = parseCaseId(req, res)
       if (!caseId) return
 
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-      const draftCount = _.get(req, basePath, {})
+      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+      const countPath = `${draftBasePath}.currentCount`
+      const draftCount = _.get(req, countPath, {})
 
-      const rawSelected = req.body.assignedVictimIds
-      const assignedVictimIds = Array.isArray(rawSelected)
-        ? rawSelected
-        : (rawSelected ? [rawSelected] : [])
+      // Normalise selected IDs
+      const rawAssigned = req.body.assignedVictimIds
+      const assignedVictimIds = Array.isArray(rawAssigned)
+        ? rawAssigned
+        : (rawAssigned ? [rawAssigned] : [])
 
-      // ✅ Normalise to strings so `v.id in assignedVictimIds` works reliably
-      draftCount.assignedVictimIds = assignedVictimIds.map(String)
-
+      draftCount.assignedVictimIds = assignedVictimIds.map(String).filter(Boolean)
       draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
+
+      // Persist
+      _.set(req, countPath, draftCount)
+
+      // Optional: store as a draft-level default for later use (does not auto-preselect unless you seed it)
+      _.set(req, `${draftBasePath}.defaultAssignedVictimIds`, draftCount.assignedVictimIds)
 
       const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
       if (returnTo) return res.redirect(returnTo)
-
-      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
-      _.set(req, `${draftBasePath}.defaultAssignedVictimIds`, draftCount.assignedVictimIds)
-
 
       return res.redirect(`/cases/${caseId}/indictment/assign/witnesses`)
     })
@@ -211,51 +214,73 @@ module.exports = router => {
       const draftCount = _.get(req, countPath, {})
       const returnTo = safeReturnTo(req.query.returnTo)
 
-      // 1) Story order ids from the order step
+      const allWitnesses = Array.isArray(_case.witnesses) ? _case.witnesses : []
+      const byId = new Map(allWitnesses.map(w => [String(w.id), w]))
+
+      // Count-level selection (if present)
       const orderedSelectedIds =
         (draftCount.orderedSelectedWitnessIds && draftCount.orderedSelectedWitnessIds.length)
           ? draftCount.orderedSelectedWitnessIds
           : (draftCount.selectedWitnessIds || [])
 
-      const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String)
+      const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String).filter(Boolean)
 
-      // ✅ 2) Never pre-check on assign (clear any old session state)
-      draftCount.assignedWitnessIds = []
-      _.set(req, countPath, draftCount)
+      // Case-level default story order (optional)
+      const defaultOrderIds =
+        (_.get(req, `${draftBasePath}.defaultWitnessOrderIds`, []) || []).map(String)
 
-      // ✅ 3) Only show witnesses selected earlier, in that exact order
-      const allWitnesses = _case.witnesses || []
-      const byId = new Map(allWitnesses.map(w => [String(w.id), w]))
+      function applyCaseDefaultOrder(entities = [], defaultIds = []) {
+        if (!defaultIds.length) return entities
+        const map = new Map(entities.map(e => [String(e.id), e]))
+        const ordered = defaultIds.map(id => map.get(String(id))).filter(Boolean)
+        const remaining = entities.filter(e => !defaultIds.includes(String(e.id)))
+        return [...ordered, ...remaining]
+      }
 
-      const orderedWitnessesForDisplay = orderedSelectedIdsStr
-        .map(id => byId.get(id))
-        .filter(Boolean)
+      // ✅ Display list:
+      // - if count has a selection, show that subset
+      // - otherwise, show ALL witnesses (in case default order if available)
+      const witnessesForDisplay = orderedSelectedIdsStr.length
+        ? orderedSelectedIdsStr.map(id => byId.get(id)).filter(Boolean)
+        : applyCaseDefaultOrder(allWitnesses, defaultOrderIds)
+
+      // ✅ IMPORTANT: do NOT clear or seed assignedWitnessIds here
+      // We want no preselection on later counts.
 
       return res.render('cases/indictment/assign/witnesses', {
-        _case: { ..._case, witnesses: orderedWitnessesForDisplay },
+        _case: { ..._case, witnesses: witnessesForDisplay },
         draftCount,
         returnTo
       })
     })
 
 
+    // ============================================================
+    // /cases/:caseId/indictment/assign/witnesses (POST)
+    // ============================================================
+
     router.post('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
       const caseId = parseCaseId(req, res)
       if (!caseId) return
 
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
-      const draftCount = _.get(req, basePath, {})
+      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+      const countPath = `${draftBasePath}.currentCount`
+      const draftCount = _.get(req, countPath, {})
 
-      const rawSelected = req.body.assignedWitnessIds
-      const assignedWitnessIds = Array.isArray(rawSelected)
-        ? rawSelected
-        : (rawSelected ? [rawSelected] : [])
+      // Normalise selected IDs
+      const rawAssigned = req.body.assignedWitnessIds
+      const assignedWitnessIds = Array.isArray(rawAssigned)
+        ? rawAssigned
+        : (rawAssigned ? [rawAssigned] : [])
 
-      // ✅ Normalise to strings
-      draftCount.assignedWitnessIds = assignedWitnessIds.map(String)
-
+      draftCount.assignedWitnessIds = assignedWitnessIds.map(String).filter(Boolean)
       draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
+
+      // Persist
+      _.set(req, countPath, draftCount)
+
+      // Optional: store as a draft-level default for later use (does not auto-preselect unless you seed it)
+      _.set(req, `${draftBasePath}.defaultAssignedWitnessIds`, draftCount.assignedWitnessIds)
 
       const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
       if (returnTo) return res.redirect(returnTo)

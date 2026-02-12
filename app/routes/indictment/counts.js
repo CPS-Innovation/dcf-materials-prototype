@@ -1284,7 +1284,7 @@ router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (re
       draftCount.particularsOfOffenceText ||
       draftCount.selectedPrecedentId
 
-    if (hasAnyContent) {
+      // ✅ Always add the count on CYA submit (user explicitly confirmed save)
       indictment.counts = indictment.counts || []
       indictment.counts.push({
         createdAt: new Date().toISOString(),
@@ -1308,7 +1308,6 @@ router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (re
         selectedPrecedentId: draftCount.selectedPrecedentId || null,
         precedentSelection: draftCount.precedentSelection || null
       })
-    }
 
     indictment.lastSavedAt = new Date().toISOString()
     _.set(req, indictmentBasePath, indictment)

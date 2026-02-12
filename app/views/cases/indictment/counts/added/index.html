@@ -48,38 +48,40 @@
       </div>
 
 
+      {% if counts and counts.length %}
 
-        {% if addedCount %}
+        {% for c in counts %}
 
-        {{ govukSummaryList({
-          card: {
-            title: {
-              text: "Count " + (counts | length)
+          {{ govukSummaryList({
+            card: {
+              title: {
+                text: "Count " + loop.index
+              },
+              actions: {
+                items: [
+                  { href: "#", text: "Edit", visuallyHiddenText: "count" },
+                  { href: "#", text: "Remove", visuallyHiddenText: "count" },
+                  { href: "#", text: "Duplicate", visuallyHiddenText: "count" }
+                ]
+              }
             },
-            actions: {
-              items: [
-                { href: "#", text: "Edit", visuallyHiddenText: "count" },
-                { href: "#", text: "Remove", visuallyHiddenText: "count" },
-                { href: "#", text: "Duplicate", visuallyHiddenText: "count" }
-              ]
-            }
-          },
-          rows: [
-            {
-              key: { text: "Statement of offence" },
-              value: { html: addedCount.statementOfOffenceText or "—" }
-            },
-            {
-              key: { text: "Particulars of offence" },
-              value: { html: addedCount.particularsOfOffenceText or "—" }
-            }
-          ]
-        }) }}
+            rows: [
+              {
+                key: { text: "Statement of offence" },
+                value: { html: c.statementOfOffenceText or "—" }
+              },
+              {
+                key: { text: "Particulars of offence" },
+                value: { html: c.particularsOfOffenceText or "—" }
+              }
+            ]
+          }) }}
+
+        {% endfor %}
 
       {% else %}
         <p class="govuk-body">No count has been added yet.</p>
       {% endif %}
-
 
     
     </div>
