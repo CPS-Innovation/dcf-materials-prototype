@@ -23,39 +23,52 @@ module.exports = router => {
       const draftCount = _.get(req, countPath, {})
       const returnTo = safeReturnTo(req.query.returnTo)
 
-      // Story order ids from the order step
+      const allDefendants = Array.isArray(_case.defendants) ? _case.defendants : []
+      const byId = new Map(allDefendants.map(d => [String(d.id), d]))
+
+      // Count-level selection (if present)
       const orderedSelectedIds =
         (draftCount.orderedSelectedDefendantIds && draftCount.orderedSelectedDefendantIds.length)
           ? draftCount.orderedSelectedDefendantIds
           : (draftCount.selectedDefendantIds || [])
 
-      const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String)
+      const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String).filter(Boolean)
 
-      // If we have a case-level default, seed a fresh count from it
+      // Case-level default story order (optional)
+      const defaultOrderIds =
+        (_.get(req, `${draftBasePath}.defaultDefendantOrderIds`, []) || []).map(String)
+
+      function applyCaseDefaultOrder(entities = [], defaultIds = []) {
+        if (!defaultIds.length) return entities
+        const map = new Map(entities.map(e => [String(e.id), e]))
+        const ordered = defaultIds.map(id => map.get(String(id))).filter(Boolean)
+        const remaining = entities.filter(e => !defaultIds.includes(String(e.id)))
+        return [...ordered, ...remaining]
+      }
+
+      // ✅ Display list:
+      // - if count has a selection, show that subset
+      // - otherwise, show ALL defendants (in case default order if available)
+      const defendantsForDisplay = orderedSelectedIdsStr.length
+        ? orderedSelectedIdsStr.map(id => byId.get(id)).filter(Boolean)
+        : applyCaseDefaultOrder(allDefendants, defaultOrderIds)
+
+      // ✅ Seed checkboxes for a new count from a case-level default assignment list (optional)
       const defaultAssignedDefendantIds =
         (_.get(req, `${draftBasePath}.defaultAssignedDefendantIds`, []) || []).map(String)
 
-      // Only seed when the count hasn’t set anything yet
-      if (!Array.isArray(draftCount.assignedDefendantIds) || !draftCount.assignedDefendantIds.length) {
-        draftCount.assignedDefendantIds = defaultAssignedDefendantIds
-        _.set(req, countPath, draftCount)
-      }
-
-
-      // ✅ Only show defendants that were selected earlier, in that exact order
-      const allDefendants = _case.defendants || []
-      const byId = new Map(allDefendants.map(d => [String(d.id), d]))
-
-      const orderedDefendantsForDisplay = orderedSelectedIdsStr
-        .map(id => byId.get(id))
-        .filter(Boolean)
+      // if (!Array.isArray(draftCount.assignedDefendantIds) || !draftCount.assignedDefendantIds.length) {
+      //   draftCount.assignedDefendantIds = defaultAssignedDefendantIds
+      //   _.set(req, countPath, draftCount)
+      // }
 
       return res.render('cases/indictment/assign/defendants', {
-        _case: { ..._case, defendants: orderedDefendantsForDisplay },
+        _case: { ..._case, defendants: defendantsForDisplay },
         draftCount,
         returnTo
       })
     })
+
 
 
     //////// POST /////////////////////////////////////////////////////////////////
@@ -75,10 +88,6 @@ module.exports = router => {
       // ✅ Normalise to strings so template membership checks work reliably
       draftCount.assignedDefendantIds = assignedDefendantIds.map(String)
 
-      // Persist as the new default for the next count
-      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
-      _.set(req, `${draftBasePath}.defaultAssignedDefendantIds`, draftCount.assignedDefendantIds)
-
 
       draftCount.lastUpdatedAt = new Date().toISOString()
       _.set(req, basePath, draftCount)
@@ -86,6 +95,10 @@ module.exports = router => {
       // ✅ Prefer body.returnTo (hidden input), fall back to query
       const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
       if (returnTo) return res.redirect(returnTo)
+
+      // Persist as the new default for the next count
+      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+      _.set(req, `${draftBasePath}.defaultAssignedDefendantIds`, draftCount.assignedDefendantIds)
 
       return res.redirect(`/cases/${caseId}/indictment/assign/victims`)
     })
@@ -108,32 +121,46 @@ module.exports = router => {
       const draftCount = _.get(req, countPath, {})
       const returnTo = safeReturnTo(req.query.returnTo)
 
-      // 1) Story order ids from the order step
+      const allVictims = Array.isArray(_case.victims) ? _case.victims : []
+      const byId = new Map(allVictims.map(v => [String(v.id), v]))
+
+      // Count-level selection (if present)
       const orderedSelectedIds =
         (draftCount.orderedSelectedVictimIds && draftCount.orderedSelectedVictimIds.length)
           ? draftCount.orderedSelectedVictimIds
           : (draftCount.selectedVictimIds || [])
 
-      const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String)
+      const orderedSelectedIdsStr = (orderedSelectedIds || []).map(String).filter(Boolean)
 
-      // ✅ 2) Never pre-check on assign (clear any old session state)
-      draftCount.assignedVictimIds = []
-      _.set(req, countPath, draftCount)
+      // Case-level default story order (optional)
+      const defaultOrderIds =
+        (_.get(req, `${draftBasePath}.defaultVictimOrderIds`, []) || []).map(String)
 
-      // ✅ 3) Only show victims selected earlier, in that exact order
-      const allVictims = _case.victims || []
-      const byId = new Map(allVictims.map(v => [String(v.id), v]))
+      function applyCaseDefaultOrder(entities = [], defaultIds = []) {
+        if (!defaultIds.length) return entities
+        const map = new Map(entities.map(e => [String(e.id), e]))
+        const ordered = defaultIds.map(id => map.get(String(id))).filter(Boolean)
+        const remaining = entities.filter(e => !defaultIds.includes(String(e.id)))
+        return [...ordered, ...remaining]
+      }
 
-      const orderedVictimsForDisplay = orderedSelectedIdsStr
-        .map(id => byId.get(id))
-        .filter(Boolean)
+      // ✅ Display list:
+      // - if count has a selection, show that subset
+      // - otherwise, show ALL victims (in case default order if available)
+      const victimsForDisplay = orderedSelectedIdsStr.length
+        ? orderedSelectedIdsStr.map(id => byId.get(id)).filter(Boolean)
+        : applyCaseDefaultOrder(allVictims, defaultOrderIds)
+
+      // ✅ IMPORTANT: do NOT clear or seed assignedVictimIds here
+      // We want no preselection on later counts.
 
       return res.render('cases/indictment/assign/victims', {
-        _case: { ..._case, victims: orderedVictimsForDisplay },
+        _case: { ..._case, victims: victimsForDisplay },
         draftCount,
         returnTo
       })
     })
+
 
 
     ////////// POST /////////////////////////////////////////////////////////////////
@@ -158,6 +185,10 @@ module.exports = router => {
 
       const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
       if (returnTo) return res.redirect(returnTo)
+
+      const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+      _.set(req, `${draftBasePath}.defaultAssignedVictimIds`, draftCount.assignedVictimIds)
+
 
       return res.redirect(`/cases/${caseId}/indictment/assign/witnesses`)
     })
