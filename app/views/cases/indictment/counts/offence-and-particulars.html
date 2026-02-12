@@ -266,14 +266,30 @@
            2) Template-driven starter (if selected)
            3) Fallback suggestion
            ------------------------------------------------------------ #}
-        {% set particularsValue = draftCount.particularsOfOffenceText or "" %}
-        {% if not particularsValue %}
-          {% if particularsFromStarter %}
-            {% set particularsValue = particularsFromStarter %}
-          {% else %}
-            {% set particularsValue = suggestedParticulars %}
+          {% set particularsValue = draftCount.particularsOfOffenceText or "" %}
+          {% if not particularsValue %}
+            {% if particularsFromStarter %}
+              {% set particularsValue = particularsFromStarter %}
+            {% else %}
+              {% set particularsValue = suggestedParticulars %}
+            {% endif %}
           {% endif %}
-        {% endif %}
+
+          {# ------------------------------------------------------------
+            Patch older saved textarea values that still say “the defendant”
+            (only if names exist and the names aren’t already in the text)
+            ------------------------------------------------------------ #}
+          {% if defendantNames and defendantNames.length %}
+            {% set firstDefName = defendantNames[0] %}
+            {% set lowerParticulars = (particularsValue or "") | lower %}
+
+            {% if (lowerParticulars.indexOf("the defendant") != -1) and (particularsValue.indexOf(firstDefName) == -1) %}
+              {% set particularsValue = particularsValue | replace("The defendant", defendantsText) %}
+              {% set particularsValue = particularsValue | replace("the defendant", defendantsText) %}
+            {% endif %}
+          {% endif %}
+
+
 
         {{ govukTextarea({
           id: "particularsOfOffenceText",
