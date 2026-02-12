@@ -14,6 +14,8 @@ const {
 } = require('./_shared')
 
 module.exports = router => {
+
+    // /cases/:caseId/indictment (GET)
     router.get('/cases/:caseId/indictment', async (req, res) => {
       const caseId = parseCaseId(req, res)
       if (!caseId) return
@@ -23,9 +25,19 @@ module.exports = router => {
 
       const countsCase = getCountsCaseFor(caseId)
 
+      const isCompleted = _.get(req, `session.data.indictmentCompleted.${caseId}`, false)
+      const completedIndictment = _.get(req, `session.data.completedIndictments.${caseId}`, null)
+
       const indictment = _.get(req, `session.data.indictments.${caseId}`, {
-        status: countsCase.numberOfCounts || 'Not started',
+        status: isCompleted ? 'Completed' : (countsCase.numberOfCounts || 'Not started'),
         counts: []
+      })
+
+      // 👇 ADD IT RIGHT HERE
+      console.log('GET indictment', {
+        caseId,
+        isCompleted,
+        hasCompletedIndictment: !!completedIndictment
       })
 
       const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
@@ -37,14 +49,20 @@ module.exports = router => {
       return res.render('cases/indictment/index', {
         _case,
         indictment,
+        isCompleted,
+        completedIndictment,
+        readOnlyUrl: `/cases/${caseId}/indictment/preview/read-only`,
         successBanner,
         countsCase,
-        chargeOptions,      // narrative/library enriched
-        caseChargeOptions,  // prisma charges (deduped)
+        chargeOptions,
+        caseChargeOptions,
         chargeLibrary
       })
     })
 
+
+
+    // /cases/:caseId/indictment/(POST)
     router.post('/cases/:caseId/indictment', async (req, res) => {
       const caseId = parseCaseId(req, res)
       if (!caseId) return
@@ -84,14 +102,52 @@ module.exports = router => {
         })
       })
 
-      ///cases/:caseId/indictment/save (POST)
-      router.post('/cases/:caseId/indictment/complete', async (req, res) => {
-        const caseId = Number(req.params.caseId)
-        if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
+    router.post('/cases/:caseId/indictment/complete', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
 
-        return res.redirect(`/cases/${caseId}/indictment`)
+      const draftPath = `session.data.indictments.${caseId}`
+
+      // ✅ handles undefined OR null
+      const draft = _.get(req, draftPath) || { status: 'In progress', counts: [] }
+
+      draft.status = 'Completed'
+      draft.completedAt = new Date().toISOString()
+
+      _.set(req, `session.data.completedIndictments.${caseId}`, draft)
+      _.set(req, `session.data.indictmentCompleted.${caseId}`, true)
+      _.unset(req, draftPath)
+
+      _.set(req, 'session.data.successBanner', {
+        titleText: 'Indictment saved',
+        text: 'Indictment marked as completed.'
       })
+
+      return res.redirect(`/cases/${caseId}/indictment`)
+    })
+
+
+
+    // /cases/:caseId/indictment/preview/read-only (GET)
+    router.get('/cases/:caseId/indictment/preview/read-only', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      const indictment = _.get(req, `session.data.completedIndictments.${caseId}`, null)
+      if (!indictment) return res.redirect(`/cases/${caseId}/indictment`)
+
+      console.log('READ-ONLY HIT', caseId)
+
+
+      return res.render('cases/indictment/preview/read-only', {
+        _case,
+        indictment
+      })
+    })
 
 
 

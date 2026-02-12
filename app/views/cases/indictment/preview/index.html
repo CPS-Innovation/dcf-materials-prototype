@@ -34,18 +34,20 @@
     <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
 
-    {# --- Build defendant display name list --- #}
-      {% set defendantNames = "" %}
+    {# --- Build defendant display name list (UPPERCASE) --- #}
+    {% set defendantNames = "" %}
 
-      {% if _case.defendants and _case.defendants.length %}
-        {% for d in _case.defendants %}
-          {% if loop.first %}
-            {% set defendantNames = d.name %}
-          {% else %}
-            {% set defendantNames = defendantNames + ", " + d.name %}
-          {% endif %}
-        {% endfor %}
-      {% endif %}
+    {% if _case.defendants and _case.defendants.length %}
+      {% for d in _case.defendants %}
+        {% set thisName = (d.name or (d.firstName ~ " " ~ d.lastName)) | upper %}
+        {% if loop.first %}
+          {% set defendantNames = thisName %}
+        {% else %}
+          {% set defendantNames = defendantNames + ", " + thisName %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
 
 
     <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
@@ -118,7 +120,7 @@
 
       <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
 
-        <form method="post" action="/cases/{{ _case.id }}/indictment">
+       <form method="post" action="/cases/{{ _case.id }}/indictment/complete">
           <input type="hidden" name="action" value="complete">
 
           <div class="govuk-button-group">
