@@ -4,6 +4,22 @@ const { _, fetchCase, parseCaseId, safeReturnTo } = require('./_shared')
 
 module.exports = router => {
 
+  function getCountsForReorder(req, _case, caseId) {
+  // 1) Your intended place (current code)
+  const a = _.get(req, `session.data.indictmentDrafts.${caseId}.counts`, [])
+  if (Array.isArray(a) && a.length) return a
+
+  // 2) Common fallbacks (adjust if your data model differs)
+  const b = _.get(req, `session.data.cases.${caseId}.indictment.counts`, [])
+  if (Array.isArray(b) && b.length) return b
+
+  const c = _.get(_case, 'indictmentCounts', null) || _.get(_case, 'counts', null)
+  if (Array.isArray(c) && c.length) return c
+
+  return []
+}
+
+
   // ------------------------------------------------------------
   // GET: Reorder counts (read-only cards + position inputs)
   // ------------------------------------------------------------
@@ -18,12 +34,13 @@ module.exports = router => {
     const showCountReorderSuccess = String(req.query.success || '') === '1'
 
     // Session storage root for this case’s indictment draft
-    const basePath = `session.data.indictmentDrafts.${caseId}`
-    const countsPath = `${basePath}.counts`
-    const countOrderPath = `${basePath}.countOrder`
+    const indictmentBasePath = `session.data.indictments.${caseId}`
+    const countsPath = `${indictmentBasePath}.counts`
+    const countOrderPath = `${indictmentBasePath}.countOrder`
 
     const counts = _.get(req, countsPath, []) || []
     const countOrder = _.get(req, countOrderPath, {}) || {}
+
 
     // ✅ Apply saved order map to counts for display (best-effort)
     // countOrder keys look like: { "id-0": "2", "id-1": "1" }
@@ -50,11 +67,13 @@ module.exports = router => {
 
     const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
 
-    const basePath = `session.data.indictmentDrafts.${caseId}`
-    const countsPath = `${basePath}.counts`
-    const countOrderPath = `${basePath}.countOrder`
+    const indictmentBasePath = `session.data.indictments.${caseId}`
+    const countsPath = `${indictmentBasePath}.counts`
+    const countOrderPath = `${indictmentBasePath}.countOrder`
 
     const counts = _.get(req, countsPath, []) || []
+
+
 
     // action buttons: (default = save+continue)
     const action = (req.body.action || '').toString()
