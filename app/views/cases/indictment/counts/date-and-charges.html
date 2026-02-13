@@ -51,7 +51,7 @@
       {% set _ = chargeSelectionItems.push({ divider: "or" }) %}
       {% set _ = chargeSelectionItems.push({
         value: "newCount",
-        text: "Add a new count (not related to a charge)",
+        text: "Add a new count",
         checked: draftCount.countBasis == "newCount"
       }) %}
 
@@ -71,7 +71,7 @@
            DATE TYPE (radio + conditional date inputs)
            ========================= #}
 
-        <h2 class="govuk-heading-m govuk-!-margin-top-6">Date or date range</h2>
+        <h2 class="govuk-heading-m govuk-!-margin-top-6">Enter date information for charge</h2>
 
         {% set singleDateConditionalHtml %}
           <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">

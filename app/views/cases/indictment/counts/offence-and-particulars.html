@@ -313,7 +313,8 @@
             text: "Save and come back later",
             classes: "govuk-button--secondary",
             name: "action",
-            value: "saveForLater"
+            value: "saveForLater",
+            href: "#"
           }) }}
         </div>
 
@@ -325,7 +326,7 @@
     {##############################################################################################}
     <div class="govuk-grid-column-one-third govuk-!-padding-left-6">
 
-      <h2 class="govuk-heading-m">Selected charge</h2>
+      <h2 class="govuk-heading-m">Charge</h2>
 
       <p class="govuk-body">
         {% if defendantNames.length %}
@@ -344,26 +345,68 @@
         {% endif %}.
       </p>
 
-      {# Details with ALL case charges (from Prisma) #}
-      {% set allChargesListHtml %}
-        {% if dedupedCharges.length %}
-          <ul class="govuk-list govuk-!-margin-bottom-0">
-            {% for ch in dedupedCharges %}
-              <li>
-                {% if ch.chargeCode %}{{ ch.chargeCode }}:{% endif %}
-                {{ ch.description }}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="govuk-body govuk-!-margin-bottom-0">No charges recorded for this case.</p>
-        {% endif %}
-      {% endset %}
+  {# ------------------------------------------------------------
+   Details: All related charges
+   - Put selected charge (from date-and-charges) first
+   - Then a divider + all other available charges
+   ------------------------------------------------------------ #}
 
-      {{ govukDetails({
-        summaryText: "See related charges",
-        html: allChargesListHtml
-      }) }}
+  {# Selected charge identity #}
+  {% set selectedChargeCode = (draftCount.chargeCode or "") %}
+  {% set selectedChargeLabel = (draftCount.chargeLabel or "") %}
+  {% set selectedChargeText = "" %}
+  {% if selectedChargeCode and selectedChargeLabel %}
+    {% set selectedChargeText = selectedChargeCode + ": " + selectedChargeLabel %}
+  {% elif selectedChargeLabel %}
+    {% set selectedChargeText = selectedChargeLabel %}
+  {% elif selectedChargeCode %}
+    {% set selectedChargeText = selectedChargeCode %}
+  {% endif %}
+
+  {% set allChargesListHtml %}
+
+    <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Charge you are working on</h3>
+
+    {% if selectedChargeText %}
+      <p class="govuk-body govuk-!-margin-bottom-3">{{ selectedChargeText }}</p>
+    {% else %}
+      <p class="govuk-body govuk-!-margin-bottom-3">No charge selected yet.</p>
+    {% endif %}
+
+    <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-3">
+
+    <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Other charges</h3>
+
+    {% if dedupedCharges.length %}
+      <ul class="govuk-list govuk-!-margin-bottom-0">
+        {% for ch in dedupedCharges %}
+
+          {# hide the selected one from the list below #}
+          {% set isSelected = false %}
+          {% if selectedChargeCode and ch.chargeCode and (ch.chargeCode == selectedChargeCode) %}
+            {% set isSelected = true %}
+          {% endif %}
+
+          {% if not isSelected %}
+            <li>
+              {% if ch.chargeCode %}{{ ch.chargeCode }}:{% endif %}
+              {{ ch.description }}
+            </li>
+          {% endif %}
+
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="govuk-body govuk-!-margin-bottom-0">No charges recorded for this case.</p>
+    {% endif %}
+
+  {% endset %}
+
+  {{ govukDetails({
+    summaryText: "All charges",
+    html: allChargesListHtml
+  }) }}
+
 
     </div>
   </div>

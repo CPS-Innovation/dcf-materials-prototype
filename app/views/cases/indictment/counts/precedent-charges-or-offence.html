@@ -20,7 +20,7 @@
 
       {% set html %}
         <p class="govuk-notification-banner__heading">
-          ** Example testing try searches on: R01, ABH, Theft Act 1968, section 8, robbery, assault, zebra ***
+          ** Can search on code, keyword or offence ***
       {% endset %}
 
       {{ govukNotificationBanner({
@@ -47,7 +47,7 @@
         
         {% if precedentSearchKeywords and precedentResults and precedentResults.length %}
           {{ govukButton({
-            text: "Add and continue",
+            text: "Save and continue",
             classes: "govuk-!-margin-top-4"
           }) }}
         {% endif %}
