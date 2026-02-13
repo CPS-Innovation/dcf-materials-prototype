@@ -142,12 +142,12 @@ module.exports = router => {
 
       console.log('READ-ONLY HIT', caseId)
 
-
       return res.render('cases/indictment/preview/read-only', {
         _case,
         indictment
       })
     })
+
 
     // /cases/:caseId/indictment/task-list (GET)
     router.get('/cases/:caseId/indictment/task-list', async (req, res) => {
