@@ -54,18 +54,19 @@
           {% set conditionalHtml %}
             <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
 
-              {{ govukInput({
-                id: "witnessOrder-" + wid,
-                name: "witnessOrder[" + wid + "]",
-                value: orderValue,
-                classes: "govuk-input--width-3",
-                inputmode: "numeric",
-                type: "text",
-                label: {
-                  text: "Move " + w.firstName + " " + w.lastName + " to position (optional)",
-                  classes: "govuk-label--s"
-                }
-              }) }}
+          {{ govukInput({
+            id: "witnessOrder-" + wid,
+            name: "witnessOrder[id-" + wid + "]",
+            value: orderValue,
+            classes: "govuk-input--width-3",
+            inputmode: "numeric",
+            type: "text",
+            label: {
+              text: "Move " + w.firstName + " " + w.lastName + " to position (optional)",
+              classes: "govuk-label--s"
+            }
+          }) }}
+
 
             </div>
           {% endset %}
