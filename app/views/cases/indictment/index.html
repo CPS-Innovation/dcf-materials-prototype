@@ -129,7 +129,7 @@
             items: [
               {
                 href: "/cases/" + _case.id + "/indictment/preview",
-                text: "Edit"
+                text: "Continue"
               }
             ]
           }
@@ -233,7 +233,7 @@
       <div class="app-list">
         <div class="app-list__item">
           {{ govukSummaryList({
-            classes: "govuk-summary-list--no-border app-summary-list--compact",
+            classes: "app-summary-list--compact app-summary-list--divided",
             rows: summaryRows
           }) }}
         </div>
