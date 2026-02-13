@@ -1,0 +1,108 @@
+{# app/views/cases/indictment/index #}
+
+{% extends "layouts/main.html" %}
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Indictments' %}
+
+{# {% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: returnUrl or "javascript:window.history.back()"
+  }) }}
+{% endblock %} #}
+
+{% block beforeContent %}
+  {% include "_includes/case/identity-bar.njk" %}
+{% endblock %}
+
+
+{% block content %}
+{% include "_includes/case/dcf-navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">
+  Indictment step-by-step checklist
+</h1>
+
+{{ govukTaskList({
+  idPrefix: "indictment-task-list",
+  items: [
+
+    {
+      title: { text: "Review case and materials" },
+      href: "#",
+      status: {
+        tag: { text: "Completed", classes: "govuk-tag--green" }
+      }
+    },
+
+    {
+      title: { text: "Map out the story you want to tell" },
+      hint: { text: "Add your case review to the system." },
+      href: "#",
+      status: {
+        tag: { text: "Completed", classes: "govuk-tag--green" }
+      }
+    },
+
+    {
+      title: { text: "Review unused materials and complete disclosure" },
+      href: "#",
+      status: {
+        tag: { text: "Completed", classes: "govuk-tag--green" }
+      }
+    },
+
+    {
+      title: { text: "Build the indictment count(s)" },
+      href: "#",
+      status: {
+        tag: { text: "In progress", classes: "govuk-tag--blue" }
+      }
+    },
+
+    {
+      title: { text: "Review count order" },
+      href: "#",
+      status: {
+        tag: { text: "In progress", classes: "govuk-tag--blue" }
+      }
+    },
+
+    {
+      title: { text: "Complete your Advocate brief, including summary" },
+      href: "#",
+      status: {
+        tag: { text: "Not started", classes: "govuk-tag--grey" }
+      }
+    },
+
+    {
+      title: { text: "Consider any summary charges" },
+      href: "#",
+      status: {
+        tag: { text: "Not started", classes: "govuk-tag--grey" }
+      }
+    },
+
+    {
+      title: { text: "Complete the pre-trial preparatory hearing (PTPH) form" },
+      href: "#",
+      status: {
+        tag: { text: "Not started", classes: "govuk-tag--grey" }
+      }
+    }
+
+  ]
+}) }}
+
+
+
+
+      </div>
+  </div>
+    
+{% endblock %}

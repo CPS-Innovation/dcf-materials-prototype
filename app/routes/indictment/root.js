@@ -149,6 +149,16 @@ module.exports = router => {
       })
     })
 
+    // /cases/:caseId/indictment/task-list (GET)
+    router.get('/cases/:caseId/indictment/task-list', async (req, res) => {
+      const caseId = parseCaseId(req, res)
+      if (!caseId) return
+
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+      return res.render('cases/indictment/task-list/index', { _case })
+    })
 
 
 }

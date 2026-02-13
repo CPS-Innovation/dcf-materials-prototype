@@ -90,10 +90,12 @@
 
       {% set pinnedStartLink %}
         <a class="govuk-link govuk-link--no-visited-state govuk-!-margin-bottom-0"
-          href="/cases/{{ pinnedCaseId }}/indictment">
+          href="/cases/{{ pinnedCaseId }}/indictment/task-list">
           Start task
         </a>
       {% endset %}
+
+
 
       {{ govukSummaryList({
         classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
@@ -183,12 +185,21 @@
           {# -----------------------------
             Start task link - route is in case--materials.js
             ----------------------------- #}
+          {% set startTaskHref = "/cases/" + task.case.id + "/material/start-disclosure" %}
+
+          {# Normalise IDs so "1" and 1 both match #}
+          {% if (task.case.id | int) == (pinnedCaseId | int) %}
+            {% set startTaskHref = "/cases/" + task.case.id + "/indictment/task-list" %}
+          {% endif %}
+
+
           {% set startTaskLink %}
             <a class="govuk-link govuk-link--no-visited-state govuk-!-margin-bottom-0"
-              href="/cases/{{ task.case.id }}/material/start-disclosure">
+              href="{{ startTaskHref }}">
               Start task
             </a>
           {% endset %}
+
 
           {{ govukSummaryList({
             classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
