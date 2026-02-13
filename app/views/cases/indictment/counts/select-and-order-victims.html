@@ -26,10 +26,7 @@
       {% endif %}
 
       <p class="govuk-body">
-        Enter a new number for victims you want to move to a new position.
-      </p>
-      <p class="govuk-body">
-        Victims will move up or down to accommodate the new order when you save your changes.
+        Reorder defendants by entering new order numbers. Defendant positions will move up and down accordingly.
       </p>
 
       <h2 class="govuk-heading-m">Select the victim(s) that apply to this indictment</h2>
@@ -71,9 +68,10 @@
             </div>
           {% endset %}
 
+          {# ✅ Slot number prefix = row position, not the victim #}
           {% set _ = victimItems.push({
             value: vid,
-            text: v.firstName + " " + v.lastName,
+            text: loop.index + ". " + v.firstName + " " + v.lastName,
             checked: isChecked,
             conditional: { html: conditionalHtml }
           }) %}
@@ -90,8 +88,10 @@
           <p class="govuk-body">No victims have been added to this case.</p>
         {% endif %}
 
-        {# Tiny friction: list those who will be left off the count (unchecked) #}
-        {% if showLeftOffInset and leftOffPreview.length %}
+        {# -----------------------------------------------------------
+          Left-off inset temporarily disabled for this iteration
+          ----------------------------------------------------------- #}
+       {# {% if showLeftOffInset and leftOffPreview and leftOffPreview.length %}
           <div class="govuk-inset-text">
             <p class="govuk-body govuk-!-margin-bottom-2">
               If you save now, these victims will be left off this count:
@@ -103,7 +103,7 @@
               {% endfor %}
             </ul>
           </div>
-        {% endif %}
+        {% endif %}#}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Save and continue" }) }}

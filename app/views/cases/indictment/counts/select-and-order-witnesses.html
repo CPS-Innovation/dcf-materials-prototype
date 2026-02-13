@@ -26,10 +26,7 @@
       {% endif %}
 
       <p class="govuk-body">
-        Enter a new number for witnesses you want to move to a new position.
-      </p>
-      <p class="govuk-body">
-        Witnesses will move up or down to accommodate the new order when you save your changes.
+        Reorder defendants by entering new order numbers. Defendant positions will move up and down accordingly.
       </p>
 
       <h2 class="govuk-heading-m">Select the witness(es) that apply to this indictment</h2>
@@ -41,7 +38,7 @@
 
         {% set witnessItems = [] %}
 
-        {% for w in _case.witnesses %}
+        {% for w in (_case.witnesses or []) %}
 
           {% set wid = w.id | string %}
 
@@ -73,9 +70,10 @@
             </div>
           {% endset %}
 
+          {# ✅ Slot number prefix = row position #}
           {% set _ = witnessItems.push({
             value: wid,
-            text: w.firstName + " " + w.lastName,
+            text: loop.index + ". " + w.firstName + " " + w.lastName,
             checked: isChecked,
             conditional: { html: conditionalHtml }
           }) %}
@@ -88,7 +86,12 @@
           items: witnessItems
         }) }}
 
-        {% if showLeftOffInset and leftOffPreview.length %}
+        {# -----------------------------------------------------------
+          Left-off inset temporarily disabled for this iteration
+          ----------------------------------------------------------- #}
+
+        {#
+        {% if showLeftOffInset and leftOffPreview and leftOffPreview.length %}
           <div class="govuk-inset-text">
             <p class="govuk-body govuk-!-margin-bottom-2">
               If you save now, these witnesses will be left off this count:
@@ -101,6 +104,8 @@
             </ul>
           </div>
         {% endif %}
+        #}
+
 
         <div class="govuk-button-group govuk-!-margin-top-6">
 

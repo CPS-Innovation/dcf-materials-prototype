@@ -87,8 +87,10 @@
           items: defendantItems
         }) }}
 
-        {# Tiny friction: list those who will be left off the count (unchecked) #}
-        {% if showLeftOffInset and leftOffPreview and leftOffPreview.length %}
+        {# -----------------------------------------------------------
+          Left-off inset temporarily disabled for this iteration
+          ----------------------------------------------------------- #}
+        {#{% if showLeftOffInset and leftOffPreview and leftOffPreview.length %}
           <div class="govuk-inset-text">
             <p class="govuk-body govuk-!-margin-bottom-2">
               If you save now, these defendants will be left off this count:
@@ -100,7 +102,7 @@
               {% endfor %}
             </ul>
           </div>
-        {% endif %}
+        {% endif %}#}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Save and continue" }) }}
