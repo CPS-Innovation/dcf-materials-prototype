@@ -1,9 +1,8 @@
 {# /cases/indictment/counts/added #}
-{# /cases/indictment/counts/added #}
 {% extends "layouts/main.html" %}
 
 {% set pageName = "Counts (" + (counts | length) + ")" %}
- 
+
 {% block beforeContent %}
   {{ govukBreadcrumbs({
     items: [
@@ -18,12 +17,9 @@
   }) }}
 {% endblock %}
 
-
 {% block content %}
-
   <div class="govuk-grid-row">
-  <div class="govuk-grid-column-full">
-
+    <div class="govuk-grid-column-full">
 
       {% if successBanner %}
         {{ govukNotificationBanner({
@@ -32,7 +28,6 @@
           text: successBanner.text
         }) }}
       {% endif %}
-
 
       <span class="govuk-caption-m">Build indictment</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
@@ -44,11 +39,17 @@
         }) }}
 
         <a class="govuk-button govuk-button--secondary"
-          href="/cases/{{ _case.id }}/indictment/preview"
+          href="/cases/{{ _case.id }}/indictment/counts/added/reorder"
           data-module="govuk-button">
-          Preview indictment
+          Reorder counts
         </a>
 
+
+        <a class="govuk-button govuk-button--secondary"
+           href="/cases/{{ _case.id }}/indictment/preview"
+           data-module="govuk-button">
+          Preview indictment
+        </a>
       </div>
 
       {% if counts and counts.length %}
@@ -79,8 +80,7 @@
       {% else %}
         <p class="govuk-body">No count has been added yet.</p>
       {% endif %}
-    
+
     </div>
   </div>
-
 {% endblock %}
