@@ -2,7 +2,7 @@
 
 {% extends "layouts/main.html" %}
 
-{% set pageName = "Preview and edit indictment" %}
+{% set pageName = "Preview indictment" %}
 
 {% block beforeContent %}
   {{ govukBreadcrumbs({
@@ -30,8 +30,12 @@
     html: "<p class='govuk-notification-banner__heading'>Draft count added to Indictment</p>"
   }) }} #}
 
-    <span class="govuk-caption-m">Build indictment</span>
-    <h1 class="govuk-heading-l">{{ pageName }}</h1>
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
 
     {# --- Build defendant display name list (UPPERCASE) --- #}
