@@ -170,8 +170,8 @@
       {% endif %}
 
       {# ------------------------------------------------------------
-         Counts row (ONLY when In progress)
-         ------------------------------------------------------------ #}
+        Counts row (display-only when Completed)
+        ------------------------------------------------------------ #}
 
       {% set countsLength = 0 %}
       {% if indictment and indictment.counts and indictment.counts.length %}
@@ -185,30 +185,53 @@
           value: { text: countsLength },
           actions: {
             items: [
-              {
-                href: "/cases/" + _case.id + "/indictment/counts/added",
-                text: "View counts"
-              },
-              {
-                href: "/cases/" + _case.id + "/indictment/counts/date-and-charges",
-                text: "Add another count"
-              }
+              { href: "/cases/" + _case.id + "/indictment/counts/added", text: "View counts" },
+              { href: "/cases/" + _case.id + "/indictment/counts/date-and-charges", text: "Add another count" }
             ]
           }
         } %}
 
+      {% elif indictment.status == "Completed" %}
+
+        {% set countsRow = {
+          key: { text: "Counts" },
+          value: { text: countsLength }
+        } %}
+
       {% endif %}
+
 
       {# ------------------------------------------------------------
          Build rows array
          ------------------------------------------------------------ #}
-      {% set summaryRows = [] %}
+        {% set countsLength = 0 %}
+        {% if indictment and indictment.counts and indictment.counts.length %}
+          {% set countsLength = indictment.counts.length %}
+        {% endif %}
 
-      {% set _ = summaryRows.push(indictmentRow) %}
+        {% if indictment.status == "In progress" %}
+          {% set countsRow = {
+            key: { text: "Counts" },
+            value: { text: countsLength },
+            actions: {
+              items: [
+                { href: "/cases/" + _case.id + "/indictment/counts/added", text: "View counts" },
+                { href: "/cases/" + _case.id + "/indictment/counts/date-and-charges", text: "Add another count" }
+              ]
+            }
+          } %}
+        {% elif indictment.status == "Completed" %}
+          {% set countsRow = {
+            key: { text: "Counts" },
+            value: { text: countsLength }
+          } %}
+        {% endif %}
 
-      {% if indictment.status == "In progress" %}
-        {% set _ = summaryRows.push(countsRow) %}
-      {% endif %}
+        {% set summaryRows = [] %}
+        {% set _ = summaryRows.push(indictmentRow) %}
+        {% if countsRow %}{% set _ = summaryRows.push(countsRow) %}{% endif %}
+
+
 
       {% set _ = summaryRows.push({
         key: { text: "Defendant(s)" },
