@@ -5,4 +5,5 @@ module.exports = router => {
   require('./indictment/assign')(router)
   require('./indictment/multiple')(router)
   require('./indictment/counts-edit')(router)
+    require('./indictment/counts-reorder')(router) // ✅ add this
 }
