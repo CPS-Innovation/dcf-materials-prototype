@@ -28,10 +28,13 @@ module.exports = router => {
       const isCompleted = _.get(req, `session.data.indictmentCompleted.${caseId}`, false)
       const completedIndictment = _.get(req, `session.data.completedIndictments.${caseId}`, null)
 
-      const indictment = _.get(req, `session.data.indictments.${caseId}`, {
-        status: isCompleted ? 'Completed' : (countsCase.numberOfCounts || 'Not started'),
-        counts: []
-      })
+      const indictment = (isCompleted && completedIndictment)
+        ? completedIndictment
+        : _.get(req, `session.data.indictments.${caseId}`, {
+            status: isCompleted ? 'Completed' : 'Not started',
+            counts: []
+          })
+
 
       // 👇 ADD IT RIGHT HERE
       console.log('GET indictment', {
