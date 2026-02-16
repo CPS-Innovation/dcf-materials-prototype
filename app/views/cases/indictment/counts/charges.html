@@ -3,7 +3,7 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Charges' %}
+{% set pageName = 'Select charges for indictment' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -17,8 +17,13 @@
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
+        
 
-       <span class="govuk-caption-m">Indictment - Draft count</span>
+       <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <form method="post" novalidate>
