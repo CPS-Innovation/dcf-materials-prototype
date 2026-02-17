@@ -122,6 +122,18 @@
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
+                text: "Dispute sensitivity",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/item-dispute-sensitivity?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Change sensitivity dispute",
+                href: "/cases/" ~ _case.id ~
+                  "/disclosure/assess-non-sensitive/change-sensitivity-dispute?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
                 text: "Request updated description",
                 href: "/cases/" ~ _case.id ~
                   "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
@@ -209,7 +221,14 @@
             {{ status }}
           </strong>
 
-          {% if disagrees %}
+          {% if r.sensitivityDisputed %}
+            <div class="govuk-!-margin-top-3">
+              {{ govukTag({
+                text: "Sensitivity disputed",
+                classes: "govuk-tag--yellow"
+              }) }}
+            </div>
+          {% elseif disagrees %}
             <div class="govuk-!-margin-top-3">
               {{ govukTag({
                 text: "Disagrees with police",
