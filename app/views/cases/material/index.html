@@ -80,15 +80,37 @@
       history.scrollRestoration = 'manual'
     }
 
-    function isDisclosureTarget() {
-      // Disclosure can be indicated by hash OR by query param
-      var params = new URLSearchParams(window.location.search)
-      var tab = (params.get('tab') || '').trim()
-      return window.location.hash === '#disclosure' || tab === 'disclosure'
+    var params = new URLSearchParams(window.location.search)
+    var tabParam = (params.get('tab') || '').trim()
+
+    // Map query param values to their GOV.UK Tabs anchor hrefs
+    var TAB_HREFS = {
+      'disclosure':     '#disclosure',
+      'view-materials': '#view-materials',
+      'communications': '#communications'
+    }
+
+    function getTargetTabHref() {
+      // Hash takes priority (direct link like #disclosure)
+      if (window.location.hash && window.location.hash !== '#') {
+        return window.location.hash
+      }
+      // Fall back to ?tab= query param
+      return TAB_HREFS[tabParam] || null
+    }
+
+    function activateTab(targetHref) {
+      // Find the tab link with matching href and simulate a click so GOV.UK Tabs
+      // switches panel, updates aria-selected, and manages focus correctly
+      var tabLink = document.querySelector('#case-tabs a.govuk-tabs__tab[href="' + targetHref + '"]')
+      if (tabLink) {
+        tabLink.click()
+        // Don't scroll to the tab — we want top of page
+        window.scrollTo(0, 0)
+      }
     }
 
     function forceTopHard() {
-      // Multiple ticks to beat GOV.UK tabs init + focus timing + layout settling
       window.scrollTo(0, 0)
       requestAnimationFrame(function () {
         window.scrollTo(0, 0)
@@ -98,35 +120,34 @@
       })
     }
 
-    // 1) On initial load / BFCache return
     function onEntry() {
-      if (isDisclosureTarget()) {
+      var targetHref = getTargetTabHref()
+      if (!targetHref) return
+
+      // GOV.UK Tabs initialises synchronously on DOMContentLoaded via govuk-frontend.
+      // By the time our load event fires it's already set up, so we can click safely.
+      // Use a short timeout as a safety net for slower initialisations.
+      setTimeout(function () {
+        activateTab(targetHref)
         forceTopHard()
-      }
+      }, 0)
     }
 
     window.addEventListener('load', onEntry)
-    window.addEventListener('pageshow', function (e) {
-      // pageshow fires on BFCache restores too
-      onEntry()
-    })
+    window.addEventListener('pageshow', function () { onEntry() })
 
-    // 2) If hash changes (rare, but safe)
     window.addEventListener('hashchange', function () {
-      if (window.location.hash === '#disclosure') {
-        forceTopHard()
+      var targetHref = getTargetTabHref()
+      if (targetHref) {
+        setTimeout(function () { forceTopHard() }, 0)
       }
     })
 
-    // 3) When user clicks Disclosure tab, always go top (your requirement)
+    // When user clicks any tab, scroll to top (your existing requirement)
     document.addEventListener('click', function (e) {
       var a = e.target && e.target.closest ? e.target.closest('a.govuk-tabs__tab') : null
       if (!a) return
-
-      // If they clicked the disclosure tab link, force top after GOVUK tabs switches panels
-      if (a.getAttribute('href') === '#disclosure') {
-        setTimeout(forceTopHard, 0)
-      }
+      setTimeout(forceTopHard, 0)
     })
   })()
 </script>
