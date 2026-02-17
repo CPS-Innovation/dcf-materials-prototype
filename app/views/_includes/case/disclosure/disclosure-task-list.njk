@@ -124,6 +124,15 @@
   {% endif %}
 {% endif %}
 
+{# ----------------------------------------------------------------
+   PROTOTYPE ONLY: force sensitive to Completed for UR sessions.
+   Set to false once sensitive flow is being tested end-to-end.
+----------------------------------------------------------------- #}
+{% set urSimulateSensitiveCompleted = true %}
+{% if urSimulateSensitiveCompleted %}
+  {% set sensitiveStatus = "Completed" %}
+{% endif %}
+
 {% set nonSensitiveStatusHtml %}
   {% if nonSensitiveStatus == "Completed" %}
     <span class="govuk-body govuk-!-margin-0">Completed</span>
