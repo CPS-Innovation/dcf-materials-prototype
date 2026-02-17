@@ -1157,4 +1157,38 @@ module.exports = router => {
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
 
+
+  // ---------------------------------------------------------------------------
+  // Sign and export disclosure documents
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/sign-and-export-disclosure-documents', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    return res.render('cases/disclosure/assess-non-sensitive/sign-and-export-disclosure-documents', {
+      _case,
+      caseMaterials,
+      returnUrl: req.query?.returnUrl || `/cases/${caseId}/material?tab=disclosure`
+    })
+  })
+
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/sign-and-export-disclosure-documents', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    _.set(req, 'session.data.disclosureExported', true)
+
+    _.set(req, 'session.data.successBanner', {
+      titleText: '3 disclosure documents have been signed and exported',
+      text: 'Disclosure documents can be viewed in the unused non-sensitive and unused sensitive folders in the Review and redact tab.'
+    })
+
+    return res.redirect(`/cases/${caseId}/material?tab=disclosure`)
+  })
+
 }

@@ -177,6 +177,9 @@
   }) }}
 {% endif %}
 
+{% set bothCompleted = (nonSensitiveStatus == "Completed") and (sensitiveStatus == "Completed") %}
+{% set hasBeenExported = data.disclosureExported %}
+
 {% if nonSensitiveCompleted %}
   {% if hasAnyDisagreement %}
     {{ govukInsetText({
@@ -184,7 +187,7 @@
         "Your assessment disagrees with the police on one or more selected items.<br>" ~
         "They have been notified so they can update their disclosure status. Once all disagreements are resolved, the option to sign and export the disclosure schedules will become available on this page."
     }) }}
-  {% else %}
+  {% elseif hasBeenExported %}
     {{ govukInsetText({
       html:
         "This assessment has now been exported.<br>" ~
@@ -210,11 +213,16 @@
   status: { html: sensitiveStatusHtml }
 }) %}
 
-{# ✅ Append ONLY when completed + agreement #}
-{% if nonSensitiveCompleted and (not hasAnyDisagreement) %}
+{# ✅ Append ONLY when both completed + no disagreements + not yet exported #}
+{% if bothCompleted and (not hasAnyDisagreement) and (not hasBeenExported) %}
   {% set _ = taskItems.push({
-    title: { html: '<a class="govuk-link" href="#">Sign and export the disclosure schedules</a>' },
+    title: { html: '<a class="govuk-link" href="/cases/' ~ _case.id ~ '/disclosure/assess-non-sensitive/sign-and-export-disclosure-documents">Sign and export the disclosure schedules</a>' },
     status: { html: '<strong class="govuk-tag govuk-tag--blue">Not completed</strong>' }
+  }) %}
+{% elseif bothCompleted and (not hasAnyDisagreement) and hasBeenExported %}
+  {% set _ = taskItems.push({
+    title: { text: "Sign and export the disclosure schedules" },
+    status: { html: '<span class="govuk-body govuk-!-margin-0">Completed</span>' }
   }) %}
 {% endif %}
 

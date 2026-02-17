@@ -67,13 +67,13 @@
             button: { text: "Actions" },
             items: [
               {
-                text: "Agree no longer relevant",
+                text: "Accept item is no longer relevant",
                 href: "/cases/" ~ _case.id ~
                   "/disclosure/no-longer-relevant/agree-no-longer-relevant?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
-                text: "Request item is reinstated",
+                text: "Ask police to reinstate item",
                 href: "/cases/" ~ _case.id ~
                   "/disclosure/no-longer-relevant/request-item-reinstatement?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
