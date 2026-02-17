@@ -3,7 +3,7 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Precedent charges or offence' %}
+{% set pageName = 'Select precedent charges or offence for count' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -27,7 +27,11 @@
         html: html
       }) }}
 
-      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       {# Search form submits query + category #}

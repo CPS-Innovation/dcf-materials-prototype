@@ -2,7 +2,7 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Select and order victims' %}
+{% set pageName = 'Select victims for indictment' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -15,7 +15,11 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       {% if showVictimReorderSuccess %}
@@ -29,7 +33,7 @@
         Reorder defendants by entering new order numbers. Defendant positions will move up and down accordingly.
       </p>
 
-      <h2 class="govuk-heading-m">Select the victim(s) that apply to this indictment</h2>
+      <h2 class="govuk-heading-m">Select all that apply</h2>
 
       <form method="post" novalidate>
         {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}

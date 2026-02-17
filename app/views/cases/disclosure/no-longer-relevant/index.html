@@ -70,12 +70,12 @@
         button: { text: "Assess multiple items" },
         items: [
           {
-            text: "Agree no longer relevant",
+            text: "Accept item is no longer relevant",
             href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" | urlencode),
             attributes: { "data-allow-nlr": "true" }
           },
           {
-            text: "Request item is reinstated",
+            text: "Ask police to reinstate item",
             href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-item-reinstatement?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" | urlencode),
             attributes: { "data-allow-nlr": "true" }
           }
