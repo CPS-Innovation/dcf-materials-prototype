@@ -228,6 +228,9 @@
                 classes: "govuk-tag--yellow"
               }) }}
             </div>
+            {% if r.sensitivityDisputeReason %}
+              <div class="govuk-!-margin-top-2">{{ r.sensitivityDisputeReason }}</div>
+            {% endif %}
           {% elseif disagrees %}
             <div class="govuk-!-margin-top-3">
               {{ govukTag({
@@ -235,10 +238,13 @@
                 classes: "govuk-tag--yellow"
               }) }}
             </div>
-          {% endif %}
-
-          {% if cpsRationale %}
-            <div class="govuk-!-margin-top-2">{{ cpsRationale }}</div>
+            {% if cpsRationale %}
+              <div class="govuk-!-margin-top-2">{{ cpsRationale }}</div>
+            {% endif %}
+          {% else %}
+            {% if cpsRationale %}
+              <div class="govuk-!-margin-top-2">{{ cpsRationale }}</div>
+            {% endif %}
           {% endif %}
         </td>
 
