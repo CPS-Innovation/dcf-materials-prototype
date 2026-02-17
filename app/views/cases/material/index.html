@@ -29,7 +29,6 @@
 {% set pageName = defendantsValue %}
 
 {% block beforeContent %}
-  {# {% include "_includes/case/identity-bar.njk" %} #}
 {% endblock %}
 
 {% block content %}
@@ -182,6 +181,59 @@
           setTimeout(updateHeaderActions, 0)
         })
       })
+    })()
+  </script>
+
+  <script>
+    // Inject "Back to assessment" into the viewer toolbar when returnUrl is in the URL.
+    // The toolbar is built dynamically by material-viewer.js so we watch for it.
+    (function () {
+      var params = new URLSearchParams(window.location.search)
+      var returnUrl = params.get('returnUrl')
+      if (!returnUrl) return
+
+      function injectBackLink (toolbar) {
+        // Don't inject twice
+        if (toolbar.querySelector('[data-action="back-to-assessment"]')) return
+
+        var backLink = document.createElement('a')
+        backLink.href = returnUrl
+        backLink.className = 'govuk-link dcf-back-to-assessment'
+        backLink.textContent = 'Back to assessment'
+
+        var sep = document.createElement('span')
+        sep.setAttribute('aria-hidden', 'true')
+        sep.className = 'govuk-!-margin-horizontal-2'
+        sep.innerHTML = '&nbsp; | &nbsp;'
+
+        // Insert before the first existing link in the toolbar
+        var firstLink = toolbar.querySelector('a')
+        if (firstLink) {
+          toolbar.insertBefore(sep, firstLink)
+          toolbar.insertBefore(backLink, sep)
+        } else {
+          toolbar.appendChild(backLink)
+          toolbar.appendChild(sep)
+        }
+      }
+
+      // Watch for the viewer toolbar being created by material-viewer.js
+      var observer = new MutationObserver(function () {
+        var toolbar = document.querySelector('.dcf-viewer__toolbar')
+        if (toolbar) {
+          observer.disconnect()
+          injectBackLink(toolbar)
+        }
+      })
+
+      observer.observe(document.body, { childList: true, subtree: true })
+
+      // Also handle the case where toolbar already exists on load
+      var existing = document.querySelector('.dcf-viewer__toolbar')
+      if (existing) {
+        observer.disconnect()
+        injectBackLink(existing)
+      }
     })()
   </script>
 {% endblock %}

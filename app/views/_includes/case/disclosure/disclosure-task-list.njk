@@ -100,11 +100,29 @@
   or "Not started yet"
 %}
 
-{% set sensitiveStatus =
-  (data.cpsDisclosureAssessment and data.cpsDisclosureAssessment.hasAssessedSensitive)
-  or (cm.cpsDisclosureAssessment and cm.cpsDisclosureAssessment.hasAssessedSensitive)
-  or "Not started yet"
-%}
+{% set sensitiveStatus = "Not started yet" %}
+{% set sensitiveRows = data.disclosureSensitiveRows or [] %}
+{% set assessSensitiveRows = [] %}
+{% for r in sensitiveRows %}
+  {% if r and (((r.policeAssessment or '') | lower) != 'no longer relevant') %}
+    {% set _ = assessSensitiveRows.push(r) %}
+  {% endif %}
+{% endfor %}
+{% if assessSensitiveRows.length > 0 %}
+  {% set touchedSensitiveRows = [] %}
+  {% for r in assessSensitiveRows %}
+    {% if r and r.cpsAssessment and r.cpsAssessment != 'To be assessed' %}
+      {% set _ = touchedSensitiveRows.push(r) %}
+    {% endif %}
+  {% endfor %}
+  {% if touchedSensitiveRows.length == 0 %}
+    {% set sensitiveStatus = "Not started yet" %}
+  {% elseif touchedSensitiveRows.length < assessSensitiveRows.length %}
+    {% set sensitiveStatus = "In progress" %}
+  {% else %}
+    {% set sensitiveStatus = "Completed" %}
+  {% endif %}
+{% endif %}
 
 {% set nonSensitiveStatusHtml %}
   {% if nonSensitiveStatus == "Completed" %}
@@ -125,15 +143,6 @@
     </strong>
   {% endif %}
 {% endset %}
-
-{# TEMP: demo toggle #}
-{% set simulateSensitiveCompleted = true %}
-{% if simulateSensitiveCompleted %}
-  {% set sensitiveStatus = "Completed" %}
-  {% set sensitiveStatusHtml %}
-    <span class="govuk-body govuk-!-margin-0">Completed</span>
-  {% endset %}
-{% endif %}
 
 {# ------------------------------
    3) Disagreement detection (ONLY for assessNsRows)
