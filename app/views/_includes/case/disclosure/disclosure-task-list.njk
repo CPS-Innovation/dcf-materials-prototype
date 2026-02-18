@@ -48,32 +48,16 @@
 
 {# ------------------------------
    Rows (session data)
+   Non-sensitive rows no longer include NLR items
    ------------------------------ #}
-{% set nsRows = data.disclosureNonSensitiveRows or [] %}
+{% set assessNsRows = data.disclosureNonSensitiveRows or [] %}
 
 {# ------------------------------
-   1) Split rows into:
-      - Assess NS flow rows (exclude police NLR)
-      - NLR rows (police says "No longer relevant")
-   ------------------------------ #}
-{% set assessNsRows = [] %}
-{% set nlrRows = [] %}
-
-{% for r in nsRows %}
-  {% set policeIsNlr = r and (((r.policeAssessment or '') | lower) == 'no longer relevant') %}
-  {% if policeIsNlr %}
-    {% set _ = nlrRows.push(r) %}
-  {% else %}
-    {% set _ = assessNsRows.push(r) %}
-  {% endif %}
-{% endfor %}
-
-{# ------------------------------
-   2) Derive NS progress (ONLY from assessNsRows)
+   2) Derive NS progress
    ------------------------------ #}
 {% set touchedAssessNsRows = [] %}
 {% for r in assessNsRows %}
-  {% if r and r.cpsAssessment and r.cpsAssessment != 'To be assessed' %}
+  {% if r and r.cpsAssessment and r.cpsAssessment != 'To be reviewed' %}
     {% set _ = touchedAssessNsRows.push(r) %}
   {% endif %}
 {% endfor %}
@@ -111,7 +95,7 @@
 {% if assessSensitiveRows.length > 0 %}
   {% set touchedSensitiveRows = [] %}
   {% for r in assessSensitiveRows %}
-    {% if r and r.cpsAssessment and r.cpsAssessment != 'To be assessed' %}
+    {% if r and r.cpsAssessment and r.cpsAssessment != 'To be reviewed' %}
       {% set _ = touchedSensitiveRows.push(r) %}
     {% endif %}
   {% endfor %}
@@ -179,20 +163,39 @@
    ------------------------------ #}
 
 {# ----------------------------------------------------------------
-   PROTOTYPE ONLY: show NLR inset by default.
-   Later flow will remove it, so keep this as a single toggle.
+   No-longer-relevant inset:
+   - Show warning if there are unassessed NLR items
+   - Show completed state with link if all NLR items are assessed
 ----------------------------------------------------------------- #}
-{% set showNoLongerRelevantInset = true %}
+{% set nlrRows = data.disclosureNoLongerRelevantRows or [] %}
 
-{% if showNoLongerRelevantInset %}
+{% set unassessedNlrRows = [] %}
+{% for r in nlrRows %}
+  {% if r and r.cpsAssessment == 'To be reviewed' %}
+    {% set _ = unassessedNlrRows.push(r) %}
+  {% endif %}
+{% endfor %}
+
+{% set hasNlrItems = nlrRows.length > 0 %}
+{% set hasUnassessedNlr = unassessedNlrRows.length > 0 %}
+
+{% if hasNlrItems %}
   {% set disclosureReturnUrl = ("/cases/" ~ _case.id ~ "/material?tab=disclosure") | urlencode %}
   {% set nlrHref = "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant?returnUrl=" ~ disclosureReturnUrl %}
 
-  {{ govukInsetText({
-    html:
-      "The police have assessed one or more items as no longer relevant as part of splitting or merging this case.<br><br>" ~
-      "You need to <a class='govuk-link' href='" ~ nlrHref ~ "'>review material that is no longer relevant</a> and either agree that the items are no longer relevant or ask the police to reinstate them."
-  }) }}
+  {% if hasUnassessedNlr %}
+    {{ govukInsetText({
+      html:
+        "The police have assessed one or more items as no longer relevant as part of splitting or merging this case.<br><br>" ~
+        "You need to <a class='govuk-link' href='" ~ nlrHref ~ "'>review material that is no longer relevant</a> and either agree that the items are no longer relevant or ask the police to reinstate them."
+    }) }}
+  {% else %}
+    {{ govukInsetText({
+      html:
+        "You have reviewed all items marked as no longer relevant by the police.<br><br>" ~
+        "<a class='govuk-link' href='" ~ nlrHref ~ "'>View no longer relevant items</a>"
+    }) }}
+  {% endif %}
 {% endif %}
 
 {% set bothCompleted = (nonSensitiveStatus == "Completed") and (sensitiveStatus == "Completed") %}

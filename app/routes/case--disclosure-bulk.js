@@ -74,7 +74,7 @@ module.exports = router => {
 
     if (assessableRows.length === 0) return 'Not started yet'
 
-    const touchedRows = assessableRows.filter(r => r.cpsAssessment !== 'To be assessed')
+    const touchedRows = assessableRows.filter(r => r.cpsAssessment !== 'To be reviewed')
 
     if (touchedRows.length === 0) return 'Not started yet'
     if (touchedRows.length < assessableRows.length) return 'In progress'
@@ -739,7 +739,7 @@ module.exports = router => {
     const assessableRows = (rows || []).filter(r => r && r.cpsAssessment && r.cpsAssessment !== 'No longer relevant')
     let progress = 'Not started yet'
     if (assessableRows.length) {
-      const touched = assessableRows.filter(r => r.cpsAssessment !== 'To be assessed').length
+      const touched = assessableRows.filter(r => r.cpsAssessment !== 'To be reviewed').length
       if (touched === 0) progress = 'Not started yet'
       else if (touched < assessableRows.length) progress = 'In progress'
       else progress = 'Completed'
@@ -992,6 +992,103 @@ module.exports = router => {
     setSuccessBanner(req, `Requested reinstatement for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`, 'This update has been sent to the police.')
     const fallback = `/cases/${caseId}/disclosure/assess-sensitive`
     return redirectBack(res, req.body?.returnUrl ? String(req.body.returnUrl) : fallback, selectedIds[0])
+  })
+
+  // ===========================================================================
+  // NO LONGER RELEVANT BULK ROUTES
+  // For items in disclosureNoLongerRelevantRows
+  // ===========================================================================
+
+  async function renderBulkNlr(req, res, viewName) {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedIds = parseIdsParam(req.query?.ids)
+    if (!selectedIds.length) return res.status(400).send('Missing ids')
+    const rows = _.get(req, 'session.data.disclosureNoLongerRelevantRows', [])
+    const selectedRows = selectedIds.map(id => rows.find(r => String(r.id) === String(id))).filter(Boolean)
+    if (!selectedRows.length) return res.status(404).send('No rows found')
+    return res.render(viewName, {
+      _case,
+      caseMaterials,
+      selectedIds,
+      selectedRows,
+      returnUrl: req.query?.returnUrl ? String(req.query.returnUrl) : `/cases/${caseId}/disclosure/no-longer-relevant`
+    })
+  }
+
+  router.get('/cases/:caseId/disclosure/no-longer-relevant/bulk/agree-no-longer-relevant', (req, res) => {
+    return renderBulkNlr(req, res, 'cases/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant')
+  })
+
+  router.post('/cases/:caseId/disclosure/no-longer-relevant/bulk/agree-no-longer-relevant', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    if (!selectedIds.length) return res.status(400).send('Missing ids')
+    
+    // Direct reference to session array
+    const rows = req.session.data.disclosureNoLongerRelevantRows || []
+    
+    console.log('[NLR Bulk] BEFORE update:', JSON.stringify(rows.map(r => ({ id: r.id, cpsAssessment: r.cpsAssessment })), null, 2))
+    
+    // Direct mutation
+    selectedIds.forEach(id => {
+      const idx = rows.findIndex(r => String(r.id) === String(id))
+      if (idx === -1) return
+      rows[idx].cpsAssessment = 'No longer relevant'
+      rows[idx].cpsDisagreesWithPolice = false
+    })
+    
+    console.log('[NLR Bulk] AFTER update:', JSON.stringify(rows.map(r => ({ id: r.id, cpsAssessment: r.cpsAssessment })), null, 2))
+    
+    setSuccessBanner(req, `Agreed ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'} as No longer relevant`, 'This update has been sent to the police.')
+    const fallback = `/cases/${caseId}/disclosure/no-longer-relevant`
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallback
+    
+    // Force session save before redirect
+    req.session.save(err => {
+      if (err) console.error('Session save error:', err)
+      console.log('[NLR Bulk] Session saved, redirecting...')
+      return redirectBack(res, returnUrl, selectedIds[0])
+    })
+  })
+
+  router.get('/cases/:caseId/disclosure/no-longer-relevant/bulk/request-item-reinstatement', (req, res) => {
+    return renderBulkNlr(req, res, 'cases/disclosure/assess-non-sensitive/bulk/request-item-reinstatement')
+  })
+
+  router.post('/cases/:caseId/disclosure/no-longer-relevant/bulk/request-item-reinstatement', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    const selectedIds = parseIdsParam(req.body?.ids)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    if (!selectedIds.length) return res.status(400).send('Missing ids')
+    const reason = (req.body?.reinstatementReason || '').trim()
+    
+    // Direct reference to session array
+    const rows = req.session.data.disclosureNoLongerRelevantRows || []
+    
+    // Direct mutation
+    selectedIds.forEach(id => {
+      const idx = rows.findIndex(r => String(r.id) === String(id))
+      if (idx === -1) return
+      rows[idx].reinstatementRequested = true
+      rows[idx].reinstatementReason = reason || null
+      rows[idx].reinstatementRequestedAt = new Date().toISOString()
+      rows[idx].cpsDisagreesWithPolice = true
+    })
+    
+    setSuccessBanner(req, `Requested reinstatement for ${selectedIds.length} item${selectedIds.length === 1 ? '' : 's'}`, 'This update has been sent to the police.')
+    const fallback = `/cases/${caseId}/disclosure/no-longer-relevant`
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : fallback
+    
+    // Force session save before redirect
+    req.session.save(err => {
+      if (err) console.error('Session save error:', err)
+      return redirectBack(res, returnUrl, selectedIds[0])
+    })
   })
 
 }

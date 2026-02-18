@@ -18,7 +18,7 @@
 %}
 
 {% set cpsTagClass = {
-  "To be assessed": "govuk-tag--blue",
+  "To be reviewed": "govuk-tag--blue",
   "Disclosable": "govuk-tag--blue",
   "Disclosable by inspection": "govuk-tag--blue",
   "Evidence": "govuk-tag--blue",
@@ -74,7 +74,7 @@
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
-                text: "Ask police to reinstate item",
+                text: "Ask police to reinstate items",
                 href: routePrefix ~
                   "/no-longer-relevant/request-item-reinstatement?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
@@ -230,7 +230,7 @@
 
         {# CPS assessment #}
         <td class="govuk-table__cell">
-          {% set status = r.cpsAssessment or "To be assessed" %}
+          {% set status = r.cpsAssessment or "To be reviewed" %}
           <strong class="govuk-tag {{ cpsTagClass[status] }}">
             {{ status }}
           </strong>

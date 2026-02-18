@@ -62,7 +62,7 @@ module.exports = router => {
     /// Helper to compute non-sensitive assessment progress
     function computeNonSensitiveProgress(rows) {
       const NON_SENSITIVE_STATES = [
-        'To be assessed',
+        'To be reviewed',
         'Disclosable',
         'Disclosable by inspection',
         'Not disclosable',
@@ -79,7 +79,7 @@ module.exports = router => {
       }
 
       const touchedRows = assessableRows.filter(r =>
-        r.cpsAssessment !== 'To be assessed'
+        r.cpsAssessment !== 'To be reviewed'
       )
 
       if (touchedRows.length === 0) return 'Not started yet'
@@ -111,7 +111,7 @@ module.exports = router => {
     if (assessableRows.length) {
       const assessedCount = assessableRows.filter(r => {
         const s = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
-        return s && s !== 'To be assessed'
+        return s && s !== 'To be reviewed'
       }).length
 
       if (assessedCount === 0) status = 'Not started yet'
@@ -136,7 +136,7 @@ module.exports = router => {
       if (police !== 'no longer relevant') return false
 
       const cps = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
-      return !cps || cps === 'To be assessed'
+      return !cps || cps === 'To be reviewed'
     })
 
     const hasNlrDisagreement = rows.some(r => {
@@ -448,20 +448,25 @@ module.exports = router => {
 
     const caseMaterials = getCaseMaterialsForCase(req, _case)
 
-    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-    const nlrRows = rows.filter(r => String(r?.policeAssessment || '').toLowerCase() === 'no longer relevant')
+    const rows = _.get(req, 'session.data.disclosureNoLongerRelevantRows', [])
+    
+    console.log('[NLR GET] Session rows:', JSON.stringify(rows.map(r => ({ id: r.id, cpsAssessment: r.cpsAssessment })), null, 2))
 
-    // If no items are NLR, send them back where they came from (keeps prototype tidy)
-    if (!nlrRows.length) {
+    // If no items exist, send them back to disclosure tab
+    if (!rows.length) {
       const fallback = `/cases/${caseId}/material?tab=disclosure`
       const returnUrl = req.query?.returnUrl ? String(req.query.returnUrl) : fallback
       return res.redirect(returnUrl)
     }
 
+    // Handle success banner
+    const banner = _.get(req, 'session.data.successBanner')
+    if (banner) _.unset(req, 'session.data.successBanner')
+
     return res.render('cases/disclosure/no-longer-relevant/index', {
       _case,
       caseMaterials,
-      nlrRows,
+      successBanner: banner,
       returnUrl: req.query?.returnUrl || null
     })
   })
@@ -1209,7 +1214,7 @@ module.exports = router => {
     if (assessableRows.length) {
       const assessedCount = assessableRows.filter(r => {
         const s = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
-        return s && s !== 'To be assessed'
+        return s && s !== 'To be reviewed'
       }).length
       if (assessedCount === 0) status = 'Not started yet'
       else if (assessedCount < assessableRows.length) status = 'In progress'

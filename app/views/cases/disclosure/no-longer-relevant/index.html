@@ -11,14 +11,13 @@
 
 {# -------------------------
    Build rows for this page
-   ONLY policeAssessment = "No longer relevant"
+   From dedicated NLR session key
    ------------------------- #}
-{% set allRows = data.disclosureNonSensitiveRows or [] %}
-{% set rows = [] %}
-{% for r in allRows %}
-  {% if r and ((r.policeAssessment or '') | lower) == 'no longer relevant' %}
-    {% set _ = rows.push(r) %}
-  {% endif %}
+{% set rows = data.disclosureNoLongerRelevantRows or [] %}
+
+<!-- DEBUG: rows.length = {{ rows.length }} -->
+{% for r in rows %}
+  <!-- DEBUG: row {{ r.id }} cpsAssessment = {{ r.cpsAssessment }} -->
 {% endfor %}
 
 {# -------------------------
@@ -53,11 +52,11 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
 
-      {% if data.successBanner %}
+      {% if successBanner %}
         {{ govukNotificationBanner({
           type: "success",
-          titleText: data.successBanner.titleText or "Success",
-          text: data.successBanner.text or ""
+          titleText: successBanner.titleText or "Success",
+          text: successBanner.text or ""
         }) }}
       {% endif %}
 
@@ -70,13 +69,13 @@
         button: { text: "Assess multiple items" },
         items: [
           {
-            text: "Accept item is no longer relevant",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" | urlencode),
+            text: "Accept items are no longer relevant",
+            href: "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant/bulk/agree-no-longer-relevant?returnUrl=/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant",
             attributes: { "data-allow-nlr": "true" }
           },
           {
-            text: "Ask police to reinstate item",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-item-reinstatement?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" | urlencode),
+            text: "Ask police to reinstate items",
+            href: "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant/bulk/request-item-reinstatement?returnUrl=/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant",
             attributes: { "data-allow-nlr": "true" }
           }
         ]
@@ -97,7 +96,7 @@
 
         // Expose row data for bulk selection logic
         
-        window.__disclosureRows = {{ (data.disclosureNonSensitiveRows or []) | dump | safe }};
+        window.__disclosureRows = {{ (data.disclosureNoLongerRelevantRows or []) | dump | safe }};
 
         var bulkMenu = document.querySelector('.moj-button-menu');
         if (!bulkMenu) return;
@@ -164,7 +163,7 @@
             }
 
             // Only add ids= to real bulk routes
-            if (link.href && link.href.indexOf('/disclosure/assess-non-sensitive/bulk/') !== -1) {
+            if (link.href && link.href.indexOf('/disclosure/no-longer-relevant/bulk/') !== -1) {
               e.preventDefault();
               var url = new URL(link.href, window.location.origin);
               url.searchParams.set('ids', ids.join(','));
