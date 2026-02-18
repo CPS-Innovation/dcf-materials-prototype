@@ -1,9 +1,9 @@
-{# /cases/indictment/counts/date-and-charges.html #}
+{# /cases/indictment/counts/date-and-charges #}
 
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Charge and date' %}
+{% set pageName = 'Select charge for count' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -17,7 +17,11 @@
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
-       <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       <form method="post" novalidate>
@@ -51,7 +55,7 @@
       {% set _ = chargeSelectionItems.push({ divider: "or" }) %}
       {% set _ = chargeSelectionItems.push({
         value: "newCount",
-        text: "Add a new count (not related to a charge)",
+        text: "Add a new count",
         checked: draftCount.countBasis == "newCount"
       }) %}
 
@@ -71,7 +75,7 @@
            DATE TYPE (radio + conditional date inputs)
            ========================= #}
 
-        <h2 class="govuk-heading-m govuk-!-margin-top-6">Date or date range</h2>
+        <h2 class="govuk-heading-m govuk-!-margin-top-6">Enter date information for charge</h2>
 
         {% set singleDateConditionalHtml %}
           <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">

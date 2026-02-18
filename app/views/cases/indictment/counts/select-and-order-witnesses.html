@@ -2,7 +2,7 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Select and order witnesses' %}
+{% set pageName = 'Select witnesses for indictment' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -15,7 +15,11 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       {% if showWitnessReorderSuccess %}
@@ -26,13 +30,10 @@
       {% endif %}
 
       <p class="govuk-body">
-        Enter a new number for witnesses you want to move to a new position.
-      </p>
-      <p class="govuk-body">
-        Witnesses will move up or down to accommodate the new order when you save your changes.
+        Reorder defendants by entering new order numbers. Defendant positions will move up and down accordingly.
       </p>
 
-      <h2 class="govuk-heading-m">Select the witness(es) that apply to this count</h2>
+      <h2 class="govuk-heading-m">Select the witness(es) that apply to this indictment</h2>
 
       <form method="post" novalidate>
         {% if returnTo %}
@@ -41,7 +42,7 @@
 
         {% set witnessItems = [] %}
 
-        {% for w in _case.witnesses %}
+        {% for w in (_case.witnesses or []) %}
 
           {% set wid = w.id | string %}
 
@@ -57,25 +58,27 @@
           {% set conditionalHtml %}
             <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
 
-              {{ govukInput({
-                id: "witnessOrder-" + wid,
-                name: "witnessOrder[" + wid + "]",
-                value: orderValue,
-                classes: "govuk-input--width-3",
-                inputmode: "numeric",
-                type: "text",
-                label: {
-                  text: "Move " + w.firstName + " " + w.lastName + " to position (optional)",
-                  classes: "govuk-label--s"
-                }
-              }) }}
+          {{ govukInput({
+            id: "witnessOrder-" + wid,
+            name: "witnessOrder[id-" + wid + "]",
+            value: orderValue,
+            classes: "govuk-input--width-3",
+            inputmode: "numeric",
+            type: "text",
+            label: {
+              text: "Move " + w.firstName + " " + w.lastName + " to position (optional)",
+              classes: "govuk-label--s"
+            }
+          }) }}
+
 
             </div>
           {% endset %}
 
+          {# ✅ Slot number prefix = row position #}
           {% set _ = witnessItems.push({
             value: wid,
-            text: w.firstName + " " + w.lastName,
+            text: loop.index + ". " + w.firstName + " " + w.lastName,
             checked: isChecked,
             conditional: { html: conditionalHtml }
           }) %}
@@ -88,7 +91,12 @@
           items: witnessItems
         }) }}
 
-        {% if showLeftOffInset and leftOffPreview.length %}
+        {# -----------------------------------------------------------
+          Left-off inset temporarily disabled for this iteration
+          ----------------------------------------------------------- #}
+
+        {#
+        {% if showLeftOffInset and leftOffPreview and leftOffPreview.length %}
           <div class="govuk-inset-text">
             <p class="govuk-body govuk-!-margin-bottom-2">
               If you save now, these witnesses will be left off this count:
@@ -101,9 +109,16 @@
             </ul>
           </div>
         {% endif %}
+        #}
+
 
         <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({ text: "Save and continue" }) }}
+
+          {{ govukButton({
+            text: "Save and continue",
+            name: "action",
+            value: "continue"
+          }) }}
 
           {{ govukButton({
             text: "Refresh and reorder",

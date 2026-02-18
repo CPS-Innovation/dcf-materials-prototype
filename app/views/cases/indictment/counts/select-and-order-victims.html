@@ -2,7 +2,7 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Select and order victims' %}
+{% set pageName = 'Select victims for indictment' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -15,7 +15,11 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       {% if showVictimReorderSuccess %}
@@ -26,13 +30,10 @@
       {% endif %}
 
       <p class="govuk-body">
-        Enter a new number for victims you want to move to a new position.
-      </p>
-      <p class="govuk-body">
-        Victims will move up or down to accommodate the new order when you save your changes.
+        Reorder defendants by entering new order numbers. Defendant positions will move up and down accordingly.
       </p>
 
-      <h2 class="govuk-heading-m">Select the victim(s) that apply to this count</h2>
+      <h2 class="govuk-heading-m">Select all that apply</h2>
 
       <form method="post" novalidate>
         {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
@@ -71,9 +72,10 @@
             </div>
           {% endset %}
 
+          {# ✅ Slot number prefix = row position, not the victim #}
           {% set _ = victimItems.push({
             value: vid,
-            text: v.firstName + " " + v.lastName,
+            text: loop.index + ". " + v.firstName + " " + v.lastName,
             checked: isChecked,
             conditional: { html: conditionalHtml }
           }) %}
@@ -90,8 +92,10 @@
           <p class="govuk-body">No victims have been added to this case.</p>
         {% endif %}
 
-        {# Tiny friction: list those who will be left off the count (unchecked) #}
-        {% if showLeftOffInset and leftOffPreview.length %}
+        {# -----------------------------------------------------------
+          Left-off inset temporarily disabled for this iteration
+          ----------------------------------------------------------- #}
+       {# {% if showLeftOffInset and leftOffPreview and leftOffPreview.length %}
           <div class="govuk-inset-text">
             <p class="govuk-body govuk-!-margin-bottom-2">
               If you save now, these victims will be left off this count:
@@ -103,7 +107,7 @@
               {% endfor %}
             </ul>
           </div>
-        {% endif %}
+        {% endif %}#}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Save and continue" }) }}

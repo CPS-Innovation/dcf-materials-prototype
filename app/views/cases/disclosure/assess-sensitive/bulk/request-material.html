@@ -1,0 +1,117 @@
+{# This file is a template for /disclosure/assess-non-sensitive/bulk/request-material #}
+{% extends "layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+
+{% set firstDefendant = (_case.defendants | first) %}
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set count = selectedRows.length %}
+{% set pageName = "Request material for " ~ count ~ " item" ~ ("s" if count != 1) %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: returnUrl or "javascript:window.history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary">
+          <span class="govuk-details__summary-text">Show selected items</span>
+        </summary>
+        <div class="govuk-details__text">
+
+          {% for r in selectedRows %}
+
+            {# Reset per row to avoid leaking between loop iterations #}
+            {% set displayItem = r.item or r.Item or r.itemNumber or r.ItemNumber or r.displayItem %}
+
+            {# If item is missing or is the placeholder, derive it from its position in the full dataset #}
+            {% if (not displayItem) or (displayItem == 'n/a') %}
+              {% set displayItem = '' %}
+
+              {% for rr in (data.disclosureNonSensitiveRows or []) %}
+                {% if (rr.id and r.id and (rr.id == r.id)) %}
+                  {# loop.index is 1-based #}
+                  {% set displayItem = loop.index %}
+                {% endif %}
+              {% endfor %}
+
+              {% if not displayItem %}
+                {% set displayItem = 'n/a' %}
+              {% endif %}
+            {% endif %}
+
+            {{ govukSummaryList({
+              card: {
+                title: {
+                  html: "<strong>" ~ displayItem ~ " – " ~ r.title ~ "</strong>"
+                }
+              },
+              classes: "govuk-!-margin-bottom-3",
+              rows: [
+                {
+                  key: { text: "Description" },
+                  value: { text: r.description or "No description" }
+                },
+                {
+                  key: { text: "Police disclosure status" },
+                  value: { text: r.policeAssessment or "Not assessed" }
+                },
+                {
+                  key: { text: "Police disclosure reason" },
+                  value: { text: r.policeRationale or "—" }
+                }
+              ]
+            }) }}
+
+            {% if not loop.last %}
+              <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+            {% endif %}
+          {% endfor %}
+
+        </div>
+      </details>
+
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/bulk/request-material">
+        <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">
+        <input type="hidden" name="returnUrl" value="{{ returnUrl or '' }}">
+
+        {{ govukTextarea({
+          name: "bulkRationale",
+          id: "bulk-rationale",
+          rows: 8,
+          classes: "govuk-!-width-one-half",
+          label: {
+            text: "What material do you need from the police? (Optional)",
+            classes: "govuk-label--m"
+          },
+          hint: {
+            text: "Include what you need and why, for example the full document, missing pages, or a clearer copy."
+          }
+        }) }}
+
+        {{ govukButton({ text: "Save and confirm" }) }}
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

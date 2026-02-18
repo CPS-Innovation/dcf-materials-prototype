@@ -4,7 +4,10 @@
 {% set bodyClasses = "dcf-materials-wide" %}
 
 {# Allow parent templates to pass a pre-filtered rows array #}
+{# Also accept tableReturnUrl and tableRoutePrefix to support sensitive/non-sensitive #}
 {% set rows = rows or data.disclosureNonSensitiveRows or [] %}
+{% set returnUrl = tableReturnUrl or ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive") %}
+{% set routePrefix = tableRoutePrefix or ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive") %}
 
 {# Appended rows (unused non-sensitive) #}
 {% set assessedUnusedRows =
@@ -27,8 +30,6 @@
   "Unused - Not disclosable": "govuk-tag--blue",
   "Unused - Clearly not disclosable": "govuk-tag--blue"
 } %}
-
-{% set returnUrl = "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" %}
 
 <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="materials-">
   <thead class="govuk-table__head govuk-body-s">
@@ -67,15 +68,15 @@
             button: { text: "Actions" },
             items: [
               {
-                text: "Agree no longer relevant",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/no-longer-relevant/agree-no-longer-relevant?id=" ~ r.id ~
+                text: "Accept item is no longer relevant",
+                href: routePrefix ~
+                  "/no-longer-relevant/agree-no-longer-relevant?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
-                text: "Request item is reinstated",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/no-longer-relevant/request-item-reinstatement?id=" ~ r.id ~
+                text: "Ask police to reinstate item",
+                href: routePrefix ~
+                  "/no-longer-relevant/request-item-reinstatement?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               }
             ]
@@ -87,50 +88,62 @@
             items: [
               {
                 text: "Assess as disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable?id=" ~ r.id ~
+                href: routePrefix ~
+                  "/item-disclosable?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
                 text: "Assess as disclosable by inspection",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-disclosable-by-inspection?id=" ~ r.id ~
+                href: routePrefix ~
+                  "/item-disclosable-by-inspection?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
                 text: "Assess as clearly not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-clearly-not-disclosable?id=" ~ r.id ~
+                href: routePrefix ~
+                  "/item-clearly-not-disclosable?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
                 text: "Assess as not disclosable",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-not-disclosable?id=" ~ r.id ~
+                href: routePrefix ~
+                  "/item-not-disclosable?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
                 text: "Assess as evidence",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-evidence?id=" ~ r.id ~
+                href: routePrefix ~
+                  "/item-evidence?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
                 text: "Assess as no longer relevant",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
+                href: routePrefix ~
+                  "/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Dispute sensitivity",
+                href: routePrefix ~
+                  "/item-dispute-sensitivity?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Change sensitivity dispute",
+                href: routePrefix ~
+                  "/change-sensitivity-dispute?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
                 text: "Request updated description",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~
+                href: routePrefix ~
+                  "/item-request-updated-description?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
                 text: "Request material",
-                href: "/cases/" ~ _case.id ~
-                  "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~
+                href: routePrefix ~
+                  "/item-request-material?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               }
             ]
@@ -182,7 +195,7 @@
               {% if itemId %}
                 <a
                   class="govuk-link"
-                  href="/cases/{{ _case.id }}/material?tab=view-materials&openItemId={{ itemId | urlencode }}"
+                  href="/cases/{{ _case.id }}/material?tab=view-materials&openItemId={{ itemId | urlencode }}&returnUrl={{ returnUrl | urlencode }}"
                 >
                   View material
                 </a>
@@ -200,6 +213,19 @@
           {% if r.policeRationale %}
             <div class="govuk-!-margin-top-2">{{ r.policeRationale }}</div>
           {% endif %}
+
+          {% if r.isRebuttable %}
+            <div class="govuk-!-margin-top-2">
+              <strong>{{ "Not rebuttable" if r.isRebuttable == "No" else "Rebuttable" }}</strong>
+            </div>
+          {% endif %}
+
+          {% if r.reasonForSensitivity %}
+            <div class="govuk-!-margin-top-2">
+              <strong>Reason for sensitivity:</strong><br>
+              {{ r.reasonForSensitivity }}
+            </div>
+          {% endif %}
         </td>
 
         {# CPS assessment #}
@@ -209,17 +235,30 @@
             {{ status }}
           </strong>
 
-          {% if disagrees %}
+          {% if r.sensitivityDisputed %}
+            <div class="govuk-!-margin-top-3">
+              {{ govukTag({
+                text: "Sensitivity disputed",
+                classes: "govuk-tag--yellow"
+              }) }}
+            </div>
+            {% if r.sensitivityDisputeReason %}
+              <div class="govuk-!-margin-top-2">{{ r.sensitivityDisputeReason }}</div>
+            {% endif %}
+          {% elseif disagrees %}
             <div class="govuk-!-margin-top-3">
               {{ govukTag({
                 text: "Disagrees with police",
                 classes: "govuk-tag--yellow"
               }) }}
             </div>
-          {% endif %}
-
-          {% if cpsRationale %}
-            <div class="govuk-!-margin-top-2">{{ cpsRationale }}</div>
+            {% if cpsRationale %}
+              <div class="govuk-!-margin-top-2">{{ cpsRationale }}</div>
+            {% endif %}
+          {% else %}
+            {% if cpsRationale %}
+              <div class="govuk-!-margin-top-2">{{ cpsRationale }}</div>
+            {% endif %}
           {% endif %}
         </td>
 

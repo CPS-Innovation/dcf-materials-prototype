@@ -1157,4 +1157,504 @@ module.exports = router => {
     return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
 
+
+  // ---------------------------------------------------------------------------
+  // Sign and export disclosure documents
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-non-sensitive/sign-and-export-disclosure-documents', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
+    return res.render('cases/disclosure/assess-non-sensitive/sign-and-export-disclosure-documents', {
+      _case,
+      caseMaterials,
+      returnUrl: req.query?.returnUrl || `/cases/${caseId}/material?tab=disclosure`
+    })
+  })
+
+  router.post('/cases/:caseId/disclosure/assess-non-sensitive/sign-and-export-disclosure-documents', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    _.set(req, 'session.data.disclosureExported', true)
+
+    _.set(req, 'session.data.successBanner', {
+      titleText: '3 disclosure documents have been signed and exported',
+      text: 'Disclosure documents can be viewed in the unused non-sensitive and unused sensitive folders in the Review and redact tab.'
+    })
+
+    return res.redirect(`/cases/${caseId}/material?tab=disclosure`)
+  })
+
+
+
+  // ===========================================================================
+  // SENSITIVE DISCLOSURE ROUTES
+  // Mirror of assess-non-sensitive, using disclosureSensitiveRows
+  // ===========================================================================
+
+  function syncCpsSensitiveAssessment(req, _case) {
+    _.defaults(req.session.data, { cpsSensitiveAssessment: {} })
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const assessableRows = rows.filter(r => {
+      const police = (r && r.policeAssessment) ? String(r.policeAssessment).toLowerCase().trim() : ''
+      return police !== 'no longer relevant'
+    })
+    let status = 'Not started yet'
+    if (assessableRows.length) {
+      const assessedCount = assessableRows.filter(r => {
+        const s = (r && r.cpsAssessment) ? String(r.cpsAssessment) : ''
+        return s && s !== 'To be assessed'
+      }).length
+      if (assessedCount === 0) status = 'Not started yet'
+      else if (assessedCount < assessableRows.length) status = 'In progress'
+      else status = 'Completed'
+    }
+    _.set(req, 'session.data.cpsSensitiveAssessment.hasAssessedSensitive', status)
+    _.set(req, 'session.data.caseMaterials.cpsDisclosureAssessment.hasAssessedSensitive', status)
+  }
+
+  function findSensitiveRowByIdOrItemId(rows, selectedId) {
+    if (!Array.isArray(rows)) return null
+    return (
+      rows.find(r => String(r.id) === String(selectedId)) ||
+      rows.find(r => String(r.ItemId || r.itemId || r.materialId) === String(selectedId))
+    )
+  }
+
+  function findSensitiveRowIndexByIdOrItemId(rows, selectedId) {
+    if (!Array.isArray(rows)) return -1
+    let idx = rows.findIndex(r => String(r.id) === String(selectedId))
+    if (idx === -1) {
+      idx = rows.findIndex(r => String(r.ItemId || r.itemId || r.materialId) === String(selectedId))
+    }
+    return idx
+  }
+
+  // ---------------------------------------------------------------------------
+  // Assess sensitive index
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    syncCpsSensitiveAssessment(req, _case)
+    const banner = _.get(req, 'session.data.successBanner')
+    if (banner) _.unset(req, 'session.data.successBanner')
+    return res.render('cases/disclosure/assess-sensitive/index', { _case, caseMaterials, successBanner: banner })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive item: Disclosable
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/item-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/assess-sensitive/item-disclosable', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/item-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rationale = (req.body?.disclosureStatusChangeReason || req.body?.cpsRationale || '').trim()
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Disclosable')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, computeCpsDisagreesWithPolice(_.get(req, `${rowsPath}[${idx}].policeAssessment`, ''), 'Disclosable'))
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Item assessed as Disclosable', text: 'This update has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive item: Disclosable by inspection
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/item-disclosable-by-inspection', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/assess-sensitive/item-disclosable-by-inspection', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/item-disclosable-by-inspection', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rationale = (req.body?.disclosureStatusChangeReason || req.body?.cpsRationale || '').trim()
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Disclosable by inspection')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, computeCpsDisagreesWithPolice(_.get(req, `${rowsPath}[${idx}].policeAssessment`, ''), 'Disclosable by inspection'))
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Item assessed as Disclosable by inspection', text: 'This update has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive item: Not disclosable
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/item-not-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/assess-sensitive/item-not-disclosable', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/item-not-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rationale = (req.body?.disclosureStatusChangeReason || req.body?.cpsRationale || '').trim()
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Not disclosable')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, computeCpsDisagreesWithPolice(_.get(req, `${rowsPath}[${idx}].policeAssessment`, ''), 'Not disclosable'))
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Item assessed as Not disclosable', text: 'This update has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive item: Clearly not disclosable
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/item-clearly-not-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/assess-sensitive/item-clearly-not-disclosable', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/item-clearly-not-disclosable', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rationale = (req.body?.disclosureStatusChangeReason || req.body?.cpsRationale || '').trim()
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Clearly not disclosable')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, computeCpsDisagreesWithPolice(_.get(req, `${rowsPath}[${idx}].policeAssessment`, ''), 'Clearly not disclosable'))
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Item assessed as Clearly not disclosable', text: 'This update has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive item: Evidence
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/item-evidence', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/assess-sensitive/item-evidence', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/item-evidence', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rationale = (req.body?.disclosureStatusChangeReason || '').trim()
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'Evidence')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, false)
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Item assessed as Evidence', text: 'This update has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive item: Dispute sensitivity
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/item-dispute-sensitivity', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/assess-sensitive/item-dispute-sensitivity', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/item-dispute-sensitivity', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const reason = (req.body?.disclosureStatusChangeReason || '').trim()
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, true)
+    _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, reason || null)
+    _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, new Date().toISOString())
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Sensitivity disputed', text: 'This update has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive item: Change sensitivity dispute
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/change-sensitivity-dispute', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/assess-sensitive/change-sensitivity-dispute', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/change-sensitivity-dispute', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const option = req.body?.changeSensitivityDisputeOption ? String(req.body.changeSensitivityDisputeOption) : null
+    const reason = (req.body?.sensitivityDisputeReason || '').trim()
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    if (option === 'agree') {
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, false)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, null)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, null)
+      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, computeCpsDisagreesWithPolice(_.get(req, `${rowsPath}[${idx}].policeAssessment`, ''), _.get(req, `${rowsPath}[${idx}].cpsAssessment`, '')))
+      _.set(req, 'session.data.successBanner', { titleText: 'Sensitivity dispute removed', text: 'The dispute has been removed from this item.' })
+    } else if (option === 'wording') {
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputed`, true)
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, reason || _.get(req, `${rowsPath}[${idx}].sensitivityDisputeReason`, null))
+      _.set(req, `${rowsPath}[${idx}].sensitivityDisputedAt`, new Date().toISOString())
+      _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+      _.set(req, 'session.data.successBanner', { titleText: 'Sensitivity dispute updated', text: 'The dispute wording has been updated.' })
+    }
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive item: Request updated description
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/item-request-updated-description', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/assess-sensitive/item-request-updated-description', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/item-request-updated-description', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const requestText = (req.body?.updatedDescriptionRequest || '').trim()
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].updatedDescriptionRequest`, requestText || null)
+    _.set(req, `${rowsPath}[${idx}].updatedDescriptionRequestedAt`, new Date().toISOString())
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Updated description requested', text: 'This request has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive item: Request material
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/item-request-material', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = req.query?.id ? String(req.query.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/assess-sensitive/item-request-material', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/item-request-material', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = req.body?.id ? String(req.body.id) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const reason = (req.body?.requestMaterialReason || '').trim()
+    const day = (req.body?.['materialNeededBy-day'] || '').trim()
+    const month = (req.body?.['materialNeededBy-month'] || '').trim()
+    const year = (req.body?.['materialNeededBy-year'] || '').trim()
+    const materialNeededBy = (day && month && year) ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}` : null
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].requestMaterialReason`, reason || null)
+    _.set(req, `${rowsPath}[${idx}].materialNeededBy`, materialNeededBy)
+    _.set(req, `${rowsPath}[${idx}].materialRequestedAt`, new Date().toISOString())
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Material requested', text: 'This request has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive: Agree no longer relevant (single item)
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/no-longer-relevant/agree-no-longer-relevant', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = (req.query?.id || req.query?.itemId) ? String(req.query.id || req.query.itemId) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/no-longer-relevant/agree-no-longer-relevant/index', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/no-longer-relevant/agree-no-longer-relevant', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = (req.body?.id || req.body?.itemId) ? String(req.body.id || req.body.itemId) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'No longer relevant')
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, false)
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Agreed item is no longer relevant', text: 'This update has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
+  // ---------------------------------------------------------------------------
+  // Sensitive: Assess as no longer relevant (CPS asserts, single item)
+  // ---------------------------------------------------------------------------
+  router.get('/cases/:caseId/disclosure/assess-sensitive/no-longer-relevant/assess-unused-no-longer-relevant', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const caseMaterials = getCaseMaterialsForCase(req, _case)
+    const selectedId = (req.query?.id || req.query?.itemId) ? String(req.query.id || req.query.itemId) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
+    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
+    if (!selectedRow) return res.status(404).send('Row not found')
+    return res.render('cases/disclosure/no-longer-relevant/assess-unused-no-longer-relevant/index', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+  })
+  router.post('/cases/:caseId/disclosure/assess-sensitive/no-longer-relevant/assess-unused-no-longer-relevant', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+    const selectedId = (req.body?.id || req.body?.itemId) ? String(req.body.id || req.body.itemId) : null
+    if (!selectedId) return res.status(400).send('Missing id')
+    const rationale = (req.body?.noLongerRelevantReason || req.body?.bulkRationale || '').trim()
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+    _.set(req, `${rowsPath}[${idx}].cpsAssessment`, 'No longer relevant')
+    _.set(req, `${rowsPath}[${idx}].cpsRationale`, rationale || null)
+    _.set(req, `${rowsPath}[${idx}].cpsDisagreesWithPolice`, true)
+    const _case = await fetchCase(caseId)
+    if (_case) syncCpsSensitiveAssessment(req, _case)
+    _.set(req, 'session.data.successBanner', { titleText: 'Item assessed as No longer relevant', text: 'This update has been sent to the police.' })
+    const returnUrl = req.body?.returnUrl ? String(req.body.returnUrl) : `/cases/${caseId}/disclosure/assess-sensitive`
+    return res.redirect(`${returnUrl}${returnUrl.includes('?') ? '&' : '?'}updatedRow=${encodeURIComponent(selectedId)}`)
+  })
+
 }

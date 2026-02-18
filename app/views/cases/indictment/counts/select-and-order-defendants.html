@@ -3,7 +3,7 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Select and order defendants' %}
+{% set pageName = 'Select defendants for indictment' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -16,10 +16,15 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <span class="govuk-caption-m">Indictment - Draft count</span>
+        <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {% if showReorderSuccess %}
+      {# ✅ FIX: use the variable name you pass from the route #}
+      {% if showDefendantReorderSuccess %}
         {{ govukNotificationBanner({
           type: "success",
           text: "Defendants reordered"
@@ -27,19 +32,17 @@
       {% endif %}
 
       <p class="govuk-body">
-        Enter a new number for defendants you want to move to a new position.
-      </p>
-      <p class="govuk-body">
-        Defendants will move up or down to accommodate the new order when you save your changes.
+        Reorder defendants by entering new order numbers. Defendant positions will move up and down accordingly.
       </p>
 
-      <h2 class="govuk-heading-m">Select the defendant(s) that apply to this count</h2>
+      <h2 class="govuk-heading-m">Select all that apply</h2>
 
       <form method="post" novalidate>
         {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
 
         {% set defendantItems = [] %}
 
+        {# ✅ IMPORTANT: this loop uses _case.defendants in the DISPLAY ORDER from the GET route #}
         {% for d in _case.defendants %}
 
           {% set did = d.id | string %}
@@ -72,9 +75,10 @@
             </div>
           {% endset %}
 
+          {# ✅ SLOT NUMBER prefix: static to the row position, not the defendant #}
           {% set _ = defendantItems.push({
             value: did,
-            text: d.firstName + " " + d.lastName,
+            text: loop.index + ". " + d.firstName + " " + d.lastName,
             checked: isChecked,
             conditional: { html: conditionalHtml }
           }) %}
@@ -87,8 +91,10 @@
           items: defendantItems
         }) }}
 
-        {# Tiny friction: list those who will be left off the count (unchecked) #}
-        {% if showLeftOffInset and leftOffPreview.length %}
+        {# -----------------------------------------------------------
+          Left-off inset temporarily disabled for this iteration
+          ----------------------------------------------------------- #}
+        {#{% if showLeftOffInset and leftOffPreview and leftOffPreview.length %}
           <div class="govuk-inset-text">
             <p class="govuk-body govuk-!-margin-bottom-2">
               If you save now, these defendants will be left off this count:
@@ -100,7 +106,7 @@
               {% endfor %}
             </ul>
           </div>
-        {% endif %}
+        {% endif %}#}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Save and continue" }) }}

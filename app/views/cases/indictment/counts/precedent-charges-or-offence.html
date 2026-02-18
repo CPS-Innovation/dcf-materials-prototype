@@ -3,7 +3,7 @@
 {% extends "layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
-{% set pageName = 'Precedent charges or offence' %}
+{% set pageName = 'Select precedent charges or offence for count' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -20,14 +20,18 @@
 
       {% set html %}
         <p class="govuk-notification-banner__heading">
-          ** Example testing try searches on: R01, ABH, Theft Act 1968, section 8, robbery, assault, zebra ***
+          ** Can search on code, keyword or offence ***
       {% endset %}
 
       {{ govukNotificationBanner({
         html: html
       }) }}
 
-      <span class="govuk-caption-m">Indictment - Draft count</span>
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       {# Search form submits query + category #}
@@ -47,7 +51,7 @@
         
         {% if precedentSearchKeywords and precedentResults and precedentResults.length %}
           {{ govukButton({
-            text: "Add and continue",
+            text: "Save and continue",
             classes: "govuk-!-margin-top-4"
           }) }}
         {% endif %}
