@@ -676,7 +676,7 @@
       setIds = Object.keys(MATERIAL_ACTIONS_LOOKUP)
     } else if (type === 'statement' || type === 'exhibit') {
       setIds = MATERIAL_ACTION_SETS.statementOrExhibit
-    } else if (type === 'unused non-sensitive' || type === 'sensitive') {
+    } else if (type === 'unused non-sensitive' || type === 'sensitive' || type === 'unused sensitive') {
       setIds = MATERIAL_ACTION_SETS.unusedOrSensitive
     } else {
       // Unknown type but non-empty string – also show all actions
@@ -740,7 +740,7 @@ function buildMetaPanel (meta, bodyId) {
                 ''
   var typeNorm = String(rawType).toLowerCase().trim()
 
-  var isUnusedOrSensitive = (typeNorm === 'unused non-sensitive' || typeNorm === 'sensitive')
+  var isUnusedOrSensitive = (typeNorm === 'unused non-sensitive' || typeNorm === 'sensitive' || typeNorm === 'unused sensitive')
   var isExhibit   = (typeNorm === 'exhibit')
   var isStatement = (typeNorm === 'statement')
 
