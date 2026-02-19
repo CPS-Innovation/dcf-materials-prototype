@@ -676,7 +676,7 @@
       setIds = Object.keys(MATERIAL_ACTIONS_LOOKUP)
     } else if (type === 'statement' || type === 'exhibit') {
       setIds = MATERIAL_ACTION_SETS.statementOrExhibit
-    } else if (type === 'unused non-sensitive' || type === 'sensitive') {
+    } else if (type === 'unused non-sensitive' || type === 'sensitive' || type === 'unused sensitive') {
       setIds = MATERIAL_ACTION_SETS.unusedOrSensitive
     } else {
       // Unknown type but non-empty string – also show all actions
@@ -740,7 +740,7 @@ function buildMetaPanel (meta, bodyId) {
                 ''
   var typeNorm = String(rawType).toLowerCase().trim()
 
-  var isUnusedOrSensitive = (typeNorm === 'unused non-sensitive' || typeNorm === 'sensitive')
+  var isUnusedOrSensitive = (typeNorm === 'unused non-sensitive' || typeNorm === 'sensitive' || typeNorm === 'unused sensitive')
   var isExhibit   = (typeNorm === 'exhibit')
   var isStatement = (typeNorm === 'statement')
 
@@ -786,30 +786,17 @@ function buildMetaPanel (meta, bodyId) {
     var lower = text.toLowerCase()
 
     if (kind === 'police') {
-      // Police statuses (plus support for "evidence" for exhibits)
-      if (lower === 'passes disclosure test') {
-        cls += ' govuk-tag--green'
-      } else if (lower === 'does not pass disclosure test') {
-        cls += ' govuk-tag--yellow'
-      } else if (lower === 'evidence') {
-        // You can change this colour if you prefer grey rather than blue
-        cls += ' govuk-tag--blue'
-      }
+      // All police statuses use govuk-tag--grey — matches Disclosure screens (source of truth)
+      cls += ' govuk-tag--grey'
     } else if (kind === 'cps') {
-      // CPS statuses
-      if (lower === 'to be assessed') {
-        cls += ' govuk-tag--grey'
-      } else if (lower === 'disclosable') {
-        cls += ' govuk-tag--turquoise'
-      } else if (lower === 'disclosable by inspection') {
-        cls += ' govuk-tag--purple'
-      } else if (lower === 'not disclosable') {
-        cls += ' govuk-tag--orange'
-      } else if (lower === 'clearly not disclosable') {
-        cls += ' govuk-tag--red'
-      } else if (lower === 'evidence') {
-        cls += ' govuk-tag--blue'
-      } else if (lower.indexOf('unused -') === 0) {
+      // Yellow — disagreement / dispute flags
+      if (lower === 'disagrees with police' || lower === 'sensitivity disputed') {
+        cls += ' govuk-tag--yellow'
+      // Light blue — unassessed / pending states + Evidence
+      } else if (lower === 'to be assessed' || lower === 'to be reviewed' || lower === 'evidence') {
+        cls += ' govuk-tag--light-blue'
+      // Blue — all fully assessed CPS statuses
+      } else {
         cls += ' govuk-tag--blue'
       }
     }

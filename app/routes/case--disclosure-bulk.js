@@ -1020,7 +1020,7 @@ module.exports = router => {
   }
 
   router.get('/cases/:caseId/disclosure/no-longer-relevant/bulk/agree-no-longer-relevant', (req, res) => {
-    return renderBulkNlr(req, res, 'cases/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant')
+    return renderBulkNlr(req, res, 'cases/disclosure/no-longer-relevant/agree-no-longer-relevant/bulk/index')
   })
 
   router.post('/cases/:caseId/disclosure/no-longer-relevant/bulk/agree-no-longer-relevant', async (req, res) => {

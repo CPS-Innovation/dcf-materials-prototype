@@ -1,4 +1,4 @@
-{# This file is a template for /disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant #}
+{# /disclosure/no-longer-relevant/bulk/agree-no-longer-relevant.html #}
 {% extends "layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -45,20 +45,15 @@
 
           {% for r in selectedRows %}
 
-            {# Reset per row to avoid leaking between loop iterations #}
             {% set displayItem = r.item or r.Item or r.itemNumber or r.ItemNumber or r.displayItem %}
 
-            {# If item is missing or is the placeholder, derive it from its position in the full dataset #}
             {% if (not displayItem) or (displayItem == 'n/a') %}
               {% set displayItem = '' %}
-
               {% for rr in (data.disclosureNoLongerRelevantRows or []) %}
                 {% if (rr.id and r.id and (rr.id == r.id)) %}
-                  {# loop.index is 1-based #}
                   {% set displayItem = loop.index %}
                 {% endif %}
               {% endfor %}
-
               {% if not displayItem %}
                 {% set displayItem = 'n/a' %}
               {% endif %}
@@ -97,11 +92,7 @@
 
       <form method="post" action="/cases/{{ _case.id }}/disclosure/no-longer-relevant/bulk/agree-no-longer-relevant">
         <input type="hidden" name="ids" value="{{ selectedIds | join(',') }}">
-
-        {# IMPORTANT: for NLR we default returnUrl back to the NLR hub server-side,
-           but keep passing it through if it exists #}
         <input type="hidden" name="returnUrl" value="{{ returnUrl or '' }}">
-
         {{ govukButton({ text: "Save and confirm" }) }}
       </form>
 

@@ -1,0 +1,93 @@
+{# /disclosure/assess-non-sensitive/item-no-longer-relevant.html #}
+
+{% extends "layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+
+{% set cm = caseMaterials or data.caseMaterials or {} %}
+
+{% set selectedId = selectedId or (query.id if query and query.id) or (query.itemId if query and query.itemId) %}
+{% set selected = selectedRow or {} %}
+
+{% set firstDefendant = (_case.defendants | first) %}
+
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set pageName = "Assess item as no longer relevant" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()")
+  }) }}
+{% endblock %}
+
+{% block content %}
+
+  {% include "_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ govukInsetText({
+        html: "<strong>Your assessment disagrees with the police.</strong><br>They will be notified so they can amend the item's disclosure status."
+      }) }}
+
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-6",
+        rows: [
+          {
+            key: { text: "Description" },
+            value: { html: (selected.description or "—") }
+          },
+          {
+            key: { text: "Police disclosure status" },
+            value: { html: (selected.policeAssessment or "Not assessed") }
+          },
+          {
+            key: { text: "Police disclosure reason" },
+            value: { html: (selected.policeRationale or "—") }
+          }
+        ]
+      }) }}
+
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/item-no-longer-relevant">
+        <input type="hidden" name="id" value="{{ selectedId }}">
+        <input type="hidden" name="itemId" value="{{ selectedId }}">
+
+        {% if returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
+        {% elseif query and query.returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
+        {% endif %}
+
+        {{ govukTextarea({
+          name: "noLongerRelevantReason",
+          id: "no-longer-relevant-reason",
+          rows: 5,
+          label: {
+            text: "Why is this material no longer relevant to this case?",
+            classes: "govuk-label--m"
+          },
+          value: (selected.noLongerRelevantReason or data.noLongerRelevantReason or "")
+        }) }}
+
+        {{ govukButton({ text: "Confirm" }) }}
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

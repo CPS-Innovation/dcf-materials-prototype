@@ -5,7 +5,7 @@
     "referenceNumber": "PD-2025-03-11-CA48321",
     "dateOfCertification": "11 March 2025",
     "disclosingOfficerName": "Sgt Clare Jennings",
-    "certifierComment": "I certify that, to the best of my knowledge and belief, no information has been withheld which would assist the accused in the preparation of the defence in accordance with R. v Director of Public Prosecutions ex parte Lee [1999] 2 CR. App. R. 304 which includes, but is not limited to, information that might assist the defence in making an application for bail.\n\n\nTo the best of my knowledge and belief, all material that is or may be relevant has been retained and made available to me. It has been inspected, viewed or listened to and revealed to the prosecutor in accordance with the Criminal Procedure and Investigations Act 1996 as amended, Code of Practice and the Attorney General’s Guidelines.\n\n\nI also certify that all material subject to rebuttable presumption under the CPIA code of practice has been recorded and provided (as required). I have reviewed all the relevant material, that has been retained and made available to me and there is nothing to the best of my knowledge and belief that might reasonably be considered capable of undermining the prosecution case against the accused or assisting the case for the accused.\n\n\nI understand that the digital disclosure schedule I have prepared and provided to the prosecutor in relation to non-sensitive relevant unused material will be shared with the defence in a document format." 
+    "certifierComment": "I certify that, to the best of my knowledge and belief, no information has been withheld which would assist the accused in the preparation of the defence in accordance with R. v Director of Public Prosecutions ex parte Lee [1999] 2 CR. App. R. 304 which includes, but is not limited to, information that might assist the defence in making an application for bail.\n\n\nTo the best of my knowledge and belief, all material that is or may be relevant has been retained and made available to me. It has been inspected, viewed or listened to and revealed to the prosecutor in accordance with the Criminal Procedure and Investigations Act 1996 as amended, Code of Practice and the Attorney General\u2019s Guidelines.\n\n\nI also certify that all material subject to rebuttable presumption under the CPIA code of practice has been recorded and provided (as required). I have reviewed all the relevant material, that has been retained and made available to me and there is nothing to the best of my knowledge and belief that might reasonably be considered capable of undermining the prosecution case against the accused or assisting the case for the accused.\n\n\nI understand that the digital disclosure schedule I have prepared and provided to the prosecutor in relation to non-sensitive relevant unused material will be shared with the defence in a document format."
   },
   "cpsDisclosureAssessment": {
     "hasAssessedNonSensitive": "Not started yet",
@@ -32,7 +32,7 @@
       "PeriodTo": "2025-09-14T09:25:00Z",
       "policeDisclosure": {
         "status": "Evidence",
-        "rationale": "Statement sets out the complainant’s account of the theft and common assault and is relied upon as core evidence.",
+        "rationale": "Statement sets out the complainant\u2019s account of the theft and common assault and is relied upon as core evidence.",
         "rebuttable": null,
         "exception": null,
         "exceptionReason": null,
@@ -154,7 +154,7 @@
       "PeriodTo": "2025-09-14T19:45:00Z",
       "policeDisclosure": {
         "status": "Evidence",
-        "rationale": "Footage provides contextual material showing the suspect’s movements before the incident.",
+        "rationale": "Footage provides contextual material showing the suspect\u2019s movements before the incident.",
         "rebuttable": null,
         "exception": null,
         "exceptionReason": null,
@@ -185,12 +185,12 @@
       "SentExternally": "Email",
       "RelatedParticipantId": "VIC-0012",
       "Incident": "Bruising documented following altercation",
-      "Location": "St Mary’s Hospital, Manchester M20 4BX",
+      "Location": "St Mary\u2019s Hospital, Manchester M20 4BX",
       "PeriodFrom": "2025-09-15T21:00:00Z",
       "PeriodTo": "2025-09-15T21:05:00Z",
       "policeDisclosure": {
         "status": "Evidence",
-        "rationale": "Photographs show injuries relied upon to support the complainant’s account.",
+        "rationale": "Photographs show injuries relied upon to support the complainant\u2019s account.",
         "rebuttable": null,
         "exception": null,
         "exceptionReason": null,
@@ -302,7 +302,6 @@
         "SensitivityDispute": "None"
       }
     },
-
     {
       "Type": "Unused sensitive",
       "materialStatus": "New",
@@ -321,7 +320,21 @@
       "Incident": "Customer distress reported post-incident",
       "Location": "5 Beechfield Road, Norwich NR1 4DP",
       "PeriodFrom": "2025-09-17T14:00:00Z",
-      "PeriodTo": "2025-09-17T14:10:00Z"
+      "PeriodTo": "2025-09-17T14:10:00Z",
+      "policeDisclosure": {
+        "status": "Unused - Does not pass disclosure test",
+        "rationale": "Reason material does not pass test here",
+        "rebuttable": "No",
+        "sensitivity": "Sensitive for this reason and this reason and this reason and this reason",
+        "exception": "None",
+        "exceptionReason": "None"
+      },
+      "cpsDisclosure": {
+        "status": "To be assessed",
+        "rationale": "",
+        "SensitivityDispute": "None",
+        "disagreesWithPolice": false
+      }
     },
     {
       "Type": "Unused sensitive",
@@ -341,7 +354,21 @@
       "Incident": "Compilation of contact details for coordination",
       "Location": "CID Office, Leeds",
       "PeriodFrom": "2025-09-12T09:00:00Z",
-      "PeriodTo": "2025-09-12T09:30:00Z"
+      "PeriodTo": "2025-09-12T09:30:00Z",
+      "policeDisclosure": {
+        "status": "Unused - Does not pass disclosure test",
+        "rationale": "Reason material does not pass test here",
+        "rebuttable": "Yes",
+        "sensitivity": "Sensitive for this reason and this reason",
+        "exception": "None",
+        "exceptionReason": "None"
+      },
+      "cpsDisclosure": {
+        "status": "To be assessed",
+        "rationale": "",
+        "SensitivityDispute": "None",
+        "disagreesWithPolice": false
+      }
     },
     {
       "Type": "Unused sensitive",
@@ -361,7 +388,21 @@
       "Incident": "Minor injury unrelated to charges",
       "Location": "A&E, Sheffield",
       "PeriodFrom": "2025-09-13T16:05:00Z",
-      "PeriodTo": "2025-09-13T16:07:00Z"
+      "PeriodTo": "2025-09-13T16:07:00Z",
+      "policeDisclosure": {
+        "status": "Unused - Does not pass disclosure test",
+        "rationale": "Reason material does not pass test here",
+        "rebuttable": "Yes",
+        "sensitivity": "Sensitive for this reason and this reason",
+        "exception": "None",
+        "exceptionReason": "None"
+      },
+      "cpsDisclosure": {
+        "status": "To be assessed",
+        "rationale": "",
+        "SensitivityDispute": "None",
+        "disagreesWithPolice": false
+      }
     }
   ]
 }
