@@ -80,11 +80,6 @@
           { 
             text: "Assess as evidence", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/evidence?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
           },
-          {
-            text: "Assess as no longer relevant",
-            href: "/cases/" ~ _case.id ~
-              "/disclosure/assess-non-sensitive/bulk/assess-as-no-longer-relevant" ~ "?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode)
-          },
           { 
             text: "Dispute sensitivity", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/dispute-sensitivity?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },
           {
@@ -96,17 +91,6 @@
           },
           { 
             text: "Request updated description", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-updated-description?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
-          },
-          { 
-            text: "Agree no longer relevant",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/agree-no-longer-relevant?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode),
-            attributes: { "data-allow-nlr": "true" }
-          },
-
-          { 
-            text: "Request item is reinstated",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/request-item-reinstatement?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode),
-            attributes: { "data-allow-nlr": "true" }
           }
         ]
       }) }}

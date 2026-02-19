@@ -117,12 +117,6 @@
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
-                text: "Assess as no longer relevant",
-                href: routePrefix ~
-                  "/no-longer-relevant/assess-unused-no-longer-relevant?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
                 text: "Dispute sensitivity",
                 href: routePrefix ~
                   "/item-dispute-sensitivity?id=" ~ r.id ~
@@ -135,15 +129,15 @@
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
-                text: "Request updated description",
-                href: routePrefix ~
-                  "/item-request-updated-description?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
                 text: "Request material",
                 href: routePrefix ~
                   "/item-request-material?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Request updated description",
+                href: routePrefix ~
+                  "/item-request-updated-description?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               }
             ]
