@@ -117,6 +117,12 @@
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
+                text: "Assess as no longer relevant",
+                href: routePrefix ~
+                  "/item-no-longer-relevant?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
                 text: "Dispute sensitivity",
                 href: routePrefix ~
                   "/item-dispute-sensitivity?id=" ~ r.id ~
