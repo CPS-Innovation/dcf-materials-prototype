@@ -512,7 +512,7 @@ module.exports = router => {
       (req.body?.noLongerRelevantReason ? String(req.body.noLongerRelevantReason).trim() : '') ||
       (req.body?.bulkRationale ? String(req.body.bulkRationale).trim() : '')
 
-    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rowsPath = 'session.data.disclosureNoLongerRelevantRows'
     const rows = _.get(req, rowsPath, [])
     const idx = findRowIndexByIdOrItemId(rows, selectedId)
     if (idx === -1) return res.status(404).send('Row not found')
@@ -555,7 +555,7 @@ module.exports = router => {
     const selectedId = selectedKey ? String(selectedKey) : null
     if (!selectedId) return res.status(400).send('Missing id')
 
-    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
+    const rows = _.get(req, 'session.data.disclosureNoLongerRelevantRows', [])
     const selectedRow = findRowByIdOrItemId(rows, selectedId)
     if (!selectedRow) return res.status(404).send('Row not found')
 
@@ -576,7 +576,7 @@ module.exports = router => {
     const selectedId = selectedKey ? String(selectedKey) : null
     if (!selectedId) return res.status(400).send('Missing id')
 
-    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rowsPath = 'session.data.disclosureNoLongerRelevantRows'
     const rows = _.get(req, rowsPath, [])
     const idx = findRowIndexByIdOrItemId(rows, selectedId)
     if (idx === -1) return res.status(404).send('Row not found')
@@ -666,9 +666,7 @@ module.exports = router => {
 
     const caseMaterials = getCaseMaterialsForCase(req, _case)
 
-    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-
-    // Accept either single id/itemId or bulk ids
+    const rows = _.get(req, 'session.data.disclosureNoLongerRelevantRows', [])
     const singleKey = req.query?.id || req.query?.itemId
     const idsFromQuery = parseIdsParam(req.query?.ids)
     const selectedIds = idsFromQuery.length ? idsFromQuery : (singleKey ? [String(singleKey)] : [])
@@ -711,9 +709,7 @@ module.exports = router => {
       ? String(req.body.reinstatementReason).trim()
       : ''
 
-    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-
-    const selectedRows = ids
+    const rows = _.get(req, 'session.data.disclosureNoLongerRelevantRows', [])
       .map(id => findRowByIdOrItemId(rows, id))
       .filter(Boolean)
 
