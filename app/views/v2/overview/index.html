@@ -1,0 +1,24 @@
+{% extends "_shared/layouts/main.html" %}
+
+{% set navId = 'home' %}
+{% set pageName = "Prototype" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+      <h1 class="govuk-heading-l">
+        {{ pageName }}
+      </h1>
+      
+        <div class="govuk-!-margin-bottom-9">
+          <p class="govuk-body">
+            <a href="/cases/{{ _case.id }}/tasks" class="govuk-link--no-visited-state">
+              Go to task list
+            </a>
+          </p>
+        </div>
+      
+    </div>
+  </div>
+{% endblock %}

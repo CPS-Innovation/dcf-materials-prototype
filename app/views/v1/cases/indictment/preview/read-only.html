@@ -1,0 +1,114 @@
+{# /cases/:caseId/indictment/read-only #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set pageName = "Read-only indictment" %}
+
+{% block beforeContent %}
+  {{ govukBreadcrumbs({
+    items: [
+      {
+        text: "Indictments",
+        href: "/cases/" + _case.id + "/indictment"
+      },
+      {
+        text: "Read-only preview"
+      }
+    ]
+  }) }}
+{% endblock %}
+
+{% block content %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+      <span class="govuk-caption-m">Build indictment</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {# <p class="govuk-body">
+        <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ _case.id }}/indictment">
+          Back to indictments
+        </a>
+      </p> #}
+
+      {# --- Build defendant display name list (UPPERCASE) --- #}
+      {% set defendantNames = "" %}
+
+      {% if _case.defendants and _case.defendants.length %}
+        {% for d in _case.defendants %}
+          {% set thisName = (d.name or (d.firstName ~ " " ~ d.lastName)) | upper %}
+          {% if loop.first %}
+            {% set defendantNames = thisName %}
+          {% else %}
+            {% set defendantNames = defendantNames + ", " + thisName %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+
+
+      <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+      <div class="govuk-!-margin-top-6">
+
+        <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-6" style="letter-spacing: 0.05em;">
+          INDICTMENT
+        </p>
+
+        <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-6" style="letter-spacing: 0.02em;">
+          IN THE CROWN COURT AT {{ _case.location.crownCourtName or "BIRMINGHAM CROWN COURT" }}
+        </p>
+
+        <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-6" style="letter-spacing: 0.02em;">
+          THE KING - v - {{ defendantNames or "[DEFENDANT(S)]" }}
+        </p>
+
+        <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-2" style="letter-spacing: 0.01em;">
+          {{ defendantNames or "[DEFENDANT(S)]" }} are charged as follows
+        </p>
+
+        <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+        {# --- Counts --- #}
+        {% set counts = (indictment and indictment.counts) or [] %}
+
+        {% if counts.length %}
+
+          {% for c in counts %}
+            <h2 class="govuk-heading-m govuk-!-margin-top-7">Count {{ loop.index }}</h2>
+
+            <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-2" style="letter-spacing: 0.03em;">
+              STATEMENT OF OFFENCE
+            </p>
+
+            <p class="govuk-body">
+              {{ c.statementOfOffenceText or "Will be populated by previous flows" }}
+            </p>
+
+            <p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-top-6 govuk-!-margin-bottom-2" style="letter-spacing: 0.03em;">
+              PARTICULARS OF OFFENCE
+            </p>
+
+            <p class="govuk-body">
+              {{ c.particularsOfOffenceText or "Will be populated by previous flows" }}
+            </p>
+
+            {% if not loop.last %}
+              <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+            {% endif %}
+          {% endfor %}
+
+        {% else %}
+          <p class="govuk-body">No counts have been added yet.</p>
+        {% endif %}
+
+        <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+        
+
+      </div>
+
+    </div>
+  </div>
+
+{% endblock %}

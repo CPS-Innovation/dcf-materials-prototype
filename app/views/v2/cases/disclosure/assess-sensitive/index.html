@@ -1,0 +1,226 @@
+{# cases/disclosure/assess-sensitive/index.html #}
+
+{% extends "_shared/layouts/main.html" %}
+{% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+
+{% set cm = caseMaterials or {} %}
+{% set materials = cm.Material or [] %}
+{% set firstMaterial = materials | first %}
+
+{# Source all rows #}
+{% set allRows = data.disclosureSensitiveRows or [] %}
+
+{# Filter OUT policeAssessment = "No longer relevant" (handled on separate table) #}
+{% set rows = [] %}
+{% for r in allRows %}
+  {% if r and ((r.policeAssessment or '') | lower) != 'no longer relevant' %}
+    {% set _ = rows.push(r) %}
+  {% endif %}
+{% endfor %}
+
+
+
+
+{# -------------------------
+   Defendants display value
+   ------------------------- #}
+{% set firstDefendant = (_case.defendants | first) %}
+
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set pageName = 'Assess sensitive materials' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material?tab=disclosure"
+  }) }}
+{% endblock %}
+
+{% block content %}
+
+  {% include "_shared/_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+      {% if successBanner %}
+        {{ govukNotificationBanner({
+          type: "success",
+          titleText: successBanner.titleText or "Success",
+          text: successBanner.text or ""
+        }) }}
+      {% endif %}
+
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {# Bulk actions – dynamic availability based on selected rows #}
+      {{ mojButtonMenu({
+        classes: "govuk-!-margin-bottom-6",
+        button: { text: "Assess multiple items" },
+        items: [
+
+          { 
+            text: "Assess as disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode) 
+          },
+          { 
+            text: "Assess as disclosable by inspection", href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/disclosable-by-inspection?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode) 
+          },
+          { 
+            text: "Assess as not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode) 
+          },
+          { 
+            text: "Assess as clearly not disclosable", href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/clearly-not-disclosable?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode) 
+          },
+          { 
+            text: "Assess as evidence", href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/evidence?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode) 
+          },
+          {
+            text: "Assess as no longer relevant",
+            href: "/cases/" ~ _case.id ~
+              "/disclosure/assess-sensitive/bulk/assess-as-no-longer-relevant" ~ "?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode)
+          },
+          { 
+            text: "Dispute sensitivity", href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/dispute-sensitivity?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode) },
+          {
+            text: "Change sensitivity dispute",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/change-sensitivity-dispute?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode)
+          },
+          { 
+            text: "Request material", href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/request-material?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode) 
+          },
+          { 
+            text: "Request updated description", href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/request-updated-description?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode) 
+          },
+          { 
+            text: "Agree no longer relevant",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/agree-no-longer-relevant?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode),
+            attributes: { "data-allow-nlr": "true" }
+          },
+
+          { 
+            text: "Request item is reinstated",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive/bulk/request-item-reinstatement?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" | urlencode),
+            attributes: { "data-allow-nlr": "true" }
+          }
+        ]
+      }) }}
+
+      {# Row-level table lives entirely in the include #}
+      {% set showItemColumn = true %}
+      {% set tableReturnUrl = "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" %}
+      {% set tableRoutePrefix = "/cases/" ~ _case.id ~ "/disclosure/assess-sensitive" %}
+      {% include "_shared/_includes/case/disclosure/disclosure-table.njk" %}
+
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+    <script>
+      (function () {
+
+        // Expose row data for bulk selection logic
+        window.__disclosureRows = {{ rows | dump | safe }};
+
+        var bulkMenu = document.querySelector('.moj-button-menu');
+        if (!bulkMenu) return;
+
+        // IMPORTANT: grab ALL links in the bulk menu (some may be "#" placeholders)
+        var bulkLinks = bulkMenu.querySelectorAll('a');
+
+        function getSelectedIds() {
+          return Array.prototype.slice.call(
+            document.querySelectorAll('input[name="selectedMaterials"]:checked')
+          ).map(function (el) { return String(el.value); });
+        }
+
+        function selectedIncludesPoliceNoLongerRelevant(ids) {
+          if (!ids || !ids.length) return false;
+
+          var rows = window.__disclosureRows || [];
+          return ids.some(function (id) {
+            var r = rows.find(function (x) { return String(x.id) === String(id); });
+            if (!r) return false;
+            return String(r.policeAssessment || '').toLowerCase() === 'no longer relevant';
+          });
+        }
+
+        function toggleBulkMenu() {
+          var ids = getSelectedIds();
+          var hasNlr = selectedIncludesPoliceNoLongerRelevant(ids);
+
+          Array.prototype.forEach.call(bulkLinks, function (a) {
+            var li = a.parentNode;
+            while (li && li.nodeName !== 'LI') li = li.parentNode;
+
+            if (!li) return;
+
+            var allowNlr = a.getAttribute('data-allow-nlr') === 'true';
+
+            if (hasNlr) {
+              // Only show the two allowed actions
+              li.style.display = allowNlr ? '' : 'none';
+            } else {
+              // Show everything
+              li.style.display = '';
+            }
+          });
+        }
+
+        // Click behaviour: append ids= to bulk links, but block invalid actions when hasNlr is true
+        Array.prototype.forEach.call(bulkLinks, function (link) {
+          link.addEventListener('click', function (e) {
+            var ids = getSelectedIds();
+            if (!ids.length) {
+              e.preventDefault();
+              alert('Select at least one item to assess.');
+              return;
+            }
+
+            var hasNlr = selectedIncludesPoliceNoLongerRelevant(ids);
+            var allowNlr = link.getAttribute('data-allow-nlr') === 'true';
+
+            if (hasNlr && !allowNlr) {
+              e.preventDefault();
+              alert("For items marked 'No longer relevant', you can only agree or request reinstatement.");
+              return;
+            }
+
+            // Only add ids= to real bulk routes
+            if (link.href && link.href.indexOf('/disclosure/assess-sensitive/bulk/') !== -1) {
+              e.preventDefault();
+              var url = new URL(link.href, window.location.origin);
+              url.searchParams.set('ids', ids.join(','));
+              window.location.href = url.toString();
+            }
+          });
+        });
+
+        document.addEventListener('change', function (e) {
+          if (e.target && e.target.name === 'selectedMaterials') {
+            toggleBulkMenu();
+          }
+        });
+
+        toggleBulkMenu();
+
+      })();
+    </script>
+
+
+{% endblock %}

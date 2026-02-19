@@ -1,0 +1,54 @@
+{# app/views/cases/indictment/index #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Indictments' %}
+
+{% block beforeContent %}
+  {% include "_shared/_includes/case/identity-bar.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% include "_shared/_includes/success-banner.njk" %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <div class="govuk-button-group">
+        <a href="/cases/{{ _case.id }}/indictment/counts/charges" class="govuk-button">
+          Build indictment
+        </a>
+      </div>
+
+      {# ------------------------------------------------------------
+         Task list
+         ------------------------------------------------------------ #}
+
+      {{ govukTaskList({
+        idPrefix: "indictment-tasks",
+        items: [
+          {
+            title: { text: "Counts" },
+            href: "/cases/" + _case.id + "/indictment/counts/charges",
+            status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
+          },
+          {
+            title: { text: "Defendants" },
+            href: "/cases/" + _case.id + "/indictment/defendants",
+            status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
+          },
+          {
+            title: { text: "Victims" },
+            href: "/cases/" + _case.id + "/indictment/victims",
+            status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
+          }
+        ]
+      }) }}
+
+    </div>
+  </div>
+{% endblock %}

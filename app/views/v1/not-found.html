@@ -1,0 +1,15 @@
+{% extends "_shared/layouts/main.html" %}
+
+{% set pageName = "Page not found" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+      <p class="govuk-body">If you typed the web address, check it is correct.</p>
+      <p class="govuk-body">
+        <a class="govuk-link" href="/">Return to start</a>
+      </p>
+    </div>
+  </div>
+{% endblock %}
