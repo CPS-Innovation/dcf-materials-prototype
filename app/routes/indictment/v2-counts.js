@@ -4,6 +4,7 @@
 // Only routes where the v2 flow differs from v1 live here.
 // Register this BEFORE the v1 counts.js (via case--indictment-v2.js).
 
+
 const {
   _,
   fetchCase,
@@ -65,8 +66,6 @@ module.exports = router => {
 
   // ============================================================
   // POST /cases/:caseId/indictment/counts/date-and-charges (V2)
-  // continue → assign/defendants
-  // exit     → indictment task list
   // ============================================================
 
   router.post('/cases/:caseId/indictment/counts/date-and-charges', async (req, res) => {
@@ -94,15 +93,12 @@ module.exports = router => {
       draftCount.chargeCode = null
       draftCount.chargeLabel = null
       draftCount.statementOfOffenceText = null
-
     } else {
       draftCount.countBasis = 'existingCharge'
 
       const primaryChargeCode = String(chargeSelection) || null
       draftCount.primaryChargeCode = primaryChargeCode
 
-      // V2: resolve from chargeLibrary — radios are populated from the library,
-      // not from Prisma defendant charges, so caseChargeOptions won't find them
       const selected = (chargeLibrary || []).find(o => String(o.chargeCode) === String(primaryChargeCode)) || null
 
       draftCount.chargeCode = selected ? selected.chargeCode : null
@@ -143,9 +139,14 @@ module.exports = router => {
     _.set(req, basePath, draftCount)
     _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
 
-    // ---- Routing ----
+    // ---- Step status ----
     const action = (req.body.action || 'continue').toString()
+    const stepStatusPath = `${draftBasePath}.stepStatus`
+    const stepStatus = _.get(req, stepStatusPath, {})
+    stepStatus.dateAndCharges = (action === 'exit') ? 'inProgress' : 'completed'
+    _.set(req, stepStatusPath, stepStatus)
 
+    // ---- Routing ----
     if (action === 'exit') {
       return res.redirect(`/cases/${caseId}/indictment`)
     }
@@ -159,17 +160,21 @@ module.exports = router => {
 
   // ============================================================
   // POST /cases/:caseId/indictment/counts/precedent-charges-or-offence/continue (V2)
-  // Intercepts exit only — continue falls through to v1 handler
   // ============================================================
 
   router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res, next) => {
     const action = (req.body.action || 'continue').toString()
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+    const stepStatusPath = `${draftBasePath}.stepStatus`
+    const stepStatus = _.get(req, stepStatusPath, {})
+    stepStatus.precedent = (action === 'exit') ? 'inProgress' : 'completed'
+    _.set(req, stepStatusPath, stepStatus)
 
     if (action === 'exit') {
-      const caseId = parseCaseId(req, res)
-      if (!caseId) return
-
-      const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+      const basePath = `${draftBasePath}.currentCount`
       const draftCount = _.get(req, basePath, {})
       const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString().trim()
       draftCount.selectedPrecedentId = selectedPrecedentId || null
@@ -185,7 +190,6 @@ module.exports = router => {
 
   // ============================================================
   // GET /cases/:caseId/indictment/counts/offence-and-particulars (V2)
-  // Same as v1 but passes chargeLibrary to the template
   // ============================================================
 
   router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (req, res) => {
@@ -238,17 +242,17 @@ module.exports = router => {
     })
   })
 
+
   // ============================================================
   // POST /cases/:caseId/indictment/counts/offence-and-particulars (V2)
-  // continue → counts/check
-  // exit     → indictment task list
   // ============================================================
 
   router.post('/cases/:caseId/indictment/counts/offence-and-particulars', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
-    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+    const basePath = `${draftBasePath}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
     draftCount.statementOfOffenceText = (req.body.statementOfOffenceText || '').toString()
@@ -256,7 +260,12 @@ module.exports = router => {
     draftCount.lastUpdatedAt = new Date().toISOString()
     _.set(req, basePath, draftCount)
 
+    // ---- Step status ----
     const action = (req.body.action || 'continue').toString()
+    const stepStatusPath = `${draftBasePath}.stepStatus`
+    const stepStatus = _.get(req, stepStatusPath, {})
+    stepStatus.particulars = (action === 'exit') ? 'inProgress' : 'completed'
+    _.set(req, stepStatusPath, stepStatus)
 
     if (action === 'exit') {
       _.set(req, 'session.data.successBanner', {
@@ -272,16 +281,17 @@ module.exports = router => {
     return res.redirect(`/cases/${caseId}/indictment/counts/check`)
   })
 
-// ============================================================
+
+  // ============================================================
   // POST /cases/:caseId/indictment/counts/check (V2)
-  // Identical to v1 but sets banner to "Count X added"
   // ============================================================
 
   router.post('/cases/:caseId/indictment/counts/check', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
 
-    const basePath = `session.data.indictmentDrafts.${caseId}.currentCount`
+    const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+    const basePath = `${draftBasePath}.currentCount`
     const draftCount = _.get(req, basePath, {})
 
     draftCount.confirmedAt = new Date().toISOString()
@@ -347,6 +357,39 @@ module.exports = router => {
     _.set(req, indictmentBasePath, indictment)
     _.unset(req, basePath)
 
+    // Clear step status for the next count
+    _.unset(req, `${draftBasePath}.stepStatus`)
+
     return res.redirect(`/cases/${caseId}/indictment/counts/added`)
   })
+
+  // ============================================================
+  // GET /cases/:caseId/indictment/counts/added (V2)
+  // Guards against null indictment
+  // ============================================================
+
+  router.get('/cases/:caseId/indictment/counts/added', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+    const indictmentBasePath = `session.data.indictments.${caseId}`
+    const indictment = _.get(req, indictmentBasePath, null) || { status: 'In progress', counts: [] }
+
+    const counts = indictment.counts || []
+    const addedCount = counts.length ? counts[counts.length - 1] : null
+
+    const successBanner = _.get(req, 'session.data.successBanner', null)
+    _.unset(req, 'session.data.successBanner')
+
+    return res.render('cases/indictment/counts/added/index', {
+      _case,
+      counts,
+      addedCount,
+      successBanner
+    })
+  })
+
 }

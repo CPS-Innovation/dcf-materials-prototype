@@ -225,8 +225,8 @@
           {% set particularsFromStarter = particularsFromStarter | replace("[Victim(s)]", victimsText) %}
           {% set particularsFromStarter = particularsFromStarter | replace("[victim(s)]", victimsText) %}
 
-          {% set particularsFromStarter = particularsFromStarter | replace("[Place]", placeForTemplate) %}
-          {% set particularsFromStarter = particularsFromStarter | replace("[place]", placeForTemplate) %}
+          {# {% set particularsFromStarter = particularsFromStarter | replace("[Place]", placeForTemplate) %}
+          {% set particularsFromStarter = particularsFromStarter | replace("[place]", placeForTemplate) %} #}
 
           {# ✅ use unified date token #}
           {% set particularsFromStarter = particularsFromStarter | replace("[Date]", dateForToken) %}
@@ -263,8 +263,8 @@
 
         {% set suggestedParticulars =
           defendantsText + ", on " + (dateText if (dateText and dateText != "xx/xx/xx") else "[DATE]") + ", " +
-          victimsText + ", at " + placeForTemplate + ", " +
-          offenceForFallback + " of [PROPERTY]"
+          victimsText + ", " +
+          offenceForFallback
         %}
 
         {# ------------------------------------------------------------
@@ -294,6 +294,15 @@
             {% set particularsValue = particularsValue | replace("The defendant", defendantsText) %}
             {% set particularsValue = particularsValue | replace("the defendant", defendantsText) %}
           {% endif %}
+        {% endif %}
+
+        {# ------------------------------------------------------------
+          ✅ STRIP LOCATION from older saved values
+          ------------------------------------------------------------ #}
+        {% if particularsValue and locationText %}
+          {% set particularsValue = particularsValue | replace(", at " + locationText, "") %}
+          {% set particularsValue = particularsValue | replace(" at " + locationText + ",", "") %}
+          {% set particularsValue = particularsValue | replace(" at " + locationText, "") %}
         {% endif %}
 
         {# ------------------------------------------------------------
@@ -369,20 +378,21 @@
       <h2 class="govuk-heading-m">Charge you are working on</h2>
 
       <p class="govuk-body">
-        {% if defendantNames.length %}
-          {{ defendantNames | join(" and ") }}
+        {% set workingCharge = null %}
+        {% for c in (chargeLibrary or []) %}
+          {% if c.policeCharge and (c.chargeCode | string) == (draftCount.primaryChargeCode | string) %}
+            {% set workingCharge = c %}
+          {% endif %}
+        {% endfor %}
+
+        {% if workingCharge %}
+          {{ workingCharge.policeCharge }}
         {% else %}
-          [DEFENDANT(S)]
+          {% if defendantNames.length %}{{ defendantNames | join(" and ") }}{% else %}[DEFENDANT(S)]{% endif %}
+          on {{ dateText }} at {{ locationText }}
+          {% if primaryChargeText %}{{ primaryChargeText | lower }}{% endif %}
+          {% if victimNames.length %}{{ victimNames | join(" and ") }}{% else %}[VICTIM]{% endif %}.
         {% endif %}
-        on {{ dateText }} at {{ locationText }}
-        {% if primaryChargeText %}
-          {{ primaryChargeText | lower }}
-        {% endif %}
-        {% if victimNames.length %}
-          {{ victimNames | join(" and ") }}
-        {% else %}
-          [VICTIM]
-        {% endif %}.
       </p>
 
       {# ------------------------------------------------------------
@@ -405,27 +415,6 @@
 
       {% set allChargesListHtml %}
 
-        <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Charge you are working on</h3>
-
-        {% set workingCharge = null %}
-        {% for c in (chargeLibrary or []) %}
-          {% if c.policeCharge and (c.chargeCode | string) == (draftCount.primaryChargeCode | string) %}
-            {% set workingCharge = c %}
-          {% endif %}
-        {% endfor %}
-
-        {% if workingCharge %}
-          <p class="govuk-body govuk-!-margin-bottom-3">{{ workingCharge.policeCharge }}</p>
-        {% elif selectedChargeText %}
-          <p class="govuk-body govuk-!-margin-bottom-3">{{ selectedChargeText }}</p>
-        {% else %}
-          <p class="govuk-body govuk-!-margin-bottom-3">No charge selected yet.</p>
-        {% endif %}
-
-        <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-3">
-
-        <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Other charges</h3>
-
         {% set otherCharges = [] %}
         {% for c in (chargeLibrary or []) %}
           {% if c.policeCharge and (c.chargeCode | string) != (draftCount.primaryChargeCode | string) %}
@@ -436,7 +425,7 @@
         {% if otherCharges.length %}
           <ul class="govuk-list govuk-!-margin-bottom-0">
             {% for c in otherCharges %}
-              <li>{{ c.policeCharge }}</li>
+              <li class="govuk-!-margin-bottom-3">{{ c.policeCharge }}</li>
             {% endfor %}
           </ul>
         {% else %}
@@ -446,10 +435,9 @@
       {% endset %}
 
       {{ govukDetails({
-        summaryText: "All charges",
+        summaryText: "Other charges",
         html: allChargesListHtml
       }) }}
-
     </div>
   </div>
 {% endblock %}
