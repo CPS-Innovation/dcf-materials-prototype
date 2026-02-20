@@ -150,6 +150,9 @@ module.exports = router => {
       return res.redirect(`/cases/${caseId}/indictment`)
     }
 
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
+
     return res.redirect(`/cases/${caseId}/indictment/assign/defendants`)
   })
 
@@ -269,7 +272,7 @@ module.exports = router => {
     return res.redirect(`/cases/${caseId}/indictment/counts/check`)
   })
 
-  // ============================================================
+// ============================================================
   // POST /cases/:caseId/indictment/counts/check (V2)
   // Identical to v1 but sets banner to "Count X added"
   // ============================================================
@@ -291,7 +294,9 @@ module.exports = router => {
     indictment.counts = indictment.counts || []
 
     const hasAnyContent =
-      (draftCount.chargeCode || (draftCount.selectedChargeCodes && draftCount.selectedChargeCodes.length)) ||
+      draftCount.primaryChargeCode ||
+      draftCount.chargeCode ||
+      (draftCount.selectedChargeCodes && draftCount.selectedChargeCodes.length) ||
       draftCount.statementOfOffenceText ||
       draftCount.particularsOfOffenceText ||
       draftCount.selectedPrecedentId
@@ -304,6 +309,7 @@ module.exports = router => {
       countBasis: draftCount.countBasis || null,
       chargeCode: draftCount.chargeCode || null,
       chargeLabel: draftCount.chargeLabel || null,
+      primaryChargeCode: draftCount.primaryChargeCode || null,
       dateType: draftCount.dateType || null,
       offenceDate: draftCount.offenceDate || null,
       offenceDateFrom: draftCount.offenceDateFrom || null,
@@ -331,6 +337,10 @@ module.exports = router => {
           titleText: `Count ${countNumber} added`
         })
       }
+    } else {
+      _.set(req, 'session.data.successBanner', {
+        titleText: 'Count added'
+      })
     }
 
     indictment.lastSavedAt = new Date().toISOString()

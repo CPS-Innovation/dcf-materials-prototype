@@ -76,16 +76,7 @@
               {# ✅ Summary card second #}
               {{ govukSummaryList({
                 card: {
-                  title: { text: "Count " + loop.index },
-                  actions: {
-                    items: [
-                      {
-                        href: "/cases/" + _case.id + "/indictment/counts/edit/" + loop.index0,
-                        text: "Edit",
-                        visuallyHiddenText: "count " + loop.index
-                      }
-                    ]
-                  }
+                  title: { text: "Count " + loop.index }
                 },
                 rows: [
                   {

@@ -1,4 +1,4 @@
-{# /app/views/cases/indictment/counts/check #}
+{# /v2/app/views/cases/indictment/counts/check #}
 
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -165,7 +165,7 @@
         actions: {
           items: [{
             text: "Change",
-            href: "/cases/" + _case.id + "/indictment/counts/date-and-charges?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+            href: "/cases/" + _case.id + "/indictment/counts/date-and-charges?returnTo=" + ("/cases/" + _case.id + "/indictment/counts/check" | urlencode)
           }]
         }
       }) %}
@@ -176,7 +176,7 @@
         actions: {
           items: [{
             text: defendantsActionText,
-            href: "/cases/" + _case.id + "/indictment/assign/defendants?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+            href: "/cases/" + _case.id + "/indictment/assign/defendants?returnTo=" + ("/cases/" + _case.id + "/indictment/counts/check" | urlencode)
           }]
         }
       }) %}
@@ -187,7 +187,7 @@
         actions: {
           items: [{
             text: victimsActionText,
-            href: "/cases/" + _case.id + "/indictment/assign/victims?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+            href: "/cases/" + _case.id + "/indictment/assign/victims?returnTo=" + ("/cases/" + _case.id + "/indictment/counts/check" | urlencode)
           }]
         }
       }) %}
@@ -209,7 +209,7 @@
         actions: {
           items: [{
             text: "Change",
-            href: "/cases/" + _case.id + "/indictment/counts/offence-and-particulars?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+            href: "/cases/" + _case.id + "/indictment/counts/offence-and-particulars?returnTo=" + ("/cases/" + _case.id + "/indictment/counts/check" | urlencode)
           }]
         }
       }) %}
@@ -220,7 +220,7 @@
         actions: {
           items: [{
             text: "Change",
-            href: "/cases/" + _case.id + "/indictment/counts/offence-and-particulars?returnTo=/cases/" + _case.id + "/indictment/counts/check"
+            href: "/cases/" + _case.id + "/indictment/counts/offence-and-particulars?returnTo=" + ("/cases/" + _case.id + "/indictment/counts/check" | urlencode)
           }]
         }
       }) %}
