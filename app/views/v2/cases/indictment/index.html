@@ -18,13 +18,22 @@
     <div class="govuk-grid-column-two-thirds">
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      <p class="govuk-body">You have not created any counts</p>
+      {# Indictment counter — 1 once preview has been saved, 0 otherwise #}
+      {% set indictmentCount = 1 if isCompleted else 0 %}
+      <p class="govuk-body">
+        <strong>{{ indictmentCount }}</strong> indictment{{ "s" if indictmentCount != 1 else "" }}
+      </p>
 
-      {# <div class="govuk-button-group">
-        <a href="/cases/{{ _case.id }}/indictment/counts/charges" class="govuk-button">
-          Build indictment
-        </a>
-      </div> #}
+      {# Count counter — reads from session indictment.counts #}
+      {% set countCount = (indictment.counts and indictment.counts.length) or 0 %}
+      <p class="govuk-body">
+        <strong>{{ countCount }}</strong>
+        {% if isCompleted %}
+          count{{ "s" if countCount != 1 else "" }}
+        {% else %}
+          <a href="/cases/{{ _case.id }}/indictment/counts/added" class="govuk-link">count{{ "s" if countCount != 1 else "" }}</a>
+        {% endif %}
+      </p>
 
       {# ------------------------------------------------------------
          Task list
@@ -35,7 +44,7 @@
         items: [
           {
             title: { text: "Select police charge" },
-             href: "/cases/" + _case.id + "/indictment/counts/date-and-charges",
+            href: "/cases/" + _case.id + "/indictment/counts/date-and-charges",
             status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
           },
           {
