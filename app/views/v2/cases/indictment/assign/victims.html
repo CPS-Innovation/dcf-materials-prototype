@@ -1,4 +1,4 @@
-{# /cases/indictment/assign/victims.html #}
+{# /v2/cases/indictment/assign/victims.html #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'indictment' %}
@@ -42,7 +42,6 @@
             {% set fullName = "Victim " + loop.index %}
           {% endif %}
 
-          {# Checked state from session (string-safe) #}
           {% set isChecked = (draftCount.assignedVictimIds and (vid in draftCount.assignedVictimIds)) %}
 
           {% set _ = victimItems.push({
@@ -64,7 +63,18 @@
         {% endif %}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({ text: "Save and continue" }) }}
+          {{ govukButton({
+            text: "Save and continue",
+            name: "action",
+            value: "continue"
+          }) }}
+
+          {{ govukButton({
+            text: "Save and exit",
+            name: "action",
+            value: "exit",
+            classes: "govuk-button--secondary"
+          }) }}
         </div>
 
       </form>

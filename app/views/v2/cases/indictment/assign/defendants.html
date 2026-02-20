@@ -39,7 +39,6 @@
           {% set did = d.id | string %}
           {% set fullName = ((d.firstName or "") + " " + (d.lastName or "")) | trim %}
 
-          {# Checked state from session (string-safe) #}
           {% set isChecked = (draftCount.assignedDefendantIds and (did in draftCount.assignedDefendantIds)) %}
 
           {% set _ = defendantItems.push({
@@ -61,7 +60,18 @@
         {% endif %}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({ text: "Save and continue" }) }}
+          {{ govukButton({
+            text: "Save and continue",
+            name: "action",
+            value: "continue"
+          }) }}
+
+          {{ govukButton({
+            text: "Save and exit",
+            name: "action",
+            value: "exit",
+            classes: "govuk-button--secondary"
+          }) }}
         </div>
 
       </form>

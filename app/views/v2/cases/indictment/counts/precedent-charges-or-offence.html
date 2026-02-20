@@ -1,4 +1,4 @@
-{# /cases/indictment/counts/precedent-charges-or-offence.html #}
+{# /v2/cases/indictment/counts/precedent-charges-or-offence.html #}
 
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -34,13 +34,10 @@
         </span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      {# Search form submits query + category #}
       {% include "_shared/_includes/case/indictment/search-form.njk" %}
 
-
-      {# POST the form (Main page submit) #}
-        <form method="post"
-            action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence/continue">
+      <form method="post"
+          action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence/continue">
 
         {% if returnTo %}
           <input type="hidden" name="returnTo" value="{{ returnTo }}">
@@ -48,16 +45,24 @@
 
         {% include "_shared/_includes/case/indictment/search-results.njk" %}
 
-        
         {% if precedentSearchKeywords and precedentResults and precedentResults.length %}
-          {{ govukButton({
-            text: "Save and continue",
-            classes: "govuk-!-margin-top-4"
-          }) }}
+          <div class="govuk-button-group govuk-!-margin-top-4">
+            {{ govukButton({
+              text: "Save and continue",
+              name: "action",
+              value: "continue"
+            }) }}
+
+            {{ govukButton({
+              text: "Save and exit",
+              name: "action",
+              value: "exit",
+              classes: "govuk-button--secondary"
+            }) }}
+          </div>
         {% endif %}
 
       </form>
-
 
     </div>
   </div>

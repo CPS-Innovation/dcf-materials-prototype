@@ -11,4 +11,5 @@ module.exports = router => {
   // V2 count overrides — must be required BEFORE case--indictment.js
   // so Express matches these handlers first.
   require('./indictment/v2-counts')(router)
+  require('./indictment/v2-assign')(router)
 }

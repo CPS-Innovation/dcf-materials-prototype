@@ -1,4 +1,4 @@
-{# app/views/cases/indictment/index #}
+{# app/views/v2/cases/indictment/index #}
 
 {% extends "_shared/layouts/main.html" %}
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -39,18 +39,23 @@
             status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
           },
           {
-            title: { text: "Add offence and particulars" },
-            href: "/cases/" + _case.id + "/indictment/counts/charges",
-            status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
-          },
-          {
             title: { text: "Add defendants" },
-            href: "/cases/" + _case.id + "/indictment/defendants",
+            href: "/cases/" + _case.id + "/indictment/assign/defendants",
             status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
           },
           {
             title: { text: "Add victims" },
-            href: "/cases/" + _case.id + "/indictment/victims",
+            href: "/cases/" + _case.id + "/indictment/assign/victims",
+            status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
+          },
+          {
+            title: { text: "Select precedent" },
+            href: "/cases/" + _case.id + "/indictment/counts/precedent-charges-or-offence",
+            status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
+          },
+          {
+            title: { text: "Statement of offence and particulars" },
+            href: "/cases/" + _case.id + "/indictment/counts/offence-and-particulars",
             status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
           }
         ]

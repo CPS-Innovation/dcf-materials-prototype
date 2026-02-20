@@ -1,4 +1,4 @@
-{# /cases/indictment/counts/added #}
+{# /v2/cases/indictment/counts/added #}
 {% extends "_shared/layouts/main.html" %}
 
 {% set pageName = "Counts (" + (counts | length) + ")" %}
@@ -32,38 +32,32 @@
       <span class="govuk-caption-m">{{_case.reference}} - Indictments</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      <div class="govuk-button-group">
-        {{ govukButton({
-          text: "Add another count",
-          href: "/cases/" + _case.id + "/indictment/counts/date-and-charges"
-        }) }}
+        <div class="govuk-button-group">
+          {{ govukButton({
+            text: "Add another count",
+            href: "/cases/" + _case.id + "/indictment/counts/date-and-charges"
+          }) }}
 
-        <a class="govuk-button govuk-button--secondary"
-          href="/cases/{{ _case.id }}/indictment/counts/added/reorder"
-          data-module="govuk-button">
-          Reorder counts
-        </a>
+          {% if counts and counts.length > 1 %}
+            <a class="govuk-button govuk-button--secondary"
+              href="/cases/{{ _case.id }}/indictment/counts/added/reorder"
+              data-module="govuk-button">
+              Reorder counts
+            </a>
+          {% endif %}
 
-
-        <a class="govuk-button govuk-button--secondary"
-           href="/cases/{{ _case.id }}/indictment/preview"
-           data-module="govuk-button">
-          Preview indictment
-        </a>
-      </div>
+          <a class="govuk-button govuk-button--secondary"
+            href="/cases/{{ _case.id }}/indictment/preview"
+            data-module="govuk-button">
+            Preview indictment
+          </a>
+        </div>
 
       {% if counts and counts.length %}
         {% for c in counts %}
           {{ govukSummaryList({
             card: {
-              title: { text: "Count " + loop.index },
-              actions: {
-                items: [
-                  { href: "/cases/" + _case.id + "/indictment/counts/edit/" + loop.index0, text: "Edit", visuallyHiddenText: "count " + loop.index },
-                  { href: "#", text: "Remove", visuallyHiddenText: "count " + loop.index },
-                  { href: "#", text: "Duplicate", visuallyHiddenText: "count " + loop.index }
-                ]
-              }
+              title: { text: "Count " + loop.index }
             },
             rows: [
               {

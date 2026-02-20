@@ -1,0 +1,122 @@
+// app/routes/indictment/v2-assign.js
+//
+// V2 POST overrides for assign/defendants, assign/victims, assign/witnesses.
+// Identical session logic to v1 but with "Save and exit" support on all three,
+// redirecting back to the indictment task list instead of the next step.
+//
+// Register this BEFORE assign.js (via case--indictment-v2.js).
+
+const {
+  _,
+  fetchCase,
+  parseCaseId,
+  safeReturnTo
+} = require('./_shared')
+
+module.exports = router => {
+
+  // ============================================================
+  // POST /cases/:caseId/indictment/assign/defendants (V2)
+  // continue → assign/victims
+  // exit     → indictment task list
+  // ============================================================
+
+  router.post('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+    const countPath = `${draftBasePath}.currentCount`
+    const draftCount = _.get(req, countPath, {})
+
+    const rawAssigned = req.body.assignedDefendantIds
+    const assignedDefendantIds = Array.isArray(rawAssigned)
+      ? rawAssigned
+      : (rawAssigned ? [rawAssigned] : [])
+
+    draftCount.assignedDefendantIds = assignedDefendantIds.map(String).filter(Boolean)
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, countPath, draftCount)
+    _.set(req, `${draftBasePath}.defaultAssignedDefendantIds`, draftCount.assignedDefendantIds)
+
+    const action = (req.body.action || 'continue').toString()
+    if (action === 'exit') return res.redirect(`/cases/${caseId}/indictment`)
+
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
+
+    return res.redirect(`/cases/${caseId}/indictment/assign/victims`)
+  })
+
+
+  // ============================================================
+  // POST /cases/:caseId/indictment/assign/victims (V2)
+  // continue → assign/witnesses
+  // exit     → indictment task list
+  // ============================================================
+
+  router.post('/cases/:caseId/indictment/assign/victims', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+    const countPath = `${draftBasePath}.currentCount`
+    const draftCount = _.get(req, countPath, {})
+
+    const rawAssigned = req.body.assignedVictimIds
+    const assignedVictimIds = Array.isArray(rawAssigned)
+      ? rawAssigned
+      : (rawAssigned ? [rawAssigned] : [])
+
+    draftCount.assignedVictimIds = assignedVictimIds.map(String).filter(Boolean)
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, countPath, draftCount)
+    _.set(req, `${draftBasePath}.defaultAssignedVictimIds`, draftCount.assignedVictimIds)
+
+    const action = (req.body.action || 'continue').toString()
+    if (action === 'exit') return res.redirect(`/cases/${caseId}/indictment`)
+
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
+
+    // V2: skip witnesses, go straight to precedent-charges-or-offence
+    return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-or-offence`)
+    
+  })
+
+
+  // ============================================================
+  // POST /cases/:caseId/indictment/assign/witnesses (V2)
+  // continue → offence-and-particulars (skipping precedent step)
+  // exit     → indictment task list
+  // ============================================================
+
+  router.post('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+    const countPath = `${draftBasePath}.currentCount`
+    const draftCount = _.get(req, countPath, {})
+
+    const rawAssigned = req.body.assignedWitnessIds
+    const assignedWitnessIds = Array.isArray(rawAssigned)
+      ? rawAssigned
+      : (rawAssigned ? [rawAssigned] : [])
+
+    draftCount.assignedWitnessIds = assignedWitnessIds.map(String).filter(Boolean)
+    draftCount.lastUpdatedAt = new Date().toISOString()
+    _.set(req, countPath, draftCount)
+    _.set(req, `${draftBasePath}.defaultAssignedWitnessIds`, draftCount.assignedWitnessIds)
+
+    const action = (req.body.action || 'continue').toString()
+    if (action === 'exit') return res.redirect(`/cases/${caseId}/indictment`)
+
+    const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+    if (returnTo) return res.redirect(returnTo)
+
+    // V2: skip precedent step, go straight to offence-and-particulars
+    return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
+  })
+
+}

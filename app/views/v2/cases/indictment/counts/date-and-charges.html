@@ -151,10 +151,20 @@
           ]
         }) }}
 
-        {{ govukButton({
-          text: "Save and continue",
-          classes: "govuk-!-margin-top-6"
-        }) }}
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Save and continue",
+            name: "action",
+            value: "continue"
+          }) }}
+
+          {{ govukButton({
+            text: "Save and exit",
+            name: "action",
+            value: "exit",
+            classes: "govuk-button--secondary"
+          }) }}
+        </div>
 
       </form>
     </div>
