@@ -2,6 +2,10 @@
 
 {% set pageName="Home" %}
 
+{% block header %}
+  {% include "_shared/_includes/header.njk" %}
+{% endblock %}
+
 {% block content %}
 
 <div class="govuk-grid-row">
@@ -24,10 +28,8 @@
       </li>
     </ul>
 
-    {% include "govuk-prototype-kit/includes/homepage-bottom.njk" %}
+    {# {% include "govuk-prototype-kit/includes/homepage-bottom.njk" %} #}
   </div>
 </div>
 
 {% endblock %}
-{# <a href="/set-version?v=v1">Version 1</a>
-<a href="/set-version?v=v2">Version 2</a> #}
