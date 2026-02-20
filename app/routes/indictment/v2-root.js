@@ -14,10 +14,6 @@ const {
 
 module.exports = router => {
 
-  // GET /cases/:caseId/indictment
-  // V2 override — same URL as v1, but Express matches this first because
-  // case--indictment-v2.js is required before case--indictment.js.
-  // res.render uses a plain path; the version middleware adds v2/ automatically.
   router.get('/cases/:caseId/indictment', async (req, res) => {
     const caseId = parseCaseId(req, res)
     if (!caseId) return
@@ -39,13 +35,15 @@ module.exports = router => {
           counts: []
         })
 
+    const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+
     const successBanner = _.get(req, 'session.data.successBanner', null)
     _.unset(req, 'session.data.successBanner')
 
-    // Plain path — version middleware prepends v1/ or v2/ automatically
     return res.render('cases/indictment/index', {
       _case,
       indictment,
+      draftCount,
       isCompleted,
       completedIndictment,
       readOnlyUrl: `/cases/${caseId}/indictment/preview/read-only`,
