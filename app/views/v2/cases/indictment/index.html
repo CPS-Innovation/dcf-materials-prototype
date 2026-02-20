@@ -1,0 +1,84 @@
+{# app/views/v2/cases/indictment/index #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Indictments' %}
+
+{% block beforeContent %}
+  {% include "_shared/_includes/case/identity-bar.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% include "_shared/_includes/success-banner.njk" %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {# Indictment counter #}
+      {% set indictmentCount = 1 if isCompleted else 0 %}
+      <p class="govuk-body">
+        <strong>{{ indictmentCount }}</strong> indictment{{ "s" if indictmentCount != 1 else "" }}
+      </p>
+
+      {# Count counter #}
+      {% set countCount = (indictment.counts and indictment.counts.length) or 0 %}
+      <p class="govuk-body">
+        <strong>{{ countCount }}</strong>
+        {% if isCompleted %}
+          count{{ "s" if countCount != 1 else "" }}
+        {% else %}
+          <a href="/cases/{{ _case.id }}/indictment/counts/added" class="govuk-link">count{{ "s" if countCount != 1 else "" }}</a>
+        {% endif %}
+      </p>
+
+      {# ------------------------------------------------------------
+         Task completion flags
+         ------------------------------------------------------------ #}
+      {% set chargeComplete     = draftCount.primaryChargeCode %}
+      {% set defendantsComplete = draftCount.assignedDefendantIds and draftCount.assignedDefendantIds.length %}
+      {% set victimsComplete    = draftCount.assignedVictimIds and draftCount.assignedVictimIds.length %}
+      {% set precedentComplete  = draftCount.selectedPrecedentId %}
+      {% set particularsComplete = draftCount.statementOfOffenceText or draftCount.particularsOfOffenceText %}
+
+      {# ------------------------------------------------------------
+         Task list
+         ------------------------------------------------------------ #}
+
+      {{ govukTaskList({
+        idPrefix: "indictment-tasks",
+        items: [
+          {
+            title: { text: "Select police charge" },
+            href: "/cases/" + _case.id + "/indictment/counts/date-and-charges",
+            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if chargeComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+          },
+          {
+            title: { text: "Add defendants" },
+            href: "/cases/" + _case.id + "/indictment/assign/defendants",
+            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if defendantsComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+          },
+          {
+            title: { text: "Add victims" },
+            href: "/cases/" + _case.id + "/indictment/assign/victims",
+            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if victimsComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+          },
+          {
+            title: { text: "Select precedent" },
+            href: "/cases/" + _case.id + "/indictment/counts/precedent-charges-or-offence",
+            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if precedentComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+          },
+          {
+            title: { text: "Statement of offence and particulars" },
+            href: "/cases/" + _case.id + "/indictment/counts/offence-and-particulars",
+            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if particularsComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+          }
+        ]
+      }) }}
+
+    </div>
+  </div>
+{% endblock %}

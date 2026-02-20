@@ -1,0 +1,142 @@
+{# /cases/indictment/counts/select-and-order-witnesses.html #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Select witnesses for indictment' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% if showWitnessReorderSuccess %}
+        {{ govukNotificationBanner({
+          type: "success",
+          text: "Witnesses reordered"
+        }) }}
+      {% endif %}
+
+      <p class="govuk-body">
+        Reorder defendants by entering new order numbers. Defendant positions will move up and down accordingly.
+      </p>
+
+      <h2 class="govuk-heading-m">Select the witness(es) that apply to this indictment</h2>
+
+      <form method="post" novalidate>
+        {% if returnTo %}
+          <input type="hidden" name="returnTo" value="{{ returnTo }}">
+        {% endif %}
+
+        {% set witnessItems = [] %}
+
+        {% for w in (_case.witnesses or []) %}
+
+          {% set wid = w.id | string %}
+
+          {# Checked state from session (string-safe) #}
+          {% set isChecked = (draftCount.selectedWitnessIds and (wid in draftCount.selectedWitnessIds)) %}
+
+          {# Optional position input value (stored as a map keyed by witness id) #}
+          {% set orderValue = '' %}
+          {% if draftCount.witnessOrder and draftCount.witnessOrder[wid] %}
+            {% set orderValue = draftCount.witnessOrder[wid] %}
+          {% endif %}
+
+          {% set conditionalHtml %}
+            <div class="govuk-!-padding-left-3 govuk-!-margin-top-2">
+
+          {{ govukInput({
+            id: "witnessOrder-" + wid,
+            name: "witnessOrder[id-" + wid + "]",
+            value: orderValue,
+            classes: "govuk-input--width-3",
+            inputmode: "numeric",
+            type: "text",
+            label: {
+              text: "Move " + w.firstName + " " + w.lastName + " to position (optional)",
+              classes: "govuk-label--s"
+            }
+          }) }}
+
+
+            </div>
+          {% endset %}
+
+          {# ✅ Slot number prefix = row position #}
+          {% set _ = witnessItems.push({
+            value: wid,
+            text: loop.index + ". " + w.firstName + " " + w.lastName,
+            checked: isChecked,
+            conditional: { html: conditionalHtml }
+          }) %}
+
+        {% endfor %}
+
+        {{ govukCheckboxes({
+          name: "selectedWitnessIds",
+          classes: "app-checkboxes--dividers",
+          items: witnessItems
+        }) }}
+
+        {# -----------------------------------------------------------
+          Left-off inset temporarily disabled for this iteration
+          ----------------------------------------------------------- #}
+
+        {#
+        {% if showLeftOffInset and leftOffPreview and leftOffPreview.length %}
+          <div class="govuk-inset-text">
+            <p class="govuk-body govuk-!-margin-bottom-2">
+              If you save now, these witnesses will be left off this count:
+            </p>
+
+            <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0">
+              {% for name in leftOffPreview %}
+                <li>{{ name }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+        #}
+
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+
+          {{ govukButton({
+            text: "Save and continue",
+            name: "action",
+            value: "continue"
+          }) }}
+
+          {{ govukButton({
+            text: "Refresh and reorder",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "reorder"
+          }) }}
+
+          {{ govukButton({
+            text: "Skip and do later",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "skip"
+          }) }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

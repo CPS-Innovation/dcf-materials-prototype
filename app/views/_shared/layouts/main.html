@@ -1,0 +1,37 @@
+{% extends "govuk-prototype-kit/layouts/govuk-branded.njk" %}
+{% from "govuk/components/service-navigation/macro.njk" import govukServiceNavigation %}
+{% from "_shared/_components/header/macro.njk" import appHeader %}
+{% from "_shared/_components/address/macro.njk" import appAddress %}
+{% from "_shared/_components/checkbox-filter/macro.njk" import appCheckboxFilter %}
+{% from "_shared/_components/value/macro.njk" import appValue %}
+{% from "_shared/_components/button-menu/macro.njk" import appButtonMenu %}
+{% from "_shared/_components/identity-bar/macro.njk" import appIdentityBar %}
+{% from "_shared/_components/activity-log-item/macro.njk" import appActivityLogItem %}
+
+{% from "_shared/_components/material-panel/macro.njk" import appMaterialPanel %}
+
+
+{% block header %}
+  {% include "_shared/_includes/header.njk" %}
+  {% include "_shared/_includes/navigation.njk" %}
+{% endblock %}
+
+
+<body class="{{ bodyClasses }}"></body>
+
+
+
+{% block footer %}
+	{% include "_shared/_includes/footer.njk" %}
+{% endblock %}
+
+{% block pageScripts %}
+  {{ super() }}
+  <script>
+    var App = {}
+  </script>
+  <script src="/public/javascripts/components/filter-toggle-button.js"></script>
+  <script src="/public/javascripts/components/list-filter.js"></script>
+  <script src="/public/javascripts/components/button-menu.js"></script>
+  <script src="/public/javascripts/components/text-expander.js"></script>
+{% endblock %}

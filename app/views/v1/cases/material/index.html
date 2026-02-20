@@ -1,0 +1,241 @@
+{# cases/material/index.html #}
+
+{% extends "_shared/layouts/main.html" %}
+{% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+
+{# default if route forgot to pass it #}
+{% set activeTab = activeTab or 'disclosure' %}
+
+{# -------------------------
+   Defendants display value
+   ------------------------- #}
+{% set firstDefendant = (_case.defendants | first) %}
+
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set pageName = defendantsValue %}
+
+{% block beforeContent %}
+{% endblock %}
+
+{% block content %}
+
+  {% include "_shared/_includes/success-banner.njk" %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {% if successBanner %}
+    {{ govukNotificationBanner({
+      type: "success",
+      titleText: successBanner.titleText or "Success",
+      text: successBanner.text or ""
+    }) }}
+  {% endif %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+      <div class="moj-page-header-actions">
+        <div class="moj-page-header-actions__title">
+          <span class="govuk-caption-m">{{ _case.reference }}</span>
+          <h1 class="govuk-heading-m">{{ pageName }}</h1>
+        </div>
+
+        {# 👇 Add an id so the JS can toggle this #}
+        <div class="moj-page-header-actions__actions" id="material-header-actions">
+          <div class="moj-button-group moj-button-group--inline">
+            <button type="submit" class="govuk-button govuk-button--primary">
+              Complete triage
+            </button>
+            <button type="submit" class="govuk-button govuk-button--secondary">
+              Case material actions
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {# <p class="govuk-body-s" style="opacity:.7">
+        debug activeTab={{ activeTab }}
+      </p> #}
+
+      {# 👇 All materials and Disclosure content is grabbed from here #}
+      {% include "_shared/_includes/case/material/main-tabs.njk" %}
+    </div>
+  </div>
+{% endblock %}
+
+
+{% block scripts %}
+  {{ super() }}
+
+  <script>
+  (function () {
+    // Stop browser restoring scroll position (helps with BFCache + some tab focus jumps)
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual'
+    }
+
+    var params = new URLSearchParams(window.location.search)
+    var tabParam = (params.get('tab') || '').trim()
+
+    // Map query param values to their GOV.UK Tabs anchor hrefs
+    var TAB_HREFS = {
+      'disclosure':     '#disclosure',
+      'view-materials': '#view-materials',
+      'communications': '#communications'
+    }
+
+    function getTargetTabHref() {
+      // Hash takes priority (direct link like #disclosure)
+      if (window.location.hash && window.location.hash !== '#') {
+        return window.location.hash
+      }
+      // Fall back to ?tab= query param
+      return TAB_HREFS[tabParam] || null
+    }
+
+    function activateTab(targetHref) {
+      // Find the tab link with matching href and simulate a click so GOV.UK Tabs
+      // switches panel, updates aria-selected, and manages focus correctly
+      var tabLink = document.querySelector('#case-tabs a.govuk-tabs__tab[href="' + targetHref + '"]')
+      if (tabLink) {
+        tabLink.click()
+        // Don't scroll to the tab — we want top of page
+        window.scrollTo(0, 0)
+      }
+    }
+
+    function forceTopHard() {
+      window.scrollTo(0, 0)
+      requestAnimationFrame(function () {
+        window.scrollTo(0, 0)
+        setTimeout(function () { window.scrollTo(0, 0) }, 0)
+        setTimeout(function () { window.scrollTo(0, 0) }, 50)
+        setTimeout(function () { window.scrollTo(0, 0) }, 250)
+      })
+    }
+
+    function onEntry() {
+      var targetHref = getTargetTabHref()
+      if (!targetHref) return
+
+      // GOV.UK Tabs initialises synchronously on DOMContentLoaded via govuk-frontend.
+      // By the time our load event fires it's already set up, so we can click safely.
+      // Use a short timeout as a safety net for slower initialisations.
+      setTimeout(function () {
+        activateTab(targetHref)
+        forceTopHard()
+      }, 0)
+    }
+
+    window.addEventListener('load', onEntry)
+    window.addEventListener('pageshow', function () { onEntry() })
+
+    window.addEventListener('hashchange', function () {
+      var targetHref = getTargetTabHref()
+      if (targetHref) {
+        setTimeout(function () { forceTopHard() }, 0)
+      }
+    })
+
+    // When user clicks any tab, scroll to top (your existing requirement)
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a.govuk-tabs__tab') : null
+      if (!a) return
+      setTimeout(forceTopHard, 0)
+    })
+  })()
+</script>
+
+  <script>
+    // 👇 your existing materials page JS stays here
+    (function () {
+      var tabsContainer = document.querySelector('#case-tabs')
+      if (!tabsContainer) return
+
+      var headerActions = document.getElementById('material-header-actions')
+      var tabs = tabsContainer.querySelectorAll('.govuk-tabs__tab')
+
+      function updateHeaderActions () {
+        var active = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
+        if (!active) return
+        headerActions.hidden = active.getAttribute('href') !== '#view-materials'
+      }
+
+      setTimeout(updateHeaderActions, 0)
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          setTimeout(updateHeaderActions, 0)
+        })
+      })
+    })()
+  </script>
+
+  <script>
+    // Inject "Back to assessment" into the viewer toolbar when returnUrl is in the URL.
+    // The toolbar is built dynamically by material-viewer.js so we watch for it.
+    (function () {
+      var params = new URLSearchParams(window.location.search)
+      var returnUrl = params.get('returnUrl')
+      if (!returnUrl) return
+
+      function injectBackLink (toolbar) {
+        // Don't inject twice
+        if (toolbar.querySelector('[data-action="back-to-assessment"]')) return
+
+        var backLink = document.createElement('a')
+        backLink.href = returnUrl
+        backLink.className = 'govuk-link dcf-back-to-assessment'
+        backLink.textContent = 'Back to assessment'
+
+        var sep = document.createElement('span')
+        sep.setAttribute('aria-hidden', 'true')
+        sep.className = 'govuk-!-margin-horizontal-2'
+        sep.innerHTML = '&nbsp; | &nbsp;'
+
+        // Insert before the first existing link in the toolbar
+        var firstLink = toolbar.querySelector('a')
+        if (firstLink) {
+          toolbar.insertBefore(sep, firstLink)
+          toolbar.insertBefore(backLink, sep)
+        } else {
+          toolbar.appendChild(backLink)
+          toolbar.appendChild(sep)
+        }
+      }
+
+      // Watch for the viewer toolbar being created by material-viewer.js
+      var observer = new MutationObserver(function () {
+        var toolbar = document.querySelector('.dcf-viewer__toolbar')
+        if (toolbar) {
+          observer.disconnect()
+          injectBackLink(toolbar)
+        }
+      })
+
+      observer.observe(document.body, { childList: true, subtree: true })
+
+      // Also handle the case where toolbar already exists on load
+      var existing = document.querySelector('.dcf-viewer__toolbar')
+      if (existing) {
+        observer.disconnect()
+        injectBackLink(existing)
+      }
+    })()
+  </script>
+{% endblock %}
+
+

@@ -1,23 +1,35 @@
-{% extends "layouts/main.html" %}
-{% set hideNav = true %}
-{% set pageName = "Prototype" %}
+{% extends "_shared/layouts/main.html" %}
+
+{% set pageName="Home" %}
+
+{% block header %}
+  {% include "_shared/_includes/header.njk" %}
+{% endblock %}
 
 {% block content %}
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-full">
 
-      <h1 class="govuk-heading-l">
-        {{ pageName }}
-      </h1>
-      
-        <div class="govuk-!-margin-bottom-9">
-          <p class="govuk-body">
-            <a href="/account/sign-in" class="govuk-link--no-visited-state">
-              Start prototype
-            </a>
-          </p>
-        </div>
-      
-    </div>
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-l">
+      Inditments prototype
+    </h1>
+
+    <p class="govuk-body">
+      Choose which version of the prototype you want to view.
+    </p>
+
+    <ul class="govuk-list govuk-list--bullet">
+      <li>
+        <a class="govuk-link" href="/set-version?v=v1">Version 1 - Old version</a>
+      </li>
+      <li>
+        <a class="govuk-link" href="/set-version?v=v2">Version 2 - Latest version</a>
+      </li>
+    </ul>
+
+    {# {% include "govuk-prototype-kit/includes/homepage-bottom.njk" %} #}
   </div>
+</div>
+
 {% endblock %}

@@ -1,0 +1,267 @@
+{# app/views/cases/indictment/index #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Indictments' %}
+
+{% block beforeContent %}
+  {% include "_shared/_includes/case/identity-bar.njk" %}
+{% endblock %}
+
+{% block content %}
+  {% include "_shared/_includes/success-banner.njk" %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <div class="govuk-button-group">
+        <a href="/cases/{{ _case.id }}/indictment/counts/charges" class="govuk-button">
+          Build indictment
+        </a>
+      </div>
+
+      {# ------------------------------------------------------------
+         Values for summary list
+         ------------------------------------------------------------ #}
+
+      {# Defendants #}
+      {% set defendantsValue %}
+        <ul class="govuk-list govuk-!-margin-bottom-0">
+          {% for defendant in _case.defendants %}
+            <li>{{ defendant.firstName }} {{ defendant.lastName }}</li>
+          {% endfor %}
+        </ul>
+      {% endset %}
+
+      {# Victims #}
+      {% set victimsValue %}
+        {% if _case.victims and _case.victims.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for victim in _case.victims %}
+              <li>
+                {% if victim.firstName or victim.lastName %}
+                  {{ victim.firstName }} {{ victim.lastName }}
+                {% elif victim.name %}
+                  {{ victim.name }}
+                {% else %}
+                  Victim {{ loop.index }}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">None added</p>
+        {% endif %}
+      {% endset %}
+
+      {# Witnesses #}
+      {% set witnessesValue %}
+        {% if _case.witnesses and _case.witnesses.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for witness in _case.witnesses %}
+              <li>
+                {% if witness.firstName or witness.lastName %}
+                  {{ witness.firstName }} {{ witness.lastName }}
+                {% elif witness.name %}
+                  {{ witness.name }}
+                {% else %}
+                  Witness {{ loop.index }}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">None added</p>
+        {% endif %}
+      {% endset %}
+
+      {# Police charges #}
+      {% set chargesValue %}
+        {% if caseChargeOptions and caseChargeOptions.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for c in caseChargeOptions %}
+              <li>
+                {% if c.chargeCode %}
+                  {{ c.chargeCode }}: {{ c.description }}
+                {% else %}
+                  {{ c.description }}
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">None added</p>
+        {% endif %}
+      {% endset %}
+
+      {# ------------------------------------------------------------
+         Indictment status tag class
+         ------------------------------------------------------------ #}
+      {% set countsTagClass = "" %}
+      {% if indictment.status == "Completed" %}
+        {% set countsTagClass = "govuk-tag--green" %}
+      {% elif indictment.status == "In progress" %}
+        {% set countsTagClass = "govuk-tag--blue" %}
+      {% else %}
+        {% set countsTagClass = "govuk-tag--yellow" %}
+      {% endif %}
+
+      {# ------------------------------------------------------------
+         Indictment row (conditional action)
+         Use isCompleted to drive Completed state (stable)
+         ------------------------------------------------------------ #}
+
+      {% if indictment.status == "In progress" %}
+
+        {% set indictmentRow = {
+          key: { text: "Indictment status" },
+          value: {
+            html: govukTag({
+              text: indictment.status,
+              classes: countsTagClass + " govuk-!-font-size-19"
+            })
+          },
+          actions: {
+            items: [
+              {
+                href: "/cases/" + _case.id + "/indictment/preview",
+                text: "Continue"
+              }
+            ]
+          }
+        } %}
+
+      {% elif isCompleted %}
+
+        {% set indictmentRow = {
+          key: { text: "Indictment status" },
+          value: {
+            html: govukTag({
+              text: "Completed",
+              classes: "govuk-tag--green govuk-!-font-size-19"
+            })
+          },
+          actions: {
+            items: [
+              {
+                href: readOnlyUrl,
+                text: "View"
+              }
+            ]
+          }
+        } %}
+
+      {% else %}
+
+        {% set indictmentRow = {
+          key: { text: "Indictment status" },
+          value: {
+            html: govukTag({
+              text: indictment.status,
+              classes: countsTagClass + " govuk-!-font-size-19"
+            })
+          }
+        } %}
+
+      {% endif %}
+
+      {# ------------------------------------------------------------
+        Counts row (display-only when Completed)
+        ------------------------------------------------------------ #}
+
+      {% set countsLength = 0 %}
+      {% if indictment and indictment.counts and indictment.counts.length %}
+        {% set countsLength = indictment.counts.length %}
+      {% endif %}
+
+      {% if indictment.status == "In progress" %}
+
+        {% set countsRow = {
+          key: { text: "Counts" },
+          value: { text: countsLength },
+          actions: {
+            items: [
+              { href: "/cases/" + _case.id + "/indictment/counts/added", text: "View counts" },
+              { href: "/cases/" + _case.id + "/indictment/counts/date-and-charges", text: "Add another count" }
+            ]
+          }
+        } %}
+
+      {% elif indictment.status == "Completed" %}
+
+        {% set countsRow = {
+          key: { text: "Counts" },
+          value: { text: countsLength }
+        } %}
+
+      {% endif %}
+
+
+      {# ------------------------------------------------------------
+         Build rows array
+         ------------------------------------------------------------ #}
+        {% set countsLength = 0 %}
+        {% if indictment and indictment.counts and indictment.counts.length %}
+          {% set countsLength = indictment.counts.length %}
+        {% endif %}
+
+        {% if indictment.status == "In progress" %}
+          {% set countsRow = {
+            key: { text: "Counts" },
+            value: { text: countsLength },
+            actions: {
+              items: [
+                { href: "/cases/" + _case.id + "/indictment/counts/added", text: "View counts" },
+                { href: "/cases/" + _case.id + "/indictment/counts/date-and-charges", text: "Add another count" }
+              ]
+            }
+          } %}
+        {% elif indictment.status == "Completed" %}
+          {% set countsRow = {
+            key: { text: "Counts" },
+            value: { text: countsLength }
+          } %}
+        {% endif %}
+
+        {% set summaryRows = [] %}
+        {% set _ = summaryRows.push(indictmentRow) %}
+        {% if countsRow %}{% set _ = summaryRows.push(countsRow) %}{% endif %}
+
+
+
+      {% set _ = summaryRows.push({
+        key: { text: "Defendants" },
+        value: { html: defendantsValue }
+      }) %}
+
+      {% set _ = summaryRows.push({
+        key: { text: "Victims" },
+        value: { html: victimsValue }
+      }) %}
+
+      {% set _ = summaryRows.push({
+        key: { text: "Witnesses" },
+        value: { html: witnessesValue }
+      }) %}
+
+      {% set _ = summaryRows.push({
+        key: { text: "Police charges" },
+        value: { html: chargesValue }
+      }) %}
+
+      <div class="app-list">
+        <div class="app-list__item">
+          {{ govukSummaryList({
+            classes: "app-summary-list--compact app-summary-list--divided",
+            rows: summaryRows
+          }) }}
+        </div>
+      </div>
+
+    </div>
+  </div>
+{% endblock %}

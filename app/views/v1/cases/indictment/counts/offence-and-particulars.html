@@ -1,0 +1,472 @@
+{# /cases/indictment/counts/offence-and-particulars #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Offence and particulars' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  {% include "_shared/_includes/success-banner.njk" %}
+
+  {# ------------------------------------------------------------
+     Build a flat list of all charges on the case (Prisma)
+     and a deduped list by chargeCode for the “related charges” details
+     (NOT used for the Statement of Offence summary card anymore)
+     ------------------------------------------------------------ #}
+  {% set allCaseCharges = [] %}
+  {% for d in (_case.defendants or []) %}
+    {% for ch in (d.charges or []) %}
+      {% set _ = allCaseCharges.push({
+        defendantId: d.id,
+        defendantName: (((d.firstName or "") + " " + (d.lastName or "")) | trim),
+        chargeCode: ch.chargeCode,
+        description: ch.description,
+        particulars: ch.particulars
+      }) %}
+    {% endfor %}
+  {% endfor %}
+
+  {% set dedupedCharges = [] %}
+  {% set seenCodes = [] %}
+  {% for ch in allCaseCharges %}
+    {% if ch.chargeCode and (ch.chargeCode not in seenCodes) %}
+      {% set _ = seenCodes.push(ch.chargeCode) %}
+      {% set _ = dedupedCharges.push(ch) %}
+    {% endif %}
+  {% endfor %}
+
+  {# ------------------------------------------------------------
+     NORMALISE assigned IDs + build ordered names (story order)
+     IMPORTANT: do this BEFORE we build particulars
+     ------------------------------------------------------------ #}
+
+  {% set assignedDefendantIds = [] %}
+  {% if draftCount.assignedDefendantIds and draftCount.assignedDefendantIds.length %}
+    {% for id in draftCount.assignedDefendantIds %}
+      {% set _ = assignedDefendantIds.push(id | string) %}
+    {% endfor %}
+  {% endif %}
+
+  {% set assignedVictimIds = [] %}
+  {% if draftCount.assignedVictimIds and draftCount.assignedVictimIds.length %}
+    {% for id in draftCount.assignedVictimIds %}
+      {% set _ = assignedVictimIds.push(id | string) %}
+    {% endfor %}
+  {% endif %}
+
+  {# Defendants names IN ASSIGNED ORDER #}
+  {% set defendantNames = [] %}
+  {% for id in assignedDefendantIds %}
+    {% for d in (_case.defendants or []) %}
+      {% if (d.id | string) == id %}
+        {% set _ = defendantNames.push((((d.firstName or "") + " " + (d.lastName or "")) | trim)) %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+
+  {# Victims names IN ASSIGNED ORDER #}
+  {% set victimNames = [] %}
+  {% for id in assignedVictimIds %}
+    {% for v in (_case.victims or []) %}
+      {% if (v.id | string) == id %}
+        {% set _ = victimNames.push((((v.firstName or "") + " " + (v.lastName or "")) | trim)) %}
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+
+  {# ------------------------------------------------------------
+     Dates
+     - Keep numeric date for display in sidebar
+     - Build narrative date (single date only) for particulars templates: "11th day of November 2025"
+     ------------------------------------------------------------ #}
+
+  {# Numeric date string (existing behaviour) #}
+  {% set dateText = "xx/xx/xx" %}
+  {% if draftCount.dateType == "single" and draftCount.offenceDate %}
+    {% set dateText = (draftCount.offenceDate.day or "xx") + "/" + (draftCount.offenceDate.month or "xx") + "/" + (draftCount.offenceDate.year or "xx") %}
+  {% elif draftCount.dateType == "range" and draftCount.offenceDateFrom and draftCount.offenceDateTo %}
+    {% set fromText = (draftCount.offenceDateFrom.day or "xx") + "/" + (draftCount.offenceDateFrom.month or "xx") + "/" + (draftCount.offenceDateFrom.year or "xx") %}
+    {% set toText = (draftCount.offenceDateTo.day or "xx") + "/" + (draftCount.offenceDateTo.month or "xx") + "/" + (draftCount.offenceDateTo.year or "xx") %}
+    {% set dateText = fromText + " to " + toText %}
+  {% endif %}
+
+  {# Narrative date for templates (single date only) #}
+  {% set dateNarrative = "[date]" %}
+  {% set months = ["", "January","February","March","April","May","June","July","August","September","October","November","December"] %}
+  {% if draftCount.dateType == "single" and draftCount.offenceDate and draftCount.offenceDate.day and draftCount.offenceDate.month and draftCount.offenceDate.year %}
+    {% set dayNum = (draftCount.offenceDate.day | int) %}
+    {% set monthIdx = (draftCount.offenceDate.month | int) %}
+    {% set yearVal = (draftCount.offenceDate.year or "") %}
+
+    {% set suffix = "th" %}
+    {% if dayNum % 100 not in [11,12,13] %}
+      {% if dayNum % 10 == 1 %}{% set suffix = "st" %}{% endif %}
+      {% if dayNum % 10 == 2 %}{% set suffix = "nd" %}{% endif %}
+      {% if dayNum % 10 == 3 %}{% set suffix = "rd" %}{% endif %}
+    {% endif %}
+
+    {% set dateNarrative = dayNum + suffix + " day of " + (months[monthIdx] or "[month]") + " " + yearVal %}
+  {% endif %}
+
+  {# ✅ Unified token date:
+     - single => narrative ("11th day of November 2025")
+     - range  => numeric range ("01/01/25 to 02/01/25")
+  #}
+  {% set dateForToken = dateText %}
+  {% if draftCount.dateType == "single" %}
+    {% set dateForToken = dateNarrative %}
+  {% endif %}
+
+  {# ------------------------------------------------------------
+     Location string
+     ------------------------------------------------------------ #}
+  {% set locationText = "High Street, Anytown" %}
+  {% if _case.location and _case.location.line1 %}
+    {% set locationText = _case.location.line1 %}
+  {% endif %}
+
+  {# ------------------------------------------------------------
+     Canonical statement + charge text
+     - We do NOT use draftCount.statementOfOffence (it isn't set in routes)
+     - Prefer user-edited text, else fall back to chargeCode + chargeLabel, else chargeLabel
+     ------------------------------------------------------------ #}
+
+  {% set chargeSummaryText = "" %}
+  {% if draftCount.chargeCode and draftCount.chargeLabel %}
+    {% set chargeSummaryText = (draftCount.chargeCode + ": " + draftCount.chargeLabel) %}
+  {% elif draftCount.chargeLabel %}
+    {% set chargeSummaryText = draftCount.chargeLabel %}
+  {% endif %}
+
+  {% set statementTextareaValue = draftCount.statementOfOffenceText or chargeSummaryText %}
+
+  {# Summary card should mirror what the user sees/edits (but fallback to charge if empty) #}
+  {% set statementCardText = statementTextareaValue or chargeSummaryText %}
+
+  {# For sidebar sentence, use the offence label if present, else statement, else blank #}
+  {% set primaryChargeText = draftCount.chargeLabel or statementCardText %}
+
+  <div class="govuk-grid-row">
+    {##############################################################################################}
+    {############################# LEFT (2/3) — Statement of offence + particulars #################}
+    {##############################################################################################}
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      <form method="post" novalidate>
+        {% if returnTo %}<input type="hidden" name="returnTo" value="{{ returnTo }}">{% endif %}
+
+        {# =========================
+           Statement of offence (editable)
+           - Prefill from selected charge (date-and-charges) unless user has typed their own.
+           ========================= #}
+        {{ govukTextarea({
+          id: "statementOfOffenceText",
+          name: "statementOfOffenceText",
+          value: statementTextareaValue,
+          label: {
+            text: "Statement of Offence",
+            classes: "govuk-label--m"
+          },
+          rows: 8
+        }) }}
+
+        {# =========================
+           Read-only summary card (single selected charge from date-and-charges)
+           ========================= #}
+        <div class="govuk-summary-card govuk-!-margin-bottom-6">
+          <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Statement of Offence</h2>
+          </div>
+
+          <div class="govuk-summary-card__content">
+            {% if statementCardText %}
+              <ul class="govuk-list govuk-!-margin-bottom-0">
+                <li>{{ statementCardText }}</li>
+              </ul>
+            {% else %}
+              <p class="govuk-body govuk-!-margin-bottom-0">No charge selected yet.</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {# =========================
+           Particulars of offence (editable)
+           ========================= #}
+        <h2 class="govuk-heading-m">Particulars of offence</h2>
+        <p class="govuk-body">Edit to match case. View particulars in the sidebar.</p>
+
+        {# ------------------------------------------------------------
+           Build tokens (actors, date, place) for template injection
+           Research ordering: DEFENDANT(s), DATE, VICTIM(s)
+           ------------------------------------------------------------ #}
+        {% set defendantsText = "[DEFENDANT(S)]" %}
+        {% if defendantNames and defendantNames.length %}
+          {% set defendantsText = (defendantNames | join(" and ")) | upper %}
+        {% endif %}
+
+        {% set victimsText = "[victim(s)]" %}
+        {% if victimNames and victimNames.length %}
+          {% set victimsText = ( victimNames | join(" and ")) | upper %}
+        {% endif %}
+
+        {% set placeForTemplate = locationText or "[place]" %}
+
+        {# ------------------------------------------------------------
+           Particulars Starter (chosen at /precedent-charges-or-offence/continue)
+           Expectation: draftCount.particularsStarter contains something like:
+           "[Defendant(s)] [date] at [place], used threatening behaviour..."
+           ------------------------------------------------------------ #}
+        {% set particularsStarter = draftCount.particularsStarter or "" %}
+        {% set particularsFromStarter = particularsStarter %}
+
+        {# Token injection (simple, case-insensitive-ish by covering common variants) #}
+        {% if particularsFromStarter %}
+          {% set particularsFromStarter = particularsFromStarter | replace("[Defendant(s)]", defendantsText) %}
+          {% set particularsFromStarter = particularsFromStarter | replace("[defendant(s)]", defendantsText) %}
+
+          {# Fallback: starter text often says “the defendant” instead of using tokens #}
+          {% set particularsFromStarter = particularsFromStarter | replace("the defendant", defendantsText) %}
+          {% set particularsFromStarter = particularsFromStarter | replace("The defendant", defendantsText) %}
+
+          {% set particularsFromStarter = particularsFromStarter | replace("[Victim(s)]", victimsText) %}
+          {% set particularsFromStarter = particularsFromStarter | replace("[victim(s)]", victimsText) %}
+
+          {% set particularsFromStarter = particularsFromStarter | replace("[Place]", placeForTemplate) %}
+          {% set particularsFromStarter = particularsFromStarter | replace("[place]", placeForTemplate) %}
+
+          {# ✅ use unified date token #}
+          {% set particularsFromStarter = particularsFromStarter | replace("[Date]", dateForToken) %}
+          {% set particularsFromStarter = particularsFromStarter | replace("[date]", dateForToken) %}
+        {% endif %}
+
+        {# ------------------------------------------------------------
+           Optional starter normaliser (light-touch):
+           If a template begins with "On <date>..." prepend defendants/date/victims
+           to match research ordering without rewriting the whole template.
+           ------------------------------------------------------------ #}
+        {% if particularsFromStarter %}
+          {% set lowerStarter = particularsFromStarter | lower %}
+          {% set lowerDate = (dateForToken or "") | lower %}
+
+          {% if lowerDate and (
+                lowerStarter.indexOf("on " + lowerDate) == 0
+                or lowerStarter.indexOf("on the " + lowerDate) == 0
+             ) %}
+            {% set particularsFromStarter =
+              defendantsText + ", on " + dateForToken + ", " + victimsText + ", " + particularsFromStarter
+            %}
+          {% endif %}
+        {% endif %}
+
+        {# ------------------------------------------------------------
+           Fallback suggested particulars if no library template selected
+           Research ordering: DEFENDANT(s), DATE, VICTIM(s)
+           ------------------------------------------------------------ #}
+        {% set offenceForFallback = "[OFFENCE]" %}
+        {% if primaryChargeText %}
+          {% set offenceForFallback = primaryChargeText | lower %}
+        {% endif %}
+
+        {% set suggestedParticulars =
+          defendantsText + ", on " + (dateText if (dateText and dateText != "xx/xx/xx") else "[DATE]") + ", " +
+          victimsText + ", at " + placeForTemplate + ", " +
+          offenceForFallback + " of [PROPERTY]"
+        %}
+
+        {# ------------------------------------------------------------
+           Decide what goes in the textarea:
+           1) User-typed value (persisted)
+           2) Template-driven starter (if selected)
+           3) Fallback suggestion
+           ------------------------------------------------------------ #}
+        {% set particularsValue = draftCount.particularsOfOffenceText or "" %}
+        {% if not particularsValue %}
+          {% if particularsFromStarter %}
+            {% set particularsValue = particularsFromStarter %}
+          {% else %}
+            {% set particularsValue = suggestedParticulars %}
+          {% endif %}
+        {% endif %}
+
+        {# ------------------------------------------------------------
+          Patch older saved textarea values that still say “the defendant”
+          (only if names exist and the names aren’t already in the text)
+          ------------------------------------------------------------ #}
+        {% if defendantNames and defendantNames.length %}
+          {% set firstDefName = defendantNames[0] %}
+          {% set lowerParticulars = (particularsValue or "") | lower %}
+
+          {% if (lowerParticulars.indexOf("the defendant") != -1) and (particularsValue.indexOf(firstDefName) == -1) %}
+            {% set particularsValue = particularsValue | replace("The defendant", defendantsText) %}
+            {% set particularsValue = particularsValue | replace("the defendant", defendantsText) %}
+          {% endif %}
+        {% endif %}
+
+        {# ------------------------------------------------------------
+           ✅ FINAL DATE TOKEN PATCH (applies to saved values too)
+           ------------------------------------------------------------ #}
+        {% if particularsValue %}
+          {% set particularsValue = particularsValue | replace("[Date]", dateForToken) %}
+          {% set particularsValue = particularsValue | replace("[date]", dateForToken) %}
+        {% endif %}
+
+        {# ------------------------------------------------------------
+          ✅ Enforce research ordering in textarea:
+          DEFENDANT(s), DATE, VICTIM(s)
+          If text begins "On ...", move defendants to the front.
+          ------------------------------------------------------------ #}
+
+        {% set lowerParticulars = (particularsValue or "") | lower %}
+        {% set lowerDef = (defendantsText or "") | lower %}
+
+        {# Only do this if it starts with "on " AND does not already start with the defendant(s) #}
+        {% if lowerParticulars.indexOf("on ") == 0 and (lowerDef and lowerParticulars.indexOf(lowerDef) != 0) %}
+
+          {# Remove leading "On " / "on " #}
+          {% set remainder = particularsValue | replace("On ", "") %}
+          {% set remainder = remainder | replace("on ", "") %}
+
+          {# Remove first “defendant chunk” where it appears later (common patterns) #}
+          {% set remainder = remainder | replace(defendantsText + " ", "") %}
+          {% set remainder = remainder | replace(defendantsText + ", ", "") %}
+          {% set remainder = remainder | replace(" " + defendantsText + " ", " ") %}
+          {% set remainder = remainder | replace(" " + defendantsText + ", ", " ") %}
+
+          {# Rebuild: DEFENDANT(s), on <date/place/etc...> #}
+          {% set particularsValue = defendantsText + ", on " + (remainder | trim) %}
+
+        {% endif %}
+
+
+        {{ govukTextarea({
+          id: "particularsOfOffenceText",
+          name: "particularsOfOffenceText",
+          value: particularsValue,
+          label: {
+            text: "Particulars of offence",
+            classes: "govuk-visually-hidden"
+          },
+          rows: 12
+        }) }}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Save and continue",
+            name: "action",
+            value: "continue"
+          }) }}
+
+          {{ govukButton({
+            text: "Save and come back later",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "saveForLater",
+            href: "#"
+          }) }}
+        </div>
+
+      </form>
+    </div>
+
+    {##############################################################################################}
+    {############################# RIGHT (1/3) — selected charge + details list ###################}
+    {##############################################################################################}
+    <div class="govuk-grid-column-one-third govuk-!-padding-left-6">
+
+      <h2 class="govuk-heading-m">Charge</h2>
+
+      <p class="govuk-body">
+        {% if defendantNames.length %}
+          {{ defendantNames | join(" and ") }}
+        {% else %}
+          [DEFENDANT(S)]
+        {% endif %}
+        on {{ dateText }} at {{ locationText }}
+        {% if primaryChargeText %}
+          {{ primaryChargeText | lower }}
+        {% endif %}
+        {% if victimNames.length %}
+          {{ victimNames | join(" and ") }}
+        {% else %}
+          [VICTIM]
+        {% endif %}.
+      </p>
+
+      {# ------------------------------------------------------------
+         Details: All related charges
+         - Put selected charge (from date-and-charges) first
+         - Then a divider + all other available charges
+         ------------------------------------------------------------ #}
+
+      {# Selected charge identity #}
+      {% set selectedChargeCode = (draftCount.chargeCode or "") %}
+      {% set selectedChargeLabel = (draftCount.chargeLabel or "") %}
+      {% set selectedChargeText = "" %}
+      {% if selectedChargeCode and selectedChargeLabel %}
+        {% set selectedChargeText = selectedChargeCode + ": " + selectedChargeLabel %}
+      {% elif selectedChargeLabel %}
+        {% set selectedChargeText = selectedChargeLabel %}
+      {% elif selectedChargeCode %}
+        {% set selectedChargeText = selectedChargeCode %}
+      {% endif %}
+
+      {% set allChargesListHtml %}
+
+        <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Charge you are working on</h3>
+
+        {% if selectedChargeText %}
+          <p class="govuk-body govuk-!-margin-bottom-3">{{ selectedChargeText }}</p>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-3">No charge selected yet.</p>
+        {% endif %}
+
+        <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-3">
+
+        <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Other charges</h3>
+
+        {% if dedupedCharges.length %}
+          <ul class="govuk-list govuk-!-margin-bottom-0">
+            {% for ch in dedupedCharges %}
+
+              {# hide the selected one from the list below #}
+              {% set isSelected = false %}
+              {% if selectedChargeCode and ch.chargeCode and (ch.chargeCode == selectedChargeCode) %}
+                {% set isSelected = true %}
+              {% endif %}
+
+              {% if not isSelected %}
+                <li>
+                  {% if ch.chargeCode %}{{ ch.chargeCode }}:{% endif %}
+                  {{ ch.description }}
+                </li>
+              {% endif %}
+
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="govuk-body govuk-!-margin-bottom-0">No charges recorded for this case.</p>
+        {% endif %}
+
+      {% endset %}
+
+      {{ govukDetails({
+        summaryText: "All charges",
+        html: allChargesListHtml
+      }) }}
+
+    </div>
+  </div>
+{% endblock %}

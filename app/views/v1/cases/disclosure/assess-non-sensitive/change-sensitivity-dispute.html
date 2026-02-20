@@ -1,0 +1,128 @@
+{# cases/disclosure/assess-non-sensitive/change-sensitivity-dispute.html #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{# Import GOV.UK macros used on this page #}
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+{% from "govuk/components/textarea/macro.njk" import govukTextarea %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+
+{% set cm = caseMaterials or data.caseMaterials or {} %}
+
+{# Row is resolved in the route and passed in #}
+{% set selectedId = selectedId or (query.id if query) %}
+{% set selected = selectedRow or {} %}
+
+{% set updateWordingHtml %}
+  {{ govukTextarea({
+    id: "sensitivity-dispute-reason",
+    name: "sensitivityDisputeReason",
+    value: selected.sensitivityDisputeReason,
+    classes: "govuk-!-width-two-thirds",
+    label: {
+      text: "Update the dispute wording",
+      classes: "govuk-label--s"
+    },
+    hint: {
+      text: "Explain why the police should change their sensitivity assessment for this item."
+    }
+  }) }}
+{% endset %}
+
+{# -------------------------
+   Defendants display value
+   ------------------------- #}
+{% set firstDefendant = (_case.defendants | first) %}
+
+{% set defendantsValue %}
+  {% if firstDefendant %}
+    {{ firstDefendant.firstName }} {{ firstDefendant.lastName }}
+    {% if _case.defendants.length > 1 %}
+      and {{ _case.defendants.length - 1 }} more
+    {% endif %}
+  {% else %}
+    {{ _case.reference }}
+  {% endif %}
+{% endset %}
+
+{% set pageName = 'Change sensitivity dispute' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: (returnUrl if returnUrl else (query.returnUrl if query and query.returnUrl else "javascript:window.history.back()"))
+  }) }}
+{% endblock %}
+
+{% block content %}
+
+  {% include "_shared/_includes/success-banner.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-6",
+        rows: [
+          {
+            key: { text: "Description" },
+            value: { html: selected.description }
+          },
+          {
+            key: { text: "Police assessment" },
+            value: { html: selected.policeAssessment }
+          },
+          {
+            key: { text: "Rationale for assessment" },
+            value: { html: selected.policeRationale }
+          }
+        ]
+      }) }}
+
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-non-sensitive/change-sensitivity-dispute">
+        <input type="hidden" name="id" value="{{ selectedId }}">
+
+        {% if returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
+        {% elseif query and query.returnUrl %}
+          <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
+        {% endif %}
+
+        {{ govukRadios({
+          name: "changeSensitivityDisputeOption",
+          fieldset: {
+            legend: {
+              text: "How do you want to change this dispute?",
+              isPageHeading: false,
+              classes: "govuk-fieldset__legend--m"
+            }
+          },
+          items: [
+            {
+              value: "agree",
+              text: "Agree with the police sensitivity assessment and remove the dispute"
+            },
+            {
+              value: "wording",
+              text: "Keep the dispute but update the wording",
+              conditional: {
+                html: updateWordingHtml
+              }
+            }
+          ]
+        }) }}
+
+        {{ govukButton({ text: "Save and confirm" }) }}
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

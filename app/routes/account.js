@@ -75,7 +75,8 @@ router.post('/account/sign-in', async (req, res) => {
   })
 
   router.get('/account/sign-in', (req, res) => {
-    res.render('account/sign-in')
+    res.render(`${req.version}/account/sign-in`)
+    //res.render('account/sign-in')
   })
 
 }

@@ -1,0 +1,117 @@
+{# /cases/indictment/counts/added/reorder #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Reorder counts' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+
+      <span class="govuk-caption-m">Indictment</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% if showCountReorderSuccess %}
+        {{ govukNotificationBanner({
+          type: "success",
+          text: "Counts reordered"
+        }) }}
+      {% endif %}
+
+      <p class="govuk-body">
+        Reorder counts by entering new order numbers. Counts will move up and down accordingly.
+      </p>
+
+      <form method="post" novalidate>
+        {% if returnTo %}
+          <input type="hidden" name="returnTo" value="{{ returnTo }}">
+        {% endif %}
+
+        {# ---------------------------------------------
+           Reorder inputs + read-only cards (one per count)
+           --------------------------------------------- #}
+
+        {% if counts and counts.length %}
+
+          {% for c in counts %}
+
+            {# Use loop.index0 as a stable identifier if you don’t yet have a count id #}
+            {% set countKey = loop.index0 | string %}
+
+            {# Optional saved value from session: draftIndictment.countOrder["id-0"]=2 etc #}
+            {% set orderValue = "" %}
+            {% if draftIndictment and draftIndictment.countOrder and draftIndictment.countOrder["id-" + countKey] %}
+              {% set orderValue = draftIndictment.countOrder["id-" + countKey] %}
+            {% endif %}
+
+            <div class="govuk-!-margin-bottom-6">
+
+              {# ✅ Input first #}
+              <div class="govuk-!-margin-bottom-3">
+                {{ govukInput({
+                  id: "countOrder-" + countKey,
+                  name: "countOrder[id-" + countKey + "]",
+                  value: orderValue,
+                  classes: "govuk-input--width-3",
+                  inputmode: "numeric",
+                  type: "text",
+                  label: {
+                    text: "Move Count " + loop.index + " to position (optional)",
+                    classes: "govuk-label--s"
+                  },
+                  hint: {
+                    text: "For example, enter 1 to move this count to the top."
+                  }
+                }) }}
+              </div>
+
+              {# ✅ Summary card second #}
+              {{ govukSummaryList({
+                card: {
+                  title: { text: "Count " + loop.index }
+                },
+                rows: [
+                  {
+                    key: { text: "Statement of offence" },
+                    value: { text: c.statementOfOffenceText or "—" }
+                  },
+                  {
+                    key: { text: "Particulars of offence" },
+                    value: { text: c.particularsOfOffenceText or "—" }
+                  }
+                ]
+              }) }}
+
+            </div>
+
+          {% endfor %}
+
+        {% else %}
+          <p class="govuk-body">No counts have been added yet.</p>
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Save and continue" }) }}
+
+          {{ govukButton({
+            text: "Refresh and reorder",
+            classes: "govuk-button--secondary",
+            name: "action",
+            value: "reorder"
+          }) }}
+
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
