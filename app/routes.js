@@ -83,9 +83,15 @@ router.use((req, res, next) => {
  * Version switcher (stores v1/v2 in session)
  * Redirects into the chosen version start page.
  */
+///// version switcher updated to redirect to sign-in page instead of version-specific homepage, as the latter may not exist in both versions
+// router.get('/set-version', (req, res) => {
+//   req.session.version = req.query.v || 'v1'
+//   return res.redirect(req.session.version === 'v2' ? '/v2' : '/v1')
+// })
+
 router.get('/set-version', (req, res) => {
   req.session.version = req.query.v || 'v1'
-  return res.redirect(req.session.version === 'v2' ? '/v2' : '/v1')
+  return res.redirect('/account/sign-in')
 })
 
 /**
@@ -182,6 +188,8 @@ require('./routes/case--details')(router)
 require('./routes/case--disclosure-assess-as-unused')(router)
 require('./routes/case--disclosure')(router)
 require('./routes/case--disclosure-bulk')(router)
+/// indictmant-v2 must be registered in your main routes.js before case--indictment.js — otherwise Express will match the v1 handler first and the v2 override never fires.
+require('./routes/case--indictment-v2')(router)
 require('./routes/case--indictment')(router)
 require('./routes/case--material')(router)
 require('./routes/case--material-actions')(router)

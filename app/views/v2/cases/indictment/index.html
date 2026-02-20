@@ -18,7 +18,7 @@
     <div class="govuk-grid-column-two-thirds">
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      <p class="govuk-body">You have not created any indictments for this case</p>
+      <p class="govuk-body">You have not created any counts</p>
 
       {# <div class="govuk-button-group">
         <a href="/cases/{{ _case.id }}/indictment/counts/charges" class="govuk-button">
@@ -34,8 +34,8 @@
         idPrefix: "indictment-tasks",
         items: [
           {
-            title: { text: "Add police charges" },
-            href: "/cases/" + _case.id + "/indictment/counts/charges",
+            title: { text: "Select police charge" },
+             href: "/cases/" + _case.id + "/indictment/counts/date-and-charges",
             status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
           },
           {

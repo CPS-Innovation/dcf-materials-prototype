@@ -112,10 +112,11 @@ function buildChargeOptionsFromCountsCase(countsCase) {
     const lib = pc.chargeCode ? libraryByCode[String(pc.chargeCode)] : null
 
     options.push({
-      policeChargeId: pc.policeChargeId, // stable per case
+      policeChargeId: pc.policeChargeId,
       chargeCode: pc.chargeCode || null,
       label: pc.label || '',
       policeParticulars: pc.policeParticulars || '',
+      policeCharge: lib?.policeCharge || null,       // ← add this line
       statementOfOffence: lib?.statementOfOffence || null,
       statute: lib?.statute || null,
       precedents: lib?.precedents || [],

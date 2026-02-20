@@ -1,4 +1,4 @@
-{# /cases/indictment/counts/date-and-charges #}
+{# /v2/cases/indictment/counts/date-and-charges #}
 
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -34,21 +34,15 @@
 
       {% set chargeSelectionItems = [] %}
 
-      {# Existing selected charges first #}
-      {% for c in (selectedChargeOptions or []) %}
-        {% set chargeText %}
-          {% if c.chargeCode %}
-            {{ c.chargeCode }}: {{ c.description }}
-          {% else %}
-            {{ c.description }}
-          {% endif %}
-        {% endset %}
-
-        {% set _ = chargeSelectionItems.push({
-          value: (c.chargeCode | string),
-          text: chargeText | trim,
-          checked: (draftCount.countBasis != "newCount" and draftCount.primaryChargeCode and (c.chargeCode | string) == (draftCount.primaryChargeCode | string))
-        }) %}
+     {# Loop directly from charge library — only entries with policeCharge wording #}
+      {% for c in (chargeLibrary or []) %}
+        {% if c.policeCharge %}
+          {% set _ = chargeSelectionItems.push({
+            value: (c.chargeCode | string),
+            text: c.policeCharge,
+            checked: (draftCount.countBasis != "newCount" and draftCount.primaryChargeCode and (c.chargeCode | string) == (draftCount.primaryChargeCode | string))
+          }) %}
+        {% endif %}
       {% endfor %}
 
       {# Divider + new count option #}
