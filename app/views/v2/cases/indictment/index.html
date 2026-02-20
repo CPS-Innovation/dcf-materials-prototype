@@ -20,33 +20,45 @@
 
       {# Indictment counter #}
       {% set indictmentCount = 1 if isCompleted else 0 %}
-      <p class="govuk-body">
-        <strong>{{ indictmentCount }}</strong> indictment{{ "s" if indictmentCount != 1 else "" }}
-      </p>
-
-      {# Count counter #}
       {% set countCount = (indictment.counts and indictment.counts.length) or 0 %}
-      <p class="govuk-body">
-        <strong>{{ countCount }}</strong>
-        {% if isCompleted %}
-          count{{ "s" if countCount != 1 else "" }}
-        {% else %}
-          <a href="/cases/{{ _case.id }}/indictment/counts/added" class="govuk-link">count{{ "s" if countCount != 1 else "" }}</a>
-        {% endif %}
-      </p>
+
+      {% if isCompleted %}
+        <p class="govuk-body">
+          <strong>{{ _case.reference }}</strong> — {{ indictmentCount }} indictment{{ "s" if indictmentCount != 1 else "" }} with {{ countCount }} count{{ "s" if countCount != 1 else "" }}
+        </p>
+      {% else %}
+        <p class="govuk-body">
+          <strong>{{ indictmentCount }}</strong> indictment{{ "s" if indictmentCount != 1 else "" }}
+        </p>
+
+        <p class="govuk-body">
+          <strong>{{ countCount }}</strong> count{{ "s" if countCount != 1 else "" }}
+          {% if countCount > 0 %}
+            — <a href="/cases/{{ _case.id }}/indictment/counts/added" class="govuk-link">View counts</a>
+          {% endif %}
+        </p>
+      {% endif %}
+
 
       {# ------------------------------------------------------------
-         Task completion flags
+         Task status tags
          ------------------------------------------------------------ #}
-      {% set chargeComplete     = draftCount.primaryChargeCode %}
-      {% set defendantsComplete = draftCount.assignedDefendantIds and draftCount.assignedDefendantIds.length %}
-      {% set victimsComplete    = draftCount.assignedVictimIds and draftCount.assignedVictimIds.length %}
-      {% set precedentComplete  = draftCount.selectedPrecedentId %}
-      {% set particularsComplete = draftCount.statementOfOffenceText or draftCount.particularsOfOffenceText %}
 
-      {# ------------------------------------------------------------
-         Task list
-         ------------------------------------------------------------ #}
+      {% set completedTag  = { tag: { text: "Completed",  classes: "govuk-tag--green" } } %}
+      {% set inProgressTag = { tag: { text: "In progress", classes: "govuk-tag--blue" } } %}
+      {% set notStartedTag = { tag: { text: "Not started", classes: "govuk-tag--grey" } } %}
+
+      {% set chargeStatus      = stepStatus.dateAndCharges or "notStarted" %}
+      {% set defendantsStatus  = stepStatus.defendants or "notStarted" %}
+      {% set victimsStatus     = stepStatus.victims or "notStarted" %}
+      {% set precedentStatus   = stepStatus.precedent or "notStarted" %}
+      {% set particularsStatus = stepStatus.particulars or "notStarted" %}
+
+      {% macro statusTag(status) %}
+        {% if status == "completed" %}completedTag{% elif status == "inProgress" %}inProgressTag{% else %}notStartedTag{% endif %}
+      {% endmacro %}
+
+      <h2 class="govuk-heading-m">Prepare count</h2>
 
       {{ govukTaskList({
         idPrefix: "indictment-tasks",
@@ -54,27 +66,27 @@
           {
             title: { text: "Select police charge" },
             href: "/cases/" + _case.id + "/indictment/counts/date-and-charges",
-            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if chargeComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+            status: completedTag if chargeStatus == "completed" else (inProgressTag if chargeStatus == "inProgress" else notStartedTag)
           },
           {
             title: { text: "Add defendants" },
             href: "/cases/" + _case.id + "/indictment/assign/defendants",
-            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if defendantsComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+            status: completedTag if defendantsStatus == "completed" else (inProgressTag if defendantsStatus == "inProgress" else notStartedTag)
           },
           {
             title: { text: "Add victims" },
             href: "/cases/" + _case.id + "/indictment/assign/victims",
-            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if victimsComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+            status: completedTag if victimsStatus == "completed" else (inProgressTag if victimsStatus == "inProgress" else notStartedTag)
           },
           {
             title: { text: "Select precedent" },
             href: "/cases/" + _case.id + "/indictment/counts/precedent-charges-or-offence",
-            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if precedentComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+            status: completedTag if precedentStatus == "completed" else (inProgressTag if precedentStatus == "inProgress" else notStartedTag)
           },
           {
             title: { text: "Statement of offence and particulars" },
             href: "/cases/" + _case.id + "/indictment/counts/offence-and-particulars",
-            status: { tag: { text: "Completed", classes: "govuk-tag--green" } if particularsComplete else { text: "Not started", classes: "govuk-tag--grey" } }
+            status: completedTag if particularsStatus == "completed" else (inProgressTag if particularsStatus == "inProgress" else notStartedTag)
           }
         ]
       }) }}

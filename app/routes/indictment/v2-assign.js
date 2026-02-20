@@ -6,6 +6,7 @@
 //
 // Register this BEFORE assign.js (via case--indictment-v2.js).
 
+
 const {
   _,
   fetchCase,
@@ -17,8 +18,6 @@ module.exports = router => {
 
   // ============================================================
   // POST /cases/:caseId/indictment/assign/defendants (V2)
-  // continue → assign/victims
-  // exit     → indictment task list
   // ============================================================
 
   router.post('/cases/:caseId/indictment/assign/defendants', async (req, res) => {
@@ -39,7 +38,12 @@ module.exports = router => {
     _.set(req, countPath, draftCount)
     _.set(req, `${draftBasePath}.defaultAssignedDefendantIds`, draftCount.assignedDefendantIds)
 
+    // ---- Step status ----
     const action = (req.body.action || 'continue').toString()
+    const stepStatus = _.get(req, `${draftBasePath}.stepStatus`, {})
+    stepStatus.defendants = (action === 'exit') ? 'inProgress' : 'completed'
+    _.set(req, `${draftBasePath}.stepStatus`, stepStatus)
+
     if (action === 'exit') return res.redirect(`/cases/${caseId}/indictment`)
 
     const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
@@ -51,8 +55,6 @@ module.exports = router => {
 
   // ============================================================
   // POST /cases/:caseId/indictment/assign/victims (V2)
-  // continue → assign/witnesses
-  // exit     → indictment task list
   // ============================================================
 
   router.post('/cases/:caseId/indictment/assign/victims', async (req, res) => {
@@ -73,22 +75,23 @@ module.exports = router => {
     _.set(req, countPath, draftCount)
     _.set(req, `${draftBasePath}.defaultAssignedVictimIds`, draftCount.assignedVictimIds)
 
+    // ---- Step status ----
     const action = (req.body.action || 'continue').toString()
+    const stepStatus = _.get(req, `${draftBasePath}.stepStatus`, {})
+    stepStatus.victims = (action === 'exit') ? 'inProgress' : 'completed'
+    _.set(req, `${draftBasePath}.stepStatus`, stepStatus)
+
     if (action === 'exit') return res.redirect(`/cases/${caseId}/indictment`)
 
     const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
     if (returnTo) return res.redirect(returnTo)
 
-    // V2: skip witnesses, go straight to precedent-charges-or-offence
     return res.redirect(`/cases/${caseId}/indictment/counts/precedent-charges-or-offence`)
-    
   })
 
 
   // ============================================================
   // POST /cases/:caseId/indictment/assign/witnesses (V2)
-  // continue → offence-and-particulars (skipping precedent step)
-  // exit     → indictment task list
   // ============================================================
 
   router.post('/cases/:caseId/indictment/assign/witnesses', async (req, res) => {
@@ -115,7 +118,6 @@ module.exports = router => {
     const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
     if (returnTo) return res.redirect(returnTo)
 
-    // V2: skip precedent step, go straight to offence-and-particulars
     return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
   })
 

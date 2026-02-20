@@ -36,6 +36,7 @@ module.exports = router => {
         })
 
     const draftCount = _.get(req, `session.data.indictmentDrafts.${caseId}.currentCount`, {})
+    const stepStatus = _.get(req, `session.data.indictmentDrafts.${caseId}.stepStatus`, {})
 
     const successBanner = _.get(req, 'session.data.successBanner', null)
     _.unset(req, 'session.data.successBanner')
@@ -44,6 +45,7 @@ module.exports = router => {
       _case,
       indictment,
       draftCount,
+      stepStatus,
       isCompleted,
       completedIndictment,
       readOnlyUrl: `/cases/${caseId}/indictment/preview/read-only`,
