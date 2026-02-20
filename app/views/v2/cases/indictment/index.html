@@ -15,14 +15,16 @@
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
 
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-full">
+    <div class="govuk-grid-column-two-thirds">
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-      <div class="govuk-button-group">
+      <p class="govuk-body">You have not created any indictments for this case</p>
+
+      {# <div class="govuk-button-group">
         <a href="/cases/{{ _case.id }}/indictment/counts/charges" class="govuk-button">
           Build indictment
         </a>
-      </div>
+      </div> #}
 
       {# ------------------------------------------------------------
          Task list
@@ -32,17 +34,22 @@
         idPrefix: "indictment-tasks",
         items: [
           {
-            title: { text: "Counts" },
+            title: { text: "Add police charges" },
             href: "/cases/" + _case.id + "/indictment/counts/charges",
             status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
           },
           {
-            title: { text: "Defendants" },
+            title: { text: "Add offence and particulars" },
+            href: "/cases/" + _case.id + "/indictment/counts/charges",
+            status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
+          },
+          {
+            title: { text: "Add defendants" },
             href: "/cases/" + _case.id + "/indictment/defendants",
             status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
           },
           {
-            title: { text: "Victims" },
+            title: { text: "Add victims" },
             href: "/cases/" + _case.id + "/indictment/victims",
             status: { tag: { text: "Not started", classes: "govuk-tag--grey" } }
           }
