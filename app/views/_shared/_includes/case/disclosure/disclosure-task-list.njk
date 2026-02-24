@@ -1,4 +1,5 @@
-{# _includes/case/disclosure/disclosure-task-list.njk  #}
+{# /views/_shared/_includes/case/disclosure/disclosure-task-list.njk  #}
+
 
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "govuk/components/details/macro.njk" import govukDetails %}
@@ -17,32 +18,30 @@
 <h2 class="govuk-heading-l">Disclosure</h2>
 <p class="govuk-body">Check or complete the assessment of unused case materials</p>
 
-<div class="app-list">
-  <div class="app-list__item">
 
-    <h3 class="govuk-heading-m">Police certification</h3>
+<h3 class="govuk-heading-m">Police certification</h3>
 
-    {{ govukSummaryList({
-      classes: "govuk-summary-list--no-border govuk-!-margin-bottom-6",
-      rows: [
-        {
-          key: { text: "Date of certification" },
-          value: { text: cm.policeDisclosureCertification.dateOfCertification }
-        },
-        {
-          key: { text: "Disclosing officer name" },
-          value: { text: cm.policeDisclosureCertification.disclosingOfficerName }
-        }
-      ]
-    }) }}
+{{ govukSummaryList({
+  rows: [
+    {
+      key: { text: "Date of certification" },
+      value: { text: cm.policeDisclosureCertification.dateOfCertification }
+    },
+    {
+      key: { text: "Disclosing officer name" },
+      value: { text: cm.policeDisclosureCertification.disclosingOfficerName }
+    },
+    {
+      key: { text: "Certification status" },
+      value: { text: "Valid" }
+    }
+  ]
+}) }}
 
-    {{ govukDetails({
-      summaryText: "Show certification",
-      html: (cm.policeDisclosureCertification.certifierComment or "") | replace('\n', '<br>') | safe
-    }) }}
-
-  </div>
-</div>
+{{ govukDetails({
+  summaryText: "Show officer comments",
+  html: (cm.policeDisclosureCertification.certifierComment or "") | replace('\n', '<br>') | safe
+}) }}
 
 <h3 class="govuk-heading-m govuk-!-margin-bottom-6">CPS disclosure assessment</h3>
 

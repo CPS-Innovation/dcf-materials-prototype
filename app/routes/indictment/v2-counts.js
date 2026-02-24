@@ -392,4 +392,109 @@ module.exports = router => {
     })
   })
 
+  // ============================================================
+  // GET /cases/:caseId/indictment/counts/added/reorder (V2)
+  // ============================================================
+
+  router.get('/cases/:caseId/indictment/counts/added/reorder', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+    const indictmentBasePath = `session.data.indictments.${caseId}`
+    const indictment = _.get(req, indictmentBasePath, { counts: [] }) || { counts: [] }
+    const counts = indictment.counts || []
+
+    const showCountReorderSuccess = _.get(req, `session.data.showCountReorderSuccess`, false)
+    _.unset(req, `session.data.showCountReorderSuccess`)
+
+    const returnTo = safeReturnTo(req.query.returnTo)
+
+    return res.render('cases/indictment/counts/added/reorder/index', {
+      _case,
+      counts,
+      indictment,
+      showCountReorderSuccess,
+      returnTo
+    })
+  })
+
+
+  // ============================================================
+  // POST /cases/:caseId/indictment/counts/added/reorder (V2)
+  // ============================================================
+
+  router.post('/cases/:caseId/indictment/counts/added/reorder', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const indictmentBasePath = `session.data.indictments.${caseId}`
+    const indictment = _.get(req, indictmentBasePath, { counts: [] }) || { counts: [] }
+    const counts = indictment.counts || []
+
+    const action = (req.body.action || 'continue').toString()
+
+    // ---- Parse the order inputs ----
+    // countOrder is posted as e.g. { "id-0": "2", "id-1": "1", "id-2": "3" }
+    const rawOrder = req.body.countOrder || {}
+
+    // Build a map of originalIndex -> desired position
+    const positionMap = {}
+    for (const [key, val] of Object.entries(rawOrder)) {
+      const originalIndex = parseInt(key.replace('id-', ''), 10)
+      const desiredPosition = parseInt(String(val || ''), 10)
+      if (Number.isFinite(originalIndex) && Number.isFinite(desiredPosition) && desiredPosition > 0) {
+        positionMap[originalIndex] = desiredPosition
+      }
+    }
+
+    // ---- Reorder the counts array ----
+    // Start with original order, then move any counts that have a new position
+    let reordered = [...counts]
+
+    if (Object.keys(positionMap).length > 0) {
+      // Assign desired positions, fill gaps with remaining counts in original order
+      const result = new Array(counts.length).fill(null)
+      const unpositioned = []
+
+      counts.forEach((count, i) => {
+        if (positionMap[i] !== undefined) {
+          const targetIdx = positionMap[i] - 1 // convert to 0-based
+          if (targetIdx >= 0 && targetIdx < counts.length) {
+            result[targetIdx] = count
+          } else {
+            unpositioned.push(count)
+          }
+        } else {
+          unpositioned.push(count)
+        }
+      })
+
+      // Fill nulls with unpositioned counts in order
+      let uIdx = 0
+      for (let i = 0; i < result.length; i++) {
+        if (result[i] === null) {
+          result[i] = unpositioned[uIdx++]
+        }
+      }
+
+      reordered = result.filter(Boolean)
+    }
+
+    indictment.counts = reordered
+    indictment.lastSavedAt = new Date().toISOString()
+    _.set(req, indictmentBasePath, indictment)
+
+    if (action === 'reorder') {
+      // PRG — show success banner and re-render with new order
+      _.set(req, `session.data.showCountReorderSuccess`, true)
+      return res.redirect(`/cases/${caseId}/indictment/counts/added/reorder`)
+    }
+
+    // continue → back to counts added
+    return res.redirect(`/cases/${caseId}/indictment/counts/added`)
+  })
+
 }
