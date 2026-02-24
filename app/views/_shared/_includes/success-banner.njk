@@ -1,5 +1,7 @@
+{# app/views/_shared/_includes/success-banner.njk #}
 {{ govukNotificationBanner({
   classes: 'app-margin-top-negative-3 govuk-!-margin-bottom-9',
   type: "success",
-  text: flash
-}) if flash.length }}
+  titleText: successBanner.titleText,
+  html: "<p class='govuk-body'>" + successBanner.text + "</p>"
+}) if successBanner }}
