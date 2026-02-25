@@ -1,0 +1,70 @@
+{# app/views/v2/cases/material/generate-cps-documents/defendants.html #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+
+{% set pageName = 'Defendant documents' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+
+      <span class="govuk-caption-m">
+        {{ _case.reference }} – Generate CPS documents
+      </span>
+
+      <h1 class="govuk-heading-l">Select a defendant</h1>
+
+      {% set docs = caseMaterialsGenerateDocuments or {} %}
+      {% set defendants = docs.defendants or [] %}
+
+      {# Build radios items array (Nunjucks-safe) #}
+      {% set defendantItems = [] %}
+      {% for d in defendants %}
+        {% set defendantItems = (defendantItems.push({
+          value: d.id,
+          text: d.name
+        }), defendantItems) %}
+      {% endfor %}
+
+      <form method="post">
+
+        <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
+        
+        {% if defendants.length == 0 %}
+          <p class="govuk-body">There are no defendants on this case.</p>
+        {% else %}
+
+          {{ govukRadios({
+            name: "selectedDefendantId",
+            fieldset: {
+              legend: {
+                text: "Generate documents for",
+                classes: "govuk-fieldset__legend--m govuk-visually-hidden"
+              }
+            },
+            items: defendantItems
+          }) }}
+
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Continue" }) }}
+          <a class="govuk-link" href="/cases/{{ _case.id }}/material?tab=view-materials">Cancel</a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
