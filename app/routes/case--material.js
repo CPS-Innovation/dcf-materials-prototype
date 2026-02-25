@@ -177,6 +177,9 @@ module.exports = router => {
     // Pull caseMaterials from session (this is what your tabs/templates expect)
     const caseMaterials = _.get(req, 'session.data.caseMaterials', {})
 
+    // Pull generate documents data from session
+    const generateDocuments = _.get(req, 'session.data.caseMaterialsGenerateDocuments', {})
+
     // If your session data holds an array of cases, pick the matching one
     const cm = Array.isArray(caseMaterials)
       ? (caseMaterials.find(c => String(c.caseId) === String(_case.reference)) || {})
@@ -209,6 +212,7 @@ module.exports = router => {
     return res.render("cases/material/index", {
       _case,
       caseMaterials: cm,
+      generateDocuments,  // ✅ CPS generate documents data
       documents,
       documentTypeItems,
       selectedFilters,

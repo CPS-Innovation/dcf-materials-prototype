@@ -1,4 +1,5 @@
 const caseMaterials = require('./case-materials.json')
+const caseMaterialsGenerateDocuments = require('./case-materials-generate-documents.json')
 const disclosureStatuses = require('./disclosure-statuses.json')
 const disclosureNonSensitiveRows = require('./disclosure-non-sensitive-rows.json')
 const disclosureSensitiveRows = require('./disclosure-sensitive-rows.json')
@@ -10,6 +11,7 @@ module.exports = {
   caseSort: 'Name',
   taskSort: 'Due date',
   caseMaterials,
+  caseMaterialsGenerateDocuments,
   disclosureStatuses,
   disclosureNonSensitiveRows,
   disclosureSensitiveRows,
