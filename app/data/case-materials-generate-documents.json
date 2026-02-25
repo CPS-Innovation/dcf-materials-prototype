@@ -1,0 +1,97 @@
+{
+  "caseDocuments": [
+    {
+      "id": "factual_summary",
+      "label": "Factual Summary",
+      "lastGenerated": null
+    },
+    {
+      "id": "confidential_information",
+      "label": "Confidential Information",
+      "lastGenerated": "2024-09-24T12:32:00"
+    },
+    {
+      "id": "action_plan",
+      "label": "Action Plan",
+      "lastGenerated": null
+    },
+    {
+      "id": "case_review",
+      "label": "Case Review",
+      "lastGenerated": "2024-09-24T12:32:00"
+    }
+  ],
+  "defendants": [
+    {
+      "id": "defendant_1",
+      "name": "Mr Elton Berkley",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": null
+        },
+        {
+          "id": "offences_taken_into_consideration",
+          "label": "Offences Taken Into Consideration",
+          "lastGenerated": null
+        },
+        {
+          "id": "breach_of_bail_condition",
+          "label": "Breach of Bail Condition",
+          "lastGenerated": "2024-09-24T12:32:00"
+        },
+        {
+          "id": "remand_application",
+          "label": "Remand Application",
+          "lastGenerated": null
+        },
+        {
+          "id": "candidate_court_orders",
+          "label": "Candidate Court Orders",
+          "lastGenerated": "2024-09-24T12:32:00"
+        }
+      ]
+    },
+    {
+      "id": "defendant_2",
+      "name": "Mr Kevin Bully",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": null
+        },
+        {
+          "id": "candidate_court_orders",
+          "label": "Candidate Court Orders",
+          "lastGenerated": "2024-09-24T12:32:00"
+        }
+      ]
+    }
+  ],
+  "witnesses": [
+    {
+      "id": "witness_1",
+      "name": "Miss Carly Mitty",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "witness_2",
+      "name": "Mr Sam Parsons",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": null
+        }
+      ]
+    }
+  ]
+}
