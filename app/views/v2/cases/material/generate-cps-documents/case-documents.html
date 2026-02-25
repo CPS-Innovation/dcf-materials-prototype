@@ -1,0 +1,112 @@
+{# app/views/v2/cases/material/generate-cps-documents/case-documents.html #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+
+
+
+{% set pageName = 'Case documents' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:history.back()"
+  }) }}
+{% endblock %}
+
+
+{% block content %}
+
+  {% include "_shared/_includes/success-banner.njk" %}
+
+  {% if successBanner %}
+    {{ govukNotificationBanner({
+      type: "success",
+      titleText: successBanner.titleText or "Success",
+      text: successBanner.text or ""
+    }) }}
+  {% endif %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+
+           <span class="govuk-caption-m">{{_case.reference}} - Generate CPS documents
+            </span>
+          <h1 class="govuk-heading-l">{{ pageName }}</h1>
+      
+
+        {# Case documents wizard step (case-level only) #}
+
+        {% set docs = caseMaterialsGenerateDocuments or data.caseMaterialsGenerateDocuments or {} %}
+        {% set caseDocs = docs.caseDocuments or [] %}
+
+        <form method="post" action="">
+          <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="case-docs-">
+            <thead class="govuk-table__head govuk-body-s">
+              <tr class="govuk-table__row">
+                {# IMPORTANT: empty header cell, MOJ injects select-all here #}
+                <th class="govuk-table__header" scope="col" id="case-docs-select-all"></th>
+
+                <th scope="col" class="govuk-table__header">
+                  Document
+                </th>
+
+                <th scope="col" class="govuk-table__header govuk-!-width-one-quarter">
+                  Generated
+                </th>
+              </tr>
+            </thead>
+
+            <tbody class="govuk-table__body">
+              {% for doc in caseDocs %}
+                <tr class="govuk-table__row">
+                  <td class="govuk-table__cell">
+                    {# IMPORTANT: moj-multi-select__checkbox is on the wrapper, not the input #}
+                    <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
+                      <input
+                        type="checkbox"
+                        class="govuk-checkboxes__input"
+                        name="selectedDocuments"
+                        value="{{ doc.id }}"
+                        id="case-docs-{{ doc.id }}">
+                      <label class="govuk-label govuk-checkboxes__label" for="case-docs-{{ doc.id }}">
+                        <span class="govuk-visually-hidden">Select {{ doc.label }}</span>
+                      </label>
+                    </div>
+                  </td>
+
+                  <td class="govuk-table__cell">
+                    {{ doc.label }}
+                  </td>
+
+                  <td class="govuk-table__cell">
+                    {% if doc.lastGenerated %}
+                      {{ doc.lastGenerated | govukDate }}
+                    {% else %}
+                      <span class="govuk-hint">Not generated</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <div class="govuk-button-group">
+            {{ govukButton({
+              text: "Continue"
+            }) }}
+
+           <a class="govuk-link" href="/cases/{{ _case.id }}/material?tab=view-materials">Cancel</a>
+          </div>
+
+        </form>
+
+
+    </div>
+  </div>
+{% endblock %}
+
+

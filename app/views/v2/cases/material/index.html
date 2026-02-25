@@ -63,13 +63,22 @@
             </button>
 
             {# {{/* Secondary actions as a collapsible button menu */}} #}
-            <div class="moj-button-menu" data-module="moj-button-menu" data-button-text="Material actions" data-button-classes="govuk-button--secondary">
-              <button type="submit" class="govuk-button moj-button-menu__item govuk-button--secondary" data-module="govuk-button">
-                Generate disclosure schedule
-              </button>
-              <button type="submit" class="govuk-button moj-button-menu__item govuk-button--secondary" data-module="govuk-button">
+            <div class="moj-button-menu"
+                data-module="moj-button-menu"
+                data-button-text="Material actions"
+                data-button-classes="govuk-button--secondary">
+
+              <a class="govuk-button moj-button-menu__item govuk-button--secondary"
+                data-module="govuk-button"
+                href="/cases/{{ _case.id }}/material/generate-cps-documents/case-documents">
                 Generate CPS documents
-              </button>
+              </a>
+
+              <a class="govuk-button moj-button-menu__item govuk-button--secondary"
+                data-module="govuk-button"
+                href="/cases/{{ _case.id }}/material/generate-disclosure-schedule">
+                Generate disclosure schedule
+              </a>
             </div>
 
           </div>
