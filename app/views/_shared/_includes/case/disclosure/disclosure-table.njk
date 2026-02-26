@@ -74,9 +74,27 @@
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
-                text: "Ask police to reinstate items",
+                text: "Assess as unused",
                 href: routePrefix ~
-                  "/no-longer-relevant/request-item-reinstatement?id=" ~ r.id ~
+                  "/item-unused?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Assess as evidence",
+                href: routePrefix ~
+                  "/item-evidence?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Request material",
+                href: routePrefix ~
+                  "/item-request-material?id=" ~ r.id ~
+                  "&returnUrl=" ~ (returnUrl | urlencode)
+              },
+              {
+                text: "Request updated description",
+                href: routePrefix ~
+                  "/item-request-updated-description?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               }
             ]
@@ -114,12 +132,6 @@
                 text: "Assess as evidence",
                 href: routePrefix ~
                   "/item-evidence?id=" ~ r.id ~
-                  "&returnUrl=" ~ (returnUrl | urlencode)
-              },
-              {
-                text: "Assess as no longer relevant",
-                href: routePrefix ~
-                  "/item-no-longer-relevant?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
