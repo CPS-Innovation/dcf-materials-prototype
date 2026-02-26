@@ -68,7 +68,8 @@ module.exports = router => {
     ensureWizardState(req)
     _.set(req, 'session.data.generateCpsDocuments.caseDocuments', asArray(req.body.selectedDocuments))
 
-    return res.redirect(`/cases/${caseId}/material/generate-cps-documents/defendant-documents`)
+    const returnUrl = req.query.returnUrl
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents`)
   })
 
   // -------------------------
@@ -92,11 +93,10 @@ module.exports = router => {
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
     ensureWizardState(req)
-
-    // Save chosen defendant id
     _.set(req, 'session.data.generateCpsDocuments.selectedDefendantId', req.body.selectedDefendantId || null)
 
-    return res.redirect(`/cases/${caseId}/material/generate-cps-documents/defendant-documents`)
+    const returnUrl = req.query.returnUrl
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents`)
   })
 
 
@@ -230,11 +230,10 @@ module.exports = router => {
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
     ensureWizardState(req)
-
-    // Store chosen witness ID
     _.set(req, 'session.data.generateCpsDocuments.selectedWitnessId', req.body.selectedWitnessId || null)
 
-    return res.redirect(`/cases/${caseId}/material/generate-cps-documents/witness-documents`)
+    const returnUrl = req.query.returnUrl
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents`)
   })
 
 
