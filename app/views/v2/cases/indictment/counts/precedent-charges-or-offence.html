@@ -23,9 +23,9 @@
           ** Can search on code, keyword or offence ***
       {% endset %}
 
-      {{ govukNotificationBanner({
+      {# {{ govukNotificationBanner({
         html: html
-      }) }}
+      }) }} #}
 
       <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
           {% if _case.defendants.length > 1 %}

@@ -1,6 +1,7 @@
-{# cases/material/index.html #}
+{# app/views/v2/cases/material/index.html #}
 
 {% extends "_shared/layouts/main.html" %}
+{% from "moj/components/page-header-actions/macro.njk" import mojPageHeaderActions %}
 {% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -36,14 +37,6 @@
   {% include "_shared/_includes/success-banner.njk" %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
 
-  {% if successBanner %}
-    {{ govukNotificationBanner({
-      type: "success",
-      titleText: successBanner.titleText or "Success",
-      text: successBanner.text or ""
-    }) }}
-  {% endif %}
-
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
 
@@ -53,15 +46,33 @@
           <h1 class="govuk-heading-m">{{ pageName }}</h1>
         </div>
 
-        {# 👇 Add an id so the JS can toggle this #}
-        <div class="moj-page-header-actions__actions" id="material-header-actions">
+        <div class="moj-page-header-actions__actions" id="material-header-actions" hidden>
           <div class="moj-button-group moj-button-group--inline">
-            <button type="submit" class="govuk-button govuk-button--primary">
+
+            {# {{/* Primary standalone button — sits outside the menu */}} #}
+            <button type="submit" class="govuk-button govuk-button--primary" data-module="govuk-button">
               Complete triage
             </button>
-            <button type="submit" class="govuk-button govuk-button--secondary">
-              Case material actions
-            </button>
+
+            {# {{/* Secondary actions as a collapsible button menu */}} #}
+            <div class="moj-button-menu"
+                data-module="moj-button-menu"
+                data-button-text="Material actions"
+                data-button-classes="govuk-button--secondary">
+
+              <a class="govuk-button moj-button-menu__item govuk-button--secondary"
+                data-module="govuk-button"
+                href="/cases/{{ _case.id }}/material/generate-cps-documents/case-documents">
+                Generate CPS documents
+              </a>
+
+              <a class="govuk-button moj-button-menu__item govuk-button--secondary"
+                data-module="govuk-button"
+                href="/cases/{{ _case.id }}/material/generate-disclosure-schedule">
+                Generate disclosure schedule
+              </a>
+            </div>
+
           </div>
         </div>
       </div>

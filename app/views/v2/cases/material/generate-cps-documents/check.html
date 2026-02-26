@@ -1,0 +1,214 @@
+{# app/views/v2/cases/material/generate-cps-documents/check.html #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set pageName = 'Check documents' %}
+
+{% set returnUrl = "/cases/" ~ _case.id ~ "/material/generate-cps-documents/check" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witness-documents"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+
+      <span class="govuk-caption-m">
+        {{ _case.reference }} – Generate CPS documents
+      </span>
+
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% set docs = caseMaterialsGenerateDocuments or {} %}
+      {% set caseDocs = docs.caseDocuments or [] %}
+      {% set defendants = docs.defendants or [] %}
+      {% set witnesses = docs.witnesses or [] %}
+
+      {% set s = selections or data.generateCpsDocuments or {} %}
+      {% set selectedCaseIds = s.caseDocuments or [] %}
+      {% set defendantById = s.defendantDocumentsById or {} %}
+      {% set witnessById = s.witnessDocumentsById or {} %}
+
+      {# -----------------------------
+         CASE DOCUMENTS
+         ----------------------------- #}
+
+      {% set caseValueHtml %}
+        {% if selectedCaseIds | length == 0 %}
+          <span class="govuk-hint">No case documents selected</span>
+        {% else %}
+          <ul class="govuk-list">
+            {% for selectedId in selectedCaseIds %}
+              {% set label = selectedId %}
+              {% for d in caseDocs %}
+                {% if (d.id | string) == (selectedId | string) %}
+                  {% set label = d.label %}
+                {% endif %}
+              {% endfor %}
+              <li>{{ label }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endset %}
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: { text: "Case documents" },
+            value: { html: caseValueHtml },
+            actions: {
+              items: [
+                {
+                  href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents?returnUrl=" ~ (returnUrl | urlencode),
+                  text: "Change",
+                  visuallyHiddenText: "case documents"
+                }
+              ]
+            }
+          }
+        ]
+      }) }}
+
+      {# -----------------------------
+         DEFENDANT DOCUMENTS
+         ----------------------------- #}
+
+      <h2 class="govuk-heading-m govuk-!-margin-top-6">Defendant documents</h2>
+
+      {% if defendantById and (defendantById | length) %}
+        {% for defId, docIds in defendantById %}
+
+          {# Find defendant name #}
+          {% set defName = "Defendant " ~ defId %}
+          {% for d in defendants %}
+            {% if (d.id | string) == (defId | string) %}
+              {% set defName = d.name %}
+            {% endif %}
+          {% endfor %}
+
+          {% set defDocsHtml %}
+            {% if (docIds or []) | length == 0 %}
+              <span class="govuk-hint">No documents selected</span>
+            {% else %}
+              <ul class="govuk-list">
+                {% for did in docIds %}
+                  {% set dlabel = did %}
+                  {# Find the doc label within the matched defendant's documents #}
+                  {% for d in defendants %}
+                    {% if (d.id | string) == (defId | string) %}
+                      {% for dd in (d.documents or []) %}
+                        {% if (dd.id | string) == (did | string) %}
+                          {% set dlabel = dd.label %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% endfor %}
+                  <li>{{ dlabel }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          {% endset %}
+
+          {{ govukSummaryList({
+            rows: [
+              {
+                key: { text: defName },
+                value: { html: defDocsHtml },
+                actions: {
+                  items: [
+                    {
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendants?returnUrl=" ~ (returnUrl | urlencode),
+                      text: "Change",
+                      visuallyHiddenText: "documents for " ~ defName
+                    }
+                  ]
+                }
+              }
+            ]
+          }) }}
+
+        {% endfor %}
+      {% else %}
+        <p class="govuk-body"><span class="govuk-hint">No defendant documents selected</span></p>
+      {% endif %}
+
+      {# -----------------------------
+         WITNESS DOCUMENTS
+         ----------------------------- #}
+
+      <h2 class="govuk-heading-m govuk-!-margin-top-6">Witness documents</h2>
+
+      {% if witnessById and (witnessById | length) %}
+        {% for witId, docIds in witnessById %}
+
+          {# Find witness name #}
+          {% set witName = "Witness " ~ witId %}
+          {% for w in witnesses %}
+            {% if (w.id | string) == (witId | string) %}
+              {% set witName = w.name %}
+            {% endif %}
+          {% endfor %}
+
+          {% set witDocsHtml %}
+            {% if (docIds or []) | length == 0 %}
+              <span class="govuk-hint">No documents selected</span>
+            {% else %}
+              <ul class="govuk-list">
+                {% for wid in docIds %}
+                  {% set wlabel = wid %}
+                  {# Find the doc label within the matched witness's documents #}
+                  {% for w in witnesses %}
+                    {% if (w.id | string) == (witId | string) %}
+                      {% for wd in (w.documents or []) %}
+                        {% if (wd.id | string) == (wid | string) %}
+                          {% set wlabel = wd.label %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% endfor %}
+                  <li>{{ wlabel }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          {% endset %}
+
+          {{ govukSummaryList({
+            rows: [
+              {
+                key: { text: witName },
+                value: { html: witDocsHtml },
+                actions: {
+                  items: [
+                    {
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witnesses?returnUrl=" ~ (returnUrl | urlencode),
+                      text: "Change",
+                      visuallyHiddenText: "documents for " ~ witName
+                    }
+                  ]
+                }
+              }
+            ]
+          }) }}
+
+        {% endfor %}
+      {% else %}
+        <p class="govuk-body"><span class="govuk-hint">No witness documents selected</span></p>
+      {% endif %}
+
+      <form method="post">
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Continue" }) }}
+          <a class="govuk-link" href="/cases/{{ _case.id }}/material?tab=view-materials">Cancel</a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

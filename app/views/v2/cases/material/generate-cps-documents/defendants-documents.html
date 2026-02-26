@@ -1,0 +1,108 @@
+{# app/views/v2/cases/material/generate-cps-documents/defendants-documents.html #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set pageName = 'Defendant documents' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendants"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+
+      <span class="govuk-caption-m">
+        {{ _case.reference }} – Generate CPS documents
+      </span>
+
+      <h1 class="govuk-heading-l">
+        {{ selectedDefendant.name }}
+      </h1>
+
+      <p class="govuk-body">
+        Select the documents you want to generate.
+      </p>
+
+      {% set documents = selectedDefendant.documents or [] %}
+
+      <form method="post" action="">
+
+        <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
+
+        {% if documents.length == 0 %}
+          <p class="govuk-body">There are no documents available for this defendant.</p>
+        {% else %}
+
+          <div class="govuk-form-group">
+            <fieldset class="govuk-fieldset">
+              <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+
+                {% for doc in documents %}
+                  <div class="govuk-checkboxes__item">
+                    <input class="govuk-checkboxes__input"
+                           id="doc-{{ doc.id }}"
+                           name="selectedDefendantDocuments"
+                           type="checkbox"
+                           value="{{ doc.id }}">
+
+                    <label class="govuk-label govuk-checkboxes__label"
+                           for="doc-{{ doc.id }}">
+                      {{ doc.label }}
+                    </label>
+
+                    {% if doc.lastGenerated %}
+                      <div class="govuk-hint govuk-checkboxes__hint">
+                        Last generated: {{ doc.lastGenerated | govukDate }}
+                      </div>
+                    {% else %}
+                      <div class="govuk-hint govuk-checkboxes__hint">
+                        Not previously generated
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+
+              </div>
+            </fieldset>
+          </div>
+
+        {% endif %}
+
+        {# Only show the "add another defendant" radios if there is another defendant remaining #}
+        {% if hasMoreDefendants %}
+          {{ govukRadios({
+            name: "addAdditionalDefendant",
+            fieldset: {
+              legend: {
+                text: "Do you want to add documents for another defendant?",
+                isPageHeading: false,
+                classes: "govuk-fieldset__legend--m govuk-!-margin-top-6"
+              }
+            },
+            items: [
+              { value: "yes", text: "Yes" },
+              { value: "no", text: "No" }
+            ]
+          }) }}
+        {% endif %}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Continue" }) }}
+          <a class="govuk-link"
+             href="/cases/{{ _case.id }}/material?tab=view-materials">
+            Cancel
+          </a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

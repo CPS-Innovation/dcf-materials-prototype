@@ -1,4 +1,4 @@
-{# This file is a template for /disclosure/assess-as-unused/index.html #}
+{# app/views/v2/cases/disclosure/no-longer-relevant/assess-as-unused/index.html #}
 {% extends "_shared/layouts/main.html" %}
 
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -16,18 +16,6 @@
   {% endif %}
 {% endset %}
 
-{% set count = selectedRows.length %}
-{% set pageName = "Assess " ~ count ~ " item" ~ ("s" if count != 1) ~ " as disclosable" %}
-
-{# ✅ Disagreement: police said "Does not pass..." but CPS says Disclosable #}
-{% set hasAnyDisagreement = false %}
-{% for r in selectedRows %}
-  {% set disagrees = ((r.policeAssessment or '') | lower) == 'does not pass disclosure test' %}
-  {% if disagrees %}
-    {% set hasAnyDisagreement = true %}
-  {% endif %}
-{% endfor %}
-
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
@@ -40,26 +28,25 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <h1 class="govuk-heading-l">Assess {{ item.Type }} as unused</h1>
-
+      <h1 class="govuk-heading-l">Assess as unused</h1>
 
       <dl class="govuk-summary-list govuk-!-margin-bottom-6">
         <div class="govuk-summary-list__row">
           <dt class="govuk-summary-list__key">Title</dt>
           <dd class="govuk-summary-list__value">
-            {{ item.Title }}
+            {{ selectedRow.title }}
           </dd>
         </div>
         <div class="govuk-summary-list__row">
           <dt class="govuk-summary-list__key">Description</dt>
           <dd class="govuk-summary-list__value">
-            {{ item.exhibitDescription }}
+            {{ selectedRow.description }}
           </dd>
         </div>
         <div class="govuk-summary-list__row">
           <dt class="govuk-summary-list__key">Police disclosure status</dt>
           <dd class="govuk-summary-list__value">
-            {{ item.policeDisclosureStatus or item.policeDisclosure and item.policeDisclosure.status or "Evidence" }}
+            {{ selectedRow.policeAssessment or "Not assessed" }}
           </dd>
         </div>
       </dl>
@@ -103,6 +90,10 @@
           value: data.clearlyNotDisclosableReason
         }) }}
       {% endset %}
+
+      <form method="post" action="/cases/{{ _case.id }}/disclosure/no-longer-relevant/assess-as-unused">
+        <input type="hidden" name="id" value="{{ selectedId }}">
+        <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
 
       {{ govukRadios({
         idPrefix: "disclosure-assessment",
@@ -164,39 +155,37 @@
         }) }}
       {% endset %}
 
+   
 
-      <form method="post" action="/cases/{{ _case.id }}/disclosure/assess-as-unused">
-      <input type="hidden" name="itemId" value="{{ itemId }}">
-      <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
-
-          {{ govukRadios({
-            idPrefix: "is-sensitive",
-            name: "isSensitive",
-            fieldset: {
-              legend: {
-                text: "Do you consider this item to be sensitive?",
-                classes: "govuk-fieldset__legend--m",
-                isPageHeading: false
-              }
+        {{ govukRadios({
+          idPrefix: "is-sensitive",
+          name: "isSensitive",
+          fieldset: {
+            legend: {
+              text: "Do you consider this item to be sensitive?",
+              classes: "govuk-fieldset__legend--m",
+              isPageHeading: false
+            }
+          },
+          items: [
+            {
+              value: "Yes",
+              text: "Yes",
+              checked: data.isSensitive == "Yes",
+              conditional: { html: sensitiveYesReasonHtml }
             },
-            items: [
-              {
-                value: "Yes",
-                text: "Yes",
-                checked: data.isSensitive == "Yes",
-                conditional: { html: sensitiveYesReasonHtml }
-              },
-              {
-                value: "No",
-                text: "No",
-                checked: data.isSensitive == "No",
-                conditional: { html: sensitiveNoReasonHtml }
-              }
-            ]
-          }) }}
+            {
+              value: "No",
+              text: "No",
+              checked: data.isSensitive == "No",
+              conditional: { html: sensitiveNoReasonHtml }
+            }
+          ]
+        }) }}
 
-          {{ govukButton({ text: "Save and confirm" }) }}
-        </form>
+        {{ govukButton({ text: "Save and confirm" }) }}
+      </form>
+
     </div>
   </div>
 

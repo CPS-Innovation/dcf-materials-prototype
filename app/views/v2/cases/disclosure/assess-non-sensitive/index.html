@@ -1,4 +1,4 @@
-{# cases/disclosure/assess-non-sensitive/index.html #}
+{# app/views/v2/cases/disclosure/assess-non-sensitive/index.html #}
 
 {% extends "_shared/layouts/main.html" %}
 {% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
@@ -48,13 +48,13 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
 
-      {% if data.successBanner %}
+      {# {% if data.successBanner %}
         {{ govukNotificationBanner({
           type: "success",
           titleText: data.successBanner.titleText or "Success",
           text: data.successBanner.text or ""
         }) }}
-      {% endif %}
+      {% endif %} #}
 
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
@@ -79,11 +79,6 @@
           },
           { 
             text: "Assess as evidence", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/evidence?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) 
-          },
-          { 
-            text: "Assess as no longer relevant",
-            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/assess-as-no-longer-relevant?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode),
-            attributes: { "data-allow-nlr": "true" }
           },
           { 
             text: "Dispute sensitivity", href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/bulk/dispute-sensitivity?returnUrl=" ~ ("/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" | urlencode) },

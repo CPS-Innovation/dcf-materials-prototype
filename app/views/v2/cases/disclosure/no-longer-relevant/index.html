@@ -1,4 +1,4 @@
-{# /cases/disclosure/no-longer-relevant/index.html #}
+{# app/views/v2/cases/disclosure/no-longer-relevant/index.html #}
 
 {% extends "_shared/layouts/main.html" %}
 {% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
@@ -52,13 +52,13 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
 
-      {% if successBanner %}
+      {# {% if successBanner %}
         {{ govukNotificationBanner({
           type: "success",
           titleText: successBanner.titleText or "Success",
           text: successBanner.text or ""
         }) }}
-      {% endif %}
+      {% endif %} #}
 
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
@@ -74,8 +74,23 @@
             attributes: { "data-allow-nlr": "true" }
           },
           {
-            text: "Ask police to reinstate items",
-            href: "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant/bulk/request-item-reinstatement?returnUrl=/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant",
+            text: "Assess as unused",
+            href: "#",
+            attributes: { "data-allow-nlr": "true" }
+          },
+          {
+            text: "Assess as evidence",
+             href: "#",
+            attributes: { "data-allow-nlr": "true" }
+          },
+          {
+            text: "Request material",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~ "&returnUrl=" ~ returnUrl | urlencode,
+            attributes: { "data-allow-nlr": "true" }
+          },
+          {
+            text: "Request updated description",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~ "&returnUrl=" ~ returnUrl | urlencode,
             attributes: { "data-allow-nlr": "true" }
           }
         ]
@@ -83,7 +98,7 @@
 
       {# ✅ This include will now render ONLY the filtered rows because `rows` exists in scope #}
       {% set showItemColumn = false %}
-      {% set tableRoutePrefix = "/cases/" ~ _case.id ~ "/disclosure" %}
+      {% set tableRoutePrefix = "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" %}
       {% set tableReturnUrl = "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" %}
       {% include "_shared/_includes/case/disclosure/disclosure-table.njk" %}
 

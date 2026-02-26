@@ -123,8 +123,8 @@ module.exports = router => {
       _.unset(req, draftPath)
 
       _.set(req, 'session.data.successBanner', {
-        titleText: 'Indictment saved',
-        text: 'Indictment marked as completed.'
+        titleText: 'Success',
+        text: 'Indictment saved.'
       })
 
       return res.redirect(`/cases/${caseId}/indictment`)
