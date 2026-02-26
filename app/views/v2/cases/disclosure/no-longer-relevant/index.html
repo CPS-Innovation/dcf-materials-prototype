@@ -1,4 +1,4 @@
-{# /cases/disclosure/no-longer-relevant/index.html #}
+{# app/views/v2/cases/disclosure/no-longer-relevant/index.html #}
 
 {% extends "_shared/layouts/main.html" %}
 {% from "moj/components/button-menu/macro.njk" import mojButtonMenu %}
@@ -52,13 +52,13 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-full">
 
-      {% if successBanner %}
+      {# {% if successBanner %}
         {{ govukNotificationBanner({
           type: "success",
           titleText: successBanner.titleText or "Success",
           text: successBanner.text or ""
         }) }}
-      {% endif %}
+      {% endif %} #}
 
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>

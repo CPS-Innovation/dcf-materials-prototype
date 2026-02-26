@@ -75,8 +75,7 @@
               },
               {
                 text: "Assess as unused",
-                href: routePrefix ~
-                  "/item-unused?id=" ~ r.id ~
+                href: "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant/assess-as-unused?id=" ~ r.id ~
                   "&returnUrl=" ~ (returnUrl | urlencode)
               },
               {
