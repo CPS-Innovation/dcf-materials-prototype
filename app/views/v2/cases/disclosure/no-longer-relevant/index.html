@@ -98,7 +98,7 @@
 
       {# ✅ This include will now render ONLY the filtered rows because `rows` exists in scope #}
       {% set showItemColumn = false %}
-      {% set tableRoutePrefix = "/cases/" ~ _case.id ~ "/disclosure" %}
+      {% set tableRoutePrefix = "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive" %}
       {% set tableReturnUrl = "/cases/" ~ _case.id ~ "/disclosure/no-longer-relevant" %}
       {% include "_shared/_includes/case/disclosure/disclosure-table.njk" %}
 
