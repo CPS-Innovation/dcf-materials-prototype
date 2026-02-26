@@ -53,7 +53,8 @@ module.exports = router => {
     'dispute-sensitivity': '__SPECIAL__',
 
     // Optional / future (you can wire this later)
-    'assess-unused': '__NOT_IMPLEMENTED__'
+    'assess-unused': '__NOT_IMPLEMENTED__',
+    'assess-no-longer-relevant': '__NOT_IMPLEMENTED__'
   }
 
   // ---------------------------------------------------------
@@ -85,7 +86,7 @@ module.exports = router => {
     if (!action) return res.status(400).send('Missing action')
 
     // Add near the top of the GET handler, after caseId/action parsing:
-    if (action === 'assess-unused') {
+    if (action === 'assess-unused' || action === 'assess-no-longer-relevant') {
       const itemId = req.query?.itemId ? String(req.query.itemId) : null
       if (!itemId) return res.status(400).send('Missing itemId')
 
@@ -94,8 +95,12 @@ module.exports = router => {
           ? String(req.query.returnUrl)
           : buildDefaultViewerReturnUrl(caseId, itemId)
 
+      const routeSlug = action === 'assess-unused'
+        ? 'assess-as-unused'
+        : 'assess-as-no-longer-relevant'
+
       const target =
-        `/cases/${caseId}/disclosure/assess-as-unused` +
+        `/cases/${caseId}/disclosure/${routeSlug}` +
         `?itemId=${encodeURIComponent(itemId)}` +
         `&returnUrl=${encodeURIComponent(returnUrl)}` +
         `&openItemId=${encodeURIComponent(itemId)}`

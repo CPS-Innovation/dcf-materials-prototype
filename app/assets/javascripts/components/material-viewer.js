@@ -575,6 +575,10 @@
       id: 'assess-unused',
       label: 'Assess as unused'
     },
+    'assess-no-longer-relevant': {
+      id: 'assess-no-longer-relevant',
+      label: 'Assess as no longer relevant'
+    },
     'assess-disclosable': {
       id: 'assess-disclosable',
       label: 'Assess as disclosable'
@@ -613,7 +617,8 @@
   var MATERIAL_ACTION_SETS = {
     // If Material.Type == 'Statement' or 'Exhibit'
     statementOrExhibit: [
-      'assess-unused'
+      'assess-unused',
+      'assess-no-longer-relevant'
     ],
 
     // If Material.Type == 'Unused non-sensitive' or 'Sensitive'
@@ -1360,6 +1365,7 @@ function buildMetaPanel (meta, bodyId) {
 
     if ([
       'assess-unused',
+      'assess-no-longer-relevant',
       'assess-disclosable',
       'assess-disclosable-inspect',
       'assess-not-disclosable',
