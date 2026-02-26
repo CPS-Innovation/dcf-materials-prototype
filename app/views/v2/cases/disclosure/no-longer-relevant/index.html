@@ -85,12 +85,12 @@
           },
           {
             text: "Request material",
-            href: "#",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-request-material?id=" ~ r.id ~ "&returnUrl=" ~ returnUrl | urlencode,
             attributes: { "data-allow-nlr": "true" }
           },
           {
             text: "Request updated description",
-            href: "#",
+            href: "/cases/" ~ _case.id ~ "/disclosure/assess-non-sensitive/item-request-updated-description?id=" ~ r.id ~ "&returnUrl=" ~ returnUrl | urlencode,
             attributes: { "data-allow-nlr": "true" }
           }
         ]

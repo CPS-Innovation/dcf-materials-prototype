@@ -555,20 +555,21 @@ module.exports = router => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
     const selectedId = req.query?.id ? String(req.query.id) : null
     if (!selectedId) return res.status(400).send('Missing id')
 
-    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-    const selectedRow = findRowByIdOrItemId(rows, selectedId)
-    if (!selectedRow) return res.status(404).send('Row not found')
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
 
-    return res.render('cases/disclosure/assess-non-sensitive/item-request-updated-description', {
-      _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null
-    })
+    _.set(req, `${rowsPath}[${idx}].updatedDescriptionRequestedAt`, new Date().toISOString())
+    _.set(req, 'session.data.successBanner', { titleText: 'Updated description requested', text: 'This request has been sent to the police.' })
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const returnUrl = req.query?.returnUrl ? String(req.query.returnUrl) : fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
 
   router.post('/cases/:caseId/disclosure/assess-non-sensitive/item-request-updated-description', async (req, res) => {
@@ -602,20 +603,21 @@ module.exports = router => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
     const selectedId = req.query?.id ? String(req.query.id) : null
     if (!selectedId) return res.status(400).send('Missing id')
 
-    const rows = _.get(req, 'session.data.disclosureNonSensitiveRows', [])
-    const selectedRow = findRowByIdOrItemId(rows, selectedId)
-    if (!selectedRow) return res.status(404).send('Row not found')
+    const rowsPath = 'session.data.disclosureNonSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
 
-    return res.render('cases/disclosure/assess-non-sensitive/item-request-material', {
-      _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null
-    })
+    _.set(req, `${rowsPath}[${idx}].materialRequestedAt`, new Date().toISOString())
+    _.set(req, 'session.data.successBanner', { titleText: 'Material requested', text: 'This request has been sent to the police.' })
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-non-sensitive`
+    const returnUrl = req.query?.returnUrl ? String(req.query.returnUrl) : fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
 
   router.post('/cases/:caseId/disclosure/assess-non-sensitive/item-request-material', async (req, res) => {
@@ -1267,15 +1269,22 @@ module.exports = router => {
   router.get('/cases/:caseId/disclosure/assess-sensitive/item-request-updated-description', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
     const selectedId = req.query?.id ? String(req.query.id) : null
     if (!selectedId) return res.status(400).send('Missing id')
-    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
-    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
-    if (!selectedRow) return res.status(404).send('Row not found')
-    return res.render('cases/disclosure/assess-sensitive/item-request-updated-description', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+
+    _.set(req, `${rowsPath}[${idx}].updatedDescriptionRequestedAt`, new Date().toISOString())
+    _.set(req, 'session.data.successBanner', { titleText: 'Updated description requested', text: 'This request has been sent to the police.' })
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-sensitive`
+    const returnUrl = req.query?.returnUrl ? String(req.query.returnUrl) : fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
   router.post('/cases/:caseId/disclosure/assess-sensitive/item-request-updated-description', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
@@ -1302,15 +1311,22 @@ module.exports = router => {
   router.get('/cases/:caseId/disclosure/assess-sensitive/item-request-material', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
-    const _case = await fetchCase(caseId)
-    if (!_case) return res.status(404).render('not-found')
-    const caseMaterials = getCaseMaterialsForCase(req, _case)
+
     const selectedId = req.query?.id ? String(req.query.id) : null
     if (!selectedId) return res.status(400).send('Missing id')
-    const rows = _.get(req, 'session.data.disclosureSensitiveRows', [])
-    const selectedRow = findSensitiveRowByIdOrItemId(rows, selectedId)
-    if (!selectedRow) return res.status(404).send('Row not found')
-    return res.render('cases/disclosure/assess-sensitive/item-request-material', { _case, caseMaterials, selectedId, selectedRow, returnUrl: req.query?.returnUrl || null })
+
+    const rowsPath = 'session.data.disclosureSensitiveRows'
+    const rows = _.get(req, rowsPath, [])
+    const idx = findSensitiveRowIndexByIdOrItemId(rows, selectedId)
+    if (idx === -1) return res.status(404).send('Row not found')
+
+    _.set(req, `${rowsPath}[${idx}].materialRequestedAt`, new Date().toISOString())
+    _.set(req, 'session.data.successBanner', { titleText: 'Material requested', text: 'This request has been sent to the police.' })
+
+    const fallbackReturnUrl = `/cases/${caseId}/disclosure/assess-sensitive`
+    const returnUrl = req.query?.returnUrl ? String(req.query.returnUrl) : fallbackReturnUrl
+    const separator = returnUrl.includes('?') ? '&' : '?'
+    return res.redirect(`${returnUrl}${separator}updatedRow=${encodeURIComponent(selectedId)}`)
   })
   router.post('/cases/:caseId/disclosure/assess-sensitive/item-request-material', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
