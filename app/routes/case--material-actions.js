@@ -53,8 +53,7 @@ module.exports = router => {
     'dispute-sensitivity': '__SPECIAL__',
 
     // Optional / future (you can wire this later)
-    'assess-unused': '__NOT_IMPLEMENTED__',
-    'assess-no-longer-relevant': '__NOT_IMPLEMENTED__'
+    'assess-unused': '__NOT_IMPLEMENTED__'
   }
 
   // ---------------------------------------------------------
@@ -85,8 +84,58 @@ module.exports = router => {
     const action = String(req.params.action || '').trim()
     if (!action) return res.status(400).send('Missing action')
 
-    // Add near the top of the GET handler, after caseId/action parsing:
-    if (action === 'assess-unused' || action === 'assess-no-longer-relevant') {
+    // Seed a row into disclosureNoLongerRelevantRows from caseMaterials and redirect
+    // to the given NLR sub-route. Returns the seeded row's id.
+    function seedNlrRowAndRedirect(req, res, { caseId, itemId, targetPath, returnUrl }) {
+      const caseMaterials = _.get(req, 'session.data.caseMaterials', {})
+      const materials = Array.isArray(caseMaterials.Material) ? caseMaterials.Material : []
+      const wanted = String(itemId).toLowerCase()
+      const item = materials.find(m => {
+        const id = String(m?.ItemId || m?.itemId || m?.ItemID || '').toLowerCase()
+        return id && id === wanted
+      })
+
+      if (item) {
+        const nlrRowsPath = 'session.data.disclosureNoLongerRelevantRows'
+        const nlrRows = _.get(req, nlrRowsPath, [])
+
+        const alreadyExists = nlrRows.some(r =>
+          String(r?.ItemId || r?.itemId || '').toLowerCase() === wanted
+        )
+
+        if (!alreadyExists) {
+          const maxId = nlrRows.reduce((acc, r) => {
+            const n = parseInt(r?.id, 10)
+            return Number.isFinite(n) ? Math.max(acc, n) : acc
+          }, 0)
+          const nextId = String(maxId + 1).padStart(2, '0')
+
+          nlrRows.push({
+            id: nextId,
+            ItemId: itemId,
+            title: item.Title || itemId,
+            description: item.Description || item.exhibitDescription || null,
+            policeAssessment: _.get(item, 'policeDisclosure.status', null) || (item.isEvidence ? 'Evidence' : 'No longer relevant'),
+            policeRationale: _.get(item, 'policeDisclosure.rationale', null),
+            cpsAssessment: 'To be reviewed'
+          })
+
+          _.set(req, nlrRowsPath, nlrRows)
+        }
+      }
+
+      const seededRow = _.get(req, 'session.data.disclosureNoLongerRelevantRows', [])
+        .find(r => String(r?.ItemId || r?.itemId || '').toLowerCase() === wanted)
+      const rowId = seededRow?.id || itemId
+
+      return res.redirect(
+        `/cases/${caseId}/disclosure/no-longer-relevant/${targetPath}` +
+        `?id=${encodeURIComponent(rowId)}` +
+        `&returnUrl=${encodeURIComponent(returnUrl)}`
+      )
+    }
+
+    if (action === 'assess-unused') {
       const itemId = req.query?.itemId ? String(req.query.itemId) : null
       if (!itemId) return res.status(400).send('Missing itemId')
 
@@ -95,17 +144,29 @@ module.exports = router => {
           ? String(req.query.returnUrl)
           : buildDefaultViewerReturnUrl(caseId, itemId)
 
-      const routeSlug = action === 'assess-unused'
-        ? 'assess-as-unused'
-        : 'assess-as-no-longer-relevant'
+      return seedNlrRowAndRedirect(req, res, {
+        caseId,
+        itemId,
+        targetPath: 'assess-as-unused',
+        returnUrl
+      })
+    }
 
-      const target =
-        `/cases/${caseId}/disclosure/${routeSlug}` +
-        `?itemId=${encodeURIComponent(itemId)}` +
-        `&returnUrl=${encodeURIComponent(returnUrl)}` +
-        `&openItemId=${encodeURIComponent(itemId)}`
+    if (action === 'assess-no-longer-relevant') {
+      const itemId = req.query?.itemId ? String(req.query.itemId) : null
+      if (!itemId) return res.status(400).send('Missing itemId')
 
-      return res.redirect(target)
+      const returnUrl =
+        req.query?.returnUrl
+          ? String(req.query.returnUrl)
+          : buildDefaultViewerReturnUrl(caseId, itemId)
+
+      return seedNlrRowAndRedirect(req, res, {
+        caseId,
+        itemId,
+        targetPath: 'agree-no-longer-relevant',
+        returnUrl
+      })
     }
 
 
