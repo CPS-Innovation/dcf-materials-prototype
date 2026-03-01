@@ -1,0 +1,25 @@
+{# app/views/_shared/_includes/success-banner-safe.njk #}
+
+{% if successBanner is defined and successBanner %}
+  {% set title = "Action completed" %}
+  {% if successBanner.titleText is defined and successBanner.titleText %}
+    {% set title = successBanner.titleText %}
+  {% endif %}
+
+  <div class="govuk-notification-banner govuk-notification-banner--success"
+       role="alert"
+       aria-labelledby="govuk-notification-banner-title"
+       data-module="govuk-notification-banner">
+    <div class="govuk-notification-banner__header">
+      <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+        {{ title }}
+      </h2>
+    </div>
+
+    {% if successBanner.text is defined and successBanner.text %}
+      <div class="govuk-notification-banner__content">
+        <p class="govuk-notification-banner__heading">{{ successBanner.text }}</p>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}

@@ -1,7 +1,17 @@
 {# app/views/_shared/_includes/success-banner.njk #}
-{{ govukNotificationBanner({
-  classes: 'app-margin-top-negative-3 govuk-!-margin-bottom-9',
-  type: "success",
-  titleText: successBanner.titleText,
-  html: "<p class='govuk-body'>" + successBanner.text + "</p>"
-}) if successBanner }}
+
+{% if successBanner %}
+  {% set bannerHtml = "" %}
+
+  {% if successBanner.text is string and (successBanner.text | trim) %}
+    {% set bannerHtml = "<p class='govuk-body'>" + (successBanner.text | trim) + "</p>" %}
+  {% endif %}
+
+  {# IMPORTANT: titleText is hard-coded so it can NEVER be undefined #}
+  {{ govukNotificationBanner({
+    classes: "app-margin-top-negative-3 govuk-!-margin-bottom-9",
+    type: "success",
+    titleText: "Action completed",
+    html: bannerHtml
+  }) }}
+{% endif %}

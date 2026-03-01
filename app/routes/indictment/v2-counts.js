@@ -158,35 +158,151 @@ module.exports = router => {
   })
 
 
-  // ============================================================
-  // POST /cases/:caseId/indictment/counts/precedent-charges-or-offence/continue (V2)
-  // ============================================================
+// ============================================================
+// POST /cases/:caseId/indictment/counts/precedent-charges-or-offence/continue (V2)
+// ============================================================
 
-  router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res, next) => {
-    const action = (req.body.action || 'continue').toString()
-    const caseId = parseCaseId(req, res)
-    if (!caseId) return
+router.post('/cases/:caseId/indictment/counts/precedent-charges-or-offence/continue', async (req, res) => {
+  const caseId = parseCaseId(req, res)
+  if (!caseId) return
 
-    const draftBasePath = `session.data.indictmentDrafts.${caseId}`
-    const stepStatusPath = `${draftBasePath}.stepStatus`
-    const stepStatus = _.get(req, stepStatusPath, {})
-    stepStatus.precedent = (action === 'exit') ? 'inProgress' : 'completed'
-    _.set(req, stepStatusPath, stepStatus)
+  const action = (req.body.action || 'continue').toString()
 
-    if (action === 'exit') {
-      const basePath = `${draftBasePath}.currentCount`
-      const draftCount = _.get(req, basePath, {})
-      const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString().trim()
-      draftCount.selectedPrecedentId = selectedPrecedentId || null
-      draftCount.lastUpdatedAt = new Date().toISOString()
-      _.set(req, basePath, draftCount)
+  const _case = await fetchCase(caseId)
+  if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
 
-      return res.redirect(`/cases/${caseId}/indictment`)
-    }
+  const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+  const countPath = `${draftBasePath}.currentCount`
 
-    return next()
+  // Ensure draftCount exists + stable minimum shape (prevents out-of-sequence crashes)
+  let draftCount = _.get(req, countPath)
+  if (!draftCount || typeof draftCount !== 'object') draftCount = {}
+
+  _.defaults(draftCount, {
+    selectedChargeCodes: [],
+    assignedDefendantIds: [],
+    assignedVictimIds: [],
+    selectedWitnessIds: [],
+    orderedSelectedWitnessIds: [],
+    statementOfOffenceText: null,
+    particularsOfOffenceText: null,
+    place: '',
+    selectedPrecedentId: null,
+    precedentSelection: null,
+    lastUpdatedAt: null
   })
 
+  // Save selection
+  const selectedPrecedentId = (req.body.selectedPrecedentId || '').toString().trim()
+  draftCount.selectedPrecedentId = selectedPrecedentId || null
+
+  // ---- Step status ----
+  const stepStatusPath = `${draftBasePath}.stepStatus`
+  const stepStatus = _.get(req, stepStatusPath, {}) || {}
+  stepStatus.precedent = (action === 'exit') ? 'inProgress' : 'completed'
+  _.set(req, stepStatusPath, stepStatus)
+
+  // If a precedent was selected, resolve starter + inject tokens
+// If a precedent was selected, resolve starter + inject tokens
+if (draftCount.selectedPrecedentId) {
+  const chosen = (chargeLibrary || []).find(c =>
+    String(c.chargeCode) === String(draftCount.selectedPrecedentId)
+  ) || null
+
+  // Match counts.js shape (so check page renders correctly)
+  const starter =
+    chosen?.templates?.particularsStarter ||
+    chosen?.particularsStarter ||
+    null
+
+  draftCount.precedentSelection = chosen
+  draftCount.particularsStarter = starter
+
+  if (starter) {
+    // Use assigned people first (so out-of-sequence still works, but “in-sequence” is correct)
+    const assignedDefendantIds = Array.isArray(draftCount.assignedDefendantIds)
+      ? draftCount.assignedDefendantIds.map(String)
+      : []
+    const defendantNames = assignedDefendantIds
+      .map(id => (_case.defendants || []).find(d => String(d.id) === id))
+      .filter(Boolean)
+      .map(d => `${d.firstName || ''} ${d.lastName || ''}`.trim())
+      .filter(Boolean)
+
+    const assignedVictimIds = Array.isArray(draftCount.assignedVictimIds)
+      ? draftCount.assignedVictimIds.map(String)
+      : []
+    const victimNames = assignedVictimIds
+      .map(id => (_case.victims || []).find(v => String(v.id) === id))
+      .filter(Boolean)
+      .map(v => `${v.firstName || ''} ${v.lastName || ''}`.trim())
+      .filter(Boolean)
+
+    const defendantsText = defendantNames.length
+      ? defendantNames.join(' and ').toUpperCase()
+      : '[DEFENDANT(S)]'
+
+    const victimsText = victimNames.length
+      ? victimNames.join(' and ').toUpperCase()
+      : '[VICTIM(S)]'
+
+    const placeText = _case.location?.line1 || '[place]'
+    const dateText = '[date]' // keep simple in v2 unless you copy your formatDateForTemplate helper
+
+    // Token injection (same approach as counts.js)
+    const inject = (text, tokenMap) => {
+      if (!text) return text
+      let out = String(text)
+      for (const [token, replacement] of Object.entries(tokenMap || {})) {
+        if (!token) continue
+        const safeToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        out = out.replace(new RegExp(`\\[${safeToken}\\]`, 'g'), String(replacement))
+      }
+      return out
+    }
+
+    draftCount.particularsOfOffenceText = inject(starter, {
+      "Defendant(s)": defendantsText,
+      "defendant(s)": defendantsText,
+      "Defendant": defendantsText,
+      "defendant": defendantsText,
+
+      "Victim(s)": victimsText,
+      "victim(s)": victimsText,
+      "Victim": victimsText,
+      "victim": victimsText,
+
+      "date": dateText,
+      "Date": dateText,
+
+      "place": placeText,
+      "Place": placeText
+    })
+  }
+} else {
+  // Clear if nothing selected
+  draftCount.precedentSelection = null
+  draftCount.particularsStarter = null
+}
+
+  draftCount.lastUpdatedAt = new Date().toISOString()
+  _.set(req, countPath, draftCount)
+  _.set(req, `session.data.indictments.${caseId}.status`, 'In progress')
+
+  // ---- Routing ----
+  if (action === 'exit') {
+    _.set(req, 'session.data.successBanner', {
+      titleText: 'Draft saved',
+      text: 'You can come back and continue drafting this count later.'
+    })
+    return res.redirect(`/cases/${caseId}/indictment`)
+  }
+
+  const returnTo = safeReturnTo(req.body.returnTo || req.query.returnTo)
+  if (returnTo) return res.redirect(returnTo)
+
+  return res.redirect(`/cases/${caseId}/indictment/counts/offence-and-particulars`)
+})
 
   // ============================================================
   // GET /cases/:caseId/indictment/counts/offence-and-particulars (V2)
@@ -229,6 +345,15 @@ module.exports = router => {
       .filter(Boolean)
 
     const returnTo = safeReturnTo(req.query.returnTo)
+
+
+
+    console.log('[offence-and-particulars DEBUG]', JSON.stringify({
+      draftCount,
+      chargeLibrary: chargeLibrary ? `[${chargeLibrary.length} items]` : 'UNDEFINED',
+      assignedDefendants,
+      primarySelectedCharge
+    }, null, 2))
 
     return res.render('cases/indictment/counts/offence-and-particulars', {
       _case,
@@ -281,6 +406,36 @@ module.exports = router => {
     return res.redirect(`/cases/${caseId}/indictment/counts/check`)
   })
 
+
+  // ============================================================
+  // GET /cases/:caseId/indictment/counts/check (V2)
+  // ============================================================
+
+  router.get('/cases/:caseId/indictment/counts/check', async (req, res) => {
+    const caseId = parseCaseId(req, res)
+    if (!caseId) return
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).send(`Case ${caseId} not found in Prisma`)
+
+    const draftBasePath = `session.data.indictmentDrafts.${caseId}`
+    const draftCount = _.get(req, `${draftBasePath}.currentCount`, {})
+
+    const countsCase = getCountsCaseFor(caseId)
+    const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
+
+    const returnTo = safeReturnTo(req.query.returnTo)
+
+    return res.render('cases/indictment/counts/check', {
+      _case,
+      draftCount,
+      countsCase,
+      chargeOptions,
+      chargeLibrary,
+      precedentSelection: draftCount.precedentSelection || null,
+      returnTo
+    })
+  })
 
   // ============================================================
   // POST /cases/:caseId/indictment/counts/check (V2)
@@ -381,14 +536,12 @@ module.exports = router => {
     const counts = indictment.counts || []
     const addedCount = counts.length ? counts[counts.length - 1] : null
 
-    const successBanner = _.get(req, 'session.data.successBanner', null)
-    _.unset(req, 'session.data.successBanner')
+
 
     return res.render('cases/indictment/counts/added/index', {
       _case,
       counts,
-      addedCount,
-      successBanner
+      addedCount
     })
   })
 
