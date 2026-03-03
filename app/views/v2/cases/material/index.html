@@ -46,7 +46,7 @@
           <h1 class="govuk-heading-m">{{ pageName }}</h1>
         </div>
 
-        <div class="moj-page-header-actions__actions" id="material-header-actions" hidden>
+        <div class="moj-page-header-actions__actions" id="material-header-actions">
           <div class="moj-button-group moj-button-group--inline">
 
             {# {{/* Primary standalone button — sits outside the menu */}} #}
@@ -180,12 +180,14 @@
       var tabs = tabsContainer.querySelectorAll('.govuk-tabs__tab')
 
       function updateHeaderActions () {
+        if (!headerActions) return
         var active = tabsContainer.querySelector('.govuk-tabs__tab[aria-selected="true"]')
         if (!active) return
         headerActions.hidden = active.getAttribute('href') !== '#view-materials'
       }
 
-      setTimeout(updateHeaderActions, 0)
+      // Run after GOV.UK Tabs has had time to initialise and set aria-selected
+      setTimeout(updateHeaderActions, 100)
 
       tabs.forEach(function (tab) {
         tab.addEventListener('click', function () {

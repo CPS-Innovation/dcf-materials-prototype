@@ -1489,17 +1489,14 @@ router.get('/cases/:caseId/indictment/counts/offence-and-particulars', async (re
     const counts = indictment.counts || []
     const addedCount = counts.length ? counts[counts.length - 1] : null
 
-    // Pull + clear banner so it behaves like a one-time confirmation
-    const successBanner = _.get(req, 'session.data.successBanner', null)
-    _.unset(req, 'session.data.successBanner')
+
 
     // ✅ IMPORTANT: render the template you uploaded
     // Your file is "cases/indictment/counts/added/index.html"
     return res.render('cases/indictment/counts/added/index', {
       _case,
       counts,
-      addedCount,
-      successBanner
+      addedCount
     })
   })
 

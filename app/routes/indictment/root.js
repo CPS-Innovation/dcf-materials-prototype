@@ -46,8 +46,6 @@ module.exports = router => {
       const chargeOptions = buildChargeOptionsFromCountsCase(countsCase)
       const caseChargeOptions = buildChargeOptionsFromPrismaCase(_case)
 
-      const successBanner = _.get(req, 'session.data.successBanner', null)
-      _.unset(req, 'session.data.successBanner')
 
       return res.render('cases/indictment/index', {
         _case,
@@ -55,7 +53,6 @@ module.exports = router => {
         isCompleted,
         completedIndictment,
         readOnlyUrl: `/cases/${caseId}/indictment/preview/read-only`,
-        successBanner,
         countsCase,
         chargeOptions,
         caseChargeOptions,

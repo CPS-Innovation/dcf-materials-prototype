@@ -6,7 +6,7 @@
       <h2 class="govuk-heading-s">Search results: {{ precedentResults.length }} {% if precedentResults.length != 1 %}{% endif %}</h2>
 
 
-      <div class="govuk-radios" data-module="govuk-radios">
+      <div class="govuk-radios" data-module="govuk-radios">              
         {% for r in precedentResults %}
           <div class="govuk-radios__item app-precedent-result">
             <input class="govuk-radios__input"
@@ -18,23 +18,23 @@
 
             <label class="govuk-label govuk-radios__label govuk-body-s"
                    for="selectedParticularsChargeCode-{{ loop.index }}">
-              {{ govukSummaryList({
-                classes: "govuk-summary-list--no-border app-precedent-summary",
-                rows: [
-                  {
-                    key: { text: "IPP code" },
-                    value: { text: r.ippCode or "—" }
-                  },
-                  {
-                    key: { text: "Statute name" },
-                    value: { text: r.statuteName or "—" }
-                  },
-                  {
-                    key: { text: "Offence" },
-                    value: { text: r.offence or "—" }
-                  }
-                ]
-              }) }}
+                    {{ govukSummaryList({
+                      classes: "govuk-summary-list--no-border app-precedent-summary",
+                      rows: [
+                        {
+                          key: { text: "IPP code" },
+                          value: { text: r.ippCode or "—" }
+                        },
+                        {
+                          key: { text: "Statute name" },
+                          value: { text: r.statuteName or "—" }
+                        },
+                        {
+                          key: { text: "Offence" },
+                          value: { text: r.offence or "—" }
+                        }
+                      ]
+                    }) }}
             </label>
           </div>
 
