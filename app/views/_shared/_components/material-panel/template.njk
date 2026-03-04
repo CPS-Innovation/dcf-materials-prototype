@@ -317,16 +317,10 @@
       <div class="dcf-materials-header">
         <form class="dcf-materials-search" action="/materials/search" method="get" role="search">
           <label class="govuk-label govuk-!-font-weight-bold" for="materials-search">Search documents</label>
-
-          <div class="dcf-input-group">
-            <input class="govuk-input dcf-input-group__input" id="materials-search" name="q" type="search">
-            <button class="dcf-input-group__button" type="submit" aria-label="Search">
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="20" height="20">
-                <path fill="currentColor" d="M21 20.3l-4.8-4.8c.9-1.2 1.4-2.7 1.4-4.2C17.6 7 14.6 4 11 4S4.4 7 4.4 11s3 7 6.6 7c1.6 0 3.1-.5 4.2-1.4l4.8 4.8 1-1.1zM6 11c0-2.8 2.2-5 5-5s5 2.2 5 5-2.2 5-5 5-5-2.2-5-5z"/>
-              </svg>
-            </button>
+          <div class="dcf-materials-search__row">
+            <input class="govuk-input dcf-materials-search__input" id="materials-search" name="q" type="search">
+            <button class="govuk-button dcf-materials-search__button" type="submit" data-module="govuk-button">Search</button>
           </div>
-
           <input type="hidden" name="caseId" value="{{ params.caseMaterials.caseId }}">
         </form>
       </div>
@@ -335,12 +329,12 @@
         id: "materials-accordion",
         classes: "dcf-accordion",
         items: [
-          { heading: { text: "Statements (" ~ statementsCount ~ ")" },      content: { html: renderSection('statement', true) } },
-          { heading: { text: "Exhibits (" ~ exhibitsCount ~ ")" },          content: { html: renderSection('exhibit') } },
-          { heading: { text: "MG forms (" ~ mgFormsCount ~ ")" },          content: { html: renderSection('mg forms') } },
-          { heading: { text: "Other documents (" ~ otherCount ~ ")" },      content: { html: renderSection('other material') } },
-          { heading: { text: "Unused (" ~ unusedCount ~ ")" },             content: { html: unusedHtml } },
-          { heading: { text: "CPS generated documents (" ~ cpsDocsCount ~ ")" },     content: { html: cpsDocumentsHtml } }
+          { heading: { text: "Statements (" ~ statementsCount ~ ")" },                   content: { html: renderSection('statement', true) } },
+          { heading: { text: "Exhibits (" ~ exhibitsCount ~ ")" },                     content: { html: renderSection('exhibit') } },
+          { heading: { text: "MG forms (" ~ mgFormsCount ~ ")" },                     content: { html: renderSection('mg forms') } },
+          { heading: { text: "CPS generated documents (" ~ cpsDocsCount ~ ")" },      content: { html: cpsDocumentsHtml } },
+          { heading: { text: "Other documents (" ~ otherCount ~ ")" },               content: { html: renderSection('other material') } },
+          { heading: { text: "Unused (" ~ unusedCount ~ ")" },                        content: { html: unusedHtml } }
         ]
       }) }}
     </div>
