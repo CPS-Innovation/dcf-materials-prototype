@@ -37,7 +37,22 @@
         "exception": null,
         "exceptionReason": null,
         "inspectedOn": "19/09/2025",
-        "InspectedBy": "DC Alex Morton"
+        "InspectedBy": "DC Alex Morton",
+        "sensitivity": "Not sensitive",
+        "sensitivityRationale": "Reason why material is not sensitive"
+      },
+      "StatementNumber": "1",
+      "StatementMadeOn": "12/09/2025 23:43:12",
+      "WhenRecorded": "12/05/2025 09:32:03",
+      "WhereRecorded": "Egham PS",
+      "WhenTranscribed": "19/05/2025 09:32:33",
+      "PresentationOfImpactStatement": "Not attend - CPS to read",
+      "AppropriateAdult": "Julie Argyle",
+      "cpsDisclosure": {
+        "status": "Clearly not disclosable",
+        "rationale": "Does not undermine the prosecution case or assist the defence",
+        "cpsSensitivity": "Sensitive",
+        "SensitivityDispute": "Reason for dispute here"
       }
     },
     {
@@ -65,7 +80,26 @@
         "exception": null,
         "exceptionReason": null,
         "inspectedOn": "22/10/2025",
-        "InspectedBy": "DC Priya Shah"
+        "InspectedBy": "DC Priya Shah",
+        "sensitivity": "Not sensitive",
+        "sensitivityRationale": "Reason why material is not sensitive"
+      },
+      "StatementNumber": "1",
+      "StatementMadeOn": "12/09/2025 23:43:12",
+      "WhenRecorded": "12/05/2025 09:32:03",
+      "WhereRecorded": "Egham PS",
+      "WhenTranscribed": "19/05/2025 09:32:33",
+      "PresentationOfImpactStatement": "Not attend - CPS to read",
+      "AppropriateAdult": "Julie Argyle",
+      "RelatedMaterials": {
+        "PreviousMaterialName": "Stmt Ella QUAGMIRE on 08/03/2025 #1",
+        "HowMaterialRelates": "Redacted version"
+      },
+      "cpsDisclosure": {
+        "status": "Clearly not disclosable",
+        "rationale": "Does not undermine the prosecution case or assist the defence",
+        "cpsSensitivity": "Sensitive",
+        "SensitivityDispute": "Reason for dispute here"
       }
     },
     {
@@ -93,7 +127,22 @@
         "exception": null,
         "exceptionReason": null,
         "inspectedOn": "24/09/2025",
-        "InspectedBy": "DS Clare Jennings"
+        "InspectedBy": "DS Clare Jennings",
+        "sensitivity": "Not sensitive",
+        "sensitivityRationale": "Reason why material is not sensitive"
+      },
+      "StatementNumber": "1",
+      "StatementMadeOn": "12/09/2025 23:43:12",
+      "WhenRecorded": "12/05/2025 09:32:03",
+      "WhereRecorded": "Egham PS",
+      "WhenTranscribed": "19/05/2025 09:32:33",
+      "PresentationOfImpactStatement": "Not attend - CPS to read",
+      "AppropriateAdult": "Julie Argyle",
+      "cpsDisclosure": {
+        "status": "Clearly not disclosable",
+        "rationale": "Does not undermine the prosecution case or assist the defence",
+        "cpsSensitivity": "Sensitive",
+        "SensitivityDispute": "Reason for dispute here"
       }
     },
     {
@@ -119,16 +168,25 @@
       "policeDisclosure": {
         "status": "Evidence",
         "rationale": "Still image captures the key point of contact between suspect and victim and is relied upon as evidence.",
-        "rebuttable": null,
-        "exception": null,
-        "exceptionReason": null,
+        "rebuttable": "Yes",
+        "exception": "Frank Deesee",
+        "exceptionReason": "Reason why this material doesn't pass the disclosure test for this suspect",
         "inspectedOn": "20/09/2025",
-        "InspectedBy": "DC Alex Morton"
+        "InspectedBy": "DC Alex Morton",
+        "sensitivity": "Not sensitive",
+        "sensitivityRationale": "Reason why material is not sensitive"
       },
       "cpsDisclosure": {
-        "status": null,
-        "rationale": null,
-        "SensitivityDispute": null
+        "status": "Clearly not disclosable",
+        "rationale": "Does not undermine the prosecution case or assist the defence",
+        "SensitivityDispute": "Reason for dispute here",
+        "cpsSensitivity": "Not sensitive"
+      },
+      "RelatedPerson1": "Frank Deesee",
+      "RelatedPerson2": "Ella Quagmire",
+      "RelatedMaterials": {
+        "PreviousMaterialName": "Exh EQ/1",
+        "HowMaterialRelates": "Redacted version"
       }
     },
     {
@@ -155,16 +213,25 @@
       "policeDisclosure": {
         "status": "Evidence",
         "rationale": "Footage provides contextual material showing the suspect\u2019s movements before the incident.",
-        "rebuttable": null,
-        "exception": null,
-        "exceptionReason": null,
+        "rebuttable": "Yes",
+        "exception": "Frank Deesee",
+        "exceptionReason": "Reason why this material doesn't pass the disclosure test for this suspect",
         "inspectedOn": "21/09/2025",
-        "InspectedBy": "PCSO Mark Lennox"
+        "InspectedBy": "PCSO Mark Lennox",
+        "sensitivity": "Not sensitive",
+        "sensitivityRationale": "Reason why material is not sensitive"
       },
       "cpsDisclosure": {
         "status": "Disclosable by inspection",
         "rationale": "Material is relevant background and should be made available to the defence for inspection.",
-        "SensitivityDispute": "None"
+        "SensitivityDispute": "None",
+        "cpsSensitivity": "Not sensitive"
+      },
+      "RelatedPerson1": "Frank Deesee",
+      "RelatedPerson2": "Ella Quagmire",
+      "RelatedMaterials": {
+        "PreviousMaterialName": "Exh EQ/2",
+        "HowMaterialRelates": "Redacted version"
       }
     },
     {
@@ -191,16 +258,25 @@
       "policeDisclosure": {
         "status": "Evidence",
         "rationale": "Photographs show injuries relied upon to support the complainant\u2019s account.",
-        "rebuttable": null,
-        "exception": null,
-        "exceptionReason": null,
+        "rebuttable": "Yes",
+        "exception": "Frank Deesee",
+        "exceptionReason": "Reason why this material doesn't pass the disclosure test for this suspect",
         "inspectedOn": "22/09/2025",
-        "InspectedBy": "DS Clare Jennings"
+        "InspectedBy": "DS Clare Jennings",
+        "sensitivity": "Not sensitive",
+        "sensitivityRationale": "Reason why material is not sensitive"
       },
       "cpsDisclosure": {
         "status": "Disclosable",
         "rationale": "Injury photographs are directly relevant to the issues in dispute and must be disclosed.",
-        "SensitivityDispute": "None"
+        "SensitivityDispute": "None",
+        "cpsSensitivity": "Not sensitive"
+      },
+      "RelatedPerson1": "Frank Deesee",
+      "RelatedPerson2": "Ella Quagmire",
+      "RelatedMaterials": {
+        "PreviousMaterialName": "Exh EQ/3",
+        "HowMaterialRelates": "Redacted version"
       }
     },
     {
@@ -228,12 +304,19 @@
         "exception": "None",
         "exceptionReason": "None",
         "inspectedOn": "22/06/2025",
-        "InspectedBy": "Sgt Clare Jennings"
+        "InspectedBy": "Sgt Clare Jennings",
+        "sensitivityRationale": "Reason why material is not sensitive",
+        "sensitivity": "Not sensitive"
       },
       "cpsDisclosure": {
         "status": "To be assessed",
-        "rationale": null,
-        "SensitivityDispute": "None"
+        "rationale": "Does not undermine the prosecution case or assist the defence",
+        "SensitivityDispute": "None",
+        "cpsSensitivity": "Not sensitive"
+      },
+      "RelatedMaterials": {
+        "PreviousMaterialName": "Previous version of Exh SP/1",
+        "HowMaterialRelates": "Redacted version"
       }
     },
     {
@@ -261,12 +344,19 @@
         "exception": "DEESEE Frank",
         "exceptionReason": "The reason for this is something blah blah",
         "inspectedOn": "19/05/2025",
-        "InspectedBy": "Sgt Robert Dobbins"
+        "InspectedBy": "Sgt Robert Dobbins",
+        "sensitivityRationale": "Reason why material is not sensitive",
+        "sensitivity": "Not sensitive"
       },
       "cpsDisclosure": {
         "status": "To be assessed",
-        "rationale": null,
-        "SensitivityDispute": "None"
+        "rationale": "Does not undermine the prosecution case or assist the defence",
+        "SensitivityDispute": "None",
+        "cpsSensitivity": "Not sensitive"
+      },
+      "RelatedMaterials": {
+        "PreviousMaterialName": "Previous version of Exh SP/2",
+        "HowMaterialRelates": "Redacted version"
       }
     },
     {
@@ -294,12 +384,19 @@
         "exception": "None",
         "exceptionReason": "None",
         "inspectedOn": "21/06/2025",
-        "InspectedBy": "PCSO Mark Lennox"
+        "InspectedBy": "PCSO Mark Lennox",
+        "sensitivityRationale": "Reason why material is not sensitive",
+        "sensitivity": "Not sensitive"
       },
       "cpsDisclosure": {
         "status": "To be assessed",
         "rationale": "Material is relevant to the issues in dispute and should be disclosed to the defence.",
-        "SensitivityDispute": "None"
+        "SensitivityDispute": "None",
+        "cpsSensitivity": "Not sensitive"
+      },
+      "RelatedMaterials": {
+        "PreviousMaterialName": "Previous version of Exh SP/3",
+        "HowMaterialRelates": "Redacted version"
       }
     },
     {
@@ -327,13 +424,15 @@
         "rebuttable": "No",
         "sensitivity": "Sensitive for this reason and this reason and this reason and this reason",
         "exception": "None",
-        "exceptionReason": "None"
+        "exceptionReason": "None",
+        "sensitivityRationale": "Sensitive for this reason and this reason and this reason and this reason"
       },
       "cpsDisclosure": {
         "status": "To be assessed",
         "rationale": "",
         "SensitivityDispute": "None",
-        "disagreesWithPolice": false
+        "disagreesWithPolice": false,
+        "cpsSensitivity": "Sensitive"
       }
     },
     {
@@ -361,13 +460,15 @@
         "rebuttable": "Yes",
         "sensitivity": "Sensitive for this reason and this reason",
         "exception": "None",
-        "exceptionReason": "None"
+        "exceptionReason": "None",
+        "sensitivityRationale": "Sensitive for this reason and this reason"
       },
       "cpsDisclosure": {
         "status": "To be assessed",
         "rationale": "",
         "SensitivityDispute": "None",
-        "disagreesWithPolice": false
+        "disagreesWithPolice": false,
+        "cpsSensitivity": "Sensitive"
       }
     },
     {
@@ -395,13 +496,15 @@
         "rebuttable": "Yes",
         "sensitivity": "Sensitive for this reason and this reason",
         "exception": "None",
-        "exceptionReason": "None"
+        "exceptionReason": "None",
+        "sensitivityRationale": "Sensitive for this reason and this reason"
       },
       "cpsDisclosure": {
         "status": "To be assessed",
         "rationale": "",
         "SensitivityDispute": "None",
-        "disagreesWithPolice": false
+        "disagreesWithPolice": false,
+        "cpsSensitivity": "Sensitive"
       }
     }
   ]

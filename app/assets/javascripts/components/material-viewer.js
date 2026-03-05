@@ -250,6 +250,7 @@
     }
     var toggle = viewer.querySelector('[data-action="toggle-meta"]')
     if (toggle) toggle.setAttribute('aria-controls', bodyId)
+
   }
 
   function switchToTabById (id) {
@@ -844,7 +845,32 @@ function buildMetaPanel (meta, bodyId) {
 
   var materialRows
 
-  if (isUnusedOrSensitive) {
+  if (isStatement) {
+    // Statement-specific layout
+    // TODO: most fields below not yet in data model — placeholders show gaps
+    materialRows = rowsHTMLLocal(mat, [
+      { key: 'Title',                         label: 'Title' },
+      { key: 'MaterialClassification',        label: 'Classification' },
+      // TODO: StatementNumber — not yet in data model
+      { key: 'StatementNumber',               label: 'Statement number' },
+      // TODO: StatementMadeOn — not yet in data model
+      { key: 'StatementMadeOn',               label: 'Statement made on' },
+      // TODO: WhenRecorded — not yet in data model (PeriodFrom is closest current proxy)
+      { key: 'WhenRecorded',                  label: 'When recorded' },
+      // TODO: WhereRecorded — not yet in data model (Location is closest current proxy)
+      { key: 'WhereRecorded',                 label: 'Where recorded' },
+      // TODO: WhenTranscribed — not yet in data model
+      { key: 'WhenTranscribed',               label: 'When transcribed' },
+      // TODO: PresentationOfImpactStatement — not yet in data model
+      { key: 'PresentationOfImpactStatement', label: 'Presentation of impact statement' },
+      // TODO: AppropriateAdult — not yet in data model
+      { key: 'AppropriateAdult',              label: 'Appropriate adult' },
+      { key: 'myFileUrl',                     label: 'File location (URL)', render: function (v) {
+        if (!v || v === '#') return '\u2014'
+        return '<a class="govuk-link" href="' + esc(v) + '" target="_blank" rel="noreferrer">' + esc(v) + '</a>'
+      }}
+    ])
+  } else if (isUnusedOrSensitive) {
     // Unused non-sensitive / Sensitive layout
     materialRows = rowsHTMLLocal(mat, [
       { key: 'Reference',              label: 'Reference' },
@@ -854,8 +880,27 @@ function buildMetaPanel (meta, bodyId) {
       { key: 'PeriodFrom',             label: 'Period from' },
       { key: 'ProducedbyWitnessId',    label: 'Produced by' }
     ])
+  } else if (isExhibit) {
+    // Exhibit layout
+    materialRows = rowsHTMLLocal(mat, [
+      { key: 'Reference',              label: 'Reference' },
+      { key: 'exhibitName',            label: 'Title' },
+      { key: 'MaterialClassification', label: 'Classification' },
+      { key: 'exhibitDescription',     label: 'Description' },
+      { key: 'Location',               label: 'Location' },
+      { key: 'PeriodFrom',             label: 'Period from' },
+      { key: 'PeriodTo',               label: 'Period to' },
+      { key: 'ProducedbyWitnessId',    label: 'Produced by witness' },
+      // TODO: RelatedPerson1 / RelatedPerson2 — not yet in data model (currently only RelatedParticipantId)
+      { key: 'RelatedPerson1',         label: 'Related person 1' },
+      { key: 'RelatedPerson2',         label: 'Related person 2' },
+      { key: 'myFileUrl',              label: 'File location (URL)', render: function (v) {
+        if (!v || v === '#') return '—'
+        return '<a class="govuk-link" href="' + esc(v) + '" target="_blank" rel="noreferrer">' + esc(v) + '</a>'
+      }}
+    ])
   } else {
-    // Default layout (Statements, Exhibits, etc)
+    // Default layout (fallback)
     materialRows = rowsHTMLLocal(mat, [
       { key: 'Reference',              label: 'Reference' },
       { key: 'Title',                  label: 'Title' },
@@ -872,13 +917,16 @@ function buildMetaPanel (meta, bodyId) {
   }
 
   // ----------------------------------
-  // Related + digital
+  // Related material
   // ----------------------------------
 
+  // Related material — label for first row differs by type
   var relatedRows = rowsHTMLLocal(rel, [
-    { key: 'RelatesToItem',    label: 'Relates to item' },
-    { key: 'RelatedItemId',    label: 'Related item id' },
-    { key: 'RelationshipType', label: 'Relationship type' }
+    {
+      key: 'PreviousMaterialName',
+      label: isExhibit ? 'Previous material reference' : 'Previous material name'
+    },
+    { key: 'HowMaterialRelates', label: 'How this material relates to previous material' }
   ])
 
   var digitalRows
@@ -926,19 +974,25 @@ function buildMetaPanel (meta, bodyId) {
       policeRows = rowsHTMLLocal(pol, [
         {
           label: 'Police disclosure status',
-          // Ensure we always get a value, even if pol.status is missing,
-          // and override to "Evidence" when isEvidence is true.
           get: function (obj) {
             var raw = obj && obj.status
             if ((raw == null || raw === '') && isEvidence) return 'Evidence'
             return raw
           },
-          render: function (v) {
-            return statusTagHTML('police', v)
-          }
+          render: function (v) { return statusTagHTML('police', v) }
         },
+        { key: 'rationale',   label: 'Rationale for disclosure decision' },
         { key: 'InspectedBy', label: 'Inspected by' },
-        { key: 'inspectedOn', label: 'Inspected on' }
+        { key: 'inspectedOn', label: 'Inspected on' },
+        { key: 'rebuttable',  label: 'Rebuttable' },
+        // TODO: Sensitivity (not sensitive / sensitive) — not yet in data model for statements/exhibits
+        { key: 'sensitivity',     label: 'Sensitivity' },
+        // TODO: SensitivityRationale — not yet in data model for statements/exhibits
+        { key: 'sensitivityRationale', label: 'Sensitivity rationale' },
+        // TODO: Exception1Suspect and Exception1Description — currently 'exception'/'exceptionReason' are flat;
+        // per-suspect exceptions need new data structure
+        { key: 'exception',       label: 'Exception 1 - suspect' },
+        { key: 'exceptionReason', label: 'Exception 1 - description' }
       ])
     } else {
       // Unused / Sensitive: full police block
@@ -948,13 +1002,14 @@ function buildMetaPanel (meta, bodyId) {
           label: 'Police disclosure status',
           render: function (v) { return statusTagHTML('police', v) }
         },
-        { key: 'rationale',       label: 'Rationale for decision' },
-        { key: 'rebuttable',      label: 'Rebuttable' },
-        { key: 'sensitivity',     label: 'Sensitivity rationale' },
-        { key: 'exception',       label: 'Exception' },
-        { key: 'exceptionReason', label: 'Exception reason' },
+        { key: 'rationale',       label: 'Rationale for disclosure decision' },
         { key: 'InspectedBy',     label: 'Inspected by' },
-        { key: 'inspectedOn',     label: 'Inspected on' }
+        { key: 'inspectedOn',     label: 'Inspected on' },
+        { key: 'rebuttable',      label: 'Rebuttable' },
+        { key: 'sensitivity',     label: 'Sensitivity' },
+        { key: 'sensitivityRationale', label: 'Sensitivity rationale' },
+        { key: 'exception',       label: 'Exception 1 - suspect' },
+        { key: 'exceptionReason', label: 'Exception 1 - description' }
       ])
     }
   }
@@ -973,8 +1028,10 @@ function buildMetaPanel (meta, bodyId) {
           return tag
         }
       },
-      { key: 'rationale',          label: 'Rationale for decision' },
-      { key: 'SensitivityDispute', label: 'Reason for dispute' }
+      { key: 'rationale',          label: 'Rationale for disclosure decision' },
+      // TODO: Sensitivity (CPS view) — not yet in data model
+      { key: 'cpsSensitivity',     label: 'Sensitivity' },
+      { key: 'SensitivityDispute', label: 'Sensitivity dispute' }
     ])
   }
 
@@ -1000,16 +1057,47 @@ function buildMetaPanel (meta, bodyId) {
 
   var inlineActions = buildInlineActionsMenu(meta)
 
+  // ----------------------------------
+  // Accordion helper for meta sections
+  // ----------------------------------
+
+  // Each call builds one accordion section object (expanded=false by default)
+  function accordionSection (title, rows) {
+    if (!rows) return null
+    return (
+      '<div class="govuk-accordion__section">' +
+        '<div class="govuk-accordion__section-header">' +
+          '<h3 class="govuk-accordion__section-heading">' +
+            '<span class="govuk-accordion__section-button" id="' + esc(title.replace(/\s+/g,'-').toLowerCase()) + '-heading">' +
+              esc(title) +
+            '</span>' +
+          '</h3>' +
+        '</div>' +
+        '<div class="govuk-accordion__section-content">' +
+          '<dl class="govuk-summary-list govuk-!-margin-bottom-0">' + rows + '</dl>' +
+        '</div>' +
+      '</div>'
+    )
+  }
+
+  // Build accordion sections — filter out nulls (empty sections are omitted)
+  var accordionSections = [
+    accordionSection('Related material',        relatedRows),
+    policeRows ? accordionSection('Police disclosure status', policeRows) : null,
+    cpsRows    ? accordionSection('CPS disclosure status',    cpsRows)    : null
+  ].filter(Boolean).join('')
+
   return '' +
     '<div class="dcf-viewer__meta" data-meta-root>' +
       metaBar +
       '<div id="' + esc(bodyId) + '" class="dcf-viewer__meta-body" hidden>' +
         inlineActions +
         sectionHTMLNoHeadingLocal(materialRows) +
-        sectionHTMLLocal('Related materials',      relatedRows)  +
-        sectionHTMLLocal('Digital representation', digitalRows)  +
-        (policeRows ? sectionHTMLLocal('Police disclosure status', policeRows) : '') +
-        (cpsRows    ? sectionHTMLLocal('CPS disclosure status',    cpsRows)    : '') +
+        (accordionSections
+          ? '<div class="govuk-accordion dcf-meta-accordion" data-module="govuk-accordion" id="meta-accordion-' + esc(bodyId) + '">' +
+              accordionSections +
+            '</div>'
+          : '') +
       '</div>' +
     '</div>'
 }
@@ -1311,6 +1399,19 @@ function buildMetaPanel (meta, bodyId) {
 
       var caret = a.querySelector('.dcf-caret')
       if (caret) caret.textContent = willHide ? '▸' : '▾'
+
+      // Init the GOV.UK Accordion on first reveal — must be visible for layout to work
+      if (!willHide && !body.dataset.accordionInited) {
+        try {
+          var accordionEl = body.querySelector('.dcf-meta-accordion[data-module="govuk-accordion"]')
+          if (accordionEl && window.GOVUKFrontend && window.GOVUKFrontend.Accordion) {
+            new window.GOVUKFrontend.Accordion(accordionEl, { rememberExpanded: false }).init()
+            var controls = accordionEl.querySelector('.govuk-accordion__controls')
+            if (controls) controls.hidden = true
+            body.dataset.accordionInited = 'true'
+          }
+        } catch (e) {}
+      }
 
       return
     }

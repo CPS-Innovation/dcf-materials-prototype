@@ -365,3 +365,25 @@
 .dcf-viewer__meta-body > h3:first-of-type {
   margin-top: 0.5rem !important;
 }
+
+/* ----------------------------------------------------------------------
+   META ACCORDION (GOV.UK Accordion inside the meta panel)
+   ---------------------------------------------------------------------- */
+
+.dcf-meta-accordion {
+  // Tighten font size to match the rest of the meta panel
+  .govuk-accordion__section-button,
+  .govuk-accordion__section-content,
+  .govuk-body, .govuk-hint, p {
+    font-size: 16px;
+  }
+
+  // Summary list inside accordion sits flush — no double top border
+  .govuk-summary-list {
+    border-top: none;
+    margin-top: 0;
+  }
+
+  // Remove the outer accordion border so it blends into the meta panel
+  border-bottom: none;
+}
