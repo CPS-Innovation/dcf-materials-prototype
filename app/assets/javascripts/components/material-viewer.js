@@ -905,6 +905,7 @@ function buildMetaPanel (meta, bodyId) {
       { key: 'Reference',              label: 'Reference' },
       { key: 'Title',                  label: 'Title' },
       { key: 'MaterialClassification', label: 'Classification' },
+      { key: 'RelatedPerson1',         label: 'Related person' },
       { key: 'Description',            label: 'Description' },
       { key: 'Location',               label: 'Location' },
       { key: 'PeriodFrom',             label: 'Period from' },
@@ -912,7 +913,11 @@ function buildMetaPanel (meta, bodyId) {
       { key: 'ProducedbyWitnessId',    label: 'Produced by' },
       { key: 'MaterialType',           label: 'Type' },
       { key: 'SentExternally',         label: 'Sent externally' },
-      { key: 'RelatedParticipantId',   label: 'Related participant id' }
+      { key: 'RelatedParticipantId',   label: 'Related participant id' },
+      { key: 'myFileUrl',              label: 'File location (URL)', render: function (v) {
+        if (!v || v === '#') return '\u2014'
+        return esc(v)
+      }}
     ])
   }
 
