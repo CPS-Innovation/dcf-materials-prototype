@@ -506,6 +506,20 @@
         "disagreesWithPolice": false,
         "cpsSensitivity": "Sensitive"
       }
+    },
+    {
+      "Type": "other material",
+      "materialStatus": "New",
+      "myFileUrl": "/public/files/searchResults/20200601_version_MG06_3June_copy.pdf",
+      "ItemId": "MAT-02013",
+      "date": "01/06/2020",
+      "Title": "MG12_MCGREGOR #2",
+      "MaterialClassification": "Document - Legacy Document - MG12",
+      "RelatedPerson1": "Julie Argyle",
+      "RelatedMaterials": {
+        "PreviousMaterialName": "MG12_MCGREGOR #1",
+        "HowMaterialRelates": "Clipped version"
+      }
     }
   ]
 }
