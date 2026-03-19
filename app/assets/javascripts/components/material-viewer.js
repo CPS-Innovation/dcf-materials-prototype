@@ -228,7 +228,14 @@
     viewer.setAttribute('tabindex', '-1')
     viewer.dataset.mode = 'document'
 
-    return viewer.querySelector('#dcf-viewer-tabs')
+    // Recalculate visible tabs whenever the container resizes
+    var tabsContainer = viewer.querySelector('#dcf-viewer-tabs')
+    if (tabsContainer && typeof ResizeObserver !== 'undefined') {
+      var _tabBarRO = new ResizeObserver(function () { renderTabBar() })
+      _tabBarRO.observe(tabsContainer)
+    }
+
+    return tabsContainer
   }
 
   function setActiveTab (tabEl) {
@@ -239,6 +246,98 @@
       btn.setAttribute('tabindex', btn === tabEl ? '0' : '-1')
     })
   }
+
+  // ------------------------------------------------------------------
+  // renderTabBar — max 4 visible tabs, rest go into overflow dropdown
+  // ------------------------------------------------------------------
+  var MAX_VISIBLE_TABS = 4
+
+  function escHtml (s) {
+    return (s == null ? '' : String(s))
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  }
+
+  // Close the <details> overflow widget
+  function closeOverflowDropdown () {
+    var det = viewer.querySelector('.dcf-tab-overflow')
+    if (det) det.open = false
+  }
+
+  function renderTabBar () {
+    var tabsEl = viewer.querySelector('#dcf-viewer-tabs')
+    if (!tabsEl) return
+
+    var allTabs = Array.prototype.slice.call(tabsEl.querySelectorAll('.dcf-doc-tab'))
+
+    // Show/hide tabs by index — first MAX_VISIBLE_TABS visible, rest hidden
+    var hiddenTabs = []
+    allTabs.forEach(function (t, i) {
+      var hide = i >= MAX_VISIBLE_TABS
+      t.style.display = hide ? 'none' : ''
+      if (hide) hiddenTabs.push(t)
+    })
+
+    // Find or create the <details> overflow widget
+    var det = tabsEl.querySelector('.dcf-tab-overflow')
+    if (!det) {
+      det = document.createElement('details')
+      det.className = 'dcf-tab-overflow'
+
+      var summary = document.createElement('summary')
+      summary.className = 'dcf-tab-overflow-btn'
+      det.appendChild(summary)
+
+      tabsEl.appendChild(det)
+    } else {
+      // Always keep it as the last child
+      tabsEl.appendChild(det)
+    }
+
+    if (hiddenTabs.length === 0) {
+      det.style.display = 'none'
+      det.open = false
+      return
+    }
+
+    det.style.display = ''
+
+    // Update summary label
+    var summary = det.querySelector('summary')
+    summary.innerHTML =
+      '<span class="dcf-tab-overflow-badge">+' + hiddenTabs.length + '</span>' +
+      '<span class="dcf-tab-overflow-label"> Other documents</span>'
+
+    // Rebuild the dropdown list inside the <details>
+    var drop = det.querySelector('.dcf-tab-overflow-dropdown')
+    if (drop) drop.parentNode.removeChild(drop)
+
+    drop = document.createElement('div')
+    drop.className = 'dcf-tab-overflow-dropdown'
+
+    var header = document.createElement('div')
+    header.className = 'dcf-tab-overflow-dropdown__header'
+    header.textContent = 'Other documents (' + hiddenTabs.length + ')'
+    drop.appendChild(header)
+
+    hiddenTabs.forEach(function (t) {
+      var id = t.getAttribute('data-tab-id')
+      var title = t.getAttribute('data-title') || 'Document'
+      var isActive = t.classList.contains('is-active')
+
+      var item = document.createElement('button')
+      item.type = 'button'
+      item.className = 'dcf-tab-overflow-dropdown__item' + (isActive ? ' is-active' : '')
+      item.setAttribute('data-tab-id', id)
+      item.innerHTML =
+        '<span class="dcf-tab-overflow-dropdown__item-name">' + escHtml(title) + '</span>' +
+        '<span class="dcf-tab-overflow-dropdown__item-close" data-close-tab-id="' + escHtml(id) + '">&#215;</span>'
+      drop.appendChild(item)
+    })
+
+    det.appendChild(drop)
+  }
+  // ------------------------------------------------------------------
 
   function renderMeta (meta) {
     var rawId = (meta && (meta.ItemId || (meta.Material && meta.Material.Reference))) || Date.now()
@@ -324,6 +423,7 @@
     if (iframe) iframe.setAttribute('src', buildPdfViewerUrl(url))
 
     renderMeta(meta)
+    renderTabBar()
   }
 
   function removeSearchStatus () {
@@ -1264,6 +1364,16 @@ function buildMetaPanel (meta, bodyId) {
   }, true)
 
   // NB: bubble-phase so material-search.js (capture) can update searchIndex first
+  // Close overflow <details> when clicking outside it (bubble phase)
+  document.addEventListener('click', function (e) {
+    var det = viewer.querySelector('.dcf-tab-overflow')
+    if (!det || !det.open) return
+    var inOverflow = e.target && (
+      e.target.closest('.dcf-tab-overflow')
+    )
+    if (!inOverflow) det.open = false
+  }, false)
+
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest('a.dcf-viewer-link')
     if (!a) return
@@ -1281,6 +1391,7 @@ function buildMetaPanel (meta, bodyId) {
   // --------------------------------------
 
   viewer.addEventListener('click', function (e) {
+    // --- Close button on a visible tab ---
     if (e.target && e.target.closest('.dcf-doc-tab__close')) {
       e.preventDefault()
       var btn = e.target.closest('.dcf-doc-tab')
@@ -1305,13 +1416,55 @@ function buildMetaPanel (meta, bodyId) {
       }
       if (wasActive) {
         var last = Array.prototype.slice.call(viewer.querySelectorAll('#dcf-viewer-tabs .dcf-doc-tab')).pop()
-        if (last) {
-          switchToTabById(last.getAttribute('data-tab-id'))
-        }
+        if (last) switchToTabById(last.getAttribute('data-tab-id'))
       }
+      renderTabBar()
       return
     }
 
+    // --- Close button inside the overflow dropdown ---
+    if (e.target && e.target.closest('.dcf-tab-overflow-dropdown__item-close')) {
+      e.preventDefault()
+      e.stopPropagation()
+      var closeId = e.target.closest('.dcf-tab-overflow-dropdown__item-close').getAttribute('data-close-tab-id')
+      if (!closeId) return
+      var tabToClose = viewer.querySelector('#dcf-viewer-tabs .dcf-doc-tab[data-tab-id="' + closeId + '"]')
+      if (tabToClose) {
+        var wasActiveInDrop = tabToClose.classList.contains('is-active')
+        var itemIdDrop = tabToClose.getAttribute('data-item-id')
+        if (itemIdDrop) {
+          var cardDrop = document.querySelector('.dcf-material-card[data-item-id="' + CSS.escape(itemIdDrop) + '"]')
+          if (cardDrop) markCardClosed(cardDrop)
+        }
+        if (_tabStore.metaById[closeId]) delete _tabStore.metaById[closeId]
+        tabToClose.parentNode && tabToClose.parentNode.removeChild(tabToClose)
+        var anyTabDrop = viewer.querySelector('#dcf-viewer-tabs .dcf-doc-tab')
+        if (!anyTabDrop) {
+          var closeDrop = viewer.querySelector('[data-action="close-viewer"]')
+          if (closeDrop) closeDrop.click()
+          return
+        }
+        if (wasActiveInDrop) {
+          var lastDrop = Array.prototype.slice.call(viewer.querySelectorAll('#dcf-viewer-tabs .dcf-doc-tab')).pop()
+          if (lastDrop) switchToTabById(lastDrop.getAttribute('data-tab-id'))
+        }
+      }
+      renderTabBar()
+      return
+    }
+
+    // --- Click a row in the overflow dropdown ---
+    var dropItem = e.target && e.target.closest('.dcf-tab-overflow-dropdown__item')
+    if (dropItem && !e.target.closest('.dcf-tab-overflow-dropdown__item-close')) {
+      e.preventDefault()
+      var dropId = dropItem.getAttribute('data-tab-id')
+      if (dropId) switchToTabById(dropId)
+      closeOverflowDropdown()
+      renderTabBar()
+      return
+    }
+
+    // --- Click on a visible tab ---
     var tabBtn = e.target && e.target.closest('#dcf-viewer-tabs .dcf-doc-tab')
     if (tabBtn && !e.target.closest('.dcf-doc-tab__close')) {
       e.preventDefault()
