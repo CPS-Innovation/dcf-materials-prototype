@@ -306,7 +306,7 @@
     var summary = det.querySelector('summary')
     summary.innerHTML =
       '<span class="dcf-tab-overflow-badge">+' + hiddenTabs.length + '</span>' +
-      '<span class="dcf-tab-overflow-label"> Other documents</span>'
+      '<span class="dcf-tab-overflow-label"> More items</span>'
 
     // Rebuild the dropdown list inside the <details>
     var drop = det.querySelector('.dcf-tab-overflow-dropdown')
@@ -317,7 +317,7 @@
 
     var header = document.createElement('div')
     header.className = 'dcf-tab-overflow-dropdown__header'
-    header.textContent = 'Other documents (' + hiddenTabs.length + ')'
+    header.textContent = 'More items (' + hiddenTabs.length + ')'
     drop.appendChild(header)
 
     hiddenTabs.forEach(function (t) {
