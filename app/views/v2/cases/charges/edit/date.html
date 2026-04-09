@@ -1,0 +1,143 @@
+{# /cases/:caseId/charges/edit/date #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = defendant.firstName + " " + defendant.lastName + " - " + _case.reference %}
+{% set pageName = "Edit charge date" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {% set singleDateHtml %}
+          {{ govukDateInput({
+            id: "offence-date",
+            namePrefix: "offenceDate",
+            hint: { text: "For example, 27 3 2024" },
+            items: [
+              {
+                name: "day",
+                classes: "govuk-input--width-2",
+                value: data["offenceDate-day"]
+              },
+              {
+                name: "month",
+                classes: "govuk-input--width-2",
+                value: data["offenceDate-month"]
+              },
+              {
+                name: "year",
+                classes: "govuk-input--width-4",
+                value: data["offenceDate-year"]
+              }
+            ]
+          }) }}
+        {% endset %}
+
+        {% set multipleDatesHtml %}
+          {{ govukDateInput({
+            id: "offence-date-from",
+            namePrefix: "offenceDateFrom",
+            fieldset: {
+              legend: {
+                text: "From",
+                classes: "govuk-fieldset__legend--s"
+              }
+            },
+            hint: { text: "For example, 27 3 2024" },
+            items: [
+              {
+                name: "day",
+                classes: "govuk-input--width-2",
+                value: data["offenceDateFrom-day"]
+              },
+              {
+                name: "month",
+                classes: "govuk-input--width-2",
+                value: data["offenceDateFrom-month"]
+              },
+              {
+                name: "year",
+                classes: "govuk-input--width-4",
+                value: data["offenceDateFrom-year"]
+              }
+            ]
+          }) }}
+
+          {{ govukDateInput({
+            id: "offence-date-to",
+            namePrefix: "offenceDateTo",
+            fieldset: {
+              legend: {
+                text: "To",
+                classes: "govuk-fieldset__legend--s"
+              }
+            },
+            hint: { text: "For example, 27 3 2024" },
+            items: [
+              {
+                name: "day",
+                classes: "govuk-input--width-2",
+                value: data["offenceDateTo-day"]
+              },
+              {
+                name: "month",
+                classes: "govuk-input--width-2",
+                value: data["offenceDateTo-month"]
+              },
+              {
+                name: "year",
+                classes: "govuk-input--width-4",
+                value: data["offenceDateTo-year"]
+              }
+            ]
+          }) }}
+        {% endset %}
+
+        {{ govukRadios({
+          name: "chargeDate",
+          fieldset: {
+            legend: {
+              text: "When did the offence occur?",
+              isPageHeading: false,
+              classes: "govuk-fieldset__legend--m"
+            }
+          },
+          items: [
+            {
+              value: "singleDate",
+              text: "On a single date",
+              checked: data["chargeDate"] == "singleDate",
+              conditional: { html: singleDateHtml }
+            },
+            {
+              value: "multipleDates",
+              text: "On multiple dates",
+              checked: data["chargeDate"] == "multipleDates",
+              conditional: { html: multipleDatesHtml }
+            }
+          ]
+        }) }}
+
+        {{ govukButton({ text: "Continue" }) }}
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

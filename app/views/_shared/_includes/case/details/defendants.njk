@@ -151,9 +151,9 @@
                     }) }}
 
                     <div class="govuk-button-group govuk-!-margin-bottom-4">
-                      {{ govukButton({ text: "Mark for withdrawal", classes: "govuk-button--secondary" }) }}
-                      {{ govukButton({ text: "Discontinue",                 classes: "govuk-button--secondary" }) }}
-                      {{ govukButton({ text: "Edit",                        classes: "govuk-button--secondary" }) }}
+                      {{ govukButton({ text: "Mark for withdrawal", classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                      {{ govukButton({ text: "Discontinue",                 classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                      {{ govukButton({ text: "Edit", href: "/cases/" + _case.id + "/charges/" + charge.id + "/edit/date", classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
                     </div>
 
                 </td>
