@@ -1,0 +1,65 @@
+{# /cases/:caseId/charges/edit/victim #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = defendant.firstName + " " + defendant.lastName + " - " + _case.reference %}
+{% set pageName = "Who is the victim of this offence?" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {# Build radio items using push — works reliably in Nunjucks unlike concat #}
+        {% set victimItems = [] %}
+
+        {% for victim in victims %}
+          {% set _ = victimItems.push({
+            value: victim.id | string,
+            text: victim.firstName + " " + victim.lastName,
+            checked: data["victimId"] == victim.id | string
+          }) %}
+        {% endfor %}
+
+        {# Divider then no-victim option #}
+        {% set _ = victimItems.push({ divider: "or" }) %}
+        {% set _ = victimItems.push({
+          value: "none",
+          text: "There is no victim associated with this charge",
+          checked: data["victimId"] == "none"
+        }) %}
+
+        {{ govukRadios({
+          name: "victimId",
+          fieldset: {
+            legend: {
+              text: "Who is the victim of this offence?",
+              classes: "govuk-fieldset__legend--m govuk-visually-hidden"
+            }
+          },
+          items: victimItems
+        }) }}
+        
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Continue" }) }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

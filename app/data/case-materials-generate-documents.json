@@ -68,6 +68,179 @@
           "lastGenerated": "2024-09-24T12:32:00"
         }
       ]
+    },
+    {
+      "id": "defendant_3",
+      "name": "Ms Diane Cartwright",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": "2024-09-24T12:32:00"
+        },
+        {
+          "id": "remand_application",
+          "label": "Remand Application",
+          "lastGenerated": null
+        },
+        {
+          "id": "breach_of_bail_condition",
+          "label": "Breach of Bail Condition",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "defendant_4",
+      "name": "Mr Tariq Hussain",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": null
+        },
+        {
+          "id": "offences_taken_into_consideration",
+          "label": "Offences Taken Into Consideration",
+          "lastGenerated": "2024-09-24T12:32:00"
+        },
+        {
+          "id": "candidate_court_orders",
+          "label": "Candidate Court Orders",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "defendant_5",
+      "name": "Mrs Lorraine Fitch",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": "2024-09-24T12:32:00"
+        },
+        {
+          "id": "candidate_court_orders",
+          "label": "Candidate Court Orders",
+          "lastGenerated": "2024-09-24T12:32:00"
+        },
+        {
+          "id": "remand_application",
+          "label": "Remand Application",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "defendant_6",
+      "name": "Mr Gary Nolan",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": null
+        },
+        {
+          "id": "breach_of_bail_condition",
+          "label": "Breach of Bail Condition",
+          "lastGenerated": "2024-09-24T12:32:00"
+        }
+      ]
+    },
+    {
+      "id": "defendant_7",
+      "name": "Miss Priya Sharma",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": null
+        },
+        {
+          "id": "offences_taken_into_consideration",
+          "label": "Offences Taken Into Consideration",
+          "lastGenerated": null
+        },
+        {
+          "id": "candidate_court_orders",
+          "label": "Candidate Court Orders",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "defendant_8",
+      "name": "Mr Raymond Doyle",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": "2024-09-24T12:32:00"
+        },
+        {
+          "id": "remand_application",
+          "label": "Remand Application",
+          "lastGenerated": "2024-09-24T12:32:00"
+        },
+        {
+          "id": "breach_of_bail_condition",
+          "label": "Breach of Bail Condition",
+          "lastGenerated": null
+        },
+        {
+          "id": "candidate_court_orders",
+          "label": "Candidate Court Orders",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "defendant_9",
+      "name": "Mr Stefan Kowalski",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": null
+        },
+        {
+          "id": "candidate_court_orders",
+          "label": "Candidate Court Orders",
+          "lastGenerated": "2024-09-24T12:32:00"
+        }
+      ]
+    },
+    {
+      "id": "defendant_10",
+      "name": "Mrs Yvonne Blackwell",
+      "documents": [
+        {
+          "id": "charge_information",
+          "label": "Charge Information",
+          "lastGenerated": null
+        },
+        {
+          "id": "offences_taken_into_consideration",
+          "label": "Offences Taken Into Consideration",
+          "lastGenerated": "2024-09-24T12:32:00"
+        },
+        {
+          "id": "remand_application",
+          "label": "Remand Application",
+          "lastGenerated": null
+        },
+        {
+          "id": "breach_of_bail_condition",
+          "label": "Breach of Bail Condition",
+          "lastGenerated": null
+        },
+        {
+          "id": "candidate_court_orders",
+          "label": "Candidate Court Orders",
+          "lastGenerated": null
+        }
+      ]
     }
   ],
   "witnesses": [
@@ -85,6 +258,94 @@
     {
       "id": "witness_2",
       "name": "Mr Sam Parsons",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "witness_3",
+      "name": "Mrs Angela Thornton",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": "2024-09-24T12:32:00"
+        }
+      ]
+    },
+    {
+      "id": "witness_4",
+      "name": "Mr Derek Okafor",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "witness_5",
+      "name": "Ms Harriet Vane",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "witness_6",
+      "name": "Mr Paul Jennings",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": "2024-09-24T12:32:00"
+        }
+      ]
+    },
+    {
+      "id": "witness_7",
+      "name": "Miss Fatima Al-Rashid",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "witness_8",
+      "name": "Mr Colin Brennan",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": null
+        }
+      ]
+    },
+    {
+      "id": "witness_9",
+      "name": "Mrs Sunita Patel",
+      "documents": [
+        {
+          "id": "witness_special_measures",
+          "label": "Witness Special Measures",
+          "lastGenerated": "2024-09-24T12:32:00"
+        }
+      ]
+    },
+    {
+      "id": "witness_10",
+      "name": "Mr James Whitfield",
       "documents": [
         {
           "id": "witness_special_measures",

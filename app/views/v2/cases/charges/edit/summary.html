@@ -1,0 +1,67 @@
+{# /cases/:caseId/charges/edit/summary #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = defendant.firstName + " " + defendant.lastName + " - " + _case.reference %}
+{% set pageName = "Are the charge particulars correct?" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
+
+      {{ govukInsetText({
+        text: charge.particulars
+      }) }}
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        
+
+        {{ govukRadios({
+          name: "chargeParticularsCorrect",
+          fieldset: {
+            legend: {
+              text: "Are the charge particulars correct?",
+              classes: "govuk-fieldset__legend--m govuk-visually-hidden"
+            }
+          },
+          items: [
+            {
+              value: "Yes",
+              text: "Yes",
+              checked: data["chargeParticularsCorrect"] == "Yes"
+            },
+            {
+              value: "No",
+              text: "No",
+              checked: data["chargeParticularsCorrect"] == "No"
+            }
+          ]
+        }) }}
+
+        
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Continue" }) }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
+
+
+
