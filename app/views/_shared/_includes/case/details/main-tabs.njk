@@ -32,7 +32,10 @@
   {% include "_shared/_includes/case/details/outline-panels.njk" %}
 {% endset -%}
 
-{% set defendantsHtml %}<h3 class="govuk-heading-m">Defendants</h3>{% endset -%}
+{% set defendantsHtml %}<h3 class="govuk-heading-m">Defendants</h3>
+  {% include "_shared/_includes/case/details/defendants.njk" %}
+{% endset -%}
+
 {% set witnessesHtml  %}<h3 class="govuk-heading-m">Witnesses</h3>{% endset -%}
 
 {# Re-use the same contacts panel as Overview, but full width #}
