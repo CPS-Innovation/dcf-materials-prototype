@@ -59,10 +59,6 @@
         {% set particularsDisplay = data["particulars"] %}
       {% endif %}
 
-      {# ── Charge context ───────────────────────────────────────── #}
-      {{ govukInsetText({
-        text: charge.description
-      }) }}
 
       {# ── Summary list ─────────────────────────────────────────── #}
       {{ govukSummaryList({
