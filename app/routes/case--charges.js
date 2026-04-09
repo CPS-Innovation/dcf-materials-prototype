@@ -16,7 +16,9 @@ module.exports = router => {
             defenceLawyer: true
           }
         },
-        location: true
+        location: true,
+        victims: true,
+        witnesses: true
       }
     })
   }
@@ -52,13 +54,71 @@ module.exports = router => {
   })
 
   router.post('/cases/:caseId/charges/:chargeId/edit/date', (req, res) => {
+    const base = `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit`
+    if (req.body.correctDate === 'Yes') {
+      return res.redirect(`${base}/victim`)
+    }
+    return res.redirect(`${base}/date-type`)
+  })
+
+
+  // ------------------------------------------------------------------
+  // STEP 1b — DATE TYPE
+  // GET  /cases/:caseId/charges/:chargeId/edit/date-type
+  // POST /cases/:caseId/charges/:chargeId/edit/date-type  →  single-date | multiple-date
+  router.get('/cases/:caseId/charges/:chargeId/edit/date-type', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
+    if (!charge) return res.status(404).render('not-found')
+    return res.render('v2/cases/charges/edit/date-type', { _case, charge, defendant })
+  })
+
+  router.post('/cases/:caseId/charges/:chargeId/edit/date-type', (req, res) => {
+    const base = `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit`
+    req.session.data.editCharge = { ...req.session.data.editCharge, dateType: req.body.dateType }
+    if (req.body.dateType === 'singleDate') return res.redirect(`${base}/single-date`)
+    return res.redirect(`${base}/multiple-date`)
+  })
+
+
+  // ------------------------------------------------------------------
+  // STEP 1c — SINGLE DATE
+  // GET  /cases/:caseId/charges/:chargeId/edit/single-date
+  // POST /cases/:caseId/charges/:chargeId/edit/single-date  →  victim
+  router.get('/cases/:caseId/charges/:chargeId/edit/single-date', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
+    if (!charge) return res.status(404).render('not-found')
+    return res.render('v2/cases/charges/edit/single-date', { _case, charge, defendant })
+  })
+
+  router.post('/cases/:caseId/charges/:chargeId/edit/single-date', (req, res) => {
+    req.session.data.editCharge = { ...req.session.data.editCharge, offenceDate: req.body.offenceDate }
+    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/victim`)
+  })
+
+
+  // ------------------------------------------------------------------
+  // STEP 1d — MULTIPLE DATES
+  // GET  /cases/:caseId/charges/:chargeId/edit/multiple-date
+  // POST /cases/:caseId/charges/:chargeId/edit/multiple-date  →  victim
+  router.get('/cases/:caseId/charges/:chargeId/edit/multiple-date', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
+    if (!charge) return res.status(404).render('not-found')
+    return res.render('v2/cases/charges/edit/multiple-date', { _case, charge, defendant })
+  })
+
+  router.post('/cases/:caseId/charges/:chargeId/edit/multiple-date', (req, res) => {
     req.session.data.editCharge = {
       ...req.session.data.editCharge,
-      offenceDate: req.body.offenceDate
+      offenceDateFrom: req.body.offenceDateFrom,
+      offenceDateTo:   req.body.offenceDateTo
     }
-    return res.redirect(
-      `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/victim`
-    )
+    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/victim`)
   })
 
 
@@ -73,14 +133,13 @@ module.exports = router => {
     const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
     if (!charge) return res.status(404).render('not-found')
 
-    return res.render('v2/cases/charges/edit/victim', { _case, charge, defendant })
+    return res.render('v2/cases/charges/edit/victim', { _case, charge, defendant, victims: _case.witnesses })
   })
 
   router.post('/cases/:caseId/charges/:chargeId/edit/victim', (req, res) => {
     req.session.data.editCharge = {
       ...req.session.data.editCharge,
-      victimName:   req.body.victimName,
-      victimStatus: req.body.victimStatus
+      victimId: req.body.victimId
     }
     return res.redirect(
       `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/summary`
@@ -103,6 +162,29 @@ module.exports = router => {
   })
 
   router.post('/cases/:caseId/charges/:chargeId/edit/summary', (req, res) => {
+    const base = `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit`
+    if (req.body.chargeParticularsCorrect === 'Yes') {
+      return res.redirect(`${base}/check`)
+    }
+    return res.redirect(`${base}/particulars`)
+  })
+
+
+  // ------------------------------------------------------------------
+  // STEP 3b — PARTICULARS (edit the text)
+  // GET  /cases/:caseId/charges/:chargeId/edit/particulars
+  // POST /cases/:caseId/charges/:chargeId/edit/particulars  →  check
+  router.get('/cases/:caseId/charges/:chargeId/edit/particulars', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
+    if (!charge) return res.status(404).render('not-found')
+
+    return res.render('v2/cases/charges/edit/particulars', { _case, charge, defendant })
+  })
+
+  router.post('/cases/:caseId/charges/:chargeId/edit/particulars', (req, res) => {
     req.session.data.editCharge = {
       ...req.session.data.editCharge,
       particulars: req.body.particulars
@@ -130,7 +212,8 @@ module.exports = router => {
       _case,
       charge,
       defendant,
-      editCharge
+      editCharge,
+      witnesses: _case.witnesses
     })
   })
 

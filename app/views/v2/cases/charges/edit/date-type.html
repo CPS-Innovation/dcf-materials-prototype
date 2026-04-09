@@ -1,11 +1,11 @@
-{# /cases/:caseId/charges/edit/victim #}
+{# /cases/:caseId/charges/edit/date #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
 {% set captionName = defendant.firstName + " " + defendant.lastName + " - " + _case.reference %}
-{% set pageName = "Who is the victim of this offence?" %}
+{% set pageName = "When was the offence committed?" %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -24,35 +24,31 @@
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
-        {# Build radio items using push — works reliably in Nunjucks unlike concat #}
-        {% set victimItems = [] %}
-
-        {% for victim in victims %}
-          {% set _ = victimItems.push({
-            value: victim.id | string,
-            text: victim.firstName + " " + victim.lastName,
-            checked: data["victimId"] == victim.id | string
-          }) %}
-        {% endfor %}
-
-        {# Divider then no-victim option #}
-        {% set _ = victimItems.push({ divider: "or" }) %}
-        {% set _ = victimItems.push({
-          value: "none",
-          text: "There is no victim associated with this charge",
-          checked: data["victimId"] == "none"
-        }) %}
+        
 
         {{ govukRadios({
-          name: "victimId",
+          name: "dateType",
           fieldset: {
             legend: {
-              text: "Who is the victim of this offence?",
+              text: "When was the offence committed?",
+              isPageHeading: false,
               classes: "govuk-fieldset__legend--m govuk-visually-hidden"
             }
           },
-          items: victimItems
+          items: [
+            {
+              value: "singleDate",
+              text: "A single date",
+              checked: data["dateType"] == "singleDate"
+            },
+            {
+              value: "multipleDates",
+              text: "Multiple dates",
+              checked: data["dateType"] == "multipleDates"
+            }
+          ]
         }) }}
+
         
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}

@@ -1,11 +1,11 @@
-{# /cases/:caseId/charges/edit/summary #}
+{# /cases/:caseId/charges/edit/particulars #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
 {% set captionName = defendant.firstName + " " + defendant.lastName + " - " + _case.reference %}
-{% set pageName = "Are the charge particulars correct?" %}
+{% set pageName = "Edit particulars" %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -21,6 +21,7 @@
 
     <div class="govuk-grid-column-two-thirds">
 
+      <h3 class="govuk-heading-s">Current particulars</h3>
       {{ govukInsetText({
         text: charge.particulars
       }) }}
@@ -29,29 +30,18 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
         
-
-        {{ govukRadios({
-          name: "chargeParticularsCorrect",
-          fieldset: {
-            legend: {
-              text: "Are the charge particulars correct?",
-              classes: "govuk-fieldset__legend--m govuk-visually-hidden"
-            }
-          },
-          items: [
-            {
-              value: "Yes",
-              text: "Yes",
-              checked: data["chargeParticularsCorrect"] == "Yes"
+          {{ govukTextarea({
+            id: "particulars",
+            name: "particulars",
+            rows: 8,
+            label: {
+              text: "New particulars",
+              isPageHeading: false,
+              classes: "govuk-label--s"
             },
-            {
-              value: "No",
-              text: "No",
-              checked: data["chargeParticularsCorrect"] == "No"
-            }
-          ]
-        }) }}
-
+            value: data["particulars"] or charge.particulars
+          }) }}
+       
         
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}

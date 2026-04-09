@@ -4,20 +4,10 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
+{% set captionName = defendant.firstName + " " + defendant.lastName + " - " + _case.reference %}
+{% set pageName = "Check answers and update charge" %}
 
-
-{% set defendantsValue %}
-  {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
-  {% if _case.defendants.length > 1 %}
-    and {{_case.defendants.length - 1}} more
-  {% endif %}
-{% endset %}
-
-
-{% set pageName = "Check answers - Edit " + charge.description %}
-{% set captionName = defendantsValue + " " + _case.reference %}
-
-  
+{% set base = "/cases/" + _case.id + "/charges/" + charge.id + "/edit" %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -28,17 +18,96 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-three-quarters">
       <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-m">{{ pageName }}</h1>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
     </div>
-  
 
     <div class="govuk-grid-column-two-thirds">
 
-      {# ── Step content goes here ──────────────────────────────── #}
+      {# ── Resolve date display ─────────────────────────────────── #}
+      {% if data["correctDate"] == "Yes" %}
+        {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
+      {% elif data["dateType"] == "singleDate" %}
+        {% set dateDisplay = data["offenceDate-day"] + "/" + data["offenceDate-month"] + "/" + data["offenceDate-year"] %}
+      {% elif data["dateType"] == "multipleDates" %}
+        {% set dateDisplay =
+          data["offenceDateFrom-day"] + "/" + data["offenceDateFrom-month"] + "/" + data["offenceDateFrom-year"] +
+          " to " +
+          data["offenceDateTo-day"] + "/" + data["offenceDateTo-month"] + "/" + data["offenceDateTo-year"]
+        %}
+      {% else %}
+        {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
+      {% endif %}
+
+      {# ── Resolve victim display ───────────────────────────────── #}
+      {# Use push to escape Nunjucks loop scope — set inside for/if doesn't leak out #}
+      {% if data["victimId"] == "none" %}
+        {% set victimDisplay = "No victim associated with this charge" %}
+      {% else %}
+        {% set victimArr = [] %}
+        {% for v in witnesses %}
+          {% if v.id == data["victimId"] | int %}
+            {% set _ = victimArr.push(v.firstName + " " + v.lastName) %}
+          {% endif %}
+        {% endfor %}
+        {% set victimDisplay = victimArr[0] if victimArr[0] else "Not recorded" %}
+      {% endif %}
+
+      {# ── Resolve particulars display ──────────────────────────── #}
+      {% if data["chargeParticularsCorrect"] == "Yes" %}
+        {% set particularsDisplay = charge.particulars %}
+      {% else %}
+        {% set particularsDisplay = data["particulars"] %}
+      {% endif %}
+
+      {# ── Charge context ───────────────────────────────────────── #}
+      {{ govukInsetText({
+        text: charge.description
+      }) }}
+
+      {# ── Summary list ─────────────────────────────────────────── #}
+      {{ govukSummaryList({
+        rows: [
+          {
+            key:   { text: "Offence date" },
+            value: { text: dateDisplay },
+            actions: {
+              items: [{
+                href: base + "/date",
+                text: "Change",
+                visuallyHiddenText: "offence date"
+              }]
+            }
+          },
+          {
+            key:   { text: "Victim" },
+            value: { text: victimDisplay },
+            actions: {
+              items: [{
+                href: base + "/victim",
+                text: "Change",
+                visuallyHiddenText: "victim"
+              }]
+            }
+          },
+          {
+            key:   { text: "Charge particulars" },
+            value: { text: particularsDisplay },
+            actions: {
+              items: [{
+                href: base + "/summary",
+                text: "Change",
+                visuallyHiddenText: "charge particulars"
+              }]
+            }
+          }
+        ]
+      }) }}
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        {{ govukButton({ text: "Confirm and update charge" }) }}
+      </form>
 
     </div>
   </div>
 {% endblock %}
-
-
-

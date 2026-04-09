@@ -1,11 +1,11 @@
-{# /cases/:caseId/charges/edit/summary #}
+{# /cases/:caseId/charges/edit/date #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
 {% set captionName = defendant.firstName + " " + defendant.lastName + " - " + _case.reference %}
-{% set pageName = "Are the charge particulars correct?" %}
+{% set pageName = "Date of offence" %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -21,40 +21,35 @@
 
     <div class="govuk-grid-column-two-thirds">
 
-      {{ govukInsetText({
-        text: charge.particulars
-      }) }}
-
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
-        
+        {{ govukDateInput({
+            id: "offence-date",
+            namePrefix: "offenceDate",
+            hint: { text: "For example, 27 3 2024" },
+            items: [
+              {
+                name: "day",
+                classes: "govuk-input--width-2",
+                value: data["offenceDate-day"]
+              },
+              {
+                name: "month",
+                classes: "govuk-input--width-2",
+                value: data["offenceDate-month"]
+              },
+              {
+                name: "year",
+                classes: "govuk-input--width-4",
+                value: data["offenceDate-year"]
+              }
+            ]
+          }) }}
 
-        {{ govukRadios({
-          name: "chargeParticularsCorrect",
-          fieldset: {
-            legend: {
-              text: "Are the charge particulars correct?",
-              classes: "govuk-fieldset__legend--m govuk-visually-hidden"
-            }
-          },
-          items: [
-            {
-              value: "Yes",
-              text: "Yes",
-              checked: data["chargeParticularsCorrect"] == "Yes"
-            },
-            {
-              value: "No",
-              text: "No",
-              checked: data["chargeParticularsCorrect"] == "No"
-            }
-          ]
-        }) }}
-
-        
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
+        
         </div>
 
       </form>
@@ -62,6 +57,3 @@
     </div>
   </div>
 {% endblock %}
-
-
-
