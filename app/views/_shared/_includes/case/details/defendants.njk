@@ -1,0 +1,199 @@
+{# _shared/_includes/case/details/defendants.njk #}
+
+
+{#
+  Pool of mock victims — cycled by charge loop index so every charge gets one
+  regardless of its chargeCode. Replace with charge.victimName / charge.victimStatus
+  once those fields are added to the Charge model in schema.prisma.
+#}
+{% set mockVictimPool = [
+  { name: "CARTER, Frank",   status: "Intimidated" },
+  { name: "JONES, Barry",    status: "Vulnerable"  },
+  { name: "CAMPBELL, Ellie", status: "Intimidated" },
+  { name: "PATEL, Sunita",   status: "Vulnerable"  }
+] %}
+
+{# Plea enum → display label #}
+{% set pleaLabels = {
+  "NOT_GUILTY":    "Not guilty anticipated plea",
+  "GUILTY":        "Guilty anticipated plea",
+  "NO_PLEA":       "No plea entered",
+  "NOT_INDICATED": "Not indicated"
+} %}
+
+
+{# ─── Defendant loop ─────────────────────────────────────────────────────── #}
+
+{% for defendant in _case.defendants %}
+
+  {# ── Summary card ────────────────────────────────────────────────────── #}
+  <div class="govuk-summary-card">
+    <div class="govuk-summary-card__title-wrapper">
+      <h2 class="govuk-summary-card__title">
+        {{ defendant.lastName }}, {{ defendant.firstName }}
+      </h2>
+    </div>
+
+    <div class="govuk-summary-card__content">
+
+      {# ── Sub-navigation ────────────────────────────────────────────── #}
+      {{ mojSubNavigation({
+        label: "Defendant sub navigation",
+        items: [
+          { text: "Charges",                href: "#", active: true },
+          { text: "Defendant Details",       href: "#" },
+          { text: "Bail & Remand",           href: "#" },
+          { text: "Candidate Court Orders",  href: "#" },
+          { text: "Offences TIC",            href: "#" },
+          { text: "Associated Cases",        href: "#" }
+        ]
+      }) }}
+
+      {# ── Charges table ─────────────────────────────────────────────── #}
+      {#
+        govukTable() is not used here because each charge needs a paired hidden
+        detail <tr> below it — a pattern the macro cannot express.
+        GDS table classes are applied manually to stay consistent with the design system.
+      #}
+      {% if defendant.charges.length %}
+        <table class="govuk-table">
+          <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+              <th class="govuk-table__header" scope="col">Charge code</th>
+              <th class="govuk-table__header" scope="col">Description and status</th>
+              <th class="govuk-table__header" scope="col">Offence date</th>
+              <th class="govuk-table__header" scope="col">Plea or verdict</th>
+              <th class="govuk-table__header" scope="col">
+                <span class="govuk-visually-hidden">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="govuk-table__body">
+
+            {% for charge in defendant.charges %}
+              {% set detailRowId = "charge-detail-" + defendant.id + "-" + charge.id %}
+              {% set victim = mockVictimPool[loop.index0 % mockVictimPool.length] %}
+              {% set pleaDisplay = pleaLabels[charge.plea] or charge.plea %}
+
+              {# Victim cell HTML — built here so it can be used in both
+                 the main row and the detail panel without repetition #}
+              {% if victim %}
+                {% set victimCellHtml %}
+                  {{ victim.name }}
+                {% endset %}
+                {% set victimStatusHtml %}
+                   <strong class="govuk-tag govuk-tag--blue govuk-!-margin-top-1">
+                    {{ victim.status }}
+                  </strong>
+                {% endset %}
+              {% else %}
+                {% set victimCellHtml %}<span class="govuk-hint">Not recorded</span>{% endset %}
+                {% set victimStatusHtml %}<span class="govuk-hint">Not recorded</span>{% endset %}
+              {% endif %}
+
+              {# ── Main charge row ────────────────────────────────────── #}
+              <tr class="govuk-table__row">
+
+                <td class="govuk-table__cell">{{ charge.chargeCode }}</td>
+
+                <td class="govuk-table__cell">
+                  <strong>{{ charge.description }}</strong>
+                  <br>
+                  <strong class="govuk-tag govuk-tag--blue govuk-!-margin-top-1">
+                    {{ charge.status }}
+                  </strong>
+                </td>
+
+                <td class="govuk-table__cell">
+                  {{ charge.offenceDate | date("dd/MM/yy") }}
+                </td>
+
+                <td class="govuk-table__cell">{{ pleaDisplay }}</td>
+
+                <td class="govuk-table__cell govuk-table__cell--numeric">
+                  <a href="#"
+                     class="govuk-link js-charge-toggle"
+                     data-target="{{ detailRowId }}"
+                     aria-expanded="false"
+                     aria-controls="{{ detailRowId }}">
+                    Show
+                    <span class="govuk-visually-hidden">
+                      details for {{ charge.chargeCode }} {{ charge.description }}
+                    </span>
+                  </a>
+                </td>
+
+              </tr>
+
+              {# ── Detail row — hidden by default ─────────────────────── #}
+              <tr class="govuk-table__row" id="{{ detailRowId }}" hidden>
+                <td class="govuk-table__cell" colspan="5">
+
+                    {{ govukSummaryList({
+                      classes: "govuk-!-font-size-16",
+                      rows: [
+                        {
+                          classes: "govuk-summary-list__row--no-border",
+                          key:     { text: "Charge particulars" },
+                          value:   { text: charge.particulars }
+                        },
+                        {
+                          classes: "govuk-summary-list__row--no-border",
+                          key:     { text: "Victim" },
+                          value:   { html: victimCellHtml }
+                        },
+                        {
+                          classes: "govuk-summary-list__row--no-border",
+                          key:     { text: "Status" },
+                          value:   { html: victimStatusHtml }
+                        }
+                      ]
+                    }) }}
+
+                    <div class="govuk-button-group govuk-!-margin-bottom-4">
+                      {{ govukButton({ text: "Mark for withdrawal", classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                      {{ govukButton({ text: "Discontinue",                 classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                      {{ govukButton({ text: "Edit", href: "/cases/" + _case.id + "/charges/" + charge.id + "/edit/date", classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                    </div>
+
+                </td>
+              </tr>
+
+            {% endfor %}
+
+          </tbody>
+        </table>
+
+      {% else %}
+        <p class="govuk-body">No charges recorded for this defendant.</p>
+      {% endif %}
+
+      {# ── Below-table actions ──────────────────────────────────────────── #}
+      <p class="govuk-body">
+        <a href="#" class="govuk-link">Show finalised charges</a>
+      </p>
+
+      {{ govukButton({ text: "Add charges", classes: "govuk-button--secondary" }) }}
+
+    </div>{# /govuk-summary-card__content #}
+  </div>{# /govuk-summary-card #}
+
+{% endfor %}
+
+
+{# ─── Toggle script ───────────────────────────────────────────────────────── #}
+<script>
+(function () {
+  document.querySelectorAll('.js-charge-toggle').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      var detailRow = document.getElementById(this.getAttribute('data-target'));
+      var isOpen    = this.getAttribute('aria-expanded') === 'true';
+
+      detailRow.hidden = isOpen;
+      this.setAttribute('aria-expanded', String(!isOpen));
+      this.firstChild.textContent = isOpen ? 'Show ' : 'Hide ';
+    });
+  });
+})();
+</script>

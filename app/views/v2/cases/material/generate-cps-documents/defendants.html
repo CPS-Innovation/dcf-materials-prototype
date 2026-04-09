@@ -6,7 +6,7 @@
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
 
-{% set pageName = 'Defendant documents' %}
+{% set pageName = 'Defendants' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -23,7 +23,7 @@
         {{ _case.reference }} – Generate CPS documents
       </span>
 
-      <h1 class="govuk-heading-l">Select a defendant</h1>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       {% set docs = caseMaterialsGenerateDocuments or {} %}
       {% set defendants = docs.defendants or [] %}
