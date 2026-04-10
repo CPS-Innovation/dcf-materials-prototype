@@ -4,7 +4,7 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = defendant.firstName + " " + defendant.lastName + " - " + _case.reference %}
+{% set captionName = "Edit charge - " + defendant.firstName + " " + defendant.lastName + " - " + _case.reference %}
 {% set pageName = "Check answers and update charge" %}
 
 {% set base = "/cases/" + _case.id + "/charges/" + charge.id + "/edit" %}
@@ -23,20 +23,23 @@
 
     <div class="govuk-grid-column-two-thirds">
 
-      {# ── Resolve date display ─────────────────────────────────── #}
-      {% if data["correctDate"] == "Yes" %}
-        {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
-      {% elif data["dateType"] == "singleDate" %}
-        {% set dateDisplay = data["offenceDate-day"] + "/" + data["offenceDate-month"] + "/" + data["offenceDate-year"] %}
-      {% elif data["dateType"] == "multipleDates" %}
-        {% set dateDisplay =
-          data["offenceDateFrom-day"] + "/" + data["offenceDateFrom-month"] + "/" + data["offenceDateFrom-year"] +
-          " to " +
-          data["offenceDateTo-day"] + "/" + data["offenceDateTo-month"] + "/" + data["offenceDateTo-year"]
-        %}
-      {% else %}
-        {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
-      {% endif %}
+    {# ── Resolve date display ─────────────────────────────────── #}
+    {% if data["correctDate"] == "Yes" %}
+      {% set dateDisplay = charge.offenceDate | govukDate %}
+
+    {% elif data["dateType"] == "singleDate" %}
+      {% set dateDisplay = data | isoDateFromDateInput("offenceDate") | govukDate %}
+
+    {% elif data["dateType"] == "multipleDates" %}
+      {% set dateDisplay =
+        (data | isoDateFromDateInput("offenceDateFrom") | govukDate) +
+        " to " +
+        (data | isoDateFromDateInput("offenceDateTo") | govukDate)
+      %}
+
+    {% else %}
+      {% set dateDisplay = charge.offenceDate | govukDate %}
+    {% endif %}
 
       {# ── Resolve victim display ───────────────────────────────── #}
       {# Use push to escape Nunjucks loop scope — set inside for/if doesn't leak out #}
