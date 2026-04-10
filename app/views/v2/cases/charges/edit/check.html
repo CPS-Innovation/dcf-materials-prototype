@@ -39,17 +39,12 @@
       {% endif %}
 
       {# ── Resolve victim display ───────────────────────────────── #}
-      {# Use push to escape Nunjucks loop scope — set inside for/if doesn't leak out #}
-      {% if data["victimId"] == "none" %}
+      {% if editCharge.victimId == "none" %}
         {% set victimDisplay = "No victim associated with this charge" %}
+      {% elif editCharge.victimName %}
+        {% set victimDisplay = editCharge.victimName %}
       {% else %}
-        {% set victimArr = [] %}
-        {% for v in witnesses %}
-          {% if v.id == data["victimId"] | int %}
-            {% set _ = victimArr.push(v.firstName + " " + v.lastName) %}
-          {% endif %}
-        {% endfor %}
-        {% set victimDisplay = victimArr[0] if victimArr[0] else "Not recorded" %}
+        {% set victimDisplay = "Not recorded" %}
       {% endif %}
 
       {# ── Resolve particulars display ──────────────────────────── #}
