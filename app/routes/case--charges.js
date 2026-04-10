@@ -1,6 +1,17 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+// ------------------------------------------------------------------
+// Mock victim pool — mirrors defendants.njk until Charge model has
+// real victimId / victimName fields in schema.prisma.
+// Replace with _case.victims once the relation exists.
+const mockVictimPool = [
+  { id: '1', name: 'CARTER, Frank',   status: 'Intimidated' },
+  { id: '2', name: 'JONES, Barry',    status: 'Vulnerable'  },
+  { id: '3', name: 'CAMPBELL, Ellie', status: 'Intimidated' },
+  { id: '4', name: 'PATEL, Sunita',   status: 'Vulnerable'  }
+]
+
 module.exports = router => {
 
   // ------------------------------------------------------------------
@@ -25,8 +36,8 @@ module.exports = router => {
 
   // Resolves the specific charge and its owning defendant from a loaded case.
   function resolveCharge (_case, chargeId) {
-    const id       = parseInt(chargeId, 10)
-    const charge   = _case.defendants.flatMap(d => d.charges).find(c => c.id === id)
+    const id        = parseInt(chargeId, 10)
+    const charge    = _case.defendants.flatMap(d => d.charges).find(c => c.id === id)
     const defendant = _case.defendants.find(d => d.charges.some(c => c.id === id))
     return { charge, defendant }
   }
@@ -123,9 +134,9 @@ module.exports = router => {
 
 
   // ------------------------------------------------------------------
-  // STEP 2 — VICTIM
+  // STEP 2 — VICTIM (confirm current victim)
   // GET  /cases/:caseId/charges/:chargeId/edit/victim
-  // POST /cases/:caseId/charges/:chargeId/edit/victim  →  summary
+  // POST →  summary (Yes) | select-victim (No)
   router.get('/cases/:caseId/charges/:chargeId/edit/victim', async (req, res) => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
@@ -133,17 +144,69 @@ module.exports = router => {
     const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
     if (!charge) return res.status(404).render('not-found')
 
-    return res.render('v2/cases/charges/edit/victim', { _case, charge, defendant, victims: _case.witnesses })
+    // Pull current victim name from session (set when Edit is clicked from
+    // defendants.njk via ?victimName=) or fall back to first mock victim.
+    // Replace with a real DB lookup once Charge has a victimId field.
+    const currentVictimName = req.session.data.editCharge?.victimName
+      || req.query.victimName
+      || mockVictimPool[0].name
+
+    // Persist into session so it survives across steps
+    req.session.data.editCharge = {
+      ...req.session.data.editCharge,
+      victimName: currentVictimName
+    }
+
+    return res.render('v2/cases/charges/edit/victim', {
+      _case,
+      charge,
+      defendant,
+      currentVictimName
+    })
   })
 
   router.post('/cases/:caseId/charges/:chargeId/edit/victim', (req, res) => {
+    const base = `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit`
+    if (req.body.hasVictim === 'Yes') {
+      // Keep existing victim — already stored in session from the GET
+      return res.redirect(`${base}/summary`)
+    }
+    return res.redirect(`${base}/select-victim`)
+  })
+
+
+  // ------------------------------------------------------------------
+  // STEP 2b — SELECT VICTIM
+  // GET  /cases/:caseId/charges/:chargeId/edit/select-victim
+  // POST →  summary
+  router.get('/cases/:caseId/charges/:chargeId/edit/select-victim', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
+    if (!charge) return res.status(404).render('not-found')
+
+    // Exclude the current victim so they don't appear as a selectable option
+    const currentVictimName = req.session.data.editCharge?.victimName || null
+    const availableVictims  = mockVictimPool.filter(v => v.name !== currentVictimName)
+
+    return res.render('v2/cases/charges/edit/select-victim', {
+      _case,
+      charge,
+      defendant,
+      victims: availableVictims
+    })
+  })
+
+  router.post('/cases/:caseId/charges/:chargeId/edit/select-victim', (req, res) => {
+    // Store the newly selected victim name from the mock pool
+    const selectedVictim = mockVictimPool.find(v => v.id === req.body.victimId) || null
     req.session.data.editCharge = {
       ...req.session.data.editCharge,
-      victimId: req.body.victimId
+      victimId:   req.body.victimId,
+      victimName: selectedVictim ? selectedVictim.name : null
     }
-    return res.redirect(
-      `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/summary`
-    )
+    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/summary`)
   })
 
 
@@ -225,8 +288,8 @@ module.exports = router => {
     await prisma.charge.update({
       where: { id: chargeId },
       data: {
-        offenceDate:  editCharge.offenceDate ? new Date(editCharge.offenceDate) : undefined,
-        particulars:  editCharge.particulars  || undefined
+        offenceDate: editCharge.offenceDate ? new Date(editCharge.offenceDate) : undefined,
+        particulars: editCharge.particulars || undefined
         // victimName / victimStatus: add here once fields exist on the Charge model
       }
     })
