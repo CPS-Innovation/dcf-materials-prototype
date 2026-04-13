@@ -1,4 +1,4 @@
-{# app/views/v2/cases/material/generate-cps-documents/defendants-alternative.html #}
+{# app/views/v2/cases/material/generate-cps-documents/defendants.html #}
 
 {% extends "_shared/layouts/main.html" %}
 
@@ -6,7 +6,7 @@
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
 
-{% set pageName = 'Defendant documents' %}
+{% set pageName = 'Defendants' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -17,7 +17,7 @@
 
 {% block content %}
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-one-half-from-desktop">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
 
       <span class="govuk-caption-m">
         {{ _case.reference }} – Generate CPS documents
@@ -28,97 +28,33 @@
       {% set docs = caseMaterialsGenerateDocuments or {} %}
       {% set defendants = docs.defendants or [] %}
 
+      {# Build radios items array (Nunjucks-safe) #}
+      {% set defendantItems = [] %}
+      {% for d in defendants %}
+        {% set defendantItems = (defendantItems.push({
+          value: d.id,
+          text: d.name
+        }), defendantItems) %}
+      {% endfor %}
+
       <form method="post">
 
         <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
-
+        
         {% if defendants.length == 0 %}
           <p class="govuk-body">There are no defendants on this case.</p>
         {% else %}
 
-          {% for d in defendants %}
-
-            <h3 class="govuk-heading-m">{{ d.name }}</h3>
-
-            <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="defendant-{{ d.id }}-">
-              <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                  <th class="govuk-table__header" scope="col" id="defendant-{{ d.id }}-select-all"></th>
-                  <th class="govuk-table__header" scope="col">Document</th>
-                  <th class="govuk-table__header" scope="col">Last generated</th>
-                </tr>
-              </thead>
-              <tbody class="govuk-table__body">
-
-                <tr class="govuk-table__row">
-                  <td class="govuk-table__cell">
-                    <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
-                      <input type="checkbox" class="govuk-checkboxes__input" id="{{ d.id }}-charge-information" name="defendants[{{ d.id }}][documents]" value="charge-information">
-                      <label class="govuk-label govuk-checkboxes__label" for="{{ d.id }}-charge-information">
-                        <span class="govuk-visually-hidden">Select Charge Information</span>
-                      </label>
-                    </div>
-                  </td>
-                  <td class="govuk-table__cell">Charge Information</td>
-                  <td class="govuk-table__cell">Not previously generated</td>
-                </tr>
-
-                <tr class="govuk-table__row">
-                  <td class="govuk-table__cell">
-                    <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
-                      <input type="checkbox" class="govuk-checkboxes__input" id="{{ d.id }}-otic" name="defendants[{{ d.id }}][documents]" value="otic">
-                      <label class="govuk-label govuk-checkboxes__label" for="{{ d.id }}-otic">
-                        <span class="govuk-visually-hidden">Select Offences Taken Into Consideration</span>
-                      </label>
-                    </div>
-                  </td>
-                  <td class="govuk-table__cell">Offences Taken Into Consideration</td>
-                  <td class="govuk-table__cell">Not previously generated</td>
-                </tr>
-
-                <tr class="govuk-table__row">
-                  <td class="govuk-table__cell">
-                    <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
-                      <input type="checkbox" class="govuk-checkboxes__input" id="{{ d.id }}-breach-of-bail" name="defendants[{{ d.id }}][documents]" value="breach-of-bail">
-                      <label class="govuk-label govuk-checkboxes__label" for="{{ d.id }}-breach-of-bail">
-                        <span class="govuk-visually-hidden">Select Breach of Bail Condition</span>
-                      </label>
-                    </div>
-                  </td>
-                  <td class="govuk-table__cell">Breach of Bail Condition</td>
-                  <td class="govuk-table__cell">Not previously generated</td>
-                </tr>
-
-                <tr class="govuk-table__row">
-                  <td class="govuk-table__cell">
-                    <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
-                      <input type="checkbox" class="govuk-checkboxes__input" id="{{ d.id }}-remand-application" name="defendants[{{ d.id }}][documents]" value="remand-application">
-                      <label class="govuk-label govuk-checkboxes__label" for="{{ d.id }}-remand-application">
-                        <span class="govuk-visually-hidden">Select Remand Application</span>
-                      </label>
-                    </div>
-                  </td>
-                  <td class="govuk-table__cell">Remand Application</td>
-                  <td class="govuk-table__cell">Not previously generated</td>
-                </tr>
-
-                <tr class="govuk-table__row">
-                  <td class="govuk-table__cell">
-                    <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
-                      <input type="checkbox" class="govuk-checkboxes__input" id="{{ d.id }}-candidate-court-orders" name="defendants[{{ d.id }}][documents]" value="candidate-court-orders">
-                      <label class="govuk-label govuk-checkboxes__label" for="{{ d.id }}-candidate-court-orders">
-                        <span class="govuk-visually-hidden">Select Candidate Court Orders</span>
-                      </label>
-                    </div>
-                  </td>
-                  <td class="govuk-table__cell">Candidate Court Orders</td>
-                  <td class="govuk-table__cell">Not previously generated</td>
-                </tr>
-
-              </tbody>
-            </table>
-
-          {% endfor %}
+          {{ govukRadios({
+            name: "selectedDefendantId",
+            fieldset: {
+              legend: {
+                text: "Generate documents for",
+                classes: "govuk-fieldset__legend--m govuk-visually-hidden"
+              }
+            },
+            items: defendantItems
+          }) }}
 
         {% endif %}
 
