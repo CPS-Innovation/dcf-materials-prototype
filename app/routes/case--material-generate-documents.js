@@ -101,6 +101,43 @@ module.exports = router => {
 
 
   // -------------------------
+  // STEP 2 (ALT): All defendants on one page, each with their own doc table
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents/defendants-alternative', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    return res.render('v2/cases/material/generate-cps-documents/defendants-alternative', {
+      _case,
+      caseMaterialsGenerateDocuments: getGenerateDocsData(req)
+    })
+  })
+
+  router.post('/cases/:caseId/material/generate-cps-documents/defendants-alternative', (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    ensureWizardState(req)
+
+    // req.body.defendants is keyed by defendant id, e.g. { "3": { documents: ["charge-information", ...] } }
+    const submitted = req.body.defendants || {}
+    const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
+
+    Object.entries(submitted).forEach(([defendantId, value]) => {
+      byDefendant[String(defendantId)] = asArray(value.documents)
+    })
+
+    _.set(req, 'session.data.generateCpsDocuments.defendantDocumentsById', byDefendant)
+
+    const returnUrl = req.query.returnUrl
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witnesses`)
+  })
+
+
+  // -------------------------
   // STEP 2B: Select documents for the chosen defendant (single list)
   // -------------------------
   router.get('/cases/:caseId/material/generate-cps-documents/defendant-documents', async (req, res) => {
