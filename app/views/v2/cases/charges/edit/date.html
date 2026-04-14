@@ -4,8 +4,7 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set pageName = "Is this offence date correct?" %}
-{% set captionName = _case.reference + " - " + defendant.firstName + " " + defendant.lastName %}
+{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -15,27 +14,18 @@
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">{{ pageName }}</h1>
-    </div>
 
-    <div class="govuk-grid-column-two-thirds">
-
-      {{ govukInsetText({
-        text: charge.offenceDate | date("d MMMM yyyy")
-      }) }}
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-
-        
 
         {{ govukRadios({
           name: "correctDate",
           fieldset: {
             legend: {
-              text: "Is this the date of the offence?",
-              classes: "govuk-fieldset__legend--m govuk-visually-hidden"
+              html: '<span class="govuk-caption-m">' + captionName + '</span>Do you want to change the current offence date?',
+              isPageHeading: true,
+              classes: "govuk-fieldset__legend--l"
             }
           },
           items: [
@@ -47,15 +37,17 @@
             {
               value: "No",
               text: "No",
+              hint: {
+                text: "Keep " + charge.offenceDate | date("d MMMM yyyy")
+              },
               checked: data["correctDate"] == "No"
             }
           ]
         }) }}
 
-        
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
-        
+          <a href="#" class="govuk-link">Cancel</a>
         </div>
 
       </form>
