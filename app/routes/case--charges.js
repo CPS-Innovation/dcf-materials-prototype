@@ -178,13 +178,13 @@ module.exports = router => {
     })
   })
 
+  // FIXED
   router.post('/cases/:caseId/charges/:chargeId/edit/victim', (req, res) => {
     const base = `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit`
     if (req.body.hasVictim === 'Yes') {
-      // Keep existing victim — already stored in session from the GET
-      return res.redirect(`${base}/select-victim`)
+      return res.redirect(`${base}/select-victim`)         // ✅ Yes = change victim
     }
-    return res.redirect(`${base}/summary`)
+    return res.redirect(`${base}/summary`)     // ✅ No = keep victim
   })
 
 
@@ -239,9 +239,9 @@ module.exports = router => {
   router.post('/cases/:caseId/charges/:chargeId/edit/summary', (req, res) => {
     const base = `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit`
     if (req.body.chargeParticularsCorrect === 'Yes') {
-      return res.redirect(`${base}/check`)
+      return res.redirect(`${base}/particulars`)
     }
-    return res.redirect(`${base}/particulars`)
+    return res.redirect(`${base}/check`)
   })
 
 

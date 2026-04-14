@@ -23,16 +23,15 @@
     <div class="govuk-grid-column-two-thirds">
 
       {# ── Resolve date display ─────────────────────────────────── #}
-      {% if data["correctDate"] == "Yes" %}
+      {% if data["correctDate"] == "No" %}
         {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
       {% elif data["dateType"] == "singleDate" %}
-        {% set dateDisplay = data["offenceDate-day"] + "/" + data["offenceDate-month"] + "/" + data["offenceDate-year"] %}
+        {% set singleDate = data["offenceDate-year"] + "-" + data["offenceDate-month"] + "-" + data["offenceDate-day"] %}
+        {% set dateDisplay = singleDate | date("d MMMM yyyy") %}
       {% elif data["dateType"] == "multipleDates" %}
-        {% set dateDisplay =
-          data["offenceDateFrom-day"] + "/" + data["offenceDateFrom-month"] + "/" + data["offenceDateFrom-year"] +
-          " to " +
-          data["offenceDateTo-day"] + "/" + data["offenceDateTo-month"] + "/" + data["offenceDateTo-year"]
-        %}
+        {% set dateFrom = data["offenceDateFrom-year"] + "-" + data["offenceDateFrom-month"] + "-" + data["offenceDateFrom-day"] %}
+        {% set dateTo   = data["offenceDateTo-year"]   + "-" + data["offenceDateTo-month"]   + "-" + data["offenceDateTo-day"] %}
+        {% set dateDisplay = (dateFrom | date("d MMMM yyyy")) + " to " + (dateTo | date("d MMMM yyyy")) %}
       {% else %}
         {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
       {% endif %}
@@ -48,9 +47,9 @@
 
       {# ── Resolve particulars display ──────────────────────────── #}
       {% if data["chargeParticularsCorrect"] == "Yes" %}
-        {% set particularsDisplay = charge.particulars %}
-      {% else %}
         {% set particularsDisplay = data["particulars"] %}
+      {% else %}
+        {% set particularsDisplay = charge.particulars %}
       {% endif %}
 
       {{ govukSummaryList({

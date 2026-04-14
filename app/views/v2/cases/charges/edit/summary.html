@@ -16,8 +16,8 @@
     <div class="govuk-grid-column-two-thirds">
 
       {# ── Resolve what has changed ─────────────────────────────── #}
-      {% set dateChanged   = data["correctDate"] == "No" %}
-      {% set victimChanged = data["hasVictim"]   == "No" %}
+      {% set dateChanged   = data["correctDate"] == "Yes" %}
+      {% set victimChanged = data["hasVictim"]   == "Yes" %}
 
       {% if dateChanged or victimChanged %}
         {% if dateChanged and victimChanged %}
@@ -68,6 +68,7 @@
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
+          <a href="#" class="govuk-link">Cancel</a>
         </div>
 
       </form>
