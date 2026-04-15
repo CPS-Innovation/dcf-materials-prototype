@@ -34,7 +34,7 @@
           type: "important",
           html: "<p class=\"govuk-body\">You have edited " + changedText + ". Ensure the particulars reflect the changes.</p>"
         }) }}
-      {% endif %}
+        {% endif %}
 
 
       <form method="post">
@@ -63,11 +63,6 @@
           ]
         }) }}
 
-        {# Show resolved particulars in the inset (for reading) #}
-        {{ govukInsetText({
-          text: particulars
-        }) }}
-
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
@@ -75,6 +70,13 @@
         </div>
 
       </form>
+
+      {{ govukDetails({
+          summaryText: "View charge particulars",
+          classes: "govuk-!-margin-top-5",
+          text: particulars
+        }) }}
+
 
     </div>
   </div>
