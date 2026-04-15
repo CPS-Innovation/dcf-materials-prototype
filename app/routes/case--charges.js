@@ -93,12 +93,24 @@ module.exports = router => {
     if (!_case) return res.status(404).render('not-found')
     const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
     if (!charge) return res.status(404).render('not-found')
+
+    // Capture returnUrl from query string and persist in session
+    if (req.query.returnUrl) {
+      req.session.data.editCharge = {
+        ...req.session.data.editCharge,
+        returnUrl: req.query.returnUrl
+      }
+    }
+
     return res.render('v2/cases/charges/edit/date-type', { _case, charge, defendant })
   })
 
   router.post('/cases/:caseId/charges/:chargeId/edit/date-type', (req, res) => {
     const base = `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit`
     req.session.data.editCharge = { ...req.session.data.editCharge, dateType: req.body.dateType }
+
+    // returnUrl is already in session from the date-type GET — no need to thread it
+    // through the query string. It will survive naturally to single/multiple-date POST.
     if (req.body.dateType === 'singleDate') return res.redirect(`${base}/single-date`)
     return res.redirect(`${base}/multiple-date`)
   })
@@ -107,17 +119,25 @@ module.exports = router => {
   // ------------------------------------------------------------------
   // STEP 1c — SINGLE DATE
   // GET  /cases/:caseId/charges/:chargeId/edit/single-date
-  // POST /cases/:caseId/charges/:chargeId/edit/single-date  →  victim
+  // POST /cases/:caseId/charges/:chargeId/edit/single-date  →  check (returnUrl) | victim
   router.get('/cases/:caseId/charges/:chargeId/edit/single-date', async (req, res) => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
     const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
     if (!charge) return res.status(404).render('not-found')
+
     return res.render('v2/cases/charges/edit/single-date', { _case, charge, defendant })
   })
 
   router.post('/cases/:caseId/charges/:chargeId/edit/single-date', (req, res) => {
     req.session.data.editCharge = { ...req.session.data.editCharge, offenceDate: req.body.offenceDate }
+
+    const returnUrl = req.session.data.editCharge?.returnUrl
+    if (returnUrl) {
+      delete req.session.data.editCharge.returnUrl
+      return res.redirect(returnUrl)
+    }
+
     return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/victim`)
   })
 
@@ -125,12 +145,13 @@ module.exports = router => {
   // ------------------------------------------------------------------
   // STEP 1d — MULTIPLE DATES
   // GET  /cases/:caseId/charges/:chargeId/edit/multiple-date
-  // POST /cases/:caseId/charges/:chargeId/edit/multiple-date  →  victim
+  // POST /cases/:caseId/charges/:chargeId/edit/multiple-date  →  check (returnUrl) | victim
   router.get('/cases/:caseId/charges/:chargeId/edit/multiple-date', async (req, res) => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
     const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
     if (!charge) return res.status(404).render('not-found')
+
     return res.render('v2/cases/charges/edit/multiple-date', { _case, charge, defendant })
   })
 
@@ -140,6 +161,13 @@ module.exports = router => {
       offenceDateFrom: req.body.offenceDateFrom,
       offenceDateTo:   req.body.offenceDateTo
     }
+
+    const returnUrl = req.session.data.editCharge?.returnUrl
+    if (returnUrl) {
+      delete req.session.data.editCharge.returnUrl
+      return res.redirect(returnUrl)
+    }
+
     return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/victim`)
   })
 
@@ -191,13 +219,21 @@ module.exports = router => {
   // ------------------------------------------------------------------
   // STEP 2b — SELECT VICTIM
   // GET  /cases/:caseId/charges/:chargeId/edit/select-victim
-  // POST →  summary
+  // POST →  check (returnUrl) | summary
   router.get('/cases/:caseId/charges/:chargeId/edit/select-victim', async (req, res) => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
 
     const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
     if (!charge) return res.status(404).render('not-found')
+
+    // Capture returnUrl from query string and persist in session
+    if (req.query.returnUrl) {
+      req.session.data.editCharge = {
+        ...req.session.data.editCharge,
+        returnUrl: req.query.returnUrl
+      }
+    }
 
     // Exclude the current victim so they don't appear as a selectable option
     const currentVictimName = req.session.data.editCharge?.victimName || null
@@ -218,6 +254,13 @@ module.exports = router => {
       victimId:   req.body.victimId,
       victimName: selectedVictim ? formatVictimName(selectedVictim.name) : null
     }
+
+    const returnUrl = req.session.data.editCharge?.returnUrl
+    if (returnUrl) {
+      delete req.session.data.editCharge.returnUrl
+      return res.redirect(returnUrl)
+    }
+
     return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/summary`)
   })
 
@@ -248,13 +291,21 @@ module.exports = router => {
   // ------------------------------------------------------------------
   // STEP 3b — PARTICULARS (edit the text)
   // GET  /cases/:caseId/charges/:chargeId/edit/particulars
-  // POST /cases/:caseId/charges/:chargeId/edit/particulars  →  check
+  // POST /cases/:caseId/charges/:chargeId/edit/particulars  →  check (returnUrl) | check
   router.get('/cases/:caseId/charges/:chargeId/edit/particulars', async (req, res) => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
 
     const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
     if (!charge) return res.status(404).render('not-found')
+
+    // Capture returnUrl from query string and persist in session
+    if (req.query.returnUrl) {
+      req.session.data.editCharge = {
+        ...req.session.data.editCharge,
+        returnUrl: req.query.returnUrl
+      }
+    }
 
     return res.render('v2/cases/charges/edit/particulars', { _case, charge, defendant })
   })
@@ -264,6 +315,13 @@ module.exports = router => {
       ...req.session.data.editCharge,
       particulars: req.body.particulars
     }
+
+    const returnUrl = req.session.data.editCharge?.returnUrl
+    if (returnUrl) {
+      delete req.session.data.editCharge.returnUrl
+      return res.redirect(returnUrl)
+    }
+
     return res.redirect(
       `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/check`
     )

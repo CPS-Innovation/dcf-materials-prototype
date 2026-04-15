@@ -59,7 +59,7 @@
             value: { text: dateDisplay },
             actions: {
               items: [{
-                href: base + "/date",
+                href: base + "/date-type?returnUrl=" + base + "/check",
                 text: "Change",
                 visuallyHiddenText: "offence date"
               }]
@@ -70,7 +70,7 @@
             value: { text: victimDisplay },
             actions: {
               items: [{
-                href: base + "/victim",
+                href: base + "/select-victim?returnUrl=" + base + "/check",
                 text: "Change",
                 visuallyHiddenText: "victim"
               }]
@@ -81,7 +81,7 @@
             value: { text: particularsDisplay },
             actions: {
               items: [{
-                href: base + "/summary",
+                href: base + "/particulars?returnUrl=" + base + "/check",
                 text: "Change",
                 visuallyHiddenText: "charge particulars"
               }]
