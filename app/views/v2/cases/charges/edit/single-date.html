@@ -1,11 +1,10 @@
-{# /cases/:caseId/charges/edit/date #}
+{# /cases/:caseId/charges/edit/single-date #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = _case.reference + " - " + defendant.firstName + " " + defendant.lastName %}
-{% set pageName = "Date of offence" %}
+{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -14,42 +13,44 @@
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
   <div class="govuk-grid-row">
-   <div class="govuk-grid-column-two-thirds">
-      <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">{{ pageName }}</h1>
-    </div>
-
     <div class="govuk-grid-column-two-thirds">
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
         {{ govukDateInput({
-            id: "offence-date",
-            namePrefix: "offenceDate",
-            hint: { text: "For example, 27 3 2024" },
-            items: [
-              {
-                name: "day",
-                classes: "govuk-input--width-2",
-                value: data["offenceDate-day"]
-              },
-              {
-                name: "month",
-                classes: "govuk-input--width-2",
-                value: data["offenceDate-month"]
-              },
-              {
-                name: "year",
-                classes: "govuk-input--width-4",
-                value: data["offenceDate-year"]
-              }
-            ]
-          }) }}
+          id: "offence-date",
+          namePrefix: "offenceDate",
+          fieldset: {
+            legend: {
+              html: '<span class="govuk-caption-m">' + captionName + '</span>Date of offence',
+              isPageHeading: true,
+              classes: "govuk-fieldset__legend--l"
+            }
+          },
+          hint: { text: "For example, 27 3 2024" },
+          items: [
+            {
+              name: "day",
+              classes: "govuk-input--width-2",
+              value: data["offenceDate-day"]
+            },
+            {
+              name: "month",
+              classes: "govuk-input--width-2",
+              value: data["offenceDate-month"]
+            },
+            {
+              name: "year",
+              classes: "govuk-input--width-4",
+              value: data["offenceDate-year"]
+            }
+          ]
+        }) }}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
-        
+          <a href="#" class="govuk-link">Cancel</a>
         </div>
 
       </form>

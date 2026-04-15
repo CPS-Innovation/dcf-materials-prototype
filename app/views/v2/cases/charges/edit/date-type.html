@@ -1,11 +1,10 @@
-{# /cases/:caseId/charges/edit/date #}
+{# /cases/:caseId/charges/edit/date-type #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = _case.reference + " - " + defendant.firstName + " " + defendant.lastName %}
-{% set pageName = "When was the offence committed?" %}
+{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -14,44 +13,37 @@
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
   <div class="govuk-grid-row">
-   <div class="govuk-grid-column-two-thirds">
-      <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">{{ pageName }}</h1>
-    </div>
-
     <div class="govuk-grid-column-two-thirds">
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
-        
-
         {{ govukRadios({
           name: "dateType",
           fieldset: {
             legend: {
-              text: "When was the offence committed?",
-              isPageHeading: false,
-              classes: "govuk-fieldset__legend--m govuk-visually-hidden"
+              html: '<span class="govuk-caption-m">' + captionName + '</span>When was the offence committed?',
+              isPageHeading: true,
+              classes: "govuk-fieldset__legend--l"
             }
           },
           items: [
             {
               value: "singleDate",
-              text: "A single date",
+              text: "On a single date",
               checked: data["dateType"] == "singleDate"
             },
             {
               value: "multipleDates",
-              text: "Multiple dates",
+              text: "Across multiple dates",
               checked: data["dateType"] == "multipleDates"
             }
           ]
         }) }}
 
-        
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
+           <a href="#" class="govuk-link">Cancel</a>
         </div>
 
       </form>

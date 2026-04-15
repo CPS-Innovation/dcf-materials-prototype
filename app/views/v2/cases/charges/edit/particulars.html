@@ -4,8 +4,9 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = _case.reference + " - " + defendant.firstName + " " + defendant.lastName %}
-{% set pageName = "Edit particulars" %}
+{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+
+{% set particulars = charge.particulars | replace("[defendant]", defendant.firstName + " " + defendant.lastName) %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -16,35 +17,54 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+      <h1 class="govuk-heading-l">Particulars</h1>
     </div>
 
     <div class="govuk-grid-column-two-thirds">
 
+      {# ── Resolve what has changed ─────────────────────────────── #}
+      {% set dateChanged   = data["correctDate"] == "Yes" %}
+      {% set victimChanged = data["hasVictim"]   == "Yes" %}
+
+      {% if dateChanged or victimChanged %}
+        {% if dateChanged and victimChanged %}
+          {% set changedText = "the charge date and victim" %}
+        {% elif dateChanged %}
+          {% set changedText = "the charge date" %}
+        {% else %}
+          {% set changedText = "the victim" %}
+        {% endif %}
+      {% endif %}
+
       <h3 class="govuk-heading-s">Current particulars</h3>
+
+      {# Show resolved particulars in the inset (for reading) #}
       {{ govukInsetText({
-        text: charge.particulars
+        text: particulars
       }) }}
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
-        
-          {{ govukTextarea({
-            id: "particulars",
-            name: "particulars",
-            rows: 8,
-            label: {
-              text: "New particulars",
-              isPageHeading: false,
-              classes: "govuk-label--s"
-            },
-            value: data["particulars"] or charge.particulars
-          }) }}
-       
-        
+        {# Keep the raw template in the textarea (for editing) #}
+        {{ govukTextarea({
+          id: "particulars",
+          name: "particulars",
+          rows: 8,
+          label: {
+            text: "New particulars",
+            isPageHeading: false,
+            classes: "govuk-label--s"
+          },
+          hint: {
+            text: "You have edited " + changedText + ". Ensure the new particulars reflect the changes."
+          },
+          value: data["particulars"] or particulars
+        }) }}
+
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
+          <a href="#" class="govuk-link">Cancel</a>
         </div>
 
       </form>
@@ -52,6 +72,3 @@
     </div>
   </div>
 {% endblock %}
-
-
-
