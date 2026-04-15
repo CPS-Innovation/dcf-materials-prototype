@@ -30,15 +30,12 @@
           items: [
             {
               value: "Yes",
-              text: "Yes",
+              text: "Yes, change the victim",
               checked: data["hasVictim"] == "Yes"
             },
             {
               value: "No",
-              text: "No",
-              hint: {
-                text: "Keep " + currentVictimName + " as the victim for this offence"
-              },
+              text: "No, keep " + currentVictimName + " as the victim",
               checked: data["hasVictim"] == "No"
             }
           ]

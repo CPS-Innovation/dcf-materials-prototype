@@ -92,7 +92,11 @@
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        {{ govukButton({ text: "Update charge" }) }}
+        
+         <div class="govuk-button-group">
+          {{ govukButton({ text: "Update charge" }) }}
+          <a href="#" class="govuk-link">Cancel</a>
+         </div> 
       </form>
 
     </div>
