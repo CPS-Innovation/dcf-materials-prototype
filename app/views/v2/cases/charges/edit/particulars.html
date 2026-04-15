@@ -6,6 +6,8 @@
 
 {% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
+{% set particulars = charge.particulars | replace("[defendant]", defendant.firstName + " " + defendant.lastName) %}
+
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
   {% include "_shared/_includes/success-banner-safe.njk" %}
@@ -20,14 +22,31 @@
 
     <div class="govuk-grid-column-two-thirds">
 
+      {# ── Resolve what has changed ─────────────────────────────── #}
+      {% set dateChanged   = data["correctDate"] == "Yes" %}
+      {% set victimChanged = data["hasVictim"]   == "Yes" %}
+
+      {% if dateChanged or victimChanged %}
+        {% if dateChanged and victimChanged %}
+          {% set changedText = "the charge date and victim" %}
+        {% elif dateChanged %}
+          {% set changedText = "the charge date" %}
+        {% else %}
+          {% set changedText = "the victim" %}
+        {% endif %}
+      {% endif %}
+
       <h3 class="govuk-heading-s">Current particulars</h3>
+
+      {# Show resolved particulars in the inset (for reading) #}
       {{ govukInsetText({
-        text: charge.particulars
+        text: particulars
       }) }}
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
+        {# Keep the raw template in the textarea (for editing) #}
         {{ govukTextarea({
           id: "particulars",
           name: "particulars",
@@ -37,7 +56,10 @@
             isPageHeading: false,
             classes: "govuk-label--s"
           },
-          value: data["particulars"] or charge.particulars
+          hint: {
+            text: "You have edited " + changedText + ". Ensure the new particulars reflect the changes."
+          },
+          value: data["particulars"] or particulars
         }) }}
 
         <div class="govuk-button-group govuk-!-margin-top-6">

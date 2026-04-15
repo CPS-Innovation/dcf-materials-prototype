@@ -6,6 +6,8 @@
 
 {% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
+{% set particulars = charge.particulars | replace("[defendant]", defendant.firstName + " " + defendant.lastName) %}
+
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
   {% include "_shared/_includes/success-banner-safe.njk" %}
@@ -61,10 +63,11 @@
           ]
         }) }}
 
+        {# Show resolved particulars in the inset (for reading) #}
+        {{ govukInsetText({
+          text: particulars
+        }) }}
 
-          {{ govukInsetText({
-            text: charge.particulars
-          }) }}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
