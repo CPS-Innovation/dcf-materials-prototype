@@ -4,8 +4,9 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = _case.reference + " - " + defendant.firstName + " " + defendant.lastName %}
-{% set pageName = "Are the charge particulars correct?" %}
+{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+
+{% set particulars = charge.particulars | replace("[defendant]", defendant.firstName + " " + defendant.lastName) %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -14,54 +15,69 @@
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
   <div class="govuk-grid-row">
-      <div class="govuk-grid-column-two-thirds">
-      <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">{{ pageName }}</h1>
-    </div>
-
     <div class="govuk-grid-column-two-thirds">
 
-      {{ govukInsetText({
-        text: charge.particulars
-      }) }}
+      {# ── Resolve what has changed ─────────────────────────────── #}
+      {% set dateChanged   = data["correctDate"] == "Yes" %}
+      {% set victimChanged = data["hasVictim"]   == "Yes" %}
+
+      {% if dateChanged or victimChanged %}
+        {% if dateChanged and victimChanged %}
+          {% set changedText = "the charge date and victim" %}
+        {% elif dateChanged %}
+          {% set changedText = "the charge date" %}
+        {% else %}
+          {% set changedText = "the victim" %}
+        {% endif %}
+
+        {{ govukNotificationBanner({
+          type: "important",
+          html: "<p class=\"govuk-body\">You have edited " + changedText + ". Ensure the particulars reflect the changes.</p>"
+        }) }}
+        {% endif %}
+
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-
-        
 
         {{ govukRadios({
           name: "chargeParticularsCorrect",
           fieldset: {
             legend: {
-              text: "Are the charge particulars correct?",
-              classes: "govuk-fieldset__legend--m govuk-visually-hidden"
+              html: '<span class="govuk-caption-m">' + captionName + '</span>Do you want to edit the charge particulars?',
+              isPageHeading: true,
+              classes: "govuk-fieldset__legend--l"
             }
           },
           items: [
             {
               value: "Yes",
-              text: "Yes",
+               text: "Yes, edit the particulars",
               checked: data["chargeParticularsCorrect"] == "Yes"
             },
             {
               value: "No",
-              text: "No",
+              text: "No, keep the particulars as they are",
               checked: data["chargeParticularsCorrect"] == "No"
             }
           ]
         }) }}
 
-        
+
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
+          <a href="#" class="govuk-link">Cancel</a>
         </div>
 
       </form>
 
+      {{ govukDetails({
+          summaryText: "View charge particulars",
+          classes: "govuk-!-margin-top-5",
+          text: particulars
+        }) }}
+
+
     </div>
   </div>
 {% endblock %}
-
-
-

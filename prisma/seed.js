@@ -977,7 +977,7 @@ await seedShowcaseIndictmentCase(prisma, {
         status: faker.helpers.arrayElement(chargeStatuses),
         offenceDate: offenceDate,
         plea: faker.helpers.arrayElement(pleas),
-        particulars: `On the ${particularsDate} ${charge.code === 'B10' ? 'stole' : charge.code === 'A01' ? 'assaulted' : charge.code === 'C03' ? 'damaged property belonging to' : 'committed an offence against'} ${victimName}.`,
+        particulars: `On the ${particularsDate} [defendant] ${charge.code === 'B10' ? 'stole' : charge.code === 'A01' ? 'assaulted' : charge.code === 'C03' ? 'damaged property belonging to' : 'committed an offence against'} ${victimName}.`,
         custodyTimeLimit: ctl,
         statutoryTimeLimit: stl,
         isCount: faker.datatype.boolean(0.3), // 30% are counts

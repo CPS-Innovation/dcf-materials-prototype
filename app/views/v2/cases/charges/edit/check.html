@@ -4,8 +4,7 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = _case.reference + " - " + defendant.firstName + " " + defendant.lastName %}
-{% set pageName = "Check details and update charge" %}
+{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
 {% set base = "/cases/" + _case.id + "/charges/" + charge.id + "/edit" %}
 
@@ -18,22 +17,21 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+      <h1 class="govuk-heading-l">Check details and update charge</h1>
     </div>
 
     <div class="govuk-grid-column-two-thirds">
 
       {# ── Resolve date display ─────────────────────────────────── #}
-      {% if data["correctDate"] == "Yes" %}
+      {% if data["correctDate"] == "No" %}
         {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
       {% elif data["dateType"] == "singleDate" %}
-        {% set dateDisplay = data["offenceDate-day"] + "/" + data["offenceDate-month"] + "/" + data["offenceDate-year"] %}
+        {% set singleDate = data["offenceDate-year"] + "-" + data["offenceDate-month"] + "-" + data["offenceDate-day"] %}
+        {% set dateDisplay = singleDate | date("d MMMM yyyy") %}
       {% elif data["dateType"] == "multipleDates" %}
-        {% set dateDisplay =
-          data["offenceDateFrom-day"] + "/" + data["offenceDateFrom-month"] + "/" + data["offenceDateFrom-year"] +
-          " to " +
-          data["offenceDateTo-day"] + "/" + data["offenceDateTo-month"] + "/" + data["offenceDateTo-year"]
-        %}
+        {% set dateFrom = data["offenceDateFrom-year"] + "-" + data["offenceDateFrom-month"] + "-" + data["offenceDateFrom-day"] %}
+        {% set dateTo   = data["offenceDateTo-year"]   + "-" + data["offenceDateTo-month"]   + "-" + data["offenceDateTo-day"] %}
+        {% set dateDisplay = (dateFrom | date("d MMMM yyyy")) + " to " + (dateTo | date("d MMMM yyyy")) %}
       {% else %}
         {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
       {% endif %}
@@ -49,13 +47,11 @@
 
       {# ── Resolve particulars display ──────────────────────────── #}
       {% if data["chargeParticularsCorrect"] == "Yes" %}
-        {% set particularsDisplay = charge.particulars %}
-      {% else %}
         {% set particularsDisplay = data["particulars"] %}
+      {% else %}
+        {% set particularsDisplay = charge.particulars %}
       {% endif %}
 
-
-      {# ── Summary list ─────────────────────────────────────────── #}
       {{ govukSummaryList({
         rows: [
           {
@@ -63,7 +59,7 @@
             value: { text: dateDisplay },
             actions: {
               items: [{
-                href: base + "/date",
+                href: base + "/date-type?returnUrl=" + base + "/check",
                 text: "Change",
                 visuallyHiddenText: "offence date"
               }]
@@ -74,7 +70,7 @@
             value: { text: victimDisplay },
             actions: {
               items: [{
-                href: base + "/victim",
+                href: base + "/select-victim?returnUrl=" + base + "/check",
                 text: "Change",
                 visuallyHiddenText: "victim"
               }]
@@ -85,7 +81,7 @@
             value: { text: particularsDisplay },
             actions: {
               items: [{
-                href: base + "/summary",
+                href: base + "/particulars?returnUrl=" + base + "/check",
                 text: "Change",
                 visuallyHiddenText: "charge particulars"
               }]
@@ -96,7 +92,11 @@
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        {{ govukButton({ text: "Update charge" }) }}
+        
+         <div class="govuk-button-group">
+          {{ govukButton({ text: "Update charge" }) }}
+          <a href="#" class="govuk-link">Cancel</a>
+         </div> 
       </form>
 
     </div>
