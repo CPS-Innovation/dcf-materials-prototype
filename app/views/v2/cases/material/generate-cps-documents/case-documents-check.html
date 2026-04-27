@@ -1,0 +1,80 @@
+{# app/views/v2/cases/material/generate-cps-documents/case-documents-check.html #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set pageName = 'Check case documents' %}
+
+{% set returnUrl = "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents-check" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+
+      <span class="govuk-caption-m">
+        {{ _case.reference }} – Generate CPS documents
+      </span>
+
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% set docs = caseMaterialsGenerateDocuments or {} %}
+      {% set caseDocs = docs.caseDocuments or [] %}
+      {% set selectedCaseIds = selections.caseDocuments or [] %}
+
+      {% set caseValueHtml %}
+        {% if selectedCaseIds | length == 0 %}
+          <span class="govuk-hint">No case documents selected</span>
+        {% else %}
+          <ul class="govuk-list">
+            {% for selectedId in selectedCaseIds %}
+              {% set label = selectedId %}
+              {% for d in caseDocs %}
+                {% if (d.id | string) == (selectedId | string) %}
+                  {% set label = d.label %}
+                {% endif %}
+              {% endfor %}
+              <li>{{ label }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endset %}
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: { text: "Case documents" },
+            value: { html: caseValueHtml },
+            actions: {
+              items: [
+                {
+                  href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents?returnUrl=" ~ (returnUrl | urlencode),
+                  text: "Change",
+                  visuallyHiddenText: "case documents"
+                }
+              ]
+            }
+          }
+        ]
+      }) }}
+
+      <form method="post">
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Confirm" }) }}
+          <a class="govuk-link" href="/cases/{{ _case.id }}/material/generate-cps-documents">
+            Cancel
+          </a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

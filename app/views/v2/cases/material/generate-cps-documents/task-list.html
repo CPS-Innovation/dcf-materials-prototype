@@ -1,0 +1,77 @@
+{# app/views/v2/cases/material/generate-cps-documents/task-list.html #}
+
+{% extends "_shared/layouts/main.html" %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set pageName = 'Generate CPS documents' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material?tab=view-materials"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">
+        {{ _case.reference }} – Generate CPS documents
+      </span>
+
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ govukTaskList({
+        idPrefix: "generate-cps-docs",
+        items: [
+          {
+            title: { text: "Case documents" },
+            href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents",
+            status: {
+              tag: {
+                text: "Completed" if caseDocsConfirmed else "Not started",
+                classes: "govuk-tag--green" if caseDocsConfirmed else "govuk-tag--grey"
+              }
+            }
+          },
+          {
+            title: { text: "Defendants" },
+            hint: { text: defendantCount ~ " added" } if (defendantCount > 0 and not defendantsConfirmed) else undefined,
+            href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendants",
+            status: {
+              tag: {
+                text: "Completed" if defendantsConfirmed else ("In progress" if defendantCount > 0 else "Not started"),
+                classes: "govuk-tag--green" if defendantsConfirmed else ("govuk-tag--light-blue" if defendantCount > 0 else "govuk-tag--grey")
+              }
+            }
+          },
+          {
+            title: { text: "Witnesses" },
+            hint: { text: witnessCount ~ " added" } if (witnessCount > 0 and not witnessesConfirmed) else undefined,
+            href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witnesses",
+            status: {
+              tag: {
+                text: "Completed" if witnessesConfirmed else ("In progress" if witnessCount > 0 else "Not started"),
+                classes: "govuk-tag--green" if witnessesConfirmed else ("govuk-tag--light-blue" if witnessCount > 0 else "govuk-tag--grey")
+              }
+            }
+          }
+        ]
+      }) }}
+
+      <h2 class="govuk-heading-m govuk-!-margin-top-6">Check and generate</h2>
+
+      <p class="govuk-body">Review your selections before generating documents.</p>
+
+      {{ govukButton({
+        text: "Check documents",
+        href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/check"
+      }) }}
+
+    </div>
+  </div>
+{% endblock %}

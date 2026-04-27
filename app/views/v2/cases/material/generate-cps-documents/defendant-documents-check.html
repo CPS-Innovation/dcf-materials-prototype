@@ -1,0 +1,118 @@
+{# app/views/v2/cases/material/generate-cps-documents/defendant-documents-check.html #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set pageName = 'Check defendant documents' %}
+
+{% set returnUrl = "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendant-documents-check" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+
+      <span class="govuk-caption-m">
+        {{ _case.reference }} – Generate CPS documents
+      </span>
+
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% set docs = caseMaterialsGenerateDocuments or {} %}
+      {% set defendants = docs.defendants or [] %}
+      {% set defendantById = selections.defendantDocumentsById or {} %}
+
+      {% if defendantById and (defendantById | length) %}
+        {% for defId, docIds in defendantById %}
+
+          {% set defName = "Defendant " ~ defId %}
+          {% for d in defendants %}
+            {% if (d.id | string) == (defId | string) %}
+              {% set defName = d.name %}
+            {% endif %}
+          {% endfor %}
+
+          {% set defDocsHtml %}
+            {% if (docIds or []) | length == 0 %}
+              <span class="govuk-hint">No documents selected</span>
+            {% else %}
+              <ul class="govuk-list">
+                {% for did in docIds %}
+                  {% set dlabel = did %}
+                  {% for d in defendants %}
+                    {% if (d.id | string) == (defId | string) %}
+                      {% for dd in (d.documents or []) %}
+                        {% if (dd.id | string) == (did | string) %}
+                          {% set dlabel = dd.label %}
+                        {% endif %}
+                      {% endfor %}
+                    {% endif %}
+                  {% endfor %}
+                  <li>{{ dlabel }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          {% endset %}
+
+          {{ govukSummaryList({
+            rows: [
+              {
+                key: { text: "Name" },
+                value: { text: defName },
+                actions: {
+                  items: [
+                    {
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-defendant?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                      text: "Remove",
+                      visuallyHiddenText: defName
+                    }
+                  ]
+                }
+              },
+              {
+                key: { text: "Documents" },
+                value: { html: defDocsHtml },
+                actions: {
+                  items: [
+                    {
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendant-documents?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                      text: "Change",
+                      visuallyHiddenText: "documents for " ~ defName
+                    }
+                  ]
+                }
+              }
+            ]
+          }) }}
+
+        {% endfor %}
+      {% else %}
+        <p class="govuk-body"><span class="govuk-hint">No defendant documents selected</span></p>
+      {% endif %}
+
+      <p class="govuk-body">
+        <a class="govuk-link" href="/cases/{{ _case.id }}/material/generate-cps-documents/defendants">
+          Add another defendant
+        </a>
+      </p>
+
+      <form method="post">
+        <div class="govuk-button-group govuk-!-margin-top-2">
+          {{ govukButton({ text: "Confirm" }) }}
+          <a class="govuk-link" href="/cases/{{ _case.id }}/material/generate-cps-documents">
+            Cancel
+          </a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

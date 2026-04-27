@@ -12,7 +12,7 @@
 {% block beforeContent %}
   {{ govukBackLink({
     text: "Back",
-    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witness-documents"
+    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents"
   }) }}
 {% endblock %}
 
@@ -124,7 +124,7 @@
                 actions: {
                   items: [
                     {
-                      href: "#",
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-defendant?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
                       text: "Remove",
                       visuallyHiddenText: defName
                     }
@@ -200,7 +200,7 @@
                 actions: {
                   items: [
                     {
-                      href: "#",
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness?witnessId=" ~ witId ~ "&returnUrl=" ~ (returnUrl | urlencode),
                       text: "Remove",
                       visuallyHiddenText: witName
                     }
