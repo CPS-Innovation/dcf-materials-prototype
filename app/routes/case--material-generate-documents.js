@@ -157,6 +157,10 @@ module.exports = router => {
     const docs = getGenerateDocsData(req)
     const defendants = (docs && docs.defendants) ? docs.defendants : []
 
+    if (req.query.defendantId) {
+      _.set(req, 'session.data.generateCpsDocuments.selectedDefendantId', req.query.defendantId)
+    }
+
     const selectedId = _.get(req, 'session.data.generateCpsDocuments.selectedDefendantId', null)
 
     // If they landed here without choosing, bounce them back to the radios step
@@ -262,9 +266,14 @@ module.exports = router => {
     const hasMoreWitnesses = remaining.length > 1
     // ^ "more than one" makes sense on the chooser page; if only one remains you could just auto-redirect, but we’ll keep it simple.
 
+    const filteredDocs = {
+      ...docs,
+      witnesses: (docs.witnesses || []).filter(w => !Object.prototype.hasOwnProperty.call(byWitness, String(w.id)))
+    }
+
     return res.render('v2/cases/material/generate-cps-documents/witnesses', {
       _case,
-      caseMaterialsGenerateDocuments: docs,
+      caseMaterialsGenerateDocuments: filteredDocs,
       hasMoreWitnesses
     })
   })
@@ -293,6 +302,10 @@ module.exports = router => {
 
     const docs = getGenerateDocsData(req)
     const witnesses = (docs && docs.witnesses) ? docs.witnesses : []
+
+    if (req.query.witnessId) {
+      _.set(req, 'session.data.generateCpsDocuments.selectedWitnessId', req.query.witnessId)
+    }
 
     const selectedId = _.get(req, 'session.data.generateCpsDocuments.selectedWitnessId', null)
 

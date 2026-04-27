@@ -124,7 +124,7 @@
                 actions: {
                   items: [
                     {
-                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendants?returnUrl=" ~ (returnUrl | urlencode),
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendant-documents?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
                       text: "Change",
                       visuallyHiddenText: "documents for " ~ defName
                     }
@@ -187,7 +187,7 @@
                 actions: {
                   items: [
                     {
-                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witnesses?returnUrl=" ~ (returnUrl | urlencode),
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witness-documents?witnessId=" ~ witId ~ "&returnUrl=" ~ (returnUrl | urlencode),
                       text: "Change",
                       visuallyHiddenText: "documents for " ~ witName
                     }
