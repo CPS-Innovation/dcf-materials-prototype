@@ -82,9 +82,16 @@ module.exports = router => {
     const _case = await fetchCase(caseId)
     if (!_case) return res.status(404).render('not-found')
 
+    const docs = getGenerateDocsData(req)
+    const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
+    const filteredDocs = {
+      ...docs,
+      defendants: (docs.defendants || []).filter(d => !Object.prototype.hasOwnProperty.call(byDefendant, String(d.id)))
+    }
+
     return res.render('v2/cases/material/generate-cps-documents/defendants', {
       _case,
-      caseMaterialsGenerateDocuments: getGenerateDocsData(req)
+      caseMaterialsGenerateDocuments: filteredDocs
     })
   })
 
