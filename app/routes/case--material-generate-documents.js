@@ -213,6 +213,8 @@ module.exports = router => {
     byDefendant[String(selectedId)] = selectedDocs
     _.set(req, 'session.data.generateCpsDocuments.defendantDocumentsById', byDefendant)
 
+    if (req.body.returnUrl) return res.redirect(req.body.returnUrl)
+
     // Work out if there are any remaining defendants not yet completed (excluding current)
     const remaining = defendants
       .map(d => String(d.id))
@@ -357,6 +359,8 @@ module.exports = router => {
     const byWitness = _.get(req, 'session.data.generateCpsDocuments.witnessDocumentsById', {})
     byWitness[String(selectedId)] = selectedDocs
     _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', byWitness)
+
+    if (req.body.returnUrl) return res.redirect(req.body.returnUrl)
 
     // Remaining witnesses not yet completed (excluding current)
     const remaining = witnesses

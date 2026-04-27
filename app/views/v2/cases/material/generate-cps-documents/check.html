@@ -119,7 +119,20 @@
           {{ govukSummaryList({
             rows: [
               {
-                key: { text: defName },
+                key: { text: "Name" },
+                value: { text: defName },
+                actions: {
+                  items: [
+                    {
+                      href: "#",
+                      text: "Remove",
+                      visuallyHiddenText: defName
+                    }
+                  ]
+                }
+              },
+              {
+                key: { text: "Documents" },
                 value: { html: defDocsHtml },
                 actions: {
                   items: [
@@ -182,7 +195,20 @@
           {{ govukSummaryList({
             rows: [
               {
-                key: { text: witName },
+                key: { text: "Name" },
+                value: { text: witName },
+                actions: {
+                  items: [
+                    {
+                      href: "#",
+                      text: "Remove",
+                      visuallyHiddenText: witName
+                    }
+                  ]
+                }
+              },
+              {
+                key: { text: "Documents" },
                 value: { html: witDocsHtml },
                 actions: {
                   items: [

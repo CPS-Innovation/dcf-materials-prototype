@@ -75,8 +75,8 @@
 
         {% endif %}
 
-        {# Only show the "add another defendant" radios if there is another defendant remaining #}
-        {% if hasMoreDefendants %}
+        {# Only show the "add another defendant" radios if there is another defendant remaining and we are not returning to check #}
+        {% if hasMoreDefendants and not query.returnUrl %}
           {{ govukRadios({
             name: "addAdditionalDefendant",
             fieldset: {
