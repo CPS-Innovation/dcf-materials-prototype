@@ -25,6 +25,11 @@
 
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
+      {% set totalDocCount = caseDocCount + defendantDocCount + witnessDocCount %}
+      <h3 class="govuk-heading-s govuk-!-margin-bottom-6">
+        {{ totalDocCount }} {{ "document" if totalDocCount == 1 else "documents" }} selected
+      </h3>
+
       {{ govukTaskList({
         idPrefix: "generate-cps-docs",
         items: [
