@@ -63,20 +63,19 @@
           {% endset %}
 
           {{ govukSummaryList({
+            card: {
+              title: { text: witName },
+              actions: {
+                items: [
+                  {
+                    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness?witnessId=" ~ witId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                    text: "Remove",
+                    visuallyHiddenText: witName
+                  }
+                ]
+              }
+            },
             rows: [
-              {
-                key: { text: "Name" },
-                value: { text: witName },
-                actions: {
-                  items: [
-                    {
-                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness?witnessId=" ~ witId ~ "&returnUrl=" ~ (returnUrl | urlencode),
-                      text: "Remove",
-                      visuallyHiddenText: witName
-                    }
-                  ]
-                }
-              },
               {
                 key: { text: "Documents" },
                 value: { html: witDocsHtml },

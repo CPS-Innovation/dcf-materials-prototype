@@ -8,7 +8,7 @@
     {
       "id": "confidential_information",
       "label": "Confidential Information",
-      "lastGenerated": "2024-09-24T12:32:00"
+      "lastGenerated": null
     },
     {
       "id": "action_plan",
@@ -18,7 +18,7 @@
     {
       "id": "case_review",
       "label": "Case Review",
-      "lastGenerated": "2024-09-24T12:32:00"
+      "lastGenerated": null
     }
   ],
   "defendants": [
@@ -39,7 +39,7 @@
         {
           "id": "breach_of_bail_condition",
           "label": "Breach of Bail Condition",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         },
         {
           "id": "remand_application",
@@ -49,7 +49,7 @@
         {
           "id": "candidate_court_orders",
           "label": "Candidate Court Orders",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         }
       ]
     },
@@ -65,7 +65,7 @@
         {
           "id": "candidate_court_orders",
           "label": "Candidate Court Orders",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         }
       ]
     },
@@ -76,7 +76,7 @@
         {
           "id": "charge_information",
           "label": "Charge Information",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         },
         {
           "id": "remand_application",
@@ -102,7 +102,7 @@
         {
           "id": "offences_taken_into_consideration",
           "label": "Offences Taken Into Consideration",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         },
         {
           "id": "candidate_court_orders",
@@ -118,12 +118,12 @@
         {
           "id": "charge_information",
           "label": "Charge Information",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         },
         {
           "id": "candidate_court_orders",
           "label": "Candidate Court Orders",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         },
         {
           "id": "remand_application",
@@ -144,7 +144,7 @@
         {
           "id": "breach_of_bail_condition",
           "label": "Breach of Bail Condition",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         }
       ]
     },
@@ -176,12 +176,12 @@
         {
           "id": "charge_information",
           "label": "Charge Information",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         },
         {
           "id": "remand_application",
           "label": "Remand Application",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         },
         {
           "id": "breach_of_bail_condition",
@@ -207,7 +207,7 @@
         {
           "id": "candidate_court_orders",
           "label": "Candidate Court Orders",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         }
       ]
     },
@@ -223,7 +223,7 @@
         {
           "id": "offences_taken_into_consideration",
           "label": "Offences Taken Into Consideration",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         },
         {
           "id": "remand_application",
@@ -273,7 +273,7 @@
         {
           "id": "witness_special_measures",
           "label": "Witness Special Measures",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         }
       ]
     },
@@ -306,7 +306,7 @@
         {
           "id": "witness_special_measures",
           "label": "Witness Special Measures",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         }
       ]
     },
@@ -339,7 +339,7 @@
         {
           "id": "witness_special_measures",
           "label": "Witness Special Measures",
-          "lastGenerated": "2024-09-24T12:32:00"
+          "lastGenerated": null
         }
       ]
     },

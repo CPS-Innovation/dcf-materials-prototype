@@ -132,8 +132,10 @@ $dcf-muted:        #505a5f;
 }
 
 .dcf-material-card__title {
-  margin: 0 0 6px;     // was 0 0 3px – gives more space under the title
+  margin: 0 0 6px;
   font-size: 19px;
+  font-weight: normal;
+  color: $dcf-title-blue;
 
   a {
     color: $dcf-title-blue;

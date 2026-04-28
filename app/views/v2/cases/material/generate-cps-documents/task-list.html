@@ -20,7 +20,7 @@
     <div class="govuk-grid-column-two-thirds">
 
       <span class="govuk-caption-m">
-        {{ _case.reference }} – Generate CPS documents
+        {{ _case.reference }} - Generate CPS documents
       </span>
 
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
@@ -32,32 +32,21 @@
             title: { text: "Case documents" },
             href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents",
             status: {
-              tag: {
-                text: "Completed" if caseDocsConfirmed else "Not started",
-                classes: "govuk-tag--green" if caseDocsConfirmed else "govuk-tag--grey"
-              }
+              text: caseDocCount ~ " document" ~ ("s" if caseDocCount != 1 else "")
             }
           },
           {
-            title: { text: "Defendants" },
-            hint: { text: defendantCount ~ " added" } if (defendantCount > 0 and not defendantsConfirmed) else undefined,
+            title: { text: "Defendant documents" },
             href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendants",
             status: {
-              tag: {
-                text: "Completed" if defendantsConfirmed else ("In progress" if defendantCount > 0 else "Not started"),
-                classes: "govuk-tag--green" if defendantsConfirmed else ("govuk-tag--light-blue" if defendantCount > 0 else "govuk-tag--grey")
-              }
+              text: defendantDocCount ~ " document" ~ ("s" if defendantDocCount != 1 else "")
             }
           },
           {
-            title: { text: "Witnesses" },
-            hint: { text: witnessCount ~ " added" } if (witnessCount > 0 and not witnessesConfirmed) else undefined,
+            title: { text: "Witness documents" },
             href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witnesses",
             status: {
-              tag: {
-                text: "Completed" if witnessesConfirmed else ("In progress" if witnessCount > 0 else "Not started"),
-                classes: "govuk-tag--green" if witnessesConfirmed else ("govuk-tag--light-blue" if witnessCount > 0 else "govuk-tag--grey")
-              }
+              text: witnessDocCount ~ " document" ~ ("s" if witnessDocCount != 1 else "")
             }
           }
         ]

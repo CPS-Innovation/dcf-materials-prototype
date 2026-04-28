@@ -59,9 +59,12 @@
       {% endset %}
 
       {{ govukSummaryList({
+        card: {
+          title: { text: "Case documents" }
+        },
         rows: [
           {
-            key: { text: "Case documents" },
+            key: { text: "Documents" },
             value: { html: caseValueHtml },
             actions: {
               items: [
@@ -117,20 +120,19 @@
           {% endset %}
 
           {{ govukSummaryList({
+            card: {
+              title: { text: defName },
+              actions: {
+                items: [
+                  {
+                    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-defendant?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                    text: "Remove",
+                    visuallyHiddenText: defName
+                  }
+                ]
+              }
+            },
             rows: [
-              {
-                key: { text: "Name" },
-                value: { text: defName },
-                actions: {
-                  items: [
-                    {
-                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-defendant?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
-                      text: "Remove",
-                      visuallyHiddenText: defName
-                    }
-                  ]
-                }
-              },
               {
                 key: { text: "Documents" },
                 value: { html: defDocsHtml },
@@ -193,20 +195,19 @@
           {% endset %}
 
           {{ govukSummaryList({
+            card: {
+              title: { text: witName },
+              actions: {
+                items: [
+                  {
+                    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness?witnessId=" ~ witId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                    text: "Remove",
+                    visuallyHiddenText: witName
+                  }
+                ]
+              }
+            },
             rows: [
-              {
-                key: { text: "Name" },
-                value: { text: witName },
-                actions: {
-                  items: [
-                    {
-                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness?witnessId=" ~ witId ~ "&returnUrl=" ~ (returnUrl | urlencode),
-                      text: "Remove",
-                      visuallyHiddenText: witName
-                    }
-                  ]
-                }
-              },
               {
                 key: { text: "Documents" },
                 value: { html: witDocsHtml },

@@ -1,7 +1,7 @@
 {# ----- Layout ---- call the material-panel macro below ----- #}
 
 {% block content %}
-  {{ appMaterialPanel({ caseMaterials: data.caseMaterials }) }}
+  {{ appMaterialPanel({ caseMaterials: data.caseMaterials, generateDocuments: generateDocuments }) }}
 
   {# Notes side-tray modal for materials viewer #}
   {% include "_shared/_includes/case/material/notes-modal.njk" %}
