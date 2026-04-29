@@ -121,6 +121,12 @@ module.exports = router => {
 
     ensureWizardState(req)
     _.set(req, 'session.data.generateCpsDocuments.caseDocsConfirmed', true)
+
+    const count = (_.get(req, 'session.data.generateCpsDocuments.caseDocuments') || []).length
+    _.set(req, 'session.data.successBanner', {
+      text: `${count} case ${count === 1 ? 'document' : 'documents'} added`
+    })
+
     return res.redirect(`/cases/${caseId}/material/generate-cps-documents`)
   })
 
@@ -157,7 +163,8 @@ module.exports = router => {
     _.set(req, 'session.data.generateCpsDocuments.selectedDefendantId', req.body.selectedDefendantId || null)
 
     const returnUrl = req.query.returnUrl
-    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents`)
+    const next = `/cases/${caseId}/material/generate-cps-documents/defendant-documents`
+    return res.redirect(returnUrl ? `${next}?returnUrl=${encodeURIComponent(returnUrl)}` : next)
   })
 
 
@@ -368,6 +375,13 @@ module.exports = router => {
 
     ensureWizardState(req)
     _.set(req, 'session.data.generateCpsDocuments.defendantsConfirmed', true)
+
+    const byDef = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById') || {}
+    const count = Object.values(byDef).reduce((sum, docs) => sum + docs.length, 0)
+    _.set(req, 'session.data.successBanner', {
+      text: `${count} defendant ${count === 1 ? 'document' : 'documents'} added`
+    })
+
     return res.redirect(`/cases/${caseId}/material/generate-cps-documents`)
   })
 
@@ -414,7 +428,8 @@ module.exports = router => {
     _.set(req, 'session.data.generateCpsDocuments.selectedWitnessId', req.body.selectedWitnessId || null)
 
     const returnUrl = req.query.returnUrl
-    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents`)
+    const next = `/cases/${caseId}/material/generate-cps-documents/witness-documents`
+    return res.redirect(returnUrl ? `${next}?returnUrl=${encodeURIComponent(returnUrl)}` : next)
   })
 
 
@@ -541,6 +556,13 @@ module.exports = router => {
 
     ensureWizardState(req)
     _.set(req, 'session.data.generateCpsDocuments.witnessesConfirmed', true)
+
+    const byWit = _.get(req, 'session.data.generateCpsDocuments.witnessDocumentsById') || {}
+    const count = Object.values(byWit).reduce((sum, docs) => sum + docs.length, 0)
+    _.set(req, 'session.data.successBanner', {
+      text: `${count} witness ${count === 1 ? 'document' : 'documents'} added`
+    })
+
     return res.redirect(`/cases/${caseId}/material/generate-cps-documents`)
   })
 

@@ -154,6 +154,10 @@
         <p class="govuk-body"><span class="govuk-hint">No defendant documents selected</span></p>
       {% endif %}
 
+      <div class="govuk-button-group">
+        <a href="/cases/{{ _case.id }}/material/generate-cps-documents/defendants?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Add another defendant</a>
+      </div>
+
       {# -----------------------------
          WITNESS DOCUMENTS
          ----------------------------- #}
@@ -228,6 +232,10 @@
       {% else %}
         <p class="govuk-body"><span class="govuk-hint">No witness documents selected</span></p>
       {% endif %}
+
+      <div class="govuk-button-group">
+        <a href="/cases/{{ _case.id }}/material/generate-cps-documents/witnesses?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Add another witness</a>
+      </div>
 
       <form method="post">
         <div class="govuk-button-group govuk-!-margin-top-6">

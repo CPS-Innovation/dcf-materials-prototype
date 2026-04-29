@@ -6,8 +6,6 @@
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
 
-
-
 {% set pageName = 'Case documents' %}
 
 {% block beforeContent %}
@@ -17,90 +15,53 @@
   }) }}
 {% endblock %}
 
-
 {% block content %}
 
   {% include "_shared/_includes/success-banner-safe.njk" %}
 
-  {% if successBanner %}
-    {{ govukNotificationBanner({
-      type: "success",
-      titleText: successBanner.titleText or "Success",
-      text: successBanner.text or ""
-    }) }}
-  {% endif %}
-
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-one-half">
+    <div class="govuk-grid-column-two-thirds">
 
-           <span class="govuk-caption-m">{{_case.reference}} - Generate CPS documents</span>
-          <h1 class="govuk-heading-l">{{ pageName }}</h1>
-      
+      <span class="govuk-caption-m">{{ _case.reference }} - Generate CPS documents</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
-        {# Case documents wizard step (case-level only) #}
+      {% set docs = caseMaterialsGenerateDocuments or data.caseMaterialsGenerateDocuments or {} %}
+      {% set caseDocs = docs.caseDocuments or [] %}
 
-        {% set docs = caseMaterialsGenerateDocuments or data.caseMaterialsGenerateDocuments or {} %}
-        {% set caseDocs = docs.caseDocuments or [] %}
+      {% set checkboxItems = [] %}
+      {% for doc in caseDocs %}
+        {# {% set hintText = ("Last generated: " + doc.lastGenerated) if doc.lastGenerated else "Not previously generated" %} #}
+        {% set checkboxItems = (checkboxItems.push({
+          value: doc.id,
+          text: doc.label,
+          hint: { text: hintText }
+        }), checkboxItems) %}
+      {% endfor %}
 
-        <form method="post" action="">
-          <table class="govuk-table" data-module="moj-multi-select" data-id-prefix="case-docs-">
-            <thead class="govuk-table__head">
-              <tr class="govuk-table__row">
-                <th class="govuk-table__header" scope="col" id="case-docs-select-all"></th>
-                <th scope="col" class="govuk-table__header govuk-!-width-one-thirds">Document</th>
-                <th scope="col" class="govuk-table__header govuk-!-width-two-thirds">Document last generated</th>
-              </tr>
-            </thead>
+      <form method="post" action="">
 
-            <tbody class="govuk-table__body">
-              {% for doc in caseDocs %}
-                <tr class="govuk-table__row">
-                  <td class="govuk-table__cell">
-                    {# IMPORTANT: moj-multi-select__checkbox is on the wrapper, not the input #}
-                    <div class="govuk-checkboxes__item govuk-checkboxes--small moj-multi-select__checkbox">
-                      <input
-                        type="checkbox"
-                        class="govuk-checkboxes__input"
-                        name="selectedDocuments"
-                        value="{{ doc.id }}"
-                        id="case-docs-{{ doc.id }}">
-                      <label class="govuk-label govuk-checkboxes__label" for="case-docs-{{ doc.id }}">
-                        <span class="govuk-visually-hidden">Select {{ doc.label }}</span>
-                      </label>
-                    </div>
-                  </td>
+        {% if caseDocs.length == 0 %}
+          <p class="govuk-body">There are no case documents available.</p>
+        {% else %}
+          {{ govukCheckboxes({
+            name: "selectedDocuments",
+            fieldset: {
+              legend: {
+                text: "Select the documents you want to generate",
+                classes: "govuk-fieldset__legend--m govuk-visually-hidden"
+              }
+            },
+            items: checkboxItems
+          }) }}
+        {% endif %}
 
-                  <td class="govuk-table__cell">
-                    {{ doc.label }}
-                  </td>
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Continue" }) }}
+          <a class="govuk-link" href="/cases/{{ _case.id }}/material?tab=view-materials">Cancel</a>
+        </div>
 
-                  <td class="govuk-table__cell">
-                    {% if doc.lastGenerated %}
-                      {{ doc.lastGenerated | govukDate }}
-                    {% else %}
-                      <span class="govuk-hint">Not generated</span>
-                    {% endif %}
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-
-          <div class="govuk-button-group">
-            {{ govukButton({
-              text: "Continue"
-            }) }}
-
-           <a class="govuk-link" href="/cases/{{ _case.id }}/material?tab=view-materials">Cancel</a>
-
-           <a class="govuk-link" href="/cases/{{ _case.id }}/material/generate-cps-documents/defendants-alternative">Alternative defendants page</a>
-          </div>
-
-        </form>
-
+      </form>
 
     </div>
   </div>
 {% endblock %}
-
-

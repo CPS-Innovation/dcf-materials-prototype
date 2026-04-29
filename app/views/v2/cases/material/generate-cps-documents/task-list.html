@@ -19,6 +19,8 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
+      {% include "_shared/_includes/success-banner-safe.njk" %}
+
       <span class="govuk-caption-m">
         {{ _case.reference }} - Generate CPS documents
       </span>
@@ -29,6 +31,8 @@
       <h3 class="govuk-heading-s govuk-!-margin-bottom-6">
         {{ totalDocCount }} {{ "document" if totalDocCount == 1 else "documents" }} selected
       </h3>
+
+      
 
       {{ govukTaskList({
         idPrefix: "generate-cps-docs",
