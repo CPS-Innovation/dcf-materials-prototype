@@ -55,6 +55,69 @@ module.exports = router => {
 
 
   // ------------------------------------------------------------------
+  // NEW FLOW ENTRY — /cases/:caseId/charges/edit/check
+  // Starting point for the new proposed charge edit flow (no chargeId in path).
+  router.get('/cases/:caseId/charges/edit/check', async (req, res) => {
+    const caseId = req.params.caseId
+    const _case = await getCaseWithCharges(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    // Persist chargeId in session so downstream pages (particulars etc.) can resolve it
+    if (req.query.chargeId) {
+      req.session.data.editCharge = { ...req.session.data.editCharge, chargeId: req.query.chargeId }
+    }
+
+    const editCharge = req.session.data.editCharge || {}
+
+    const { charge, defendant } = editCharge.chargeId
+      ? resolveCharge(_case, editCharge.chargeId)
+      : { charge: {}, defendant: {} }
+
+    return res.render('v2/cases/charges/edit/check', {
+      _case,
+      charge,
+      defendant,
+      editCharge,
+      witnesses: _case.witnesses,
+      base: `/cases/${caseId}/charges/edit`
+    })
+  })
+
+  // ------------------------------------------------------------------
+  // NEW FLOW — PARTICULARS  /cases/:caseId/charges/edit/particulars
+  router.get('/cases/:caseId/charges/edit/particulars', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const editCharge = req.session.data.editCharge || {}
+    const { charge, defendant } = editCharge.chargeId
+      ? resolveCharge(_case, editCharge.chargeId)
+      : { charge: {}, defendant: {} }
+
+    if (req.query.returnUrl) {
+      req.session.data.editCharge = { ...editCharge, returnUrl: req.query.returnUrl }
+    }
+
+    return res.render('v2/cases/charges/edit/particulars', { _case, charge, defendant })
+  })
+
+  router.post('/cases/:caseId/charges/edit/particulars', (req, res) => {
+    req.session.data.editCharge = {
+      ...req.session.data.editCharge,
+      particulars: req.body.particulars
+    }
+
+    const returnUrl = req.session.data.editCharge?.returnUrl
+    if (returnUrl) {
+      delete req.session.data.editCharge.returnUrl
+      return res.redirect(returnUrl)
+    }
+
+    return res.redirect(`/cases/${req.params.caseId}/charges/edit/check`)
+  })
+
+
+  // ------------------------------------------------------------------
   // STEP 1 — DATE
   // GET  /cases/:caseId/charges/:chargeId/edit/date
   // POST /cases/:caseId/charges/:chargeId/edit/date  →  victim

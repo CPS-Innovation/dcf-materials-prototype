@@ -4,9 +4,9 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+{% set captionName = charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
-{% set base = "/cases/" + _case.id + "/charges/" + charge.id + "/edit" %}
+{% set base = base or ("/cases/" + _case.id + "/charges/" + charge.id + "/edit") %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -17,7 +17,7 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">Check details and update charge</h1>
+      <h1 class="govuk-heading-l">Edit charge</h1>
     </div>
 
     <div class="govuk-grid-column-two-thirds">
@@ -49,7 +49,7 @@
       {% if data["chargeParticularsCorrect"] == "Yes" %}
         {% set particularsDisplay = data["particulars"] %}
       {% else %}
-        {% set particularsDisplay = charge.particulars %}
+        {% set particularsDisplay = charge.particulars | replace("[defendant]", defendant.firstName + " " + defendant.lastName) %}
       {% endif %}
 
       {{ govukSummaryList({
