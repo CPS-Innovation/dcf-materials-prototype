@@ -40,10 +40,17 @@
          CASE DOCUMENTS
          ----------------------------- #}
 
-      {% set caseValueHtml %}
-        {% if selectedCaseIds | length == 0 %}
-          <span class="govuk-hint">No case documents selected</span>
-        {% else %}
+      {% if selectedCaseIds | length == 0 %}
+
+        <h2 class="govuk-heading-m govuk-!-margin-top-6">Case documents</h2>
+        <p class="govuk-body govuk-hint">No case documents selected</p>
+        <div class="govuk-button-group">
+          <a href="/cases/{{ _case.id }}/material/generate-cps-documents/case-documents?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Add case documents</a>
+        </div>
+
+      {% else %}
+
+        {% set caseValueHtml %}
           <ul class="govuk-list">
             {% for selectedId in selectedCaseIds %}
               {% set label = selectedId %}
@@ -55,29 +62,30 @@
               <li>{{ label }}</li>
             {% endfor %}
           </ul>
-        {% endif %}
-      {% endset %}
+        {% endset %}
 
-      {{ govukSummaryList({
-        card: {
-          title: { text: "Case documents" }
-        },
-        rows: [
-          {
-            key: { text: "Documents" },
-            value: { html: caseValueHtml },
-            actions: {
-              items: [
-                {
-                  href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents?returnUrl=" ~ (returnUrl | urlencode),
-                  text: "Change",
-                  visuallyHiddenText: "case documents"
-                }
-              ]
+        {{ govukSummaryList({
+          card: {
+            title: { text: "Case documents" }
+          },
+          rows: [
+            {
+              key: { text: "Documents" },
+              value: { html: caseValueHtml },
+              actions: {
+                items: [
+                  {
+                    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents?returnUrl=" ~ (returnUrl | urlencode),
+                    text: "Change",
+                    visuallyHiddenText: "case documents"
+                  }
+                ]
+              }
             }
-          }
-        ]
-      }) }}
+          ]
+        }) }}
+
+      {% endif %}
 
       {# -----------------------------
          DEFENDANT DOCUMENTS
