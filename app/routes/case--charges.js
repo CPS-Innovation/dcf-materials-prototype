@@ -39,7 +39,7 @@ module.exports = router => {
           }
         },
         location: true,
-        victims: true,
+        victims: { orderBy: { id: 'asc' } },
         witnesses: true
       }
     })
@@ -62,9 +62,10 @@ module.exports = router => {
     const _case = await getCaseWithCharges(caseId)
     if (!_case) return res.status(404).render('not-found')
 
-    // Persist chargeId in session so downstream pages (particulars etc.) can resolve it
+    // Always start fresh when entering edit from the charge list (prevents stale session leaking
+    // victim/particulars from a previously abandoned edit into this new one).
     if (req.query.chargeId) {
-      req.session.data.editCharge = { ...req.session.data.editCharge, chargeId: req.query.chargeId }
+      req.session.data.editCharge = { chargeId: req.query.chargeId }
     }
 
     const editCharge = req.session.data.editCharge || {}

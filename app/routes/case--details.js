@@ -49,7 +49,7 @@ module.exports = router => {
             charges: { include: { victim: true } }
           }
         },
-        victims: true,
+        victims: { orderBy: { id: 'asc' } },
         witnesses: {
           include: {
             statements: true,
@@ -163,7 +163,7 @@ module.exports = router => {
             charges: { include: { victim: true } }
           }
         },
-        victims: true,
+        victims: { orderBy: { id: 'asc' } },
         witnesses: {
           include: {
             statements: true,
