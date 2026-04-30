@@ -23,8 +23,7 @@
         {% for victim in victims %}
           {% set _ = victimItems.push({
             value: victim.id | string,
-            text: victim.name,
-            hint: { text: victim.status },
+            text: victim.firstName + " " + victim.lastName,
             checked: data["victimId"] == victim.id | string
           }) %}
         {% endfor %}

@@ -46,7 +46,7 @@ module.exports = router => {
         defendants: {
           include: {
             defenceLawyer: true,
-            charges: true
+            charges: { include: { victim: true } }
           }
         },
         victims: true,
@@ -160,7 +160,7 @@ module.exports = router => {
         defendants: {
           include: {
             defenceLawyer: true,
-            charges: true
+            charges: { include: { victim: true } }
           }
         },
         victims: true,

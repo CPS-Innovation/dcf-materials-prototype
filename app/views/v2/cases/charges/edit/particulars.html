@@ -6,7 +6,9 @@
 
 {% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
-{% set particulars = charge.particulars | replace("[defendant]", defendant.firstName + " " + defendant.lastName) %}
+{% set particulars = charge.particulars
+  | replace("[defendant]", defendant.firstName + " " + defendant.lastName)
+  | replace("[victim]", victimName if victimName else "") %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -26,14 +28,14 @@
       {% set dateChanged   = data["correctDate"] == "Yes" %}
       {% set victimChanged = data["hasVictim"]   == "Yes" %}
 
-      {% if dateChanged or victimChanged %}
-        {% if dateChanged and victimChanged %}
-          {% set changedText = "the charge date and victim" %}
-        {% elif dateChanged %}
-          {% set changedText = "the charge date" %}
-        {% else %}
-          {% set changedText = "the victim" %}
-        {% endif %}
+      {% if dateChanged and victimChanged %}
+        {% set changedText = "the charge date and victim" %}
+      {% elif dateChanged %}
+        {% set changedText = "the charge date" %}
+      {% elif victimChanged %}
+        {% set changedText = "the victim" %}
+      {% else %}
+        {% set changedText = "the charge particulars" %}
       {% endif %}
 
       <h3 class="govuk-heading-s">Current particulars</h3>
