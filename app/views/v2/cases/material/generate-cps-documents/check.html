@@ -175,36 +175,12 @@
       {% if witnessById and (witnessById | length) %}
         {% for witId, docIds in witnessById %}
 
-          {# Find witness name #}
           {% set witName = "Witness " ~ witId %}
           {% for w in witnesses %}
             {% if (w.id | string) == (witId | string) %}
               {% set witName = w.name %}
             {% endif %}
           {% endfor %}
-
-          {% set witDocsHtml %}
-            {% if (docIds or []) | length == 0 %}
-              <span class="govuk-hint">No documents selected</span>
-            {% else %}
-              <ul class="govuk-list">
-                {% for wid in docIds %}
-                  {% set wlabel = wid %}
-                  {# Find the doc label within the matched witness's documents #}
-                  {% for w in witnesses %}
-                    {% if (w.id | string) == (witId | string) %}
-                      {% for wd in (w.documents or []) %}
-                        {% if (wd.id | string) == (wid | string) %}
-                          {% set wlabel = wd.label %}
-                        {% endif %}
-                      {% endfor %}
-                    {% endif %}
-                  {% endfor %}
-                  <li>{{ wlabel }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-          {% endset %}
 
           {{ govukSummaryList({
             card: {
@@ -221,14 +197,14 @@
             },
             rows: [
               {
-                key: { text: "Documents" },
-                value: { html: witDocsHtml },
+                key: { text: "Document" },
+                value: { text: "Witness Special Measures" },
                 actions: {
                   items: [
                     {
-                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witness-documents?witnessId=" ~ witId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witnesses?returnUrl=" ~ (returnUrl | urlencode),
                       text: "Change",
-                      visuallyHiddenText: "documents for " ~ witName
+                      visuallyHiddenText: "witness selection"
                     }
                   ]
                 }
@@ -238,11 +214,11 @@
 
         {% endfor %}
       {% else %}
-        <p class="govuk-body"><span class="govuk-hint">No witness documents selected</span></p>
+        <p class="govuk-body"><span class="govuk-hint">No witnesses selected</span></p>
       {% endif %}
 
       <div class="govuk-button-group">
-        <a href="/cases/{{ _case.id }}/material/generate-cps-documents/witnesses?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Add another witness</a>
+        <a href="/cases/{{ _case.id }}/material/generate-cps-documents/witnesses?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Change witness selection</a>
       </div>
 
       <form method="post">

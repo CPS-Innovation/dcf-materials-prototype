@@ -32,11 +32,6 @@
           "lastGenerated": null
         },
         {
-          "id": "offences_taken_into_consideration",
-          "label": "Offences Taken Into Consideration",
-          "lastGenerated": null
-        },
-        {
           "id": "breach_of_bail_condition",
           "label": "Breach of Bail Condition",
           "lastGenerated": null
@@ -100,11 +95,6 @@
           "lastGenerated": null
         },
         {
-          "id": "offences_taken_into_consideration",
-          "label": "Offences Taken Into Consideration",
-          "lastGenerated": null
-        },
-        {
           "id": "candidate_court_orders",
           "label": "Candidate Court Orders",
           "lastGenerated": null
@@ -155,11 +145,6 @@
         {
           "id": "charge_information",
           "label": "Charge Information",
-          "lastGenerated": null
-        },
-        {
-          "id": "offences_taken_into_consideration",
-          "label": "Offences Taken Into Consideration",
           "lastGenerated": null
         },
         {
@@ -218,11 +203,6 @@
         {
           "id": "charge_information",
           "label": "Charge Information",
-          "lastGenerated": null
-        },
-        {
-          "id": "offences_taken_into_consideration",
-          "label": "Offences Taken Into Consideration",
           "lastGenerated": null
         },
         {
