@@ -5,7 +5,7 @@
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
-{% set pageName = 'Check case documents' %}
+{% set pageName = 'Check and add case documents' %}
 
 {% set returnUrl = "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents-check" %}
 
@@ -68,7 +68,7 @@
 
       <form method="post">
         <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({ text: "Confirm" }) }}
+          {{ govukButton({ text: "Add documents" }) }}
           <a class="govuk-link" href="/cases/{{ _case.id }}/material/generate-cps-documents">
             Cancel
           </a>
