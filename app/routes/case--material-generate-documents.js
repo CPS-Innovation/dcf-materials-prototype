@@ -146,7 +146,7 @@ module.exports = router => {
     const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
     const filteredDocs = {
       ...docs,
-      defendants: (docs.defendants || []).filter(d => !Object.prototype.hasOwnProperty.call(byDefendant, String(d.id)))
+      defendants: (docs.defendants || []).slice(0, 3).filter(d => !Object.prototype.hasOwnProperty.call(byDefendant, String(d.id)))
     }
 
     return res.render('v2/cases/material/generate-cps-documents/defendants', {
@@ -237,9 +237,9 @@ module.exports = router => {
       return res.redirect(`/cases/${caseId}/material/generate-cps-documents/defendants`)
     }
 
-    // Work out if there are other defendants remaining (not yet completed)
+    // Work out if there are other defendants remaining (not yet completed) — pool is first 3 only
     const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
-    const remaining = defendants
+    const remaining = defendants.slice(0, 3)
       .map(d => String(d.id))
       .filter(id => id !== String(selectedId))
       .filter(id => !Object.prototype.hasOwnProperty.call(byDefendant, id))
@@ -276,8 +276,8 @@ module.exports = router => {
 
     if (req.body.returnUrl) return res.redirect(req.body.returnUrl)
 
-    // Work out if there are any remaining defendants not yet completed (excluding current)
-    const remaining = defendants
+    // Work out if there are any remaining defendants not yet completed (pool is first 3 only)
+    const remaining = defendants.slice(0, 3)
       .map(d => String(d.id))
       .filter(id => id !== String(selectedId))
       .filter(id => !Object.prototype.hasOwnProperty.call(byDefendant, id))
@@ -386,7 +386,7 @@ module.exports = router => {
   })
 
   // -------------------------
-  // STEP 3A: Select a witness (radios)
+  // STEP 3A: Select witnesses (checkboxes)
   // -------------------------
   router.get('/cases/:caseId/material/generate-cps-documents/witnesses', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
@@ -398,25 +398,12 @@ module.exports = router => {
     _.set(req, 'session.data.generateCpsDocuments.witnessesConfirmed', false)
 
     const docs = getGenerateDocsData(req)
-    const witnesses = (docs && docs.witnesses) ? docs.witnesses : []
-
     const byWitness = _.get(req, 'session.data.generateCpsDocuments.witnessDocumentsById', {})
-    const remaining = witnesses
-      .map(w => String(w.id))
-      .filter(id => !Object.prototype.hasOwnProperty.call(byWitness, id))
-
-    const hasMoreWitnesses = remaining.length > 1
-    // ^ "more than one" makes sense on the chooser page; if only one remains you could just auto-redirect, but we’ll keep it simple.
-
-    const filteredDocs = {
-      ...docs,
-      witnesses: (docs.witnesses || []).filter(w => !Object.prototype.hasOwnProperty.call(byWitness, String(w.id)))
-    }
 
     return res.render('v2/cases/material/generate-cps-documents/witnesses', {
       _case,
-      caseMaterialsGenerateDocuments: filteredDocs,
-      hasMoreWitnesses
+      caseMaterialsGenerateDocuments: docs,
+      selectedWitnessIds: Object.keys(byWitness)
     })
   })
 
@@ -425,11 +412,13 @@ module.exports = router => {
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
     ensureWizardState(req)
-    _.set(req, 'session.data.generateCpsDocuments.selectedWitnessId', req.body.selectedWitnessId || null)
+    const ids = asArray(req.body.selectedWitnessIds)
+    const byWitness = {}
+    ids.forEach(id => { byWitness[id] = ['witness_special_measures'] })
+    _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', byWitness)
 
     const returnUrl = req.query.returnUrl
-    const next = `/cases/${caseId}/material/generate-cps-documents/witness-documents`
-    return res.redirect(returnUrl ? `${next}?returnUrl=${encodeURIComponent(returnUrl)}` : next)
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
   })
 
 
