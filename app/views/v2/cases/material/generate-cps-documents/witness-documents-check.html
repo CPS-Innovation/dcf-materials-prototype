@@ -34,7 +34,6 @@
 
       {% if witnessById and (witnessById | length) %}
 
-        {% set rows = [] %}
         {% for witId, docIds in witnessById %}
           {% set witName = "Witness " ~ witId %}
           {% for w in witnesses %}
@@ -42,20 +41,28 @@
               {% set witName = w.name %}
             {% endif %}
           {% endfor %}
-          {% set rows = (rows.push({
-            key: { text: witName },
-            value: { text: "Witness Special Measures" },
-            actions: {
-              items: [{
-                href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness-direct?witnessId=" ~ witId,
-                text: "Remove",
-                visuallyHiddenText: witName
-              }]
-            }
-          }), rows) %}
-        {% endfor %}
 
-        {{ govukSummaryList({ rows: rows }) }}
+          {{ govukSummaryList({
+            rows: [
+              {
+                key: { text: "Witness" },
+                value: { text: witName },
+                actions: {
+                  items: [{
+                    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness-direct?witnessId=" ~ witId,
+                    text: "Remove",
+                    visuallyHiddenText: witName
+                  }]
+                }
+              },
+              {
+                key: { text: "Document" },
+                value: { text: "Witness Special Measures" }
+              }
+            ]
+          }) }}
+
+        {% endfor %}
 
       {% else %}
         <p class="govuk-body"><span class="govuk-hint">No witness documents selected</span></p>
