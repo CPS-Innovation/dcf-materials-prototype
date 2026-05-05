@@ -1,0 +1,75 @@
+{# app/views/v2/cases/material/generate-cps-documents/task-list.html #}
+
+{% extends "_shared/layouts/main.html" %}
+{% from "govuk/components/task-list/macro.njk" import govukTaskList %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set pageName = 'Generate CPS documents' %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material?tab=view-materials"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      {% include "_shared/_includes/success-banner-safe.njk" %}
+
+      <span class="govuk-caption-m">
+        {{ _case.reference }}
+      </span>
+
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% set totalDocCount = caseDocCount + defendantDocCount + witnessDocCount %}
+      <h3 class="govuk-heading-s govuk-!-margin-bottom-6">
+        {{ totalDocCount }} {{ "document" if totalDocCount == 1 else "documents" }} 
+      </h3>
+
+      
+
+      {{ govukTaskList({
+        idPrefix: "generate-cps-docs",
+        items: [
+          {
+            title: { text: "Case documents" },
+            href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/case-documents",
+            status: {
+              text: caseDocCount ~ " document" ~ ("s" if caseDocCount != 1 else "")
+            }
+          },
+          {
+            title: { text: "Defendant documents" },
+            href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendants",
+            status: {
+              text: defendantDocCount ~ " document" ~ ("s" if defendantDocCount != 1 else "")
+            }
+          },
+          {
+            title: { text: "Witness documents" },
+            href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witnesses",
+            status: {
+              text: witnessDocCount ~ " document" ~ ("s" if witnessDocCount != 1 else "")
+            }
+          }
+        ]
+      }) }}
+
+      <h2 class="govuk-heading-m govuk-!-margin-top-6">Check and generate</h2>
+
+      <p class="govuk-body">Review selections before generating documents.</p>
+
+      {{ govukButton({
+        text: "Check documents",
+        href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/check"
+      }) }}
+
+    </div>
+  </div>
+{% endblock %}

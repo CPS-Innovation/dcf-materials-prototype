@@ -4,7 +4,7 @@
   {% set bannerHtml = "" %}
 
   {% if successBanner.text is string and (successBanner.text | trim) %}
-    {% set bannerHtml = "<p class='govuk-body'>" + (successBanner.text | trim) + "</p>" %}
+    {% set bannerHtml = "<p class='govuk-notification-banner__heading'>" + (successBanner.text | trim) + "</p>" %}
   {% endif %}
 
   {# IMPORTANT: titleText is hard-coded so it can NEVER be undefined #}

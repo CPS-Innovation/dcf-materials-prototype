@@ -46,6 +46,30 @@ module.exports = router => {
   }
 
   // -------------------------
+  // TASK LIST
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const s = _.get(req, 'session.data.generateCpsDocuments', {})
+
+    const caseDocCount      = (s.caseDocuments || []).length
+    const defendantDocCount = Object.values(s.defendantDocumentsById || {}).reduce((sum, docs) => sum + docs.length, 0)
+    const witnessDocCount   = Object.values(s.witnessDocumentsById || {}).reduce((sum, docs) => sum + docs.length, 0)
+
+    return res.render('v2/cases/material/generate-cps-documents/task-list', {
+      _case,
+      caseDocCount,
+      defendantDocCount,
+      witnessDocCount
+    })
+  })
+
+  // -------------------------
   // STEP 1: Case documents
   // -------------------------
   router.get('/cases/:caseId/material/generate-cps-documents/case-documents', async (req, res) => {
@@ -54,6 +78,8 @@ module.exports = router => {
 
     const _case = await fetchCase(caseId)
     if (!_case) return res.status(404).render('not-found')
+
+    _.set(req, 'session.data.generateCpsDocuments.caseDocsConfirmed', false)
 
     return res.render('v2/cases/material/generate-cps-documents/case-documents', {
       _case,
@@ -69,7 +95,39 @@ module.exports = router => {
     _.set(req, 'session.data.generateCpsDocuments.caseDocuments', asArray(req.body.selectedDocuments))
 
     const returnUrl = req.query.returnUrl
-    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents`)
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/case-documents-check`)
+  })
+
+  // -------------------------
+  // STEP 1 CHECK
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents/case-documents-check', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    return res.render('v2/cases/material/generate-cps-documents/case-documents-check', {
+      _case,
+      caseMaterialsGenerateDocuments: getGenerateDocsData(req),
+      selections: _.get(req, 'session.data.generateCpsDocuments', {})
+    })
+  })
+
+  router.post('/cases/:caseId/material/generate-cps-documents/case-documents-check', (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    ensureWizardState(req)
+    _.set(req, 'session.data.generateCpsDocuments.caseDocsConfirmed', true)
+
+    const count = (_.get(req, 'session.data.generateCpsDocuments.caseDocuments') || []).length
+    _.set(req, 'session.data.successBanner', {
+      text: `${count} case ${count === 1 ? 'document' : 'documents'} added`
+    })
+
+    return res.redirect(`/cases/${caseId}/material/generate-cps-documents`)
   })
 
   // -------------------------
@@ -82,9 +140,18 @@ module.exports = router => {
     const _case = await fetchCase(caseId)
     if (!_case) return res.status(404).render('not-found')
 
+    _.set(req, 'session.data.generateCpsDocuments.defendantsConfirmed', false)
+
+    const docs = getGenerateDocsData(req)
+    const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
+    const filteredDocs = {
+      ...docs,
+      defendants: (docs.defendants || []).slice(0, 3).filter(d => !Object.prototype.hasOwnProperty.call(byDefendant, String(d.id)))
+    }
+
     return res.render('v2/cases/material/generate-cps-documents/defendants', {
       _case,
-      caseMaterialsGenerateDocuments: getGenerateDocsData(req)
+      caseMaterialsGenerateDocuments: filteredDocs
     })
   })
 
@@ -96,7 +163,8 @@ module.exports = router => {
     _.set(req, 'session.data.generateCpsDocuments.selectedDefendantId', req.body.selectedDefendantId || null)
 
     const returnUrl = req.query.returnUrl
-    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents`)
+    const next = `/cases/${caseId}/material/generate-cps-documents/defendant-documents`
+    return res.redirect(returnUrl ? `${next}?returnUrl=${encodeURIComponent(returnUrl)}` : next)
   })
 
 
@@ -150,6 +218,10 @@ module.exports = router => {
     const docs = getGenerateDocsData(req)
     const defendants = (docs && docs.defendants) ? docs.defendants : []
 
+    if (req.query.defendantId) {
+      _.set(req, 'session.data.generateCpsDocuments.selectedDefendantId', req.query.defendantId)
+    }
+
     const selectedId = _.get(req, 'session.data.generateCpsDocuments.selectedDefendantId', null)
 
     // If they landed here without choosing, bounce them back to the radios step
@@ -165,9 +237,9 @@ module.exports = router => {
       return res.redirect(`/cases/${caseId}/material/generate-cps-documents/defendants`)
     }
 
-    // Work out if there are other defendants remaining (not yet completed)
+    // Work out if there are other defendants remaining (not yet completed) — pool is first 3 only
     const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
-    const remaining = defendants
+    const remaining = defendants.slice(0, 3)
       .map(d => String(d.id))
       .filter(id => id !== String(selectedId))
       .filter(id => !Object.prototype.hasOwnProperty.call(byDefendant, id))
@@ -202,8 +274,10 @@ module.exports = router => {
     byDefendant[String(selectedId)] = selectedDocs
     _.set(req, 'session.data.generateCpsDocuments.defendantDocumentsById', byDefendant)
 
-    // Work out if there are any remaining defendants not yet completed (excluding current)
-    const remaining = defendants
+    if (req.body.returnUrl) return res.redirect(req.body.returnUrl)
+
+    // Work out if there are any remaining defendants not yet completed (pool is first 3 only)
+    const remaining = defendants.slice(0, 3)
       .map(d => String(d.id))
       .filter(id => id !== String(selectedId))
       .filter(id => !Object.prototype.hasOwnProperty.call(byDefendant, id))
@@ -212,7 +286,7 @@ module.exports = router => {
 
     // If there are no more defendants, skip the "add another?" decision entirely
     if (!hasMoreDefendants) {
-      return res.redirect(`/cases/${caseId}/material/generate-cps-documents/witnesses`)
+      return res.redirect(`/cases/${caseId}/material/generate-cps-documents/defendant-documents-check`)
     }
 
     // Otherwise, honour the radio answer
@@ -220,7 +294,7 @@ module.exports = router => {
 
     // If they didn't answer, treat as "no" (keeps flow moving)
     if (addAnother !== 'yes') {
-      return res.redirect(`/cases/${caseId}/material/generate-cps-documents/witnesses`)
+      return res.redirect(`/cases/${caseId}/material/generate-cps-documents/defendant-documents-check`)
     }
 
     // They said YES — if exactly one remaining, auto-select it and go straight to docs page
@@ -235,7 +309,107 @@ module.exports = router => {
 
 
   // -------------------------
-  // STEP 3A: Select a witness (radios)
+  // REMOVE DEFENDANT (DIRECT — no confirmation page)
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents/remove-defendant-direct', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    ensureWizardState(req)
+    const defendantId = req.query.defendantId
+    const docs = getGenerateDocsData(req)
+    const defendant = (docs.defendants || []).find(d => String(d.id) === String(defendantId))
+    const defName = defendant ? defendant.name : defendantId
+
+    const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
+    delete byDefendant[String(defendantId)]
+    _.set(req, 'session.data.generateCpsDocuments.defendantDocumentsById', byDefendant)
+    _.set(req, 'session.data.generateCpsDocuments.defendantsConfirmed', false)
+    _.set(req, 'session.data.successBanner', { text: `${defName} removed` })
+
+    const returnUrl = req.query.returnUrl
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents-check`)
+  })
+
+  // -------------------------
+  // REMOVE DEFENDANT
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents/remove-defendant', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const defendantId = req.query.defendantId
+    const docs = getGenerateDocsData(req)
+    const defendant = (docs.defendants || []).find(d => String(d.id) === String(defendantId))
+    const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
+    const selectedDocIds = byDefendant[String(defendantId)] || []
+    const selectedDocs = selectedDocIds.map(id => {
+      const doc = (defendant && defendant.documents || []).find(d => String(d.id) === String(id))
+      return doc ? doc.label : id
+    })
+
+    return res.render('v2/cases/material/generate-cps-documents/remove-defendant', {
+      _case,
+      defendant,
+      selectedDocs,
+      defendantId,
+      returnUrl: req.query.returnUrl
+    })
+  })
+
+  router.post('/cases/:caseId/material/generate-cps-documents/remove-defendant', (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    ensureWizardState(req)
+    const defendantId = req.body.defendantId
+    const returnUrl = req.body.returnUrl
+    const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
+    delete byDefendant[String(defendantId)]
+    _.set(req, 'session.data.generateCpsDocuments.defendantDocumentsById', byDefendant)
+    _.set(req, 'session.data.generateCpsDocuments.defendantsConfirmed', false)
+
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents-check`)
+  })
+
+  // -------------------------
+  // STEP 2B CHECK
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents/defendant-documents-check', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    return res.render('v2/cases/material/generate-cps-documents/defendant-documents-check', {
+      _case,
+      caseMaterialsGenerateDocuments: getGenerateDocsData(req),
+      selections: _.get(req, 'session.data.generateCpsDocuments', {})
+    })
+  })
+
+  router.post('/cases/:caseId/material/generate-cps-documents/defendant-documents-check', (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    ensureWizardState(req)
+    _.set(req, 'session.data.generateCpsDocuments.defendantsConfirmed', true)
+
+    const byDef = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById') || {}
+    const count = Object.values(byDef).reduce((sum, docs) => sum + docs.length, 0)
+    _.set(req, 'session.data.successBanner', {
+      text: `${count} defendant ${count === 1 ? 'document' : 'documents'} added`
+    })
+
+    return res.redirect(`/cases/${caseId}/material/generate-cps-documents`)
+  })
+
+  // -------------------------
+  // STEP 3A: Select witnesses (checkboxes)
   // -------------------------
   router.get('/cases/:caseId/material/generate-cps-documents/witnesses', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
@@ -244,21 +418,15 @@ module.exports = router => {
     const _case = await fetchCase(caseId)
     if (!_case) return res.status(404).render('not-found')
 
+    _.set(req, 'session.data.generateCpsDocuments.witnessesConfirmed', false)
+
     const docs = getGenerateDocsData(req)
-    const witnesses = (docs && docs.witnesses) ? docs.witnesses : []
-
     const byWitness = _.get(req, 'session.data.generateCpsDocuments.witnessDocumentsById', {})
-    const remaining = witnesses
-      .map(w => String(w.id))
-      .filter(id => !Object.prototype.hasOwnProperty.call(byWitness, id))
-
-    const hasMoreWitnesses = remaining.length > 1
-    // ^ "more than one" makes sense on the chooser page; if only one remains you could just auto-redirect, but we’ll keep it simple.
 
     return res.render('v2/cases/material/generate-cps-documents/witnesses', {
       _case,
       caseMaterialsGenerateDocuments: docs,
-      hasMoreWitnesses
+      selectedWitnessIds: Object.keys(byWitness)
     })
   })
 
@@ -267,10 +435,13 @@ module.exports = router => {
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
     ensureWizardState(req)
-    _.set(req, 'session.data.generateCpsDocuments.selectedWitnessId', req.body.selectedWitnessId || null)
+    const ids = asArray(req.body.selectedWitnessIds)
+    const byWitness = {}
+    ids.forEach(id => { byWitness[id] = ['witness_special_measures'] })
+    _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', byWitness)
 
     const returnUrl = req.query.returnUrl
-    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents`)
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
   })
 
 
@@ -286,6 +457,10 @@ module.exports = router => {
 
     const docs = getGenerateDocsData(req)
     const witnesses = (docs && docs.witnesses) ? docs.witnesses : []
+
+    if (req.query.witnessId) {
+      _.set(req, 'session.data.generateCpsDocuments.selectedWitnessId', req.query.witnessId)
+    }
 
     const selectedId = _.get(req, 'session.data.generateCpsDocuments.selectedWitnessId', null)
 
@@ -338,6 +513,8 @@ module.exports = router => {
     byWitness[String(selectedId)] = selectedDocs
     _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', byWitness)
 
+    if (req.body.returnUrl) return res.redirect(req.body.returnUrl)
+
     // Remaining witnesses not yet completed (excluding current)
     const remaining = witnesses
       .map(w => String(w.id))
@@ -348,14 +525,14 @@ module.exports = router => {
 
     // If none remaining, skip the "add another?" decision entirely
     if (!hasMoreWitnesses) {
-      return res.redirect(`/cases/${caseId}/material/generate-cps-documents/check`)
+      return res.redirect(`/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
     }
 
     const addAnother = (req.body.addAdditionalWitness || '').toString()
 
     // No/blank → move on
     if (addAnother !== 'yes') {
-      return res.redirect(`/cases/${caseId}/material/generate-cps-documents/check`)
+      return res.redirect(`/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
     }
 
     // Yes → auto-select if only one left
@@ -366,6 +543,106 @@ module.exports = router => {
 
     // More than one remaining → back to radios
     return res.redirect(`/cases/${caseId}/material/generate-cps-documents/witnesses`)
+  })
+
+  // -------------------------
+  // STEP 3B CHECK
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents/witness-documents-check', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    return res.render('v2/cases/material/generate-cps-documents/witness-documents-check', {
+      _case,
+      caseMaterialsGenerateDocuments: getGenerateDocsData(req),
+      selections: _.get(req, 'session.data.generateCpsDocuments', {})
+    })
+  })
+
+  router.post('/cases/:caseId/material/generate-cps-documents/witness-documents-check', (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    ensureWizardState(req)
+    _.set(req, 'session.data.generateCpsDocuments.witnessesConfirmed', true)
+
+    const byWit = _.get(req, 'session.data.generateCpsDocuments.witnessDocumentsById') || {}
+    const count = Object.values(byWit).reduce((sum, docs) => sum + docs.length, 0)
+    _.set(req, 'session.data.successBanner', {
+      text: `${count} witness ${count === 1 ? 'document' : 'documents'} added`
+    })
+
+    return res.redirect(`/cases/${caseId}/material/generate-cps-documents`)
+  })
+
+  // -------------------------
+  // REMOVE WITNESS (DIRECT — no confirmation page)
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents/remove-witness-direct', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    ensureWizardState(req)
+    const witnessId = req.query.witnessId
+    const docs = getGenerateDocsData(req)
+    const witness = (docs.witnesses || []).find(w => String(w.id) === String(witnessId))
+    const witName = witness ? witness.name : witnessId
+
+    const byWitness = _.get(req, 'session.data.generateCpsDocuments.witnessDocumentsById', {})
+    delete byWitness[String(witnessId)]
+    _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', byWitness)
+    _.set(req, 'session.data.generateCpsDocuments.witnessesConfirmed', false)
+    _.set(req, 'session.data.successBanner', { text: `${witName} removed` })
+
+    const returnUrl = req.query.returnUrl
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
+  })
+
+  // -------------------------
+  // REMOVE WITNESS
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents/remove-witness', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    const _case = await fetchCase(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const witnessId = req.query.witnessId
+    const docs = getGenerateDocsData(req)
+    const witness = (docs.witnesses || []).find(w => String(w.id) === String(witnessId))
+    const byWitness = _.get(req, 'session.data.generateCpsDocuments.witnessDocumentsById', {})
+    const selectedDocIds = byWitness[String(witnessId)] || []
+    const selectedDocs = selectedDocIds.map(id => {
+      const doc = (witness && witness.documents || []).find(d => String(d.id) === String(id))
+      return doc ? doc.label : id
+    })
+
+    return res.render('v2/cases/material/generate-cps-documents/remove-witness', {
+      _case,
+      witness,
+      selectedDocs,
+      witnessId,
+      returnUrl: req.query.returnUrl
+    })
+  })
+
+  router.post('/cases/:caseId/material/generate-cps-documents/remove-witness', (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    ensureWizardState(req)
+    const witnessId = req.body.witnessId
+    const returnUrl = req.body.returnUrl
+    const byWitness = _.get(req, 'session.data.generateCpsDocuments.witnessDocumentsById', {})
+    delete byWitness[String(witnessId)]
+    _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', byWitness)
+    _.set(req, 'session.data.generateCpsDocuments.witnessesConfirmed', false)
+
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
   })
 
   // -------------------------
@@ -389,10 +666,58 @@ module.exports = router => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
-    // Baseline behaviour: show success + return to materials
+    const selections    = _.get(req, 'session.data.generateCpsDocuments', {})
+    const selectedCaseIds = selections.caseDocuments || []
+    const defendantById   = selections.defendantDocumentsById || {}
+    const witnessById     = selections.witnessDocumentsById || {}
+
+    const docs = getGenerateDocsFixture()
+    const now  = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+
+    const updatedCaseDocs = (docs.caseDocuments || []).map(doc =>
+      selectedCaseIds.includes(String(doc.id))
+        ? { ...doc, lastGenerated: now }
+        : { ...doc, lastGenerated: null }
+    )
+
+    const updatedDefendants = (docs.defendants || []).map(defendant => {
+      const sel = defendantById[String(defendant.id)] || []
+      return {
+        ...defendant,
+        documents: (defendant.documents || []).map(doc =>
+          sel.includes(String(doc.id))
+            ? { ...doc, lastGenerated: now }
+            : { ...doc, lastGenerated: null }
+        )
+      }
+    })
+
+    const updatedWitnesses = (docs.witnesses || []).map(witness => {
+      const sel = witnessById[String(witness.id)] || []
+      return {
+        ...witness,
+        documents: (witness.documents || []).map(doc =>
+          sel.includes(String(doc.id))
+            ? { ...doc, lastGenerated: now }
+            : { ...doc, lastGenerated: null }
+        )
+      }
+    })
+
+    _.set(req, 'session.data.caseMaterialsGenerateDocuments', {
+      ...docs,
+      caseDocuments: updatedCaseDocs,
+      defendants:    updatedDefendants,
+      witnesses:     updatedWitnesses
+    })
+
+    const totalDocCount =
+      selectedCaseIds.length +
+      Object.values(defendantById).reduce((sum, docs) => sum + docs.length, 0) +
+      Object.values(witnessById).reduce((sum, docs) => sum + docs.length, 0)
+
     _.set(req, 'session.data.successBanner', {
-      titleText: 'Documents queued',
-      text: 'Your selected documents will be generated.'
+      text: `${totalDocCount} ${totalDocCount === 1 ? 'document' : 'documents'} generated`
     })
 
     return res.redirect(`/cases/${caseId}/material?tab=view-materials`)
