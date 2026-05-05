@@ -46,10 +46,10 @@ module.exports = router => {
         defendants: {
           include: {
             defenceLawyer: true,
-            charges: true
+            charges: { include: { victim: true } }
           }
         },
-        victims: true,
+        victims: { orderBy: { id: 'asc' } },
         witnesses: {
           include: {
             statements: true,
@@ -160,10 +160,10 @@ module.exports = router => {
         defendants: {
           include: {
             defenceLawyer: true,
-            charges: true
+            charges: { include: { victim: true } }
           }
         },
-        victims: true,
+        victims: { orderBy: { id: 'asc' } },
         witnesses: {
           include: {
             statements: true,

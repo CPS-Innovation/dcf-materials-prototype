@@ -34,12 +34,12 @@ module.exports = router => {
       include: {
         defendants: {
           include: {
-            charges: true,
+            charges: { include: { victim: true } },
             defenceLawyer: true
           }
         },
         location: true,
-        victims: true,
+        victims: { orderBy: { id: 'asc' } },
         witnesses: true
       }
     })
@@ -52,6 +52,137 @@ module.exports = router => {
     const defendant = _case.defendants.find(d => d.charges.some(c => c.id === id))
     return { charge, defendant }
   }
+
+
+  // ------------------------------------------------------------------
+  // NEW FLOW ENTRY — /cases/:caseId/charges/edit/check
+  // Starting point for the new proposed charge edit flow (no chargeId in path).
+  router.get('/cases/:caseId/charges/edit/check', async (req, res) => {
+    const caseId = req.params.caseId
+    const _case = await getCaseWithCharges(caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    // Always start fresh when entering edit from the charge list (prevents stale session leaking
+    // victim/particulars from a previously abandoned edit into this new one).
+    if (req.query.chargeId) {
+      req.session.data.editCharge = { chargeId: req.query.chargeId }
+    }
+
+    const editCharge = req.session.data.editCharge || {}
+
+    const { charge, defendant } = editCharge.chargeId
+      ? resolveCharge(_case, editCharge.chargeId)
+      : { charge: {}, defendant: {} }
+
+    const chargeIndex = defendant
+      ? defendant.charges.findIndex(c => c.id === parseInt(editCharge.chargeId, 10))
+      : -1
+    const victims = _case.victims || []
+    const positionVictim = victims.length && chargeIndex >= 0
+      ? victims[chargeIndex % victims.length]
+      : null
+
+    return res.render('v2/cases/charges/edit/check', {
+      _case,
+      charge,
+      defendant,
+      editCharge,
+      positionVictim,
+      witnesses: _case.witnesses,
+      base: `/cases/${caseId}/charges/${charge.id}/edit`,
+      checkUrl: `/cases/${caseId}/charges/edit/check`
+    })
+  })
+
+  router.post('/cases/:caseId/charges/edit/check', async (req, res) => {
+    const caseId     = parseInt(req.params.caseId, 10)
+    const editCharge = req.session.data.editCharge || {}
+    const chargeId   = parseInt(editCharge.chargeId, 10)
+
+    if (chargeId) {
+      // govukDateInput with namePrefix="offenceDate" posts three separate keys
+      // (offenceDate-day/-month/-year) that the kit stores at top-level session.data.
+      // req.body.offenceDate is therefore undefined; reconstruct the date from those keys.
+      const d = req.session.data
+      let newOffenceDate = null
+      if (d['dateType'] === 'singleDate') {
+        const y = d['offenceDate-year']
+        const m = String(d['offenceDate-month'] || '').padStart(2, '0')
+        const day = String(d['offenceDate-day'] || '').padStart(2, '0')
+        if (y && m && day) newOffenceDate = new Date(`${y}-${m}-${day}`)
+      }
+
+      await prisma.charge.update({
+        where: { id: chargeId },
+        data: {
+          ...(newOffenceDate         && { offenceDate: newOffenceDate }),
+          ...(editCharge.particulars && { particulars: editCharge.particulars }),
+          ...(editCharge.victimId && editCharge.victimId !== 'none' && { victimId: parseInt(editCharge.victimId, 10) }),
+          ...(editCharge.victimId === 'none' && { victimId: null })
+        }
+      })
+
+      const _case = await getCaseWithCharges(caseId)
+      const { defendant } = resolveCharge(_case, chargeId)
+      if (defendant) {
+        req.session.data.successBanner = {
+          text: `Charge details for ${defendant.firstName} ${defendant.lastName} updated`
+        }
+      }
+    }
+
+    delete req.session.data.editCharge
+
+    return res.redirect(`/cases/${caseId}/details#defendants`)
+  })
+
+
+  // ------------------------------------------------------------------
+  // NEW FLOW — PARTICULARS  /cases/:caseId/charges/edit/particulars
+  router.get('/cases/:caseId/charges/edit/particulars', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const editCharge = req.session.data.editCharge || {}
+    const { charge, defendant } = editCharge.chargeId
+      ? resolveCharge(_case, editCharge.chargeId)
+      : { charge: {}, defendant: {} }
+
+    if (req.query.returnUrl) {
+      req.session.data.editCharge = { ...editCharge, returnUrl: req.query.returnUrl }
+    }
+
+    let victimName = ''
+    if (editCharge.victimId === 'none') {
+      victimName = ''
+    } else if (editCharge.victimName) {
+      victimName = editCharge.victimName
+    } else if (charge.victim) {
+      victimName = `${charge.victim.firstName} ${charge.victim.lastName}`
+    } else {
+      const caseVictims = _case.victims || []
+      const chargeIndex = (defendant.charges || []).findIndex(c => c.id === charge.id)
+      const posVictim = caseVictims.length ? caseVictims[Math.max(chargeIndex, 0) % caseVictims.length] : null
+      if (posVictim) victimName = `${posVictim.firstName} ${posVictim.lastName}`
+    }
+
+    return res.render('v2/cases/charges/edit/particulars', { _case, charge, defendant, victimName })
+  })
+
+  router.post('/cases/:caseId/charges/edit/particulars', (req, res) => {
+    req.session.data.editCharge = {
+      ...req.session.data.editCharge,
+      particulars: req.body.particulars
+    }
+
+    const returnUrl = req.session.data.editCharge?.returnUrl
+    if (returnUrl) {
+      delete req.session.data.editCharge.returnUrl
+      return res.redirect(returnUrl)
+    }
+
+    return res.redirect(`/cases/${req.params.caseId}/charges/edit/check`)
+  })
 
 
   // ------------------------------------------------------------------
@@ -235,24 +366,39 @@ module.exports = router => {
       }
     }
 
-    // Exclude the current victim so they don't appear as a selectable option
-    const currentVictimName = req.session.data.editCharge?.victimName || null
-    const availableVictims  = mockVictimPool.filter(v => v.name !== currentVictimName)
+    // Start with case-linked victims (current victim stays in list — pre-checked by template)
+    const caseVictims = _case.victims || []
+    const caseVictimIds = new Set(caseVictims.map(v => v.id))
+
+    // Top up to 5 with additional DB victims when the case pool is small
+    let victims = caseVictims
+    if (caseVictims.length < 5) {
+      const extra = await prisma.victim.findMany({
+        where: { id: { notIn: Array.from(caseVictimIds) } },
+        take: 5 - caseVictims.length
+      })
+      victims = [...caseVictims, ...extra]
+    }
 
     return res.render('v2/cases/charges/edit/select-victim', {
       _case,
       charge,
       defendant,
-      victims: availableVictims
+      victims
     })
   })
 
-  router.post('/cases/:caseId/charges/:chargeId/edit/select-victim', (req, res) => {
-    const selectedVictim = mockVictimPool.find(v => v.id === req.body.victimId) || null
+  router.post('/cases/:caseId/charges/:chargeId/edit/select-victim', async (req, res) => {
+    const selectedId = parseInt(req.body.victimId, 10)
+    const selectedVictim = isNaN(selectedId)
+      ? null
+      : await prisma.victim.findUnique({ where: { id: selectedId } })
     req.session.data.editCharge = {
       ...req.session.data.editCharge,
       victimId:   req.body.victimId,
-      victimName: selectedVictim ? formatVictimName(selectedVictim.name) : null
+      victimName: selectedVictim
+        ? `${selectedVictim.firstName} ${selectedVictim.lastName}`
+        : null
     }
 
     const returnUrl = req.session.data.editCharge?.returnUrl
@@ -307,7 +453,22 @@ module.exports = router => {
       }
     }
 
-    return res.render('v2/cases/charges/edit/particulars', { _case, charge, defendant })
+    const editCharge = req.session.data.editCharge || {}
+    let victimName = ''
+    if (editCharge.victimId === 'none') {
+      victimName = ''
+    } else if (editCharge.victimName) {
+      victimName = editCharge.victimName
+    } else if (charge.victim) {
+      victimName = `${charge.victim.firstName} ${charge.victim.lastName}`
+    } else {
+      const caseVictims = _case.victims || []
+      const chargeIndex = (defendant.charges || []).findIndex(c => c.id === charge.id)
+      const posVictim = caseVictims.length ? caseVictims[Math.max(chargeIndex, 0) % caseVictims.length] : null
+      if (posVictim) victimName = `${posVictim.firstName} ${posVictim.lastName}`
+    }
+
+    return res.render('v2/cases/charges/edit/particulars', { _case, charge, defendant, victimName })
   })
 
   router.post('/cases/:caseId/charges/:chargeId/edit/particulars', (req, res) => {

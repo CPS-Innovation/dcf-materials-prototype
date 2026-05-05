@@ -957,8 +957,6 @@ await seedShowcaseIndictmentCase(prisma, {
         month: 'long',
         year: 'numeric'
       });
-      const victimName = `${faker.helpers.arrayElement(firstNames)} ${faker.helpers.arrayElement(lastNames)}`;
-
       // For CTL/STL defendants, at least one charge must have the time limit
       // For first charge, always apply it. For additional charges, 50% chance
       const shouldHaveTimeLimit = index === 0 || faker.datatype.boolean();
@@ -977,7 +975,7 @@ await seedShowcaseIndictmentCase(prisma, {
         status: faker.helpers.arrayElement(chargeStatuses),
         offenceDate: offenceDate,
         plea: faker.helpers.arrayElement(pleas),
-        particulars: `On the ${particularsDate} [defendant] ${charge.code === 'B10' ? 'stole' : charge.code === 'A01' ? 'assaulted' : charge.code === 'C03' ? 'damaged property belonging to' : 'committed an offence against'} ${victimName}.`,
+        particulars: `On the ${particularsDate} [defendant] ${charge.code === 'B10' ? 'stole from' : charge.code === 'A01' ? 'assaulted' : charge.code === 'C03' ? 'damaged property belonging to' : 'committed an offence against'} [victim].`,
         custodyTimeLimit: ctl,
         statutoryTimeLimit: stl,
         isCount: faker.datatype.boolean(0.3), // 30% are counts
