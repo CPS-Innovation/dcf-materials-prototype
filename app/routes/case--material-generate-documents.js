@@ -309,6 +309,29 @@ module.exports = router => {
 
 
   // -------------------------
+  // REMOVE DEFENDANT (DIRECT — no confirmation page)
+  // -------------------------
+  router.get('/cases/:caseId/material/generate-cps-documents/remove-defendant-direct', async (req, res) => {
+    const caseId = parseInt(req.params.caseId, 10)
+    if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
+
+    ensureWizardState(req)
+    const defendantId = req.query.defendantId
+    const docs = getGenerateDocsData(req)
+    const defendant = (docs.defendants || []).find(d => String(d.id) === String(defendantId))
+    const defName = defendant ? defendant.name : defendantId
+
+    const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
+    delete byDefendant[String(defendantId)]
+    _.set(req, 'session.data.generateCpsDocuments.defendantDocumentsById', byDefendant)
+    _.set(req, 'session.data.generateCpsDocuments.defendantsConfirmed', false)
+    _.set(req, 'session.data.successBanner', { text: `${defName} removed` })
+
+    const returnUrl = req.query.returnUrl
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents-check`)
+  })
+
+  // -------------------------
   // REMOVE DEFENDANT
   // -------------------------
   router.get('/cases/:caseId/material/generate-cps-documents/remove-defendant', async (req, res) => {
@@ -574,7 +597,8 @@ module.exports = router => {
     _.set(req, 'session.data.generateCpsDocuments.witnessesConfirmed', false)
     _.set(req, 'session.data.successBanner', { text: `${witName} removed` })
 
-    return res.redirect(`/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
+    const returnUrl = req.query.returnUrl
+    return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
   })
 
   // -------------------------

@@ -20,6 +20,8 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds-from-desktop">
 
+      {% include "_shared/_includes/success-banner-safe.njk" %}
+
       <span class="govuk-caption-m">
         {{ _case.reference }}
       </span>
@@ -98,7 +100,6 @@
 
       {% if defendantById and (defendantById | length) %}
 
-        {% set defRows = [] %}
         {% for defId, docIds in defendantById %}
 
           {% set defName = "Defendant " ~ defId %}
@@ -130,28 +131,38 @@
             {% endif %}
           {% endset %}
 
-          {% set defRows = (defRows.push({
-            key: { text: defName },
-            value: { html: defDocsHtml },
-            actions: {
-              items: [
-                {
-                  href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-defendant?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
-                  text: "Remove",
-                  visuallyHiddenText: defName
-                },
-                {
-                  href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendant-documents?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
-                  text: "Change",
-                  visuallyHiddenText: "documents for " ~ defName
+          {{ govukSummaryList({
+            rows: [
+              {
+                key: { text: "Name" },
+                value: { text: defName },
+                actions: {
+                  items: [
+                    {
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-defendant-direct?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                      text: "Remove",
+                      visuallyHiddenText: defName
+                    }
+                  ]
                 }
-              ]
-            }
-          }), defRows) %}
+              },
+              {
+                key: { text: "Documents" },
+                value: { html: defDocsHtml },
+                actions: {
+                  items: [
+                    {
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendant-documents?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                      text: "Change",
+                      visuallyHiddenText: "documents for " ~ defName
+                    }
+                  ]
+                }
+              }
+            ]
+          }) }}
 
         {% endfor %}
-
-        {{ govukSummaryList({ rows: defRows }) }}
 
       {% else %}
         <p class="govuk-body"><span class="govuk-hint">No defendant documents selected</span></p>
@@ -184,9 +195,9 @@
             value: { text: "Witness Special Measures" },
             actions: {
               items: [{
-                href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witnesses?returnUrl=" ~ (returnUrl | urlencode),
-                text: "Change",
-                visuallyHiddenText: "witness selection"
+                href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness-direct?witnessId=" ~ witId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                text: "Remove",
+                visuallyHiddenText: witName
               }]
             }
           }), rows) %}
@@ -200,7 +211,7 @@
 
       <form method="post">
         <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({ text: "Continue" }) }}
+          {{ govukButton({ text: "Generate documents" }) }}
           <a class="govuk-link" href="/cases/{{ _case.id }}/material?tab=view-materials">Cancel</a>
         </div>
       </form>
