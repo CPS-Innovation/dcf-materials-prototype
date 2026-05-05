@@ -23,12 +23,9 @@
       </span>
 
       <h1 class="govuk-heading-l">
-        {{ selectedDefendant.name }}
+        Defendant documents
       </h1>
 
-      <p class="govuk-body">
-        Select the documents you want to generate.
-      </p>
 
       {% set documents = selectedDefendant.documents or [] %}
 
@@ -42,6 +39,9 @@
 
           <div class="govuk-form-group">
             <fieldset class="govuk-fieldset">
+              <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                Select documents for {{ selectedDefendant.name }}
+              </legend>
               <div class="govuk-checkboxes" data-module="govuk-checkboxes">
 
                 {% for doc in documents %}
