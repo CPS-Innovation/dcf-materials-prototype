@@ -26,10 +26,6 @@
         {{ selectedDefendant.name }}
       </h1>
 
-      <p class="govuk-body">
-        Select the documents you want to generate.
-      </p>
-
       {% set documents = selectedDefendant.documents or [] %}
 
       <form method="post" action="">

@@ -25,17 +25,39 @@
     <div class="govuk-grid-column-two-thirds">
 
       {# ── Resolve what has changed ─────────────────────────────── #}
-      {% set dateChanged   = data["correctDate"] == "Yes" %}
-      {% set victimChanged = data["hasVictim"]   == "Yes" %}
+      {% set dateChanged   = (data["dateType"] == "singleDate") or (data["dateType"] == "multipleDates") %}
+      {% set victimChanged = (data.editCharge.victimId) or (data["hasVictim"] == "Yes") %}
 
       {% if dateChanged and victimChanged %}
-        {% set changedText = "the charge date and victim" %}
+        {% set changedText = "the offence date and victim" %}
       {% elif dateChanged %}
-        {% set changedText = "the charge date" %}
+        {% set changedText = "the offence date" %}
       {% elif victimChanged %}
         {% set changedText = "the victim" %}
       {% else %}
         {% set changedText = "the charge particulars" %}
+      {% endif %}
+
+      {% if (dateChanged or victimChanged) and not (data.editCharge and data.editCharge.particulars) %}
+        {% if data["dateType"] == "singleDate" %}
+          {% set _d = data["offenceDate-year"] + "-" + data["offenceDate-month"] + "-" + data["offenceDate-day"] %}
+          {% set formattedDate = _d | date("d MMMM yyyy") %}
+          {% set datePrefix = "On the " %}
+        {% elif data["dateType"] == "multipleDates" %}
+          {% set _dFrom = data["offenceDateFrom-year"] + "-" + data["offenceDateFrom-month"] + "-" + data["offenceDateFrom-day"] %}
+          {% set _dTo   = data["offenceDateTo-year"]   + "-" + data["offenceDateTo-month"]   + "-" + data["offenceDateTo-day"] %}
+          {% set formattedDate = (_dFrom | date("d MMMM yyyy")) + " and " + (_dTo | date("d MMMM yyyy")) %}
+          {% set datePrefix = "Between " %}
+        {% else %}
+          {% set formattedDate = charge.offenceDate | date("d MMMM yyyy") %}
+          {% set datePrefix = "On the " %}
+        {% endif %}
+        {% set defName = defendant.firstName + " " + defendant.lastName %}
+        {% if victimChanged and victimName %}
+          {% set generatedParticulars = datePrefix + formattedDate + " " + defName + " committed an offence against " + victimName + "." %}
+        {% else %}
+          {% set generatedParticulars = datePrefix + formattedDate + " " + defName + " committed an offence." %}
+        {% endif %}
       {% endif %}
 
       <h3 class="govuk-heading-s">Current particulars</h3>
@@ -61,7 +83,7 @@
           hint: {
             text: "You have edited " + changedText + ". Ensure the new particulars reflect the changes."
           },
-          value: data["particulars"] or particulars
+          value: (data.editCharge.particulars if data.editCharge) or generatedParticulars or particulars
         }) }}
 
         <div class="govuk-button-group govuk-!-margin-top-6">
