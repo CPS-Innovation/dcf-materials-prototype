@@ -1,0 +1,88 @@
+{# app/views/v2/cases/material/generate-cps-documents/witness-documents-check.html #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set pageName = 'Check and add witness documents' %}
+
+{% set returnUrl = "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witness-documents-check" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents"
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+
+      {% include "_shared/_includes/success-banner-safe.njk" %}
+
+      <span class="govuk-caption-m">
+        {{ _case.reference }}
+      </span>
+
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% set docs = caseMaterialsGenerateDocuments or {} %}
+      {% set witnesses = docs.witnesses or [] %}
+      {% set witnessById = selections.witnessDocumentsById or {} %}
+
+      {% if witnessById and (witnessById | length) %}
+
+        {% for witId, docIds in witnessById %}
+          {% set witName = "Witness " ~ witId %}
+          {% for w in witnesses %}
+            {% if (w.id | string) == (witId | string) %}
+              {% set witName = w.name %}
+            {% endif %}
+          {% endfor %}
+
+          {{ govukSummaryList({
+            rows: [
+              {
+                key: { text: "Name" },
+                value: { text: witName },
+                actions: {
+                  items: [{
+                    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness-direct?witnessId=" ~ witId,
+                    text: "Remove",
+                    visuallyHiddenText: witName
+                  }]
+                }
+              },
+              {
+                key: { text: "Document" },
+                value: { text: "Witness Special Measures" }
+              }
+            ]
+          }) }}
+
+        {% endfor %}
+
+      {% else %}
+        <p class="govuk-body"><span class="govuk-hint">No witness documents selected</span></p>
+      {% endif %}
+
+      <p class="govuk-body">
+        <a class="govuk-link" href="/cases/{{ _case.id }}/material/generate-cps-documents/witnesses">
+          Add another witness
+        </a>
+      </p>
+
+      <form method="post">
+        <div class="govuk-button-group govuk-!-margin-top-2">
+          {{ govukButton({ text: "Add documents" }) }}
+          <a class="govuk-link" href="/cases/{{ _case.id }}/material/generate-cps-documents">
+            Cancel
+          </a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

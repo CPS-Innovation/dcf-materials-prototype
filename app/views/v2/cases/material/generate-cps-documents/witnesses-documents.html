@@ -75,8 +75,8 @@
 
         {% endif %}
 
-        {# Only show if there are other witnesses remaining #}
-        {% if hasMoreWitnesses %}
+        {# Only show if there are other witnesses remaining and we are not returning to check #}
+        {% if hasMoreWitnesses and not query.returnUrl %}
           {{ govukRadios({
             name: "addAdditionalWitness",
             fieldset: {

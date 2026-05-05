@@ -4,9 +4,10 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+{% set captionName = charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
-{% set base = "/cases/" + _case.id + "/charges/" + charge.id + "/edit" %}
+{% set base = base or ("/cases/" + _case.id + "/charges/" + charge.id + "/edit") %}
+{% set checkUrl = checkUrl or (base + "/check") %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -17,7 +18,7 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">Check details and update charge</h1>
+      <h1 class="govuk-heading-l">Edit charge</h1>
     </div>
 
     <div class="govuk-grid-column-two-thirds">
@@ -41,15 +42,23 @@
         {% set victimDisplay = "No victim associated with this charge" %}
       {% elif editCharge.victimName %}
         {% set victimDisplay = editCharge.victimName %}
+      {% elif charge.victim %}
+        {% set victimDisplay = charge.victim.firstName + " " + charge.victim.lastName %}
+      {% elif positionVictim %}
+        {% set victimDisplay = positionVictim.firstName + " " + positionVictim.lastName %}
       {% else %}
         {% set victimDisplay = "Not recorded" %}
       {% endif %}
 
       {# ── Resolve particulars display ──────────────────────────── #}
-      {% if data["chargeParticularsCorrect"] == "Yes" %}
+      {% if editCharge.particulars %}
+        {% set particularsDisplay = editCharge.particulars %}
+      {% elif data["chargeParticularsCorrect"] == "Yes" %}
         {% set particularsDisplay = data["particulars"] %}
       {% else %}
-        {% set particularsDisplay = charge.particulars %}
+        {% set particularsDisplay = charge.particulars
+          | replace("[defendant]", defendant.firstName + " " + defendant.lastName)
+          | replace("[victim]", victimDisplay) %}
       {% endif %}
 
       {{ govukSummaryList({
@@ -59,7 +68,7 @@
             value: { text: dateDisplay },
             actions: {
               items: [{
-                href: base + "/date-type?returnUrl=" + base + "/check",
+                href: base + "/date-type?returnUrl=" + checkUrl,
                 text: "Change",
                 visuallyHiddenText: "offence date"
               }]
@@ -70,7 +79,7 @@
             value: { text: victimDisplay },
             actions: {
               items: [{
-                href: base + "/select-victim?returnUrl=" + base + "/check",
+                href: base + "/select-victim?returnUrl=" + checkUrl,
                 text: "Change",
                 visuallyHiddenText: "victim"
               }]
@@ -81,7 +90,7 @@
             value: { text: particularsDisplay },
             actions: {
               items: [{
-                href: base + "/particulars?returnUrl=" + base + "/check",
+                href: base + "/particulars?returnUrl=" + checkUrl,
                 text: "Change",
                 visuallyHiddenText: "charge particulars"
               }]
@@ -94,7 +103,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         
          <div class="govuk-button-group">
-          {{ govukButton({ text: "Update charge" }) }}
+          {{ govukButton({ text: "Save and continue " }) }}
           <a href="#" class="govuk-link">Cancel</a>
          </div> 
       </form>

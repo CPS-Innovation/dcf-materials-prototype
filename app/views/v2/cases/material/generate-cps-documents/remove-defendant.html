@@ -1,0 +1,56 @@
+{# app/views/v2/cases/material/generate-cps-documents/remove-defendant.html #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set defName = defendant.name if defendant else ("Defendant " ~ defendantId) %}
+{% set pageName = "Are you sure you want to remove " ~ defName ~ "?" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: returnUrl or ("/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendant-documents-check")
+  }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds-from-desktop">
+
+      <span class="govuk-caption-m">
+        {{ _case.reference }}
+      </span>
+
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% if selectedDocs and selectedDocs.length %}
+        <p class="govuk-body">The following documents will be removed:</p>
+        <ul class="govuk-list govuk-list--bullet">
+          {% for doc in selectedDocs %}
+            <li>{{ doc }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="govuk-body">No documents are currently selected for {{ defName }}.</p>
+      {% endif %}
+
+      <form method="post">
+        <input type="hidden" name="defendantId" value="{{ defendantId }}">
+        <input type="hidden" name="returnUrl" value="{{ returnUrl }}">
+
+        <div class="govuk-button-group">
+          {{ govukButton({
+            text: "Remove " ~ defName,
+            classes: "govuk-button--warning"
+          }) }}
+          <a class="govuk-link" href="{{ returnUrl or ('/cases/' ~ _case.id ~ '/material/generate-cps-documents/defendant-documents-check') }}">
+            Cancel
+          </a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

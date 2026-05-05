@@ -205,21 +205,16 @@ module.exports = router => {
       _.set(cm, 'cpsDisclosureAssessment.hasAssessedSensitive', 'Not started yet')
     }
 
-    // --- One-time success banner (set by assess-as-unused POST) ---
-    const successBanner = _.get(req, 'session.data.successBanner', null)
-    _.unset(req, 'session.data.successBanner')
-
     return res.render("cases/material/index", {
       _case,
       caseMaterials: cm,
-      generateDocuments,  // ✅ CPS generate documents data
+      generateDocuments,
       documents,
       documentTypeItems,
       selectedFilters,
-      assetFiles,         // just names
-      assetFileLinks,     // [{name, href}]
-      activeTab,
-      successBanner
+      assetFiles,
+      assetFileLinks,
+      activeTab
     })
   })
 
