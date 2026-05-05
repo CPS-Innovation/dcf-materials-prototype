@@ -5,7 +5,7 @@
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
-{% set pageName = 'Check witness documents' %}
+{% set pageName = 'Check and add witness documents' %}
 
 {% set returnUrl = "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witness-documents-check" %}
 
@@ -45,7 +45,7 @@
           {{ govukSummaryList({
             rows: [
               {
-                key: { text: "Witness" },
+                key: { text: "Name" },
                 value: { text: witName },
                 actions: {
                   items: [{
