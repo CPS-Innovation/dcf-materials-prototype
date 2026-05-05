@@ -5,7 +5,7 @@
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
-{% set pageName = 'Check defendant documents' %}
+{% set pageName = 'Check and add defendant documents' %}
 
 {% set returnUrl = "/cases/" ~ _case.id ~ "/material/generate-cps-documents/defendant-documents-check" %}
 
@@ -21,7 +21,7 @@
     <div class="govuk-grid-column-two-thirds-from-desktop">
 
       <span class="govuk-caption-m">
-        {{ _case.reference }} – Generate CPS documents
+        {{ _case.reference }}
       </span>
 
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
@@ -63,19 +63,20 @@
           {% endset %}
 
           {{ govukSummaryList({
-            card: {
-              title: { text: defName },
-              actions: {
-                items: [
-                  {
-                    href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-defendant?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
-                    text: "Remove",
-                    visuallyHiddenText: defName
-                  }
-                ]
-              }
-            },
             rows: [
+              {
+                key: { text: "Defendant" },
+                value: { text: defName },
+                actions: {
+                  items: [
+                    {
+                      href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-defendant?defendantId=" ~ defId ~ "&returnUrl=" ~ (returnUrl | urlencode),
+                      text: "Remove",
+                      visuallyHiddenText: defName
+                    }
+                  ]
+                }
+              },
               {
                 key: { text: "Documents" },
                 value: { html: defDocsHtml },
@@ -105,7 +106,7 @@
 
       <form method="post">
         <div class="govuk-button-group govuk-!-margin-top-2">
-          {{ govukButton({ text: "Confirm" }) }}
+          {{ govukButton({ text: "Add documents" }) }}
           <a class="govuk-link" href="/cases/{{ _case.id }}/material/generate-cps-documents">
             Cancel
           </a>

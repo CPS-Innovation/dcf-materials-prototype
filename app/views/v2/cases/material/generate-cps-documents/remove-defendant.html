@@ -20,13 +20,13 @@
     <div class="govuk-grid-column-two-thirds-from-desktop">
 
       <span class="govuk-caption-m">
-        {{ _case.reference }} – Generate CPS documents
+        {{ _case.reference }}
       </span>
 
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       {% if selectedDocs and selectedDocs.length %}
-        <p class="govuk-body">The following documents will be removed from the bundle:</p>
+        <p class="govuk-body">The following documents will be removed:</p>
         <ul class="govuk-list govuk-list--bullet">
           {% for doc in selectedDocs %}
             <li>{{ doc }}</li>

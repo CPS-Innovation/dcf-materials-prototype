@@ -20,6 +20,8 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds-from-desktop">
 
+      {% include "_shared/_includes/success-banner-safe.njk" %}
+
       <span class="govuk-caption-m">
         {{ _case.reference }}
       </span>
@@ -45,9 +47,9 @@
             value: { text: "Witness Special Measures" },
             actions: {
               items: [{
-                href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/witnesses?returnUrl=" ~ (returnUrl | urlencode),
-                text: "Change",
-                visuallyHiddenText: "witness selection"
+                href: "/cases/" ~ _case.id ~ "/material/generate-cps-documents/remove-witness-direct?witnessId=" ~ witId,
+                text: "Remove",
+                visuallyHiddenText: witName
               }]
             }
           }), rows) %}
@@ -58,6 +60,12 @@
       {% else %}
         <p class="govuk-body"><span class="govuk-hint">No witness documents selected</span></p>
       {% endif %}
+
+      <p class="govuk-body">
+        <a class="govuk-link" href="/cases/{{ _case.id }}/material/generate-cps-documents/witnesses">
+          Add another witness
+        </a>
+      </p>
 
       <form method="post">
         <div class="govuk-button-group govuk-!-margin-top-2">

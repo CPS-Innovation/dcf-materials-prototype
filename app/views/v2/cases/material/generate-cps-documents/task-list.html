@@ -29,7 +29,7 @@
 
       {% set totalDocCount = caseDocCount + defendantDocCount + witnessDocCount %}
       <h3 class="govuk-heading-s govuk-!-margin-bottom-6">
-        {{ totalDocCount }} {{ "document" if totalDocCount == 1 else "documents" }} selected
+        {{ totalDocCount }} {{ "document" if totalDocCount == 1 else "documents" }} 
       </h3>
 
       
@@ -63,7 +63,7 @@
 
       <h2 class="govuk-heading-m govuk-!-margin-top-6">Check and generate</h2>
 
-      <p class="govuk-body">Review your selections before generating documents.</p>
+      <p class="govuk-body">Review selections before generating documents.</p>
 
       {{ govukButton({
         text: "Check documents",
