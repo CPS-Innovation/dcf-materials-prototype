@@ -53,6 +53,11 @@
 // Details - Overview panels
 @import "components/overview-areas";
 
+/* Prevent page-level x-scroll; table wrappers use overflow-x:auto for internal scroll */
+.dcf-materials-wide .govuk-main-wrapper {
+  overflow-x: hidden;
+}
+
 /* Default: pages without this class use GOV.UK default width */
 /* Mobile padding */
 .dcf-materials-wide .govuk-width-container {
@@ -83,6 +88,12 @@
 h1 .govuk-tag {
   position: relative;
   top: -7px;
+}
+
+/* Charge detail panel — key column matches the Charge code column (120px) */
+.charge-detail-summary .govuk-summary-list__key {
+  width: 120px;
+  min-width: 120px;
 }
 
 .app-overview-cards {

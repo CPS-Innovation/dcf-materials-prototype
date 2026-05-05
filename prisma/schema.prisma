@@ -40,10 +40,11 @@ model ActivityLog {
 }
 
 model Victim {
-  id        Int     @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   firstName String
   lastName  String
-  cases     Case[]  @relation("CaseVictims")
+  cases     Case[]   @relation("CaseVictims")
+  charges   Charge[]
 }
 
 model Witness {
@@ -270,6 +271,8 @@ model Charge {
   custodyTimeLimit    DateTime?
   statutoryTimeLimit  DateTime?
   isCount             Boolean   @default(false)
+  victimId            Int?
+  victim              Victim?   @relation(fields: [victimId], references: [id])
   defendantId         Int
   defendant           Defendant @relation(fields: [defendantId], references: [id])
 }

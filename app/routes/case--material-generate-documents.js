@@ -146,7 +146,7 @@ module.exports = router => {
     const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
     const filteredDocs = {
       ...docs,
-      defendants: (docs.defendants || []).slice(0, 3).filter(d => !Object.prototype.hasOwnProperty.call(byDefendant, String(d.id)))
+      defendants: (docs.defendants || []).filter(d => !Object.prototype.hasOwnProperty.call(byDefendant, String(d.id))).slice(0, 3)
     }
 
     return res.render('v2/cases/material/generate-cps-documents/defendants', {

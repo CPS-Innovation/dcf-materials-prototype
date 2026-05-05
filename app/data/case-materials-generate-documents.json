@@ -1,6 +1,11 @@
 {
   "caseDocuments": [
     {
+      "id": "charge_information",
+      "label": "Charge information",
+      "lastGenerated": null
+    },
+    {
       "id": "factual_summary",
       "label": "Factual Summary",
       "lastGenerated": null

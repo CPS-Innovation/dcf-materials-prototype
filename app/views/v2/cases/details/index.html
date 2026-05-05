@@ -26,7 +26,7 @@
   
 
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-three-quarters">
+    <div class="govuk-grid-column-three-quarters"> 
       <span class="govuk-caption-m">{{_case.reference}}</span>
       <h1 class="govuk-heading-m">{{defendantsValue}}</h1>
     </div>
@@ -40,6 +40,14 @@
 {% endblock %}
 
 {% block pageScripts %}
+<script>
+/* ---- Scroll to top when a success banner is present (banner is above the #defendants anchor) ---- */
+(function () {
+  if (document.querySelector('.govuk-notification-banner--success')) {
+    window.scrollTo(0, 0);
+  }
+})();
+</script>
 <script>
 /* ---- Side navigation: hash-scoped toggling (#factual-summary / #cip / #certifications) ---- */
 (function () {

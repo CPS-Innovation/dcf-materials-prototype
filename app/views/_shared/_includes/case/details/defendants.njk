@@ -1,18 +1,6 @@
 {# _shared/_includes/case/details/defendants.njk #}
 
 
-{#
-  Pool of mock victims — cycled by charge loop index so every charge gets one
-  regardless of its chargeCode. Replace with charge.victimName / charge.victimStatus
-  once those fields are added to the Charge model in schema.prisma.
-#}
-{% set mockVictimPool = [
-  { name: "Frank Carter",   status: "Intimidated" },
-  { name: "Barry Jones",    status: "Vulnerable"  },
-  { name: "Ellie Campbell", status: "Intimidated" },
-  { name: "Sunita Patel",   status: "Vulnerable"  }
-] %}
-
 {# Plea enum → display label #}
 {% set pleaLabels = {
   "NOT_GUILTY":    "Not guilty anticipated plea",
@@ -56,10 +44,11 @@
         GDS table classes are applied manually to stay consistent with the design system.
       #}
       {% if defendant.charges.length %}
+        <div style="overflow-x: auto;">
         <table class="govuk-table">
           <thead class="govuk-table__head">
             <tr class="govuk-table__row">
-              <th class="govuk-table__header" scope="col">Charge code</th>
+              <th class="govuk-table__header" scope="col" style="width: 120px">Charge code</th>
               <th class="govuk-table__header" scope="col">Description and status</th>
               <th class="govuk-table__header" scope="col">Offence date</th>
               <th class="govuk-table__header" scope="col">Plea or verdict</th>
@@ -72,20 +61,13 @@
 
             {% for charge in defendant.charges %}
               {% set detailRowId = "charge-detail-" + defendant.id + "-" + charge.id %}
-              {% set victim = mockVictimPool[loop.index0 % mockVictimPool.length] %}
+              {% set victim = charge.victim if charge.victim else (_case.victims[loop.index0 % _case.victims.length] if _case.victims.length else null) %}
+              {% set victimStatus = "Intimidated" if loop.index0 % 2 == 0 else "Vulnerable" %}
               {% set pleaDisplay = pleaLabels[charge.plea] or charge.plea %}
 
-              {# Victim cell HTML — built here so it can be used in both
-                 the main row and the detail panel without repetition #}
               {% if victim %}
-                {% set victimCellHtml %}
-                  {{ victim.name }}
-                {% endset %}
-                {% set victimStatusHtml %}
-                   <strong class="govuk-tag govuk-tag--blue govuk-!-margin-top-1">
-                    {{ victim.status }}
-                  </strong>
-                {% endset %}
+                {% set victimCellHtml %}{{ victim.firstName }} {{ victim.lastName }}{% endset %}
+                {% set victimStatusHtml %}<strong class="govuk-tag govuk-tag--blue govuk-!-margin-top-1">{{ victimStatus }}</strong>{% endset %}
               {% else %}
                 {% set victimCellHtml %}<span class="govuk-hint">Not recorded</span>{% endset %}
                 {% set victimStatusHtml %}<span class="govuk-hint">Not recorded</span>{% endset %}
@@ -105,7 +87,7 @@
                 </td>
 
                 <td class="govuk-table__cell">
-                  {{ charge.offenceDate | date("dd/MM/yy") }}
+                  {{ charge.offenceDate | date("D/M/YYYY") }}
                 </td>
 
                 <td class="govuk-table__cell">{{ pleaDisplay }}</td>
@@ -129,13 +111,22 @@
               <tr class="govuk-table__row" id="{{ detailRowId }}" hidden>
                 <td class="govuk-table__cell" colspan="5">
 
+                    {% if victim %}
+                      {% set resolvedParticulars = charge.particulars
+                        | replace("[defendant]", defendant.firstName + " " + defendant.lastName)
+                        | replace("[victim]", victim.firstName + " " + victim.lastName) %}
+                    {% else %}
+                      {% set resolvedParticulars = charge.particulars
+                        | replace("[defendant]", defendant.firstName + " " + defendant.lastName) %}
+                    {% endif %}
+
                     {{ govukSummaryList({
-                      classes: "govuk-!-font-size-16",
+                      classes: "govuk-!-font-size-16 charge-detail-summary",
                       rows: [
                         {
                           classes: "govuk-summary-list__row--no-border",
                           key:     { text: "Charge particulars" },
-                          value:   { text: charge.particulars }
+                          value:   { text: resolvedParticulars }
                         },
                         {
                           classes: "govuk-summary-list__row--no-border",
@@ -150,10 +141,10 @@
                       ]
                     }) }}
 
-                    <div class="govuk-button-group govuk-!-margin-bottom-4">
+                    <div class="govuk-button-group  govuk-!-margin-top-4">
                       {{ govukButton({ text: "Mark for withdrawal", classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
                       {{ govukButton({ text: "Discontinue",                 classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
-                      {{ govukButton({ text: "Edit", href: "/cases/" + _case.id + "/charges/" + charge.id + "/edit/date", classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                      {{ govukButton({ text: "Edit", href: "/cases/" + _case.id + "/charges/edit/check?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
                     </div>
 
                 </td>
@@ -163,6 +154,7 @@
 
           </tbody>
         </table>
+        </div>
 
       {% else %}
         <p class="govuk-body">No charges recorded for this defendant.</p>
