@@ -39,17 +39,17 @@
       {% endif %}
 
       {% if (dateChanged or victimChanged) and not (data.editCharge and data.editCharge.particulars) %}
-        {% if data["dateType"] == "singleDate" %}
+        {% if data["dateType"] == "singleDate" and data["offenceDate-year"] and data["offenceDate-month"] and data["offenceDate-day"] %}
           {% set _d = data["offenceDate-year"] + "-" + data["offenceDate-month"] + "-" + data["offenceDate-day"] %}
-          {% set formattedDate = _d | date("d MMMM yyyy") %}
+          {% set formattedDate = _d | date("D MMMM YYYY") %}
           {% set datePrefix = "On the " %}
-        {% elif data["dateType"] == "multipleDates" %}
+        {% elif data["dateType"] == "multipleDates" and data["offenceDateFrom-year"] and data["offenceDateTo-year"] %}
           {% set _dFrom = data["offenceDateFrom-year"] + "-" + data["offenceDateFrom-month"] + "-" + data["offenceDateFrom-day"] %}
           {% set _dTo   = data["offenceDateTo-year"]   + "-" + data["offenceDateTo-month"]   + "-" + data["offenceDateTo-day"] %}
-          {% set formattedDate = (_dFrom | date("d MMMM yyyy")) + " and " + (_dTo | date("d MMMM yyyy")) %}
+          {% set formattedDate = (_dFrom | date("D MMMM YYYY")) + " and " + (_dTo | date("D MMMM YYYY")) %}
           {% set datePrefix = "Between " %}
         {% else %}
-          {% set formattedDate = charge.offenceDate | date("d MMMM yyyy") %}
+          {% set formattedDate = charge.offenceDate | date("D MMMM YYYY") %}
           {% set datePrefix = "On the " %}
         {% endif %}
         {% set defName = defendant.firstName + " " + defendant.lastName %}
