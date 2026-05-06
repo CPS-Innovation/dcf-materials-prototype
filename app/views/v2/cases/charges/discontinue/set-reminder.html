@@ -24,9 +24,9 @@
             name: "setReminder",
             fieldset: {
               legend: {
-                text: "Set reminder",
-                isPageHeading: false,
-                classes: "govuk-fieldset__legend--s"
+                text: "Do you want to set a reminder?",
+                isPageHeading: true,
+                classes: "govuk-fieldset__legend--s govuk-visually-hidden"
               }
             },
             value: data["setReminder"],
@@ -42,7 +42,7 @@
             ]
           }) }}
 
-          <div class="govuk-button-group">
+          <div class="govuk-button-group govuk-!-margin-top-6">
             {{ govukButton({ text: "Continue" }) }}
           </div>
         </form>
