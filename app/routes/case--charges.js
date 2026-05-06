@@ -74,7 +74,7 @@ module.exports = router => {
       ? resolveCharge(_case, editCharge.chargeId)
       : { charge: {}, defendant: {} }
 
-    const chargeIndex = defendant
+    const chargeIndex = defendant && defendant.charges
       ? defendant.charges.findIndex(c => c.id === parseInt(editCharge.chargeId, 10))
       : -1
     const victims = _case.victims || []

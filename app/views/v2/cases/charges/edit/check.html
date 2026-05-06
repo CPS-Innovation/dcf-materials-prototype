@@ -25,16 +25,16 @@
 
       {# ── Resolve date display ─────────────────────────────────── #}
       {% if data["correctDate"] == "No" %}
-        {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
+        {% set dateDisplay = charge.offenceDate | date("D MMMM YYYY") %}
       {% elif data["dateType"] == "singleDate" %}
         {% set singleDate = data["offenceDate-year"] + "-" + data["offenceDate-month"] + "-" + data["offenceDate-day"] %}
-        {% set dateDisplay = singleDate | date("d MMMM yyyy") %}
+        {% set dateDisplay = singleDate | date("D MMMM YYYY") %}
       {% elif data["dateType"] == "multipleDates" %}
         {% set dateFrom = data["offenceDateFrom-year"] + "-" + data["offenceDateFrom-month"] + "-" + data["offenceDateFrom-day"] %}
         {% set dateTo   = data["offenceDateTo-year"]   + "-" + data["offenceDateTo-month"]   + "-" + data["offenceDateTo-day"] %}
-        {% set dateDisplay = (dateFrom | date("d MMMM yyyy")) + " to " + (dateTo | date("d MMMM yyyy")) %}
+        {% set dateDisplay = (dateFrom | date("D MMMM YYYY")) + " to " + (dateTo | date("D MMMM YYYY")) %}
       {% else %}
-        {% set dateDisplay = charge.offenceDate | date("d MMMM yyyy") %}
+        {% set dateDisplay = charge.offenceDate | date("D MMMM YYYY") %}
       {% endif %}
 
       {# ── Resolve victim display ───────────────────────────────── #}
