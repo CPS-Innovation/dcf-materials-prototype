@@ -269,7 +269,7 @@ module.exports = router => {
       return res.redirect(returnUrl)
     }
 
-    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/victim`)
+    return res.redirect(`/cases/${req.params.caseId}/charges/edit/check`)
   })
 
 
@@ -299,52 +299,9 @@ module.exports = router => {
       return res.redirect(returnUrl)
     }
 
-    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/victim`)
+    return res.redirect(`/cases/${req.params.caseId}/charges/edit/check`)
   })
 
-
-  // ------------------------------------------------------------------
-  // STEP 2 — VICTIM (confirm current victim)
-  // GET  /cases/:caseId/charges/:chargeId/edit/victim
-  // POST →  summary (Yes) | select-victim (No)
-  router.get('/cases/:caseId/charges/:chargeId/edit/victim', async (req, res) => {
-    const _case = await getCaseWithCharges(req.params.caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
-    if (!charge) return res.status(404).render('not-found')
-
-    // Pull current victim name from session (set when Edit is clicked from
-    // defendants.njk via ?victimName=) or fall back to first mock victim.
-    // Replace with a real DB lookup once Charge has a victimId field.
-    const currentVictimName = formatVictimName(
-      req.session.data.editCharge?.victimName
-      || req.query.victimName
-      || mockVictimPool[0].name
-    )
-
-    // Persist into session so it survives across steps
-    req.session.data.editCharge = {
-      ...req.session.data.editCharge,
-      victimName: currentVictimName
-    }
-
-    return res.render('v2/cases/charges/edit/victim', {
-      _case,
-      charge,
-      defendant,
-      currentVictimName
-    })
-  })
-
-  // FIXED
-  router.post('/cases/:caseId/charges/:chargeId/edit/victim', (req, res) => {
-    const base = `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit`
-    if (req.body.hasVictim === 'Yes') {
-      return res.redirect(`${base}/select-victim`)         // ✅ Yes = change victim
-    }
-    return res.redirect(`${base}/summary`)     // ✅ No = keep victim
-  })
 
 
   // ------------------------------------------------------------------
