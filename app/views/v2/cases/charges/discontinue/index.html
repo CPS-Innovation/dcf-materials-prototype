@@ -1,4 +1,4 @@
-{# /cases/:caseId/charges/dicontinue/index #}
+{# /cases/:caseId/charges/discontinue/index #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
@@ -6,8 +6,7 @@
 
 {% set captionName = charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
-{% set base = base or ("/cases/" + _case.id + "/charges/" + charge.id + "/edit") %}
-{% set checkUrl = checkUrl or (base + "/check") %}
+{% set chargeStatus = "Put" %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -23,52 +22,42 @@
 
     <div class="govuk-grid-column-two-thirds">
 
-
       {{ govukSummaryList({
         rows: [
           {
-            key:   { text: "Offence date" },
-            value: { text: dateDisplay },
-            actions: {
-              items: [{
-                href: base + "/date-type?returnUrl=" + checkUrl,
-                text: "Change",
-                visuallyHiddenText: "offence date"
-              }]
-            }
+            key:   { text: "Charge code" },
+            value: { text: charge.chargeCode }
           },
           {
-            key:   { text: "Victim" },
-            value: { text: victimDisplay },
-            actions: {
-              items: [{
-                href: base + "/select-victim?returnUrl=" + checkUrl,
-                text: "Change",
-                visuallyHiddenText: "victim"
-              }]
-            }
+            key:   { text: "Description" },
+            value: { text: charge.description }
           },
           {
-            key:   { text: "Particulars" },
-            value: { text: particularsDisplay },
-            actions: {
-              items: [{
-                href: base + "/particulars?returnUrl=" + checkUrl,
-                text: "Change",
-                visuallyHiddenText: "charge particulars"
-              }]
-            }
+            key:   { text: "Status" },
+            value: { text: chargeStatus }
           }
         ]
       }) }}
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        
-         <div class="govuk-button-group">
-          {{ govukButton({ text: "Save and continue " }) }}
-          <a href="#" class="govuk-link">Cancel</a>
-         </div> 
+
+        {{ govukTextarea({
+          name: "reasonForDiscontinue",
+          id: "reason-for-discontinue",
+          rows: "6",
+          classes: "govuk-!-width-one-half",
+          label: {
+            text: "Reason for discontinuation",
+            classes: "govuk-label--s",
+            isPageHeading: false
+          }
+        }) }}
+
+        <div class="govuk-button-group">
+          {{ govukButton({ text: "Save and continue" }) }}
+          <a class="govuk-link" href="/cases/{{ _case.id }}/details#defendants">Cancel</a>
+        </div>
       </form>
 
     </div>
