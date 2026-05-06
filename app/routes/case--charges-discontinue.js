@@ -85,7 +85,10 @@ module.exports = router => {
   })
 
   router.post('/cases/:caseId/charges/discontinue/check', (req, res) => {
-    res.redirect(`/cases/${req.params.caseId}/charges/discontinue/victim-letter?discontinued=true`)
+    req.session.data.discontinuedBanner = true
+    req.session.save(() => {
+      res.redirect(`/cases/${req.params.caseId}/charges/discontinue/victim-letter`)
+    })
   })
 
   // ── victim-letter ─────────────────────────────────────────────────
@@ -95,12 +98,16 @@ module.exports = router => {
     if (!_case) return res.status(404).render('not-found')
 
     const { charge, defendant } = resolveFromSession(_case, req)
+    const successBanner = req.session.data.discontinuedBanner
+      ? { titleText: 'Charge discontinued' }
+      : null
+    delete req.session.data.discontinuedBanner
 
     return res.render('v2/cases/charges/discontinue/victim-letter', {
       _case,
       charge,
       defendant,
-      showBanner: req.query.discontinued === 'true'
+      successBanner
     })
   })
 

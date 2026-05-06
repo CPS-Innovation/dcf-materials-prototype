@@ -14,13 +14,15 @@
 
 <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-
-      {% if showBanner %}
+      
+      
+      {% if successBanner %}
         {{ govukNotificationBanner({
           type: "success",
           text: "Charge discontinued"
         }) }}
       {% endif %}
+
 
       <span class="govuk-caption-m">{{ captionName }}</span>
       <h1 class="govuk-heading-l">Do you want to prepare a victim letter?</h1>
