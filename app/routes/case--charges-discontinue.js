@@ -28,20 +28,121 @@ module.exports = router => {
     return { charge, defendant }
   }
 
-  // GET /cases/:caseId/charges/discontinue/index?chargeId=:chargeId
+  function resolveFromSession (_case, req) {
+    const chargeId = req.session.data.discontinueCharge?.chargeId
+    return chargeId
+      ? resolveCharge(_case, chargeId)
+      : { charge: null, defendant: null }
+  }
+
+  // ── index ─────────────────────────────────────────────────────────
+
   router.get('/cases/:caseId/charges/discontinue/index', async (req, res) => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
 
-    const { charge, defendant } = req.query.chargeId
-      ? resolveCharge(_case, req.query.chargeId)
-      : { charge: null, defendant: null }
+    if (req.query.chargeId) {
+      req.session.data.discontinueCharge = { chargeId: req.query.chargeId }
+    }
 
-    return res.render('v2/cases/charges/discontinue/index', {
+    if (req.query.returnUrl) {
+      req.session.data.discontinueCharge = {
+        ...req.session.data.discontinueCharge,
+        returnUrl: req.query.returnUrl
+      }
+    }
+
+    const { charge, defendant } = resolveFromSession(_case, req)
+
+    return res.render('v2/cases/charges/discontinue/index', { _case, charge, defendant })
+  })
+
+  router.post('/cases/:caseId/charges/discontinue/index', (req, res) => {
+    const returnUrl = req.session.data.discontinueCharge?.returnUrl || null
+    req.session.data.discontinueCharge = {
+      ...req.session.data.discontinueCharge,
+      reasonForDiscontinue: req.body.reasonForDiscontinue,
+      returnUrl: null
+    }
+    res.redirect(returnUrl || `/cases/${req.params.caseId}/charges/discontinue/check`)
+  })
+
+  // ── check ─────────────────────────────────────────────────────────
+
+  router.get('/cases/:caseId/charges/discontinue/check', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveFromSession(_case, req)
+    const { reasonForDiscontinue } = req.session.data.discontinueCharge || {}
+
+    return res.render('v2/cases/charges/discontinue/check', {
       _case,
       charge,
-      defendant
+      defendant,
+      reasonForDiscontinue
     })
+  })
+
+  router.post('/cases/:caseId/charges/discontinue/check', (req, res) => {
+    res.redirect(`/cases/${req.params.caseId}/charges/discontinue/victim-letter?discontinued=true`)
+  })
+
+  // ── victim-letter ─────────────────────────────────────────────────
+
+  router.get('/cases/:caseId/charges/discontinue/victim-letter', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveFromSession(_case, req)
+
+    return res.render('v2/cases/charges/discontinue/victim-letter', {
+      _case,
+      charge,
+      defendant,
+      showBanner: req.query.discontinued === 'true'
+    })
+  })
+
+  router.post('/cases/:caseId/charges/discontinue/victim-letter', (req, res) => {
+    req.session.data.discontinueCharge = {
+      ...req.session.data.discontinueCharge,
+      victimLetter: req.body.victimLetter
+    }
+    if (req.body.victimLetter === 'Yes') {
+      return res.redirect(`/cases/${req.params.caseId}/charges/discontinue/cms`)
+    }
+    res.redirect(`/cases/${req.params.caseId}/charges/discontinue/set-reminder`)
+  })
+
+  // ── cms (mimic only — no POST) ────────────────────────────────────
+
+  router.get('/cases/:caseId/charges/discontinue/cms', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveFromSession(_case, req)
+
+    return res.render('v2/cases/charges/discontinue/cms', { _case, charge, defendant })
+  })
+
+  // ── set-reminder ──────────────────────────────────────────────────
+
+  router.get('/cases/:caseId/charges/discontinue/set-reminder', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveFromSession(_case, req)
+
+    return res.render('v2/cases/charges/discontinue/set-reminder', { _case, charge, defendant })
+  })
+
+  router.post('/cases/:caseId/charges/discontinue/set-reminder', (req, res) => {
+    req.session.data.discontinueCharge = {
+      ...req.session.data.discontinueCharge,
+      setReminder: req.body.setReminder
+    }
+    res.redirect(`/cases/${req.params.caseId}/details#defendants`)
   })
 
 }
