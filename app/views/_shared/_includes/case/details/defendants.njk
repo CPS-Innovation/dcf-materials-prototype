@@ -143,8 +143,13 @@
 
                     <div class="govuk-button-group  govuk-!-margin-top-4">
                       {{ govukButton({ text: "Mark for withdrawal", classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
-                      {{ govukButton({ text: "Discontinue charge", href: "/cases/" + _case.id + "/charges/discontinue/index?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
-                      {{ govukButton({ text: "Edit charge", href: "/cases/" + _case.id + "/charges/edit/check?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                      {% if charge.status === "Discontinued" %}
+                        <a class="govuk-link" href="/cases/{{ _case.id }}/charges/discontinue/cms?chargeId={{ charge.id }}">Prepare victim letter</a>
+                        <a class="govuk-link" href="/cases/{{ _case.id }}/charges/discontinue/set-reminder-details?chargeId={{ charge.id }}">Set reminder</a>
+                      {% else %}
+                        {{ govukButton({ text: "Discontinue charge", href: "/cases/" + _case.id + "/charges/discontinue/index?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                        {{ govukButton({ text: "Edit charge", href: "/cases/" + _case.id + "/charges/edit/check?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                      {% endif %}
                     </div>
 
                 </td>
@@ -161,9 +166,9 @@
       {% endif %}
 
       {# ── Below-table actions ──────────────────────────────────────────── #}
-      <p class="govuk-body">
+      {# <p class="govuk-body">
         <a href="#" class="govuk-link">Show finalised charges</a>
-      </p>
+      </p> #}
 
       {{ govukButton({ text: "Add charges", classes: "govuk-button--secondary" }) }}
 

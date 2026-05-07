@@ -84,11 +84,25 @@ module.exports = router => {
     })
   })
 
-  router.post('/cases/:caseId/charges/discontinue/check', (req, res) => {
-    req.session.data.discontinuedBanner = true
-    req.session.save(() => {
-      res.redirect(`/cases/${req.params.caseId}/charges/discontinue/victim-letter`)
-    })
+  router.post('/cases/:caseId/charges/discontinue/check', async (req, res) => {
+    const caseId   = req.params.caseId
+    const chargeId = parseInt(req.session.data.discontinueCharge?.chargeId, 10)
+
+    if (chargeId) {
+      const _case = await getCaseWithCharges(caseId)
+      const { charge, defendant } = resolveCharge(_case, chargeId)
+
+      await prisma.charge.update({
+        where: { id: chargeId },
+        data:  { status: 'Discontinued' }
+      })
+
+      req.session.data.successBanner = {
+        text: `Charge ${charge.chargeCode} for ${defendant.firstName} ${defendant.lastName} discontinued`
+      }
+    }
+
+    req.session.save(() => res.redirect(`/cases/${caseId}/details#defendants`))
   })
 
   // ── victim-letter ─────────────────────────────────────────────────
@@ -128,6 +142,13 @@ module.exports = router => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
 
+    if (req.query.chargeId) {
+      req.session.data.discontinueCharge = {
+        ...req.session.data.discontinueCharge,
+        chargeId: req.query.chargeId
+      }
+    }
+
     const { charge, defendant } = resolveFromSession(_case, req)
 
     return res.render('v2/cases/charges/discontinue/cms', { _case, charge, defendant })
@@ -160,6 +181,13 @@ module.exports = router => {
   router.get('/cases/:caseId/charges/discontinue/set-reminder-details', async (req, res) => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
+
+    if (req.query.chargeId) {
+      req.session.data.discontinueCharge = {
+        ...req.session.data.discontinueCharge,
+        chargeId: req.query.chargeId
+      }
+    }
 
     if (req.query.returnUrl) {
       req.session.data.discontinueCharge = {
