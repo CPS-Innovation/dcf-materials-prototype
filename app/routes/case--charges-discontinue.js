@@ -149,6 +149,32 @@ module.exports = router => {
       ...req.session.data.discontinueCharge,
       setReminder: req.body.setReminder
     }
+    if (req.body.setReminder === 'Yes') {
+      return res.redirect(`/cases/${req.params.caseId}/charges/discontinue/set-reminder-details`)
+    }
+    res.redirect(`/cases/${req.params.caseId}/details#defendants`)
+  })
+
+  // ── set-reminder-details ──────────────────────────────────────────
+
+  router.get('/cases/:caseId/charges/discontinue/set-reminder-details', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveFromSession(_case, req)
+
+    return res.render('v2/cases/charges/discontinue/set-reminder-details', {
+      _case,
+      charge,
+      defendant
+    })
+  })
+
+  router.post('/cases/:caseId/charges/discontinue/set-reminder-details', (req, res) => {
+    req.session.data.discontinueCharge = {
+      ...req.session.data.discontinueCharge,
+      reminderTitle: req.body.reminderTitle
+    }
     res.redirect(`/cases/${req.params.caseId}/details#defendants`)
   })
 
