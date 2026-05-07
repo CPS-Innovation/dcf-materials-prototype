@@ -20,8 +20,8 @@
 
           {{ govukDateInput({
             classes: "govuk-!-margin-bottom-6",
-            id: "set-reminder",
-            namePrefix: "set-reminder",
+            id: "set-reminder-date",
+            namePrefix: "setReminderDate",
             fieldset: {
               legend: {
                 text: "Date",
@@ -31,12 +31,17 @@
             },
             hint: {
               text: "For example, 27 3 2007"
+            },
+            values: {
+              day:   data["setReminderDate-day"],
+              month: data["setReminderDate-month"],
+              year:  data["setReminderDate-year"]
             }
           }) }}
 
           {{ govukCharacterCount({
-            id: "reminder-title",
-            name: "reminderTitle",
+            id: "set-reminder-title",
+            name: "setReminderTitle",
             maxlength: 100,
             rows: "1",
             label: {
@@ -44,7 +49,7 @@
               isPageHeading: false,
               classes: "govuk-label--s"
             },
-            value: data["reminderTitle"]
+            value: data["setReminderTitle"]
           }) }}
 
           {{ govukSummaryList({
@@ -67,6 +72,7 @@
 
           <div class="govuk-button-group govuk-!-margin-top-6">
             {{ govukButton({ text: "Continue" }) }}
+            <a href="#" class="govuk-link">Cancel</a>
           </div>
         </form>
     </div>

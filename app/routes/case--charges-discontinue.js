@@ -161,6 +161,13 @@ module.exports = router => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
 
+    if (req.query.returnUrl) {
+      req.session.data.discontinueCharge = {
+        ...req.session.data.discontinueCharge,
+        returnUrl: req.query.returnUrl
+      }
+    }
+
     const { charge, defendant } = resolveFromSession(_case, req)
 
     return res.render('v2/cases/charges/discontinue/set-reminder-details', {
@@ -171,10 +178,39 @@ module.exports = router => {
   })
 
   router.post('/cases/:caseId/charges/discontinue/set-reminder-details', (req, res) => {
+    const returnUrl = req.session.data.discontinueCharge?.returnUrl || null
     req.session.data.discontinueCharge = {
       ...req.session.data.discontinueCharge,
-      reminderTitle: req.body.reminderTitle
+      setReminderTitle: req.body.setReminderTitle,
+      returnUrl: null
     }
+    res.redirect(returnUrl || `/cases/${req.params.caseId}/charges/discontinue/set-reminder-details-check`)
+  })
+
+  // ── set-reminder-details-check ────────────────────────────────────
+
+  router.get('/cases/:caseId/charges/discontinue/set-reminder-details-check', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveFromSession(_case, req)
+    const d = req.session.data
+    const day   = d['setReminderDate-day']   ? String(d['setReminderDate-day']).padStart(2, '0')   : null
+    const month = d['setReminderDate-month'] ? String(d['setReminderDate-month']).padStart(2, '0') : null
+    const year  = d['setReminderDate-year']  || null
+    const setReminderDate = year && month && day ? `${year}-${month}-${day}` : ''
+    const setReminderTitle = req.session.data.discontinueCharge?.setReminderTitle || ''
+
+    return res.render('v2/cases/charges/discontinue/set-reminder-details-check', {
+      _case,
+      charge,
+      defendant,
+      setReminderDate,
+      setReminderTitle
+    })
+  })
+
+  router.post('/cases/:caseId/charges/discontinue/set-reminder-details-check', (req, res) => {
     res.redirect(`/cases/${req.params.caseId}/details#defendants`)
   })
 
