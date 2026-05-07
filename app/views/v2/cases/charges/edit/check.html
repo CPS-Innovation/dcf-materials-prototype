@@ -11,14 +11,13 @@
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
-  {% include "_shared/_includes/success-banner-safe.njk" %}
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">Edit charge</h1>
+      <h1 class="govuk-heading-l">Check details and edit charge</h1>
     </div>
 
     <div class="govuk-grid-column-two-thirds">
@@ -103,7 +102,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         
          <div class="govuk-button-group">
-          {{ govukButton({ text: "Save and continue " }) }}
+          {{ govukButton({ text: "Save and continue" }) }}
           <a href="#" class="govuk-link">Cancel</a>
          </div> 
       </form>

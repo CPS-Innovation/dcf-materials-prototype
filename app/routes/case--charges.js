@@ -123,17 +123,17 @@ module.exports = router => {
       })
 
       const _case = await getCaseWithCharges(caseId)
-      const { defendant } = resolveCharge(_case, chargeId)
-      if (defendant) {
+      const { charge, defendant } = resolveCharge(_case, chargeId)
+      if (charge && defendant) {
         req.session.data.successBanner = {
-          text: `Charge details for ${defendant.firstName} ${defendant.lastName} updated`
+          text: `Charge ${charge.chargeCode} for ${defendant.firstName} ${defendant.lastName} updated`
         }
       }
     }
 
     delete req.session.data.editCharge
 
-    return res.redirect(`/cases/${caseId}/details#defendants`)
+    req.session.save(() => res.redirect(`/cases/${caseId}/details#defendants`))
   })
 
 

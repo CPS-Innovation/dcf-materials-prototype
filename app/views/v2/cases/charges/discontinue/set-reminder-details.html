@@ -1,0 +1,80 @@
+{# /cases/:caseId/charges/discontinue/set-reminder-details #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">Reminder details</h1>
+        <form method="post">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+          {{ govukDateInput({
+            classes: "govuk-!-margin-bottom-6",
+            id: "set-reminder-date",
+            namePrefix: "setReminderDate",
+            fieldset: {
+              legend: {
+                text: "Date",
+                isPageHeading: false,
+                classes: "govuk-fieldset__legend--s"
+              }
+            },
+            hint: {
+              text: "For example, 27 3 2007"
+            },
+            values: {
+              day:   data["setReminderDate-day"],
+              month: data["setReminderDate-month"],
+              year:  data["setReminderDate-year"]
+            }
+          }) }}
+
+          {{ govukCharacterCount({
+            id: "set-reminder-title",
+            name: "setReminderTitle",
+            maxlength: 100,
+            rows: "1",
+            label: {
+              text: "Title",
+              isPageHeading: false,
+              classes: "govuk-label--s"
+            },
+            value: data["setReminderTitle"]
+          }) }}
+
+          {{ govukSummaryList({
+            classes: "govuk-!-margin-top-6",
+            rows: [
+              {
+                key:   { text: "Defendant" },
+                value: { text: defendant.firstName + " " + defendant.lastName }
+              },
+              {
+                key:   { text: "Charge" },
+                value: { text: charge.chargeCode }
+              },
+              {
+                key:   { text: "Victim" },
+                value: { text: (charge.victim.firstName + " " + charge.victim.lastName) if charge.victim else "Not recorded" }
+              }
+            ]
+          }) }}
+
+          <div class="govuk-button-group govuk-!-margin-top-6">
+            {{ govukButton({ text: "Continue" }) }}
+            <a href="#" class="govuk-link">Cancel</a>
+          </div>
+        </form>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{# /cases/:caseId/charges/discontinue/victim-letter #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+
+{% set chargeStatus = "Put" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      
+      
+      {% if successBanner %}
+        {{ govukNotificationBanner({
+          type: "success",
+          text: "Charge discontinued"
+        }) }}
+      {% endif %}
+
+
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">Do you want to prepare a victim letter?</h1>
+
+        {{ govukInsetText({
+          text: "If you want to prepare a victim letter, CMS will open in another browser window"
+        }) }}
+
+        <form method="post">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          {{ govukRadios({
+            name: "victimLetter",
+            fieldset: {
+              legend: {
+                text: "Do you want to prepare a victim letter?",
+                isPageHeading: true,
+                classes: "govuk-fieldset__legend--s govuk-visually-hidden"
+              }
+            },
+            value: data["victimLetter"],
+            items: [
+              {
+                value: "Yes",
+                text: "Yes"
+              },
+              {
+                value: "No",
+                text: "No"
+              }
+            ]
+          }) }}
+
+          <div class="govuk-button-group govuk-!-margin-top-6">
+            {{ govukButton({ text: "Continue" }) }}
+          </div>
+        </form>
+    </div>
+  </div>
+{% endblock %}

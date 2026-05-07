@@ -1,0 +1,65 @@
+{# /cases/:caseId/charges/discontinue/index #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+
+{% set chargeStatus = "Put" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">Discontinue charge</h1>
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key:   { text: "Charge code" },
+            value: { text: charge.chargeCode }
+          },
+          {
+            key:   { text: "Description" },
+            value: { text: charge.description }
+          },
+          {
+            key:   { text: "Status" },
+            value: { text: chargeStatus }
+          }
+        ]
+      }) }}
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {{ govukTextarea({
+          name: "reasonForDiscontinue",
+          id: "reason-for-discontinue",
+          rows: "6",
+          classes: "govuk-!-width-one-half",
+          label: {
+            text: "Reason for discontinuing",
+            classes: "govuk-label--s",
+            isPageHeading: false
+          }
+        }) }}
+
+        <div class="govuk-button-group">
+          {{ govukButton({ text: "Save and continue" }) }}
+          <a class="govuk-link" href="/cases/{{ _case.id }}/details#defendants">Cancel</a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
