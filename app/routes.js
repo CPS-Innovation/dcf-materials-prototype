@@ -47,9 +47,15 @@ router.use((req, res, next) => {
         ? banner.text.trim()
         : null
 
+      const chargeId = banner.chargeId || null
+
       // Only expose a valid banner object to templates
-      res.locals.successBanner = (titleText || text)
-        ? { ...(titleText ? { titleText } : {}), ...(text ? { text } : {}) }
+      res.locals.successBanner = (titleText || text || chargeId)
+        ? {
+            ...(titleText ? { titleText } : {}),
+            ...(text ? { text } : {}),
+            ...(chargeId ? { chargeId, chargeCode: banner.chargeCode, defendantName: banner.defendantName } : {})
+          }
         : null
 
       // Clear from session so it's one-time only

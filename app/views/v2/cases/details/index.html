@@ -41,60 +41,36 @@
 
 {% block pageScripts %}
 <script>
-/* ---- Scroll to top when a success banner is present (banner is above the #defendants anchor) ---- */
 (function () {
-  if (document.querySelector('.govuk-notification-banner--success')) {
-    window.scrollTo(0, 0);
-  }
-})();
-</script>
-<script>
-/* ---- Side navigation: hash-scoped toggling (#factual-summary / #cip / #certifications) ---- */
-(function () {
-  var SECTION_HASHES = ['#factual-summary', '#cip', '#certifications'];
-  var DEFAULT_HASH   = '#factual-summary';
-
-  function resolveHash() {
-    var h = window.location.hash || '';
-    return (SECTION_HASHES.indexOf(h) !== -1) ? h : DEFAULT_HASH;
-  }
-
-  function renderSideNav() {
-    var hash = resolveHash();
-
-    // Toggle panels
-    document.querySelectorAll('.js-case-section').forEach(function (p) {
-      p.hidden = ('#' + p.id) !== hash;
-    });
-
-    // Update side-nav state
-    document.querySelectorAll('.moj-side-navigation a[href^="#"]').forEach(function (a) {
-      var on = a.getAttribute('href') === hash;
-      if (on) {
-        a.setAttribute('aria-current', 'location');
-        a.parentElement.classList.add('moj-side-navigation__item--active');
-      } else {
-        a.removeAttribute('aria-current');
-        a.parentElement.classList.remove('moj-side-navigation__item--active');
-      }
-    });
-  }
-
-  // Clicks on side-nav: push hash and render (no page jump)
-  document.addEventListener('click', function (e) {
-    var link = e.target.closest('.moj-side-navigation a[href^="#"]');
-    if (!link) return;
-    e.preventDefault();
-    var target = link.getAttribute('href');
-    if (target && target !== window.location.hash) {
-      history.pushState(null, '', target);
+  // Scroll banner into view after all scripts (including govuk-tabs hash handling) have run
+  window.addEventListener('load', function () {
+    var banner = document.querySelector('.govuk-notification-banner--success');
+    if (banner) {
+      window.scrollTo(0, 0);
+      banner.focus();
     }
-    renderSideNav();
   });
 
-  window.addEventListener('popstate', renderSideNav);
-  window.addEventListener('hashchange', renderSideNav);
-  document.addEventListener('DOMContentLoaded', renderSideNav);
+  // Banner link: reveal charge detail row and focus Prepare victim letter
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('.js-banner-charge-link');
+    if (!link) return;
+    e.preventDefault();
+    var chargeId = link.dataset.chargeId;
+    var prepareLink = document.getElementById('prepare-victim-letter-' + chargeId);
+    if (!prepareLink) return;
+
+    var detailRow = prepareLink.closest('tr');
+    if (detailRow && detailRow.hidden) {
+      detailRow.hidden = false;
+      var toggle = document.querySelector('[data-target="' + detailRow.id + '"]');
+      if (toggle) {
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.firstChild.textContent = 'Hide ';
+      }
+    }
+    prepareLink.focus();
+  });
 })();
 </script>
 {% endblock %}

@@ -56,7 +56,7 @@ const charges = [
 ];
 
 const chargeStatuses = [
-  "Charged", "Under review", "Proceeded", "Discontinued", "Amended"
+  "Charged", "Put", "Under review", "Proceeded", "Discontinued", "Amended"
 ];
 
 const pleas = ["NOT_GUILTY", "GUILTY", "NO_PLEA", "NOT_INDICATED"];
@@ -517,7 +517,7 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
           chargeCode: 'F02',
           // Use whichever description your prototype expects — keep consistent with your seed list
           description: 'FRAUD BY FALSE REPRESENTATION, contrary to section 2 of the Fraud Act 2006',
-          status: 'Charged',
+          status: 'Put',
           offenceDate,
           plea: 'NO_PLEA',
           particulars:
@@ -532,7 +532,7 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
           defendantId: lucasStark.id,
           chargeCode: 'T01',
           description: 'THREATENING BEHAVIOUR, contrary to section 4 of the Public Order Act 1986',
-          status: 'Charged',
+          status: 'Put',
           offenceDate,
           plea: 'NO_PLEA',
           particulars:
@@ -547,7 +547,7 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
           defendantId: victorDanvers.id,
           chargeCode: 'A02',
           description: 'ACTUAL BODILY HARM, contrary to section 47 of the Offences Against the Person Act 1861',
-          status: 'Charged',
+          status: 'Amended',
           offenceDate,
           plea: 'NO_PLEA',
           particulars:
@@ -562,7 +562,7 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
           defendantId: lucasStark.id,
           chargeCode: 'A01',
           description: 'ASSAULT BY BEATING, contrary to section 39 of the Criminal Justice Act 1988',
-          status: 'Charged',
+          status: 'Amended',
           offenceDate,
           plea: 'NO_PLEA',
           particulars:

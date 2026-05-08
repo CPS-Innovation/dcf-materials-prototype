@@ -280,13 +280,6 @@ $statuses: (
 }
 
 
-.govuk-template--rebranded .govuk-header {
-  background: govuk-colour("black") !important;
-}
-
-.govuk-template--rebranded .govuk-header__link--homepage:not(:focus) {
-  background: govuk-colour("black") !important;
-}
 
 .app-inset-action {
   margin-top: -30px;
@@ -294,4 +287,9 @@ $statuses: (
 
 .govuk-tabs__panel{
   margin-bottom: 0;
+}
+
+/* Skip link: only visible on keyboard focus — reinforces govuk-frontend default */
+.govuk-skip-link:not(:focus):not(:active) {
+  top: -9999px;
 }
