@@ -5,7 +5,7 @@
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
-{% set pageName = 'Witnesses' %}
+{% set pageName = 'Select witnesses' %}
 
 {% block beforeContent %}
   {{ govukBackLink({
@@ -17,11 +17,7 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds-from-desktop">
-
-      <span class="govuk-caption-m">
-        {{ _case.reference }}
-      </span>
-
+      <span class="govuk-caption-m">Add CPS documents - {{ _case.reference }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
       {% set docs = caseMaterialsGenerateDocuments or {} %}
@@ -49,7 +45,7 @@
             name: "selectedWitnessIds",
             fieldset: {
               legend: {
-                text: "Add witness special measures document to witness",
+                text: "Witness special measures documents will be added for all witnesses you select",
                 isPageHeading: false,
                 classes: "govuk-fieldset__legend--m"
               }
