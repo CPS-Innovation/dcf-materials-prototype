@@ -20,7 +20,7 @@
     "govuk-frontend": "5.12.0",
     "govuk-prototype-kit": "13.18.1",
     "jquery": "3.7.1",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "pdfjs-dist": "^5.4.296",
     "postcss": "^8.5.6"
   },
