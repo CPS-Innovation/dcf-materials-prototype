@@ -295,3 +295,8 @@ $statuses: (
 .govuk-tabs__panel{
   margin-bottom: 0;
 }
+
+/* Skip link: only visible on keyboard focus — reinforces govuk-frontend default */
+.govuk-skip-link:not(:focus):not(:active) {
+  top: -9999px;
+}

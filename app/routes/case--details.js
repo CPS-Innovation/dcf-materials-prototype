@@ -106,6 +106,21 @@ module.exports = router => {
       })
     }
 
+    // Session is the sole source of truth for 'Discontinued' status.
+    // Charges not tracked here (including stale DB writes) are reset.
+    const discontinuedIds = req.session.data.discontinuedChargeIds || []
+    if (_case) {
+      _case.defendants.forEach(defendant => {
+        defendant.charges.forEach(charge => {
+          if (discontinuedIds.includes(charge.id)) {
+            charge.status = 'Discontinued'
+          } else if (charge.status === 'Discontinued') {
+            charge.status = 'Charged'
+          }
+        })
+      })
+    }
+
     let documentTypeItems = documentTypes.map(docType => ({
       text: docType,
       value: docType
@@ -217,6 +232,21 @@ module.exports = router => {
       documents = documents.filter(document => {
         let documentName = document.name.toLowerCase()
         return documentName.indexOf(keywords) > -1
+      })
+    }
+
+    // Session is the sole source of truth for 'Discontinued' status.
+    // Charges not tracked here (including stale DB writes) are reset.
+    const discontinuedIds2 = req.session.data.discontinuedChargeIds || []
+    if (_case) {
+      _case.defendants.forEach(defendant => {
+        defendant.charges.forEach(charge => {
+          if (discontinuedIds2.includes(charge.id)) {
+            charge.status = 'Discontinued'
+          } else if (charge.status === 'Discontinued') {
+            charge.status = 'Charged'
+          }
+        })
       })
     }
 

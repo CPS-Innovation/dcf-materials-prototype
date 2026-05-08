@@ -92,13 +92,17 @@ module.exports = router => {
       const _case = await getCaseWithCharges(caseId)
       const { charge, defendant } = resolveCharge(_case, chargeId)
 
-      await prisma.charge.update({
-        where: { id: chargeId },
-        data:  { status: 'Discontinued' }
-      })
+      // Store discontinued state in session only (resets on Clear Data, never writes to DB)
+      const discontinuedIds = req.session.data.discontinuedChargeIds || []
+      if (!discontinuedIds.includes(chargeId)) {
+        discontinuedIds.push(chargeId)
+      }
+      req.session.data.discontinuedChargeIds = discontinuedIds
 
       req.session.data.successBanner = {
-        text: `Charge ${charge.chargeCode} for ${defendant.firstName} ${defendant.lastName} discontinued`
+        chargeCode:    charge.chargeCode,
+        chargeId:      chargeId,
+        defendantName: `${defendant.firstName} ${defendant.lastName}`
       }
     }
 
