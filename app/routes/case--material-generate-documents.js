@@ -325,7 +325,7 @@ module.exports = router => {
     delete byDefendant[String(defendantId)]
     _.set(req, 'session.data.generateCpsDocuments.defendantDocumentsById', byDefendant)
     _.set(req, 'session.data.generateCpsDocuments.defendantsConfirmed', false)
-    _.set(req, 'session.data.successBanner', { text: `${defName} removed` })
+    _.set(req, 'session.data.successBanner', { text: `${defName} removed as defendant` })
 
     const returnUrl = req.query.returnUrl
     return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents-check`)
@@ -595,7 +595,7 @@ module.exports = router => {
     delete byWitness[String(witnessId)]
     _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', byWitness)
     _.set(req, 'session.data.generateCpsDocuments.witnessesConfirmed', false)
-    _.set(req, 'session.data.successBanner', { text: `${witName} removed` })
+    _.set(req, 'session.data.successBanner', { text: `${witName} removed as witness` })
 
     const returnUrl = req.query.returnUrl
     return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
@@ -672,7 +672,7 @@ module.exports = router => {
     const witnessById     = selections.witnessDocumentsById || {}
 
     const docs = getGenerateDocsFixture()
-    const now  = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    const now  = new Date().toISOString()
 
     const updatedCaseDocs = (docs.caseDocuments || []).map(doc =>
       selectedCaseIds.includes(String(doc.id))
