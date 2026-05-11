@@ -3,12 +3,12 @@
     {
       "id": "charge_information",
       "label": "Charge information",
-      "lastGenerated": null
+      "lastGenerated": "2026-04-28T09:14:00.000Z"
     },
     {
       "id": "factual_summary",
       "label": "Factual Summary",
-      "lastGenerated": null
+      "lastGenerated": "2026-04-28T09:14:00.000Z"
     },
     {
       "id": "confidential_information",
@@ -29,12 +29,12 @@
         {
           "id": "charge_information",
           "label": "Charge Information",
-          "lastGenerated": null
+          "lastGenerated": "2026-04-28T09:14:00.000Z"
         },
         {
           "id": "breach_of_bail_condition",
           "label": "Breach of Bail Condition",
-          "lastGenerated": null
+          "lastGenerated": "2026-04-28T09:14:00.000Z"
         },
         {
           "id": "remand_application",
@@ -55,7 +55,7 @@
         {
           "id": "charge_information",
           "label": "Charge Information",
-          "lastGenerated": null
+          "lastGenerated": "2026-04-28T09:14:00.000Z"
         },
         {
           "id": "candidate_court_orders",
@@ -231,7 +231,7 @@
         {
           "id": "witness_special_measures",
           "label": "Witness Special Measures",
-          "lastGenerated": null
+          "lastGenerated": "2026-04-28T09:14:00.000Z"
         }
       ]
     },
