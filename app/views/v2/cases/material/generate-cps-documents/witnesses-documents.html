@@ -57,9 +57,9 @@
                       {{ doc.label }}
                     </label>
 
-                    {% if doc.lastGenerated %}
+                    {% if doc.previouslyGenerated %}
                       <div class="govuk-hint govuk-checkboxes__hint">
-                        Last generated: {{ doc.lastGenerated | govukDateTime }}
+                        Last generated: {{ doc.previouslyGenerated | govukDateTime }}
                       </div>
                     {% else %}
                       <div class="govuk-hint govuk-checkboxes__hint">
