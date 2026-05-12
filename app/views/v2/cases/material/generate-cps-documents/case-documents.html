@@ -30,7 +30,7 @@
 
       {% set checkboxItems = [] %}
       {% for doc in caseDocs %}
-        {% set hintText = ("Last generated: " + (doc.lastGenerated | govukDateTime)) if doc.lastGenerated else "Not previously generated" %}
+        {% set hintText = ("Last generated: " + (doc.previouslyGenerated | govukDateTime)) if doc.previouslyGenerated else "Not previously generated" %}
         {% set checkboxItems = (checkboxItems.push({
           value: doc.id,
           text: doc.label,
