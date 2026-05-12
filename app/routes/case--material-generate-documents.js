@@ -146,7 +146,7 @@ module.exports = router => {
     const byDefendant = _.get(req, 'session.data.generateCpsDocuments.defendantDocumentsById', {})
     const filteredDocs = {
       ...docs,
-      defendants: (docs.defendants || []).filter(d => !Object.prototype.hasOwnProperty.call(byDefendant, String(d.id))).slice(0, 3)
+      defendants: (docs.defendants || []).slice(0, 3).filter(d => !Object.prototype.hasOwnProperty.call(byDefendant, String(d.id)))
     }
 
     return res.render('v2/cases/material/generate-cps-documents/defendants', {
@@ -325,7 +325,7 @@ module.exports = router => {
     delete byDefendant[String(defendantId)]
     _.set(req, 'session.data.generateCpsDocuments.defendantDocumentsById', byDefendant)
     _.set(req, 'session.data.generateCpsDocuments.defendantsConfirmed', false)
-    _.set(req, 'session.data.successBanner', { text: `${defName} removed as defendant` })
+    _.set(req, 'session.data.successBanner', { text: `Documents for defendant ${defName} removed` })
 
     const returnUrl = req.query.returnUrl
     return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/defendant-documents-check`)
@@ -595,7 +595,7 @@ module.exports = router => {
     delete byWitness[String(witnessId)]
     _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', byWitness)
     _.set(req, 'session.data.generateCpsDocuments.witnessesConfirmed', false)
-    _.set(req, 'session.data.successBanner', { text: `${witName} removed as witness` })
+    _.set(req, 'session.data.successBanner', { text: `Documents for witness ${witName} removed` })
 
     const returnUrl = req.query.returnUrl
     return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/witness-documents-check`)
