@@ -147,7 +147,7 @@
                         <a class="govuk-link"
                            id="prepare-victim-letter-{{ charge.id }}"
                            href="/cases/{{ _case.id }}/charges/discontinue/cms?chargeId={{ charge.id }}">Prepare victim letter</a>
-                        <a class="govuk-link" href="/cases/{{ _case.id }}/charges/discontinue/set-reminder-details?chargeId={{ charge.id }}">Set reminder</a>
+                        <a class="govuk-link" href="/cases/{{ _case.id }}/charges/discontinue/set-reminder-details?chargeId={{ charge.id }}">Set victim letter reminder</a>
                       {% else %}
                         {% if charge.status === "Discontinuance proposed" %}
                           {{ govukButton({ text: "Revoke proposal", href: "/cases/" + _case.id + "/charges/revoke-proposal/index?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
