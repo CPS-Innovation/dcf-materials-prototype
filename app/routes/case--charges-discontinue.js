@@ -243,7 +243,15 @@ module.exports = router => {
   })
 
   router.post('/cases/:caseId/charges/discontinue/set-reminder-details-check', (req, res) => {
-    req.session.data.successBanner = { text: 'Reminder task set in task list' }
+    const title = req.session.data.discontinueCharge?.setReminderTitle || 'Reminder'
+    const now = new Date()
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+    const dueDate = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`
+
+    const reminderTasks = req.session.data.reminderTasks || []
+    reminderTasks.unshift({ name: title, dueDate, status: 'New', owner: 'Jimmy Bobbins', hasWarning: false })
+    req.session.data.reminderTasks = reminderTasks
+
     req.session.save(() => res.redirect(`/cases/${req.params.caseId}/details#defendants`))
   })
 
