@@ -1,4 +1,4 @@
-{# /v2/cases/:caseId/charges/propose-discontinuance/check #}
+{# /v2/cases/:caseId/charges/revoke-proposal/index #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
@@ -6,18 +6,15 @@
 
 {% set captionName = charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
-{% set chargeStatus = "Put" %}
-
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
-  {% include "_shared/_includes/success-banner-safe.njk" %}
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">Check details and propose discontinuance</h1>
+      <h1 class="govuk-heading-l">Revoke discontinuance proposal</h1>
     </div>
 
     <div class="govuk-grid-column-two-thirds">
@@ -33,12 +30,8 @@
             value: { text: charge.description }
           },
           {
-            key:   { text: "Reason for proposing discontinuation" },
-            value: { text: reasonForDiscontinue }
-          },
-          {
-            key:   { text: "Police response required by" },
-            value: { text: policeReplyByDate }
+            key:   { text: "Status" },
+            value: { text: "Discontinuance proposed" }
           }
         ]
       }) }}
@@ -47,11 +40,10 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
         <div class="govuk-button-group">
-          {{ govukButton({ text: "Propose discontinuance" }) }}
+          {{ govukButton({ text: "Revoke proposal", classes: "govuk-button--warning" }) }}
           <a href="/cases/{{ _case.id }}/details#defendants" class="govuk-link">Cancel</a>
         </div>
       </form>
-
 
     </div>
   </div>
