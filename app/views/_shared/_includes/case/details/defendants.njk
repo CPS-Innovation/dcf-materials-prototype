@@ -81,7 +81,7 @@
                 <td class="govuk-table__cell">
                   <strong>{{ charge.description }}</strong>
                   <br>
-                  <strong class="govuk-tag {{ 'govuk-tag--yellow' if charge.status === 'Discontinued' else 'govuk-tag--blue' }} govuk-!-margin-top-1">
+                  <strong class="govuk-tag {% if charge.status === 'Discontinued' %}govuk-tag--yellow{% elif charge.status === 'Discontinuance proposed' %}govuk-tag--red{% elif charge.status === 'Put' %}govuk-tag--green{% else %}govuk-tag--blue{% endif %} govuk-!-margin-top-1">
                     {{ charge.status }}
                   </strong>
                 </td>
@@ -149,6 +149,11 @@
                            href="/cases/{{ _case.id }}/charges/discontinue/cms?chargeId={{ charge.id }}">Prepare victim letter</a>
                         <a class="govuk-link" href="/cases/{{ _case.id }}/charges/discontinue/set-reminder-details?chargeId={{ charge.id }}">Set reminder</a>
                       {% else %}
+                        {% if charge.status === "Discontinuance proposed" %}
+                          {{ govukButton({ text: "Revoke proposal", href: "/cases/" + _case.id + "/charges/revoke-proposal/index?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                        {% else %}
+                          {{ govukButton({ text: "Propose discontinuance", href: "/cases/" + _case.id + "/charges/propose-discontinuance/index?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
+                        {% endif %}
                         {{ govukButton({ text: "Discontinue charge", href: "/cases/" + _case.id + "/charges/discontinue/index?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
                         {{ govukButton({ text: "Edit charge", href: "/cases/" + _case.id + "/charges/edit/check?chargeId=" + charge.id, classes: "govuk-button--secondary govuk-!-font-size-19" }) }}
                       {% endif %}
