@@ -243,7 +243,8 @@ module.exports = router => {
   })
 
   router.post('/cases/:caseId/charges/discontinue/set-reminder-details-check', (req, res) => {
-    res.redirect(`/cases/${req.params.caseId}/details#defendants`)
+    req.session.data.successBanner = { text: 'Reminder task set in task list' }
+    req.session.save(() => res.redirect(`/cases/${req.params.caseId}/details#defendants`))
   })
 
 }
