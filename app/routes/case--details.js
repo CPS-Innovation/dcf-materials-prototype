@@ -131,6 +131,17 @@ module.exports = router => {
       { name: 'Prepare victim letter',  dueDate: '15 March 2026', status: 'Done', owner: 'Anni Arryuokay', hasWarning: false },
       { name: 'Request upgrade file',   dueDate: '06 Feb 2026',   status: 'Done', owner: 'Frank Bobbins',  hasWarning: false }
     ]
+    const proposedDiscontinuanceIds = req.session.data.proposedDiscontinuanceChargeIds || []
+    if (_case) {
+      _case.defendants.forEach(defendant => {
+        defendant.charges.forEach(charge => {
+          if (proposedDiscontinuanceIds.includes(charge.id)) {
+            charge.status = 'Discontinuance proposed'
+          }
+        })
+      })
+    }
+
     const reminderTasks = req.session.data.reminderTasks || []
     const tasks = [...reminderTasks, ...placeholderTasks]
 

@@ -1,0 +1,115 @@
+{# /v2/cases/:caseId/charges/propose-discontinuance/index #}
+{% extends "_shared/layouts/main.html" %}
+{% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+
+{% set chargeStatus = "Put" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">Propose discontinue charge</h1>
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key:   { text: "Charge code" },
+            value: { text: charge.chargeCode }
+          },
+          {
+            key:   { text: "Description" },
+            value: { text: charge.description }
+          },
+          {
+            key:   { text: "Status" },
+            value: { text: chargeStatus }
+          }
+        ]
+      }) }}
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {{ govukTextarea({
+          name: "reasonForDiscontinue",
+          id: "reason-for-discontinue",
+          rows: "6",
+          classes: "govuk-!-width-one-half",
+          label: {
+            text: "Reason for proposing discontinuation",
+            classes: "govuk-label--s",
+            isPageHeading: false
+          }
+        }) }}
+
+        <div class="moj-datepicker-with-shortcuts">
+          {{ mojDatePicker({
+            id: "policeReplyByDate",
+            name: "policeReplyByDate",
+            label: {
+              text: "When do you need the police to reply by?",
+              classes: "govuk-label--s"
+            },
+            hint: {
+              text: "For example, 17/5/2025."
+            }
+          }) }}
+          <div class="moj-datepicker-shortcuts" aria-label="Quick date selection">
+            <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="0">Today</a>
+            <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="1">+1 day</a>
+            <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="7">+7 days</a>
+            <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="14">+14 days</a>
+            <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="28">+28 days</a>
+          </div>
+        </div>
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Save and continue" }) }}
+          <a class="govuk-link" href="/cases/{{ _case.id }}/details#defendants">Cancel</a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
+
+{% block pageScripts %}
+<style>
+  .moj-datepicker-with-shortcuts { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  .moj-datepicker-with-shortcuts .moj-datepicker { margin-bottom: 0; }
+  .moj-datepicker-shortcuts { display: flex; align-items: center; gap: 12px; padding-bottom: 5px; flex-wrap: wrap; }
+</style>
+<script>
+(function () {
+  function offsetDate(days) {
+    var d = new Date();
+    d.setDate(d.getDate() + days);
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var yyyy = d.getFullYear();
+    return dd + '/' + mm + '/' + yyyy;
+  }
+
+  document.querySelectorAll('.js-date-shortcut').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      var input = document.getElementById('policeReplyByDate');
+      if (input) input.value = offsetDate(parseInt(this.dataset.offset, 10));
+    });
+  });
+})();
+</script>
+{% endblock %}
