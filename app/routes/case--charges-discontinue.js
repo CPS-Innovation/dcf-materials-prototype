@@ -202,6 +202,10 @@ module.exports = router => {
 
     const { charge, defendant } = resolveFromSession(_case, req)
 
+    if (req.query.chargeId && charge) {
+      req.session.data.setReminderTitle = `Prepare INTIMIDATED victim letter for discontinued charge ${charge.chargeCode} on case ${_case.reference}`
+    }
+
     return res.render('v2/cases/charges/discontinue/set-reminder-details', {
       _case,
       charge,
@@ -226,11 +230,13 @@ module.exports = router => {
     if (!_case) return res.status(404).render('not-found')
 
     const { charge, defendant } = resolveFromSession(_case, req)
-    const d = req.session.data
-    const day   = d['setReminderDate-day']   ? String(d['setReminderDate-day']).padStart(2, '0')   : null
-    const month = d['setReminderDate-month'] ? String(d['setReminderDate-month']).padStart(2, '0') : null
-    const year  = d['setReminderDate-year']  || null
-    const setReminderDate = year && month && day ? `${year}-${month}-${day}` : ''
+    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
+    const raw = req.session.data.setReminderDate || ''
+    const [dd, mm, yyyy] = raw.split('/')
+    const day = parseInt(dd, 10), month = parseInt(mm, 10) - 1
+    const setReminderDate = (yyyy && !isNaN(day) && !isNaN(month) && month >= 0 && month <= 11)
+      ? `${day} ${MONTHS[month]} ${yyyy}`
+      : ''
     const setReminderTitle = req.session.data.discontinueCharge?.setReminderTitle || ''
 
     return res.render('v2/cases/charges/discontinue/set-reminder-details-check', {
@@ -242,7 +248,12 @@ module.exports = router => {
     })
   })
 
-  router.post('/cases/:caseId/charges/discontinue/set-reminder-details-check', (req, res) => {
+  router.post('/cases/:caseId/charges/discontinue/set-reminder-details-check', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge } = resolveFromSession(_case, req)
+
     const title = req.session.data.discontinueCharge?.setReminderTitle || 'Reminder'
     const now = new Date()
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -251,6 +262,13 @@ module.exports = router => {
     const reminderTasks = req.session.data.reminderTasks || []
     reminderTasks.unshift({ name: title, dueDate, status: 'New', owner: 'Jimmy Bobbins', hasWarning: false })
     req.session.data.reminderTasks = reminderTasks
+
+    const victimName = charge?.victim
+      ? `${charge.victim.firstName} ${charge.victim.lastName}`
+      : null
+    req.session.data.successBanner = {
+      text: `Victim letter reminder set${victimName ? ` for ${victimName}` : ''}`
+    }
 
     req.session.save(() => res.redirect(`/cases/${req.params.caseId}/details#defendants`))
   })

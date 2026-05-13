@@ -1,5 +1,6 @@
 {# /cases/:caseId/charges/discontinue/set-reminder-details #}
 {% extends "_shared/layouts/main.html" %}
+{% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -14,30 +15,31 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">Reminder details</h1>
+      <h1 class="govuk-heading-l">Set victim letter reminder</h1>
         <form method="post">
           <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
-          {{ govukDateInput({
-            classes: "govuk-!-margin-bottom-6",
-            id: "set-reminder-date",
-            namePrefix: "setReminderDate",
-            fieldset: {
-              legend: {
+          <div class="moj-datepicker-with-shortcuts govuk-!-margin-bottom-6">
+            {{ mojDatePicker({
+              id: "setReminderDate",
+              name: "setReminderDate",
+              value: data["setReminderDate"],
+              label: {
                 text: "Date",
-                isPageHeading: false,
-                classes: "govuk-fieldset__legend--s"
+                classes: "govuk-label--s"
+              },
+              hint: {
+                text: "For example, 17/5/2025."
               }
-            },
-            hint: {
-              text: "For example, 27 3 2007"
-            },
-            values: {
-              day:   data["setReminderDate-day"],
-              month: data["setReminderDate-month"],
-              year:  data["setReminderDate-year"]
-            }
-          }) }}
+            }) }}
+            <div class="moj-datepicker-shortcuts" aria-label="Quick date selection">
+              <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="0">Today</a>
+              <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="1">+1 day</a>
+              <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="7">+7 days</a>
+              <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="14">+14 days</a>
+              <a class="govuk-link govuk-body-s js-date-shortcut" href="#" data-offset="28">+28 days</a>
+            </div>
+          </div>
 
           {{ govukCharacterCount({
             id: "set-reminder-title",
@@ -77,4 +79,32 @@
         </form>
     </div>
   </div>
+{% endblock %}
+
+{% block pageScripts %}
+<style>
+  .moj-datepicker-with-shortcuts { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+  .moj-datepicker-with-shortcuts .moj-datepicker { margin-bottom: 0; }
+  .moj-datepicker-shortcuts { display: flex; align-items: center; gap: 12px; padding-bottom: 5px; flex-wrap: wrap; }
+</style>
+<script>
+(function () {
+  function offsetDate(days) {
+    var d = new Date();
+    d.setDate(d.getDate() + days);
+    var dd = String(d.getDate()).padStart(2, '0');
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var yyyy = d.getFullYear();
+    return dd + '/' + mm + '/' + yyyy;
+  }
+
+  document.querySelectorAll('.js-date-shortcut').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      var input = document.getElementById('setReminderDate');
+      if (input) input.value = offsetDate(parseInt(this.dataset.offset, 10));
+    });
+  });
+})();
+</script>
 {% endblock %}
