@@ -40,7 +40,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
         <div class="govuk-button-group">
-          {{ govukButton({ text: "Revoke proposal", classes: "govuk-button--warning" }) }}
+          {{ govukButton({ text: "Revoke proposal" }) }}
           <a href="/cases/{{ _case.id }}/details#defendants" class="govuk-link">Cancel</a>
         </div>
       </form>

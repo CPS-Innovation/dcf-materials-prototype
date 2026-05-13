@@ -81,7 +81,7 @@
                 <td class="govuk-table__cell">
                   <strong>{{ charge.description }}</strong>
                   <br>
-                  <strong class="govuk-tag {{ 'govuk-tag--yellow' if charge.status === 'Discontinued' else 'govuk-tag--blue' }} govuk-!-margin-top-1">
+                  <strong class="govuk-tag {% if charge.status === 'Discontinued' %}govuk-tag--yellow{% elif charge.status === 'Discontinuance proposed' %}govuk-tag--red{% elif charge.status === 'Put' %}govuk-tag--green{% else %}govuk-tag--blue{% endif %} govuk-!-margin-top-1">
                     {{ charge.status }}
                   </strong>
                 </td>
