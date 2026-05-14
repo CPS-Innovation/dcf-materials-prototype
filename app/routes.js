@@ -76,6 +76,7 @@ router.use((req, res, next) => {
  */
 router.use((req, res, next) => {
   const version = req.query.v || req.session.version || 'v1'
+  if (req.query.v) req.session.version = version
   req.version = version
   res.locals.version = version
   next()
