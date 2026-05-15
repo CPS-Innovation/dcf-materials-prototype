@@ -4,7 +4,7 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+{% set captionName = "Edit charge details - " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -31,7 +31,7 @@
         {% set _ = victimItems.push({ divider: "or" }) %}
         {% set _ = victimItems.push({
           value: "none",
-          text: "There is no victim associated with this charge",
+          text: "No victim",
           checked: data["victimId"] == "none"
         }) %}
 

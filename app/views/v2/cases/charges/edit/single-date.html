@@ -4,7 +4,8 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = "Edit charge: " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+{% set captionName = "Edit charge details - " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+
 
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
@@ -23,7 +24,7 @@
           namePrefix: "offenceDate",
           fieldset: {
             legend: {
-              html: '<span class="govuk-caption-m">' + captionName + '</span>Date of offence',
+              html: '<span class="govuk-caption-m">' + captionName + '</span>Enter date of offence',
               isPageHeading: true,
               classes: "govuk-fieldset__legend--l"
             }

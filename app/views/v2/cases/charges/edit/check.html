@@ -4,7 +4,7 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+{% set captionName = "Edit charge details - " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
 
 {% set base = base or ("/cases/" + _case.id + "/charges/" + charge.id + "/edit") %}
 {% set checkUrl = checkUrl or (base + "/check") %}
@@ -17,7 +17,7 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ captionName }}</span>
-      <h1 class="govuk-heading-l">Check details and edit charge</h1>
+      <h1 class="govuk-heading-l">Edit charge details</h1>
     </div>
 
     <div class="govuk-grid-column-two-thirds">
@@ -63,12 +63,16 @@
       {{ govukSummaryList({
         rows: [
           {
+            key:   { text: "Charge" },
+            value: { text: charge.description }
+          },
+          {
             key:   { text: "Offence date" },
             value: { text: dateDisplay },
             actions: {
               items: [{
                 href: base + "/date-type?returnUrl=" + checkUrl,
-                text: "Change",
+                text: "Edit",
                 visuallyHiddenText: "offence date"
               }]
             }
@@ -79,7 +83,7 @@
             actions: {
               items: [{
                 href: base + "/select-victim?returnUrl=" + checkUrl,
-                text: "Change",
+                text: "Edit",
                 visuallyHiddenText: "victim"
               }]
             }
@@ -90,7 +94,7 @@
             actions: {
               items: [{
                 href: base + "/particulars?returnUrl=" + checkUrl,
-                text: "Change",
+                text: "Edit",
                 visuallyHiddenText: "charge particulars"
               }]
             }
@@ -102,7 +106,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         
          <div class="govuk-button-group">
-          {{ govukButton({ text: "Save and continue" }) }}
+          {{ govukButton({ text: "Save details" }) }}
           <a href="#" class="govuk-link">Cancel</a>
          </div> 
       </form>
