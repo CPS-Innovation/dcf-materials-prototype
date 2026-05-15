@@ -18,7 +18,7 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds-from-desktop">
       <span class="govuk-caption-m">Add witness documents - {{ _case.reference }}</span>
-      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+      {# <h1 class="govuk-heading-l">{{ pageName }}</h1> #}
 
       {% set docs = caseMaterialsGenerateDocuments or {} %}
       {% set witnesses = docs.witnesses or [] %}
@@ -46,8 +46,8 @@
             fieldset: {
               legend: {
                 text: "Which witnesses need special measures documents?",
-                isPageHeading: false,
-                classes: "govuk-fieldset__legend--m"
+                isPageHeading: true,
+                classes: "govuk-fieldset__legend--l"
               }
             },
             hint: {
