@@ -19,10 +19,6 @@
     <div class="govuk-grid-column-two-thirds-from-desktop">
 
       <span class="govuk-caption-m">Add defendant documents - {{ _case.reference }}</span>
-      <h1 class="govuk-heading-l">
-        Add defendant documents
-      </h1>
-
 
       {% set documents = selectedDefendant.documents or [] %}
 
@@ -31,44 +27,35 @@
         <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
 
         {% if documents.length == 0 %}
+          <h1 class="govuk-heading-l">Add defendant documents</h1>
           <p class="govuk-body">There are no documents available for this defendant.</p>
         {% else %}
 
-          <div class="govuk-form-group">
-            <fieldset class="govuk-fieldset">
-              <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-                Select documents for {{ selectedDefendant.name }}
-              </legend>
-              <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+          {% set documentItems = [] %}
+          {% for doc in documents %}
+            {% if doc.previouslyGenerated %}
+              {% set hintText = "Last generated: " ~ (doc.previouslyGenerated | govukDateTime) %}
+            {% else %}
+              {% set hintText = "Not previously generated" %}
+            {% endif %}
+            {% set documentItems = (documentItems.push({
+              value: doc.id,
+              text: doc.label,
+              hint: { text: hintText }
+            }), documentItems) %}
+          {% endfor %}
 
-                {% for doc in documents %}
-                  <div class="govuk-checkboxes__item">
-                    <input class="govuk-checkboxes__input"
-                           id="doc-{{ doc.id }}"
-                           name="selectedDefendantDocuments"
-                           type="checkbox"
-                           value="{{ doc.id }}">
-
-                    <label class="govuk-label govuk-checkboxes__label"
-                           for="doc-{{ doc.id }}">
-                      {{ doc.label }}
-                    </label>
-
-                    {% if doc.previouslyGenerated %}
-                      <div class="govuk-hint govuk-checkboxes__hint">
-                        Last generated: {{ doc.previouslyGenerated | govukDateTime }}
-                      </div>
-                    {% else %}
-                      <div class="govuk-hint govuk-checkboxes__hint">
-                        Not previously generated
-                      </div>
-                    {% endif %}
-                  </div>
-                {% endfor %}
-
-              </div>
-            </fieldset>
-          </div>
+          {{ govukCheckboxes({
+            name: "selectedDefendantDocuments",
+            fieldset: {
+              legend: {
+                text: "Which documents do you need for " + selectedDefendant.name + "?",
+                isPageHeading: true,
+                classes: "govuk-fieldset__legend--l"
+              }
+            },
+            items: documentItems
+          }) }}
 
         {% endif %}
 
