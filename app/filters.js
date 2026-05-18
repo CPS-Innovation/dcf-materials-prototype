@@ -55,7 +55,14 @@ addFilter('isoDateString', date => {
 
 addFilter('govukDate', value => {
   if (!value) return ''
-  const d = (value instanceof Date) ? value : new Date(value)
+  let d
+  if (typeof value === 'string' && value.includes('/')) {
+    const [datePart] = value.split(' ')
+    const [day, month, year] = datePart.split('/').map(Number)
+    d = new Date(year, month - 1, day)
+  } else {
+    d = (value instanceof Date) ? value : new Date(value)
+  }
   if (Number.isNaN(d.getTime())) return ''
 
   return new Intl.DateTimeFormat('en-GB', {

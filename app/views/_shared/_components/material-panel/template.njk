@@ -1,4 +1,4 @@
-{#                                                                                                                                                                                                                          #}
+{# app/views/_shared/_components/material-panel/template.njk #}
 
 {% from "govuk/components/accordion/macro.njk" import govukAccordion %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
@@ -149,7 +149,7 @@
       {% if m.date %}
         <p class="dcf-material-card__meta dcf-material-card__meta--with-note">
           <span class="dcf-material-card__date">
-            Last generated: {{ m.date | govukDateTime }}
+            {% if m.materialStatus == "Generated" %}Last generated: {{ m.date | govukDateTime }}{% else %}{{ m.date | govukDate }}{% endif %}
           </span>
 
           <a href="#" class="govuk-link dcf-note-link" data-action="open-notes">

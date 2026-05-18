@@ -62,11 +62,11 @@
                 value: { text: defendant.firstName + " " + defendant.lastName }
               },
               {
-                key:   { text: "Charge" },
-                value: { text: charge.chargeCode }
+                key:   { text: "Discontinued charge" },
+                value: { text: charge.chargeCode + " " + charge.description}
               },
               {
-                key:   { text: "Victim" },
+                key:   { text: "Linked victim" },
                 value: { text: (charge.victim.firstName + " " + charge.victim.lastName) if charge.victim else "Not recorded" }
               }
             ]
