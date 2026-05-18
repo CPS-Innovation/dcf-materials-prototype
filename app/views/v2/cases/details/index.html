@@ -45,8 +45,12 @@
   window.addEventListener('load', function () {
     var banner = document.querySelector('.govuk-notification-banner--success');
     if (banner) {
-      window.scrollTo(0, 0);
-      banner.focus();
+      setTimeout(function () {
+        var scroller = document.querySelector('.govuk-main-wrapper') || document.scrollingElement || document.documentElement;
+        scroller.scrollTop = 0;
+        scroller.scrollLeft = 0;
+        banner.focus();
+      }, 0);
     }
   });
 
