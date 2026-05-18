@@ -126,7 +126,7 @@ module.exports = router => {
       const { charge, defendant } = resolveCharge(_case, chargeId)
       if (charge && defendant) {
         req.session.data.successBanner = {
-          text: `Charge ${charge.chargeCode} for ${defendant.firstName} ${defendant.lastName} updated`
+          text: `Details of charge ${charge.chargeCode} for ${defendant.firstName} ${defendant.lastName} updated`
         }
       }
     }
@@ -387,7 +387,7 @@ module.exports = router => {
     if (req.body.chargeParticularsCorrect === 'Yes') {
       return res.redirect(`${base}/particulars`)
     }
-    return res.redirect(`${base}/check`)
+    return res.redirect(`/cases/${req.params.caseId}/charges/edit/check`)
   })
 
 
@@ -440,52 +440,8 @@ module.exports = router => {
       return res.redirect(returnUrl)
     }
 
-    return res.redirect(
-      `/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/check`
-    )
+    return res.redirect(`/cases/${req.params.caseId}/charges/edit/check`)
   })
 
-
-  // ------------------------------------------------------------------
-  // STEP 4 — CHECK ANSWERS
-  // GET  /cases/:caseId/charges/:chargeId/edit/check
-  // POST /cases/:caseId/charges/:chargeId/edit/check  →  saves + back to charges index
-  router.get('/cases/:caseId/charges/:chargeId/edit/check', async (req, res) => {
-    const _case = await getCaseWithCharges(req.params.caseId)
-    if (!_case) return res.status(404).render('not-found')
-
-    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
-    if (!charge) return res.status(404).render('not-found')
-
-    const editCharge = req.session.data.editCharge || {}
-
-    return res.render('v2/cases/charges/edit/check', {
-      _case,
-      charge,
-      defendant,
-      editCharge,
-      witnesses: _case.witnesses
-    })
-  })
-
-  router.post('/cases/:caseId/charges/:chargeId/edit/check', async (req, res) => {
-    const chargeId   = parseInt(req.params.chargeId, 10)
-    const editCharge = req.session.data.editCharge || {}
-
-    // Persist changes back to the database
-    await prisma.charge.update({
-      where: { id: chargeId },
-      data: {
-        offenceDate: editCharge.offenceDate ? new Date(editCharge.offenceDate) : undefined,
-        particulars: editCharge.particulars || undefined
-        // victimName / victimStatus: add here once fields exist on the Charge model
-      }
-    })
-
-    // Clear the edit session data
-    delete req.session.data.editCharge
-
-    return res.redirect(`/cases/${req.params.caseId}/defendants?success=charge-updated`)
-  })
 
 }

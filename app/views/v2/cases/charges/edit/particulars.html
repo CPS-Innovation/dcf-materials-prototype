@@ -34,8 +34,10 @@
         {% set changedText = "the offence date" %}
       {% elif victimChanged %}
         {% set changedText = "the victim" %}
-      {% else %}
-        {% set changedText = "the charge particulars" %}
+      {% endif %}
+
+      {% if changedText %}
+        {% set particularsHint = { text: "You have edited " + changedText + ". Ensure the new particulars reflect any changes made." } %}
       {% endif %}
 
       {% if (dateChanged or victimChanged) and not (data.editCharge and data.editCharge.particulars) %}
@@ -80,9 +82,7 @@
             isPageHeading: false,
             classes: "govuk-label--s"
           },
-          hint: {
-            text: "You have edited " + changedText + ". Ensure the new particulars reflect any changes made."
-          },
+          hint: particularsHint,
           value: (data.editCharge.particulars if data.editCharge) or generatedParticulars or particulars
         }) }}
 
