@@ -1,0 +1,66 @@
+{# /v2/cases/indictment/counts/precedent-charges-or-offence.html #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'indictment' %}
+{% set pageName = 'Select precedent charges or offence for count' %}
+
+{% block beforeContent %}
+  <a href="javascript:history.back()" class="govuk-back-link">Back</a>
+{% endblock %}
+
+{% block content %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-three-quarters">
+
+      {# {% set html %}
+        <p class="govuk-notification-banner__heading">
+          ** Can search on code, keyword or offence ***
+      {% endset %} #}
+
+      {# {{ govukNotificationBanner({
+        html: html
+      }) }} #}
+
+      <span class="govuk-caption-m">{{_case.reference}} - {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+          {% if _case.defendants.length > 1 %}
+            and {{_case.defendants.length - 1}} more
+          {% endif %}
+        </span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {% include "_shared/_includes/case/indictment/search-form.njk" %}
+
+      <form method="post"
+          action="/cases/{{ _case.id }}/indictment/counts/precedent-charges-or-offence/continue">
+
+        {% if returnTo %}
+          <input type="hidden" name="returnTo" value="{{ returnTo }}">
+        {% endif %}
+
+        {% include "_shared/_includes/case/indictment/search-results.njk" %}
+
+        {% if precedentSearchKeywords and precedentResults and precedentResults.length %}
+          <div class="govuk-button-group govuk-!-margin-top-4">
+            {{ govukButton({
+              text: "Save and continue",
+              name: "action",
+              value: "continue"
+            }) }}
+
+            {{ govukButton({
+              text: "Save and exit",
+              name: "action",
+              value: "exit",
+              classes: "govuk-button--secondary"
+            }) }}
+          </div>
+        {% endif %}
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
