@@ -149,7 +149,7 @@
       {% if m.date %}
         <p class="dcf-material-card__meta dcf-material-card__meta--with-note">
           <span class="dcf-material-card__date">
-            Date: {{ m.date }}
+            {% if m.materialStatus == "Generated" %}Last generated: {{ m.date | govukDateTime }}{% else %}{{ m.date | govukDate }}{% endif %}
           </span>
 
           <a href="#" class="govuk-link dcf-note-link" data-action="open-notes">

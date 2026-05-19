@@ -27,7 +27,6 @@
         <input type="hidden" name="returnUrl" value="{{ query.returnUrl }}">
 
         {% if documents.length == 0 %}
-          <h1 class="govuk-heading-l">Add defendant documents</h1>
           <p class="govuk-body">There are no documents available for this defendant.</p>
         {% else %}
 
@@ -49,7 +48,7 @@
             name: "selectedDefendantDocuments",
             fieldset: {
               legend: {
-                text: "Which documents do you need for " + selectedDefendant.name + "?",
+                text: "Select documents for " + selectedDefendant.name,
                 isPageHeading: true,
                 classes: "govuk-fieldset__legend--l"
               }
