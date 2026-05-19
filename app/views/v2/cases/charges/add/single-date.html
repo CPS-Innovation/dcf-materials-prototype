@@ -1,10 +1,10 @@
-{# /cases/:caseId/charges/edit/single-date #}
+{# /cases/:caseId/charges/add/single-date #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
-{% set captionName = "Edit charge details - " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+{% set captionName = "Add charge - " + defendant.firstName + " " + defendant.lastName %}
 
 
 {% block content %}

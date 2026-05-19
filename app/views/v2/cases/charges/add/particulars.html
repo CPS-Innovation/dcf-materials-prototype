@@ -1,0 +1,137 @@
+{# /cases/:caseId/charges/add/particulars #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = "Add charge - " + defendant.firstName + " " + defendant.lastName %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">Add particulars</h1>
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {# Hidden static values for JS generate #}
+        <input type="hidden" id="static-date" value="{{ datePrefill }}">
+        <input type="hidden" id="static-victim" value="{{ newCharge.victimName }}">
+
+
+        <div class="app-particulars-builder">
+
+          <div class="app-particulars-builder__row">
+            <span class="app-particulars-builder__label">Date (optional)</span>
+            <p class="app-particulars-builder__value">{{ datePrefill or "Not recorded" }}</p>
+          </div>
+
+          <div class="app-particulars-builder__row">
+            {{ govukSelect({
+              id: "builder_location",
+              name: "builder_location",
+              label: { text: "Location (optional)", classes: "app-particulars-builder__label" },
+              items: [
+                { value: "", text: "Select location" },
+                { value: "Birmingham", text: "Birmingham" },
+                { value: "Bradford", text: "Bradford" },
+                { value: "Bristol", text: "Bristol" },
+                { value: "Leeds", text: "Leeds" },
+                { value: "Liverpool", text: "Liverpool" },
+                { value: "London", text: "London" },
+                { value: "Manchester", text: "Manchester" },
+                { value: "Newcastle", text: "Newcastle" },
+                { value: "Nottingham", text: "Nottingham" },
+                { value: "Sheffield", text: "Sheffield" }
+              ]
+            }) }}
+          </div>
+
+          <div class="app-particulars-builder__row">
+            <span class="app-particulars-builder__label">Victim (optional)</span>
+            <p class="app-particulars-builder__value">{{ newCharge.victimName or "No victim" }}</p>
+          </div>
+
+          <div class="app-particulars-builder__row">
+            {{ govukSelect({
+              id: "builder_action",
+              name: "builder_action",
+              label: { text: "Action (optional)", classes: "app-particulars-builder__label" },
+              items: [
+                { value: "", text: "Select action" },
+                { value: "assaulted", text: "Assaulted" },
+                { value: "robbed", text: "Robbed" },
+                { value: "threatened", text: "Threatened" },
+                { value: "possessed", text: "Possessed" }
+              ]
+            }) }}
+          </div>
+
+          <div class="app-particulars-builder__row">
+            {{ govukInput({
+              id: "builder_details",
+              name: "builder_details",
+              label: { text: "Details (optional)  ", classes: "app-particulars-builder__label" },
+              hint: { text: "Describe the specific act, e.g. by beating, with a knife, by false representation." }
+            }) }}
+          </div>
+
+          <button type="button" id="generate-particulars" class="govuk-button govuk-button--secondary">
+            Generate summary of charge particulars
+          </button>
+        
+        </div>
+
+        {{ govukTextarea({
+          id: "particulars",
+          name: "particulars",
+          rows: 8,
+          label: {
+            text: "Summary of charge particulars (optional)",
+            classes: "govuk-label--s"
+          },
+          hint: { text: "Describe the circumstances of the offence." },
+          value: newCharge.particulars or ""
+        }) }}
+
+        <div class="govuk-button-group">
+          {{ govukButton({ text: "Continue" }) }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    var btn = document.getElementById('generate-particulars')
+    if (!btn) return
+    btn.addEventListener('click', function () {
+      var date     = document.getElementById('static-date').value
+      var location = document.getElementById('builder_location').value
+      var victim   = document.getElementById('static-victim').value
+      var action   = document.getElementById('builder_action').value
+      var details  = document.getElementById('builder_details').value
+
+      var sentence = 'On ' + (date || 'date not recorded')
+                   + ' at ' + (location || 'location not specified')
+                   + ', the defendant ' + (action || '[action]')
+      if (victim) sentence += ' ' + victim
+      sentence += '.'
+      if (details) sentence += ' ' + details
+
+      document.getElementById('particulars').value = sentence
+    })
+  })()
+  </script>
+
+{% endblock %}

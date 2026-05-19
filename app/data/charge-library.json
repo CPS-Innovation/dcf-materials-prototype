@@ -3,6 +3,7 @@
     "chargeCode": "R01",
     "label": "Robbery",
     "category": "Offences against property",
+    "effectiveFromDate": "1968-07-26",
     "statute": {
       "act": "Theft Act 1968",
       "section": "s.8(1)"
@@ -23,6 +24,7 @@
     "chargeCode": "DR01",
     "label": "Possession of a controlled drug (Class A)",
     "category": "Drug offences",
+    "effectiveFromDate": "1971-07-01",
     "statute": {
       "act": "Misuse of Drugs Act 1971",
       "section": "s.5(2)"
@@ -42,6 +44,7 @@
     "chargeCode": "DR02",
     "label": "Possession of a controlled drug (Class B)",
     "category": "Drug offences",
+    "effectiveFromDate": "1971-07-01",
     "statute": {
       "act": "Misuse of Drugs Act 1971",
       "section": "s.5(2)"
@@ -60,6 +63,7 @@
     "chargeCode": "A01",
     "label": "Assault by beating (common assault)",
     "category": "Offences against the person",
+    "effectiveFromDate": "1988-09-29",
     "statute": {
       "act": "Criminal Justice Act 1988",
       "section": "s.39"
@@ -76,6 +80,7 @@
     "chargeCode": "A02",
     "label": "Assault occasioning actual bodily harm (ABH)",
     "category": "Offences against the person",
+    "effectiveFromDate": "1861-08-06",
     "statute": {
       "act": "Offences Against the Person Act 1861",
       "section": "s.47"
@@ -92,6 +97,7 @@
     "chargeCode": "F02",
     "label": "Fraud by false representation",
     "category": "Fraud offences",
+    "effectiveFromDate": "2007-01-15",
     "statute": {
       "act": "Fraud Act 2006",
       "section": "s.2"
@@ -111,6 +117,7 @@
     "chargeCode": "PO01",
     "label": "Threatening behaviour",
     "category": "Public order offences",
+    "effectiveFromDate": "1986-04-01",
     "statute": {
       "act": "Public Order Act 1986",
       "section": "s.4"

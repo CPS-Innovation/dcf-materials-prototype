@@ -495,6 +495,32 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
       wasWarned: true
     })
 
+    await getOrCreateWitness(tx, {
+      caseId: showcaseCase.id,
+      title: 'Mr',
+      firstName: 'Andrew',
+      lastName: 'Thomas',
+      dcf: true,
+      preferredLanguage: 'English',
+      isCpsContactAllowed: true,
+      isKeyWitness: true,
+      isRelevant: true,
+      wasWarned: true
+    })
+
+    await getOrCreateWitness(tx, {
+      caseId: showcaseCase.id,
+      title: 'Mr',
+      firstName: 'Victor',
+      lastName: 'Maximoff',
+      dcf: true,
+      preferredLanguage: 'English',
+      isCpsContactAllowed: true,
+      isKeyWitness: false,
+      isRelevant: true,
+      wasWarned: false
+    })
+
     // --- Charges (refresh to exact set) ---
     // Remove any existing charges for these two defendants to keep the demo deterministic
     await tx.charge.deleteMany({
