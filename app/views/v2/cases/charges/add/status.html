@@ -1,0 +1,52 @@
+{# /cases/:caseId/charges/add/victim-status #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = "Add charge - " + defendant.firstName + " " + defendant.lastName %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {{ govukRadios({
+          name: "victimIsVI",
+          fieldset: {
+            legend: {
+              html: '<span class="govuk-caption-m">' + captionName + '</span>Is ' + (newCharge.victimName or "the victim") + ' vulnerable or intimidated?',
+              isPageHeading: true,
+              classes: "govuk-fieldset__legend--l"
+            }
+          },
+          items: [
+            {
+              value: "Vulnerable",
+              text: "Vulnerable",
+              checked: data["victimIsVI"] == "Vulnerable"
+            },
+            {
+              value: "Intimidated",
+              text: "Intimidated",
+              checked: data["victimIsVI"] == "Intimidated"
+            }
+          ]
+        }) }}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Continue" }) }}
+          <a href="#" class="govuk-link">Cancel</a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

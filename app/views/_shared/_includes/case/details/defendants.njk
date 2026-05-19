@@ -1,4 +1,4 @@
-{# _shared/_includes/case/details/defendants.njk #}
+{#  #}
 
 
 {# Plea enum → display label #}
@@ -177,7 +177,7 @@
         <a href="#" class="govuk-link">Show finalised charges</a>
       </p> #}
 
-      {{ govukButton({ text: "Add charges", classes: "govuk-button--secondary" }) }}
+      {{ govukButton({ text: "Add charge", href: "/cases/" + _case.id + "/charges/add/search-charges?defendantId=" + defendant.id, classes: "govuk-button--secondary" }) }}
 
     </div>{# /govuk-summary-card__content #}
   </div>{# /govuk-summary-card #}

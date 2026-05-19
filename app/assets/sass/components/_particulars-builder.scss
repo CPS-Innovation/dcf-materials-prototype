@@ -1,0 +1,22 @@
+.app-particulars-builder {
+  margin-bottom: govuk-spacing(6);
+}
+
+.app-particulars-builder__row {
+  margin-bottom: govuk-spacing(4);
+
+  &:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+.app-particulars-builder__label {
+  @include govuk-font($size: 19, $weight: bold);
+  display: block;
+  margin-bottom: govuk-spacing(1);
+}
+
+.app-particulars-builder__value {
+  @include govuk-font($size: 19);
+  margin: 0;
+}

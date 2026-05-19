@@ -1,0 +1,54 @@
+{# /cases/:caseId/charges/add/date-type #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = "Add charge - " + defendant.firstName + " " + defendant.lastName %}
+
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {{ govukRadios({
+          name: "dateType",
+          fieldset: {
+            legend: {
+              html: '<span class="govuk-caption-m">' + captionName + '</span>When was the offence committed?',
+              isPageHeading: true,
+              classes: "govuk-fieldset__legend--l"
+            }
+          },
+          items: [
+            {
+              value: "singleDate",
+              text: "On a single date",
+              checked: data["dateType"] == "singleDate"
+            },
+            {
+              value: "multipleDates",
+              text: "Across multiple dates",
+              checked: data["dateType"] == "multipleDates"
+            }
+          ]
+        }) }}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Continue" }) }}
+           <a href="#" class="govuk-link">Cancel</a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

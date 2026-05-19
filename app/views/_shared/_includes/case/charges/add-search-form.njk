@@ -1,0 +1,22 @@
+{# app/views/_shared/_includes/case/charges/add-search-form.njk #}
+<div class="app-search-form">
+  <form method="get" action="/cases/{{ _case.id }}/charges/add/search-charges" novalidate>
+    {{ govukInput({
+      id: "precedentSearchKeywords",
+      name: "precedentSearchKeywords",
+      label: {
+        text: "Search by part of a CJS code, statute or by offence keyword",
+        classes: "govuk-label--s app-search-form__label"
+      },
+      value: precedentSearchKeywords or ""
+    }) }}
+    {{ govukButton({ text: "Search", classes: "app-search-form__button" }) }}
+  </form>
+
+  {% if precedentSearchKeywords %}
+    <p class="govuk-!-margin-top-2 govuk-!-margin-bottom-0">
+      <a class="govuk-link--no-visited-state"
+         href="/cases/{{ _case.id }}/charges/add/search-charges">Clear search</a>
+    </p>
+  {% endif %}
+</div>

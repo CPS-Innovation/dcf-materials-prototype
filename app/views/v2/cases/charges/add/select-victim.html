@@ -1,0 +1,60 @@
+{# /cases/:caseId/charges/add/select-victim #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = "Add charge - " + defendant.firstName + " " + defendant.lastName %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {% set victimItems = [] %}
+
+        {% for victim in victims %}
+          {% set _ = victimItems.push({
+            value: victim.id | string,
+            text: victim.firstName + " " + victim.lastName,
+            hint: { text: "Pure victim" } if victim.isPure else undefined,
+            checked: data["victimId"] == victim.id | string
+          }) %}
+        {% endfor %}
+
+        {% set _ = victimItems.push({ divider: "or" }) %}
+        {% set _ = victimItems.push({
+          value: "none",
+          text: "No victim",
+          checked: data["victimId"] == "none"
+        }) %}
+
+        {{ govukRadios({
+          name: "victimId",
+          fieldset: {
+            legend: {
+              html: '<span class="govuk-caption-m">' + captionName + '</span>Select victim',
+              isPageHeading: true,
+              classes: "govuk-fieldset__legend--l"
+            }
+          },
+          items: victimItems
+        }) }}
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({ text: "Continue" }) }}
+          <a href="#" class="govuk-link">Cancel</a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

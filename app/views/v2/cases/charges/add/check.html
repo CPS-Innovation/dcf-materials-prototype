@@ -1,0 +1,117 @@
+{# /cases/:caseId/charges/add/check #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = "Add charge - " + defendant.firstName + " " + defendant.lastName %}
+{% set base = "/cases/" + _case.id + "/charges/add" %}
+{% set checkUrl = base + "/check" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">Check details and add charge</h1>
+    </div>
+
+    <div class="govuk-grid-column-two-thirds">
+
+      {# ── Resolve date display ─────────────────────────────────── #}
+      {% if data["dateType"] == "singleDate" %}
+        {% set singleDate = data["offenceDate-year"] + "-" + data["offenceDate-month"] + "-" + data["offenceDate-day"] %}
+        {% set dateDisplay = singleDate | date("D MMMM YYYY") %}
+      {% elif data["dateType"] == "multipleDates" %}
+        {% set dateFrom = data["offenceDateFrom-year"] + "-" + data["offenceDateFrom-month"] + "-" + data["offenceDateFrom-day"] %}
+        {% set dateTo   = data["offenceDateTo-year"]   + "-" + data["offenceDateTo-month"]   + "-" + data["offenceDateTo-day"] %}
+        {% set dateDisplay = (dateFrom | date("D MMMM YYYY")) + " to " + (dateTo | date("D MMMM YYYY")) %}
+      {% else %}
+        {% set dateDisplay = "Not recorded" %}
+      {% endif %}
+
+      {# ── Resolve address display ──────────────────────────────── #}
+      {% set addr = newCharge.offenceAddress %}
+      {% if addr and (addr.line1 or addr.town) %}
+        {% set addrParts = [] %}
+        {% if addr.line1 %}{% set _ = addrParts.push(addr.line1) %}{% endif %}
+        {% if addr.line2 %}{% set _ = addrParts.push(addr.line2) %}{% endif %}
+        {% if addr.town  %}{% set _ = addrParts.push(addr.town)  %}{% endif %}
+        {% if addr.postcode %}{% set _ = addrParts.push(addr.postcode) %}{% endif %}
+        {% set addressDisplay = addrParts | join(", ") %}
+      {% else %}
+        {% set addressDisplay = "Not recorded" %}
+      {% endif %}
+
+      {# ── Resolve victim display ───────────────────────────────── #}
+      {% if newCharge.victimId == "none" %}
+        {% set victimDisplay = "No victim associated with this charge" %}
+      {% elif newCharge.victimName %}
+        {% set victimDisplay = newCharge.victimName %}
+      {% else %}
+        {% set victimDisplay = "Not recorded" %}
+      {% endif %}
+
+      {# ── Resolve V&I display ──────────────────────────────────── #}
+      {% if newCharge.victimId == "none" or not newCharge.victimId %}
+        {% set viDisplay = "N/A" %}
+      {% elif newCharge.victimIsVI %}
+        {% set viDisplay = newCharge.victimIsVI %}
+      {% else %}
+        {% set viDisplay = "Not recorded" %}
+      {% endif %}
+
+      {% set summaryRows = [
+        {
+          key:   { text: "Charge" },
+          value: { html: newCharge.chargeDescription + '<br><span class="govuk-hint govuk-!-margin-bottom-0">' + (newCharge.chargeCode or "") + '</span>' },
+          actions: { items: [{ href: base + "/search-charges", text: "Change", visuallyHiddenText: "charge" }] }
+        },
+        {
+          key:   { text: "Date" },
+          value: { text: dateDisplay },
+          actions: { items: [{ href: base + "/date-type?returnUrl=" + checkUrl, text: "Change", visuallyHiddenText: "offence date" }] }
+        },
+        {
+          key:   { text: "Address" },
+          value: { text: addressDisplay },
+          actions: { items: [{ href: base + "/address?returnUrl=" + checkUrl, text: "Change", visuallyHiddenText: "offence address" }] }
+        },
+        {
+          key:   { text: "Victim" },
+          value: { text: victimDisplay },
+          actions: { items: [{ href: base + "/select-victim?returnUrl=" + checkUrl, text: "Change", visuallyHiddenText: "victim" }] }
+        }
+      ] %}
+
+      {% if newCharge.victimIsVI %}
+        {% set _ = summaryRows.push({
+          key:   { text: "Intimidated or vulnerable" },
+          value: { text: newCharge.victimIsVI },
+          actions: { items: [{ href: base + "/victim-status", text: "Change", visuallyHiddenText: "victim vulnerability status" }] }
+        }) %}
+      {% endif %}
+
+      {% set _ = summaryRows.push({
+        key:   { text: "Particulars" },
+        value: { text: newCharge.particulars or "Not recorded" },
+        actions: { items: [{ href: base + "/particulars?returnUrl=" + checkUrl, text: "Change", visuallyHiddenText: "particulars" }] }
+      }) %}
+
+      {{ govukSummaryList({ rows: summaryRows }) }}
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        <div class="govuk-button-group">
+          {{ govukButton({ text: "Add charge" }) }}
+          <a href="/cases/{{ _case.id }}/details#defendants" class="govuk-link">Cancel</a>
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
