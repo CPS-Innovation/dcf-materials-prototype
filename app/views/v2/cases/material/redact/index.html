@@ -44,6 +44,8 @@
 
       {% if scan.findings and scan.findings.length %}
 
+      <h3 class="govuk-heading-m">Redaction cart</h3>
+
         {{ govukInsetText({
           html: 'Deselect any instances that should not be redacted.'
         }) }}
@@ -73,7 +75,7 @@
             fieldset: {
               legend: {
                 text: "Suggested redactions",
-                classes: "govuk-fieldset__legend--s"
+                classes: "govuk-fieldset__legend--s govuk-visually-hidden"
               }
             },
             items: checkboxItems

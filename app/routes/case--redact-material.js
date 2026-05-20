@@ -120,7 +120,7 @@ module.exports = router => {
   // CHECK
   // POST /cases/:caseId/material/redact/check
   router.post('/cases/:caseId/material/redact/check', (req, res) => {
-    const confirmed = [].concat(req.body.confirmedRedactions || [])
+    const confirmed = [].concat(req.body.confirmedRedactions || []).filter(v => v !== '_unchecked')
     const instanceCount = req.body.instanceCount || {}
     const mode = req.body.mode || 'assisted'
 
