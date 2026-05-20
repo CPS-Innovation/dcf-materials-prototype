@@ -1,6 +1,5 @@
 (() => {
   var iframe = document.getElementById('redact-preview-iframe')
-  var checkboxes = document.querySelectorAll('input[name="confirmedRedactions"]')
 
   // ── Mode panels & toggle ──────────────────────────────────────────────────
   var modeButtons = document.querySelectorAll('[data-panel]')
@@ -18,14 +17,8 @@
     })
   })
 
-  // ── Assisted: PDF.js find highlights ─────────────────────────────────────
+  // ── PDF.js find ───────────────────────────────────────────────────────────
   var pdfApp = null
-
-  function getActiveValues () {
-    return Array.from(checkboxes)
-      .filter(function (cb) { return cb.checked })
-      .map(function (cb) { return cb.value })
-  }
 
   function dispatchFind (terms) {
     pdfApp.eventBus.dispatch('find', {
@@ -46,23 +39,18 @@
     var manualActive   = panels.manual   && panels.manual.classList.contains('dcf-redact-panel--visible')
 
     if (assistedActive) {
-      var active = getActiveValues()
-      if (active.length) { dispatchFind(active); return }
+      var assistedTerms = Array.from(assistedItems.keys())
+      if (assistedTerms.length) { dispatchFind(assistedTerms); return }
     }
     if (manualActive) {
-      var terms = Array.from(manualItems.keys())
-      if (terms.length) { dispatchFind(terms); return }
+      var manualTerms = Array.from(manualItems.keys())
+      if (manualTerms.length) { dispatchFind(manualTerms); return }
     }
     pdfApp.eventBus.dispatch('findbarclose', { source: {} })
   }
 
-  checkboxes.forEach(function (cb) {
-    cb.addEventListener('change', applyHighlights)
-  })
-
-  // ── Manual: text selection ────────────────────────────────────────────────
+  // ── Shared helpers ────────────────────────────────────────────────────────
   var fullDocText = ''
-  var manualItems = new Map()
 
   function extractFullText (pdfDocument) {
     var pages = pdfDocument.numPages
@@ -91,6 +79,67 @@
       .replace(/"/g, '&quot;')
   }
 
+  function makeListItem (text, count, onRemove) {
+    var li = document.createElement('li')
+    li.className = 'dcf-manual-list__item'
+    li.innerHTML =
+      '<strong class="dcf-manual-list__text">' + escHtml(text) + '</strong>' +
+      ' — appears ' + count + ' time' + (count !== 1 ? 's' : '') +
+      '<br><button type="button" class="dcf-manual-list__remove govuk-link">Remove</button>'
+    li.querySelector('.dcf-manual-list__remove').addEventListener('click', onRemove)
+    return li
+  }
+
+  // ── Assisted: remove-link list ────────────────────────────────────────────
+  var assistedItems = new Map()
+
+  function renderAssistedList () {
+    var list   = document.getElementById('dcf-assisted-list')
+    var empty  = document.getElementById('dcf-assisted-empty')
+    var submit = document.getElementById('dcf-assisted-submit')
+    if (!list) return
+    list.innerHTML = ''
+    if (assistedItems.size === 0) {
+      if (empty)  empty.hidden         = false
+      if (submit) submit.style.display = 'none'
+      return
+    }
+    if (empty)  empty.hidden         = true
+    if (submit) submit.style.display = ''
+    assistedItems.forEach(function (count, text) {
+      list.appendChild(makeListItem(text, count, function () {
+        assistedItems.delete(text)
+        renderAssistedList()
+        applyHighlights()
+      }))
+    })
+  }
+
+  var assistedForm = document.getElementById('dcf-assisted-form')
+  if (assistedForm) {
+    assistedForm.addEventListener('submit', function () {
+      this.querySelectorAll('input[data-assisted]').forEach(function (el) { el.remove() })
+      assistedItems.forEach(function (count, text) {
+        var inp = document.createElement('input')
+        inp.type  = 'hidden'
+        inp.name  = 'confirmedRedactions'
+        inp.setAttribute('data-assisted', '1')
+        inp.value = text
+        assistedForm.appendChild(inp)
+
+        var countInp = document.createElement('input')
+        countInp.type  = 'hidden'
+        countInp.name  = 'instanceCount[' + text + ']'
+        countInp.setAttribute('data-assisted', '1')
+        countInp.value = count
+        assistedForm.appendChild(countInp)
+      })
+    })
+  }
+
+  // ── Manual: text selection ────────────────────────────────────────────────
+  var manualItems = new Map()
+
   function renderManualList () {
     var list   = document.getElementById('dcf-manual-list')
     var empty  = document.getElementById('dcf-manual-empty')
@@ -98,25 +147,18 @@
     if (!list) return
     list.innerHTML = ''
     if (manualItems.size === 0) {
-      if (empty)  empty.hidden        = false
+      if (empty)  empty.hidden         = false
       if (submit) submit.style.display = 'none'
       return
     }
-    if (empty)  empty.hidden        = true
+    if (empty)  empty.hidden         = true
     if (submit) submit.style.display = ''
     manualItems.forEach(function (count, text) {
-      var li = document.createElement('li')
-      li.className = 'dcf-manual-list__item'
-      li.innerHTML =
-        '<span class="dcf-manual-list__text">' + escHtml(text) + '</span> ' +
-        ' <strong> — Appears ' + count + ' time' + (count !== 1 ? 's' : '') + '</strong>' +
-        '<br><button type="button" class="dcf-manual-list__remove govuk-link">Remove</button>'
-      li.querySelector('.dcf-manual-list__remove').addEventListener('click', function () {
+      list.appendChild(makeListItem(text, count, function () {
         manualItems.delete(text)
         renderManualList()
         applyHighlights()
-      })
-      list.appendChild(li)
+      }))
     })
   }
 
@@ -154,6 +196,36 @@
         manualForm.appendChild(countInp)
       })
     })
+  }
+
+  // ── Initialise assisted items from findings data ──────────────────────────
+  var restore   = window.__redactRestore
+  var findings  = window.__assistedFindings || []
+
+  if (restore && restore.mode === 'assisted') {
+    // returning from check page — restore survivors only
+    var confirmedSet = new Set(restore.confirmed || [])
+    findings.forEach(function (f) {
+      if (confirmedSet.has(f.value)) {
+        assistedItems.set(f.value, Number((restore.instanceCount && restore.instanceCount[f.value]) || f.instances))
+      }
+    })
+  } else {
+    // fresh visit — all findings pre-loaded
+    findings.forEach(function (f) { assistedItems.set(f.value, f.instances) })
+  }
+  renderAssistedList()
+
+  if (restore && restore.mode === 'manual') {
+    ;(restore.confirmed || []).forEach(function (text) {
+      manualItems.set(text, Number((restore.instanceCount && restore.instanceCount[text]) || 0))
+    })
+    renderManualList()
+  }
+
+  if (restore) {
+    var targetBtn = document.querySelector('[data-panel="' + restore.mode + '"]')
+    if (targetBtn) targetBtn.click()
   }
 
   // ── Iframe init ───────────────────────────────────────────────────────────
