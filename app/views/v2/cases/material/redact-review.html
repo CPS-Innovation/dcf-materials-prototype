@@ -1,0 +1,88 @@
+{# /cases/:caseId/material/redact/review #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <span class="govuk-caption-m">AI redaction</span>
+  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">
+    Review suggested redactions{% if scan.title %} — {{ scan.title }}{% endif %}
+  </h1>
+
+  <div class="dcf-redact-layout">
+
+    {# ── Left: document viewer ───────────────────────────────── #}
+    <div class="dcf-redact-viewer">
+      {% if pdfViewerUrl %}
+        <iframe
+          id="redact-preview-iframe"
+          src="{{ pdfViewerUrl }}"
+          title="Document preview"
+          loading="lazy"
+        ></iframe>
+      {% else %}
+        <div class="govuk-inset-text">No document URL available.</div>
+      {% endif %}
+    </div>
+
+    {# ── Right: findings panel ───────────────────────────────── #}
+    <div class="dcf-redact-panel">
+
+      {% if scan.findings and scan.findings.length %}
+
+        {{ govukInsetText({
+          html: '<strong>Identified by Claude AI.</strong> Deselect any instances that should not be redacted.'
+        }) }}
+
+        <form method="post" action="/cases/{{ _case.id }}/material/redact/confirm">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+          {% set checkboxItems = [] %}
+          {% for finding in scan.findings %}
+            {% set _ = checkboxItems.push({
+              value: finding.value,
+              text: finding.value,
+              hint: { text: finding.type + " — " + finding.instances + " instance" + ("s" if finding.instances !== 1 else "") },
+              checked: true,
+              attributes: {}
+            }) %}
+          {% endfor %}
+
+          {{ govukCheckboxes({
+            name: "confirmedRedactions",
+            fieldset: {
+              legend: {
+                text: "Select PII to redact",
+                classes: "govuk-fieldset__legend--s"
+              }
+            },
+            items: checkboxItems
+          }) }}
+
+          <div class="govuk-button-group govuk-!-margin-top-4">
+            {{ govukButton({ text: "Confirm redactions" }) }}
+            <a href="/cases/{{ _case.id }}/material" class="govuk-link">Cancel</a>
+          </div>
+
+        </form>
+
+      {% else %}
+
+        <p class="govuk-body">No PII was identified in this document.</p>
+        <a href="/cases/{{ _case.id }}/material" class="govuk-link">Return to materials</a>
+
+      {% endif %}
+
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block pageScripts %}
+  <script src="/public/javascripts/components/material-redact-review.js" defer></script>
+{% endblock %}
