@@ -44,47 +44,20 @@
 
       {% if scan.findings and scan.findings.length %}
 
-      <h3 class="govuk-heading-m">Redaction cart</h3>
-
+        <h3 class="govuk-heading-m">Redaction cart</h3>
         {{ govukInsetText({
-          html: 'Deselect any instances that should not be redacted.'
+          html: 'Remove any terms that should not be redacted.'
         }) }}
 
-        <form method="post" action="/cases/{{ _case.id }}/material/redact/check">
+        <p class="govuk-body" id="dcf-assisted-empty" hidden>All suggested redactions have been removed.</p>
+        <ul class="dcf-manual-list govuk-list" id="dcf-assisted-list"></ul>
+
+        <form method="post" action="/cases/{{ _case.id }}/material/redact/check" id="dcf-assisted-form">
           <input type="hidden" name="_csrf" value="{{ csrfToken }}">
           <input type="hidden" name="mode" value="assisted">
-
-          {# Pass instance counts so the check page can display them #}
-          {% for finding in scan.findings %}
-            <input type="hidden" name="instanceCount[{{ finding.value }}]" value="{{ finding.instances }}">
-          {% endfor %}
-
-          {% set checkboxItems = [] %}
-          {% for finding in scan.findings %}
-            {% set _ = checkboxItems.push({
-              value: finding.value,
-              text: finding.value,
-              hint: { text: finding.type + " — " + finding.instances + " instance" + ("s" if finding.instances !== 1 else "") },
-              checked: true,
-              attributes: {}
-            }) %}
-          {% endfor %}
-
-          {{ govukCheckboxes({
-            name: "confirmedRedactions",
-            fieldset: {
-              legend: {
-                text: "Suggested redactions",
-                classes: "govuk-fieldset__legend--s govuk-visually-hidden"
-              }
-            },
-            items: checkboxItems
-          }) }}
-
-          <div class="govuk-button-group govuk-!-margin-top-4">
+          <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-assisted-submit">
             {{ govukButton({ text: "Accept suggestions" }) }}
           </div>
-
         </form>
 
       {% else %}
@@ -123,5 +96,11 @@
 {% endblock %}
 
 {% block pageScripts %}
+  <script>
+    window.__assistedFindings = {{ (scan.findings or []) | dump | safe }};
+    {% if redactCheck %}
+    window.__redactRestore = {{ redactCheck | dump | safe }};
+    {% endif %}
+  </script>
   <script src="/public/javascripts/components/material-redact-review.js" defer></script>
 {% endblock %}

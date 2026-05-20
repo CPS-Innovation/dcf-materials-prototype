@@ -108,11 +108,12 @@ module.exports = router => {
     })
     if (!_case) return res.status(404).render('not-found')
 
-    const scan = req.session.data.redactScan || {}
+    const scan       = req.session.data.redactScan  || {}
+    const redactCheck = req.session.data.redactCheck || null
     const pdfViewerUrl = scan.url
       ? '/public/pdfjs/web/viewer.html?file=' + encodeURIComponent(scan.url)
       : ''
-    return res.render('v2/cases/material/redact/index', { _case, scan, pdfViewerUrl })
+    return res.render('v2/cases/material/redact/index', { _case, scan, pdfViewerUrl, redactCheck })
   })
 
 
