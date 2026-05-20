@@ -92,10 +92,12 @@
     {# ── Right: manual panel ─────────────────────────────────── #}
     <div class="dcf-redact-panel" id="panel-manual">
 
+      <h3 class="govuk-heading-m">Redaction cart</h3>
       {{ govukInsetText({
         html: 'Select text in the document to mark it for redaction.'
       }) }}
 
+      
       <p class="govuk-body" id="dcf-manual-empty">No text selected yet.</p>
       <ul class="dcf-manual-list govuk-list" id="dcf-manual-list"></ul>
 
@@ -103,7 +105,6 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <div class="govuk-button-group govuk-!-margin-top-4">
           {{ govukButton({ text: "Confirm redactions" }) }}
-          <a href="/cases/{{ _case.id }}/material" class="govuk-link">Cancel</a>
         </div>
       </form>
 
