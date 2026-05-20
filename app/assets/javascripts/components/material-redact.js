@@ -2,29 +2,23 @@
   var viewer = document.getElementById('material-viewer')
   if (!viewer) return
 
-  function injectRedactLink (opsBar) {
-    if (opsBar.querySelector('[data-action="redact-document"]')) return
-    var actions = opsBar.querySelector('.dcf-ops-actions')
-    if (!actions) return
-
-    var sep = document.createElement('span')
-    sep.setAttribute('aria-hidden', 'true')
-    sep.className = 'govuk-!-margin-horizontal-2'
-    sep.innerHTML = '&nbsp; | &nbsp;'
+  function injectRedactLink (toolbarRight) {
+    if (toolbarRight.querySelector('[data-action="redact-document"]')) return
+    var docActions = toolbarRight.querySelector('details[data-menu="document"]')
+    if (!docActions) return
 
     var link = document.createElement('a')
     link.href = '#'
-    link.className = 'govuk-link'
+    link.className = 'govuk-link govuk-!-margin-right-3'
     link.setAttribute('data-action', 'redact-document')
     link.textContent = 'Redact document'
 
-    actions.appendChild(sep)
-    actions.appendChild(link)
+    toolbarRight.insertBefore(link, docActions)
   }
 
   var observer = new MutationObserver(function () {
-    var opsBar = viewer.querySelector('.dcf-viewer__ops-bar')
-    if (opsBar) injectRedactLink(opsBar)
+    var toolbarRight = viewer.querySelector('.dcf-viewer__toolbar-right')
+    if (toolbarRight) injectRedactLink(toolbarRight)
   })
   observer.observe(viewer, { childList: true, subtree: true })
 

@@ -13,13 +13,7 @@
     btn.addEventListener('click', function () {
       var target = btn.getAttribute('data-panel')
       Object.values(panels).forEach(function (p) { if (p) p.classList.remove('dcf-redact-panel--visible') })
-      modeButtons.forEach(function (b) {
-        b.classList.remove('govuk-button--primary')
-        b.classList.add('govuk-button--secondary')
-      })
       if (panels[target]) panels[target].classList.add('dcf-redact-panel--visible')
-      btn.classList.remove('govuk-button--secondary')
-      btn.classList.add('govuk-button--primary')
       applyHighlights()
     })
   })
@@ -61,7 +55,27 @@
   })
 
   // ── Manual: text selection ────────────────────────────────────────────────
+  var fullDocText = ''
   var manualItems = new Map()
+
+  function extractFullText (pdfDocument) {
+    var pages = pdfDocument.numPages
+    var promises = []
+    for (var i = 1; i <= pages; i++) {
+      promises.push(
+        pdfDocument.getPage(i)
+          .then(function (page) { return page.getTextContent() })
+          .then(function (tc) { return tc.items.map(function (it) { return it.str }).join(' ') })
+      )
+    }
+    Promise.all(promises).then(function (texts) { fullDocText = texts.join(' ') })
+  }
+
+  function countInDoc (text) {
+    if (!text || !fullDocText) return 0
+    var escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return (fullDocText.match(new RegExp(escaped, 'gi')) || []).length
+  }
 
   function escHtml (str) {
     return str
@@ -86,9 +100,7 @@
       li.className = 'dcf-manual-list__item'
       li.innerHTML =
         '<span class="dcf-manual-list__text">' + escHtml(text) + '</span> ' +
-        '<strong class="govuk-tag govuk-tag--grey">' +
-          count + ' instance' + (count !== 1 ? 's' : '') +
-        '</strong>' +
+        ' <strong> — Appears ' + count + ' time' + (count !== 1 ? 's' : '') + '</strong>' +
         '<br><button type="button" class="dcf-manual-list__remove govuk-link">Remove</button>'
       li.querySelector('.dcf-manual-list__remove').addEventListener('click', function () {
         manualItems.delete(text)
@@ -104,7 +116,8 @@
       var sel  = iframe.contentWindow.getSelection()
       var text = sel ? sel.toString().trim() : ''
       if (!text || text.length < 2) return
-      manualItems.set(text, (manualItems.get(text) || 0) + 1)
+      if (manualItems.has(text)) return
+      manualItems.set(text, countInDoc(text))
       renderManualList()
       sel.removeAllRanges()
     } catch (e) {}
@@ -149,6 +162,7 @@
     try {
       waitForPdfApp(iframe.contentWindow, function (app) {
         pdfApp = app
+        extractFullText(app.pdfDocument)
         applyHighlights()
         try { iframe.contentDocument.addEventListener('mouseup', onIframeMouseUp) } catch (e) {}
       })
