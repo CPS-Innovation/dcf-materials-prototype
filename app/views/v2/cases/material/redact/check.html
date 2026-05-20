@@ -8,10 +8,12 @@
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
-  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %}</span>
-  <h1 class="govuk-heading-l">Check your redactions</h1>
+    <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
 
-  <p class="govuk-body">Review the text to be redacted before confirming. Once confirmed, these terms will be removed from the document.</p>
+  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %}</span>
+  <h1 class="govuk-heading-l">Check and commit redactions</h1>
+
 
   {% if check.confirmed and check.confirmed.length %}
 
@@ -46,8 +48,7 @@
     <form method="post" action="/cases/{{ _case.id }}/material/redact/confirm">
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
       <div class="govuk-button-group govuk-!-margin-top-4">
-        {{ govukButton({ text: "Confirm redactions" }) }}
-        <a href="/cases/{{ _case.id }}/material/redact/review" class="govuk-link">Cancel</a>
+        {{ govukButton({ text: "Commit redactions" }) }}
       </div>
     </form>
 
@@ -57,5 +58,8 @@
     <a href="/cases/{{ _case.id }}/material/redact/review" class="govuk-link">Go back</a>
 
   {% endif %}
+
+    </div>
+    </div>
 
 {% endblock %}
