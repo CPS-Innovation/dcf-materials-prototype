@@ -1,4 +1,4 @@
-{# /cases/:caseId/material/redact-review #}
+{# /cases/:caseId/material/redact #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
@@ -48,8 +48,14 @@
           html: 'Deselect any instances that should not be redacted.'
         }) }}
 
-        <form method="post" action="/cases/{{ _case.id }}/material/redact/confirm">
+        <form method="post" action="/cases/{{ _case.id }}/material/redact/check">
           <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="mode" value="assisted">
+
+          {# Pass instance counts so the check page can display them #}
+          {% for finding in scan.findings %}
+            <input type="hidden" name="instanceCount[{{ finding.value }}]" value="{{ finding.instances }}">
+          {% endfor %}
 
           {% set checkboxItems = [] %}
           {% for finding in scan.findings %}
@@ -74,8 +80,7 @@
           }) }}
 
           <div class="govuk-button-group govuk-!-margin-top-4">
-            {{ govukButton({ text: "Confirm redactions" }) }}
-            <a href="/cases/{{ _case.id }}/material" class="govuk-link">Cancel</a>
+            {{ govukButton({ text: "Accept suggestions" }) }}
           </div>
 
         </form>
@@ -101,10 +106,11 @@
       <p class="govuk-body" id="dcf-manual-empty">No text selected yet.</p>
       <ul class="dcf-manual-list govuk-list" id="dcf-manual-list"></ul>
 
-      <form method="post" action="/cases/{{ _case.id }}/material/redact/confirm" id="dcf-manual-form">
+      <form method="post" action="/cases/{{ _case.id }}/material/redact/check" id="dcf-manual-form">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        <div class="govuk-button-group govuk-!-margin-top-4">
-          {{ govukButton({ text: "Confirm redactions" }) }}
+        <input type="hidden" name="mode" value="manual">
+        <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-manual-submit" style="display:none">
+          {{ govukButton({ text: "Accept selections" }) }}
         </div>
       </form>
 

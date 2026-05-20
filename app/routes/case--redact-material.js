@@ -112,7 +112,32 @@ module.exports = router => {
     const pdfViewerUrl = scan.url
       ? '/public/pdfjs/web/viewer.html?file=' + encodeURIComponent(scan.url)
       : ''
-    return res.render('v2/cases/material/redact-review', { _case, scan, pdfViewerUrl })
+    return res.render('v2/cases/material/redact/index', { _case, scan, pdfViewerUrl })
+  })
+
+
+  // ------------------------------------------------------------------
+  // CHECK
+  // POST /cases/:caseId/material/redact/check
+  router.post('/cases/:caseId/material/redact/check', (req, res) => {
+    const confirmed = [].concat(req.body.confirmedRedactions || [])
+    const instanceCount = req.body.instanceCount || {}
+    const mode = req.body.mode || 'assisted'
+
+    req.session.data.redactCheck = { confirmed, instanceCount, mode }
+    res.redirect(`/cases/${req.params.caseId}/material/redact/check`)
+  })
+
+  // GET /cases/:caseId/material/redact/check
+  router.get('/cases/:caseId/material/redact/check', async (req, res) => {
+    const _case = await prisma.case.findUnique({
+      where: { id: parseInt(req.params.caseId, 10) }
+    })
+    if (!_case) return res.status(404).render('not-found')
+
+    const scan = req.session.data.redactScan || {}
+    const check = req.session.data.redactCheck || { confirmed: [], instanceCount: {}, mode: 'assisted' }
+    return res.render('v2/cases/material/redact/check', { _case, scan, check })
   })
 
 
@@ -120,8 +145,9 @@ module.exports = router => {
   // CONFIRM
   // POST /cases/:caseId/material/redact/confirm
   router.post('/cases/:caseId/material/redact/confirm', (req, res) => {
-    const confirmed = [].concat(req.body.confirmedRedactions || [])
-    const scan = req.session.data.redactScan || {}
+    const scan  = req.session.data.redactScan  || {}
+    const check = req.session.data.redactCheck || { confirmed: [] }
+    const confirmed = check.confirmed
 
     const materials = req.session.data.caseMaterials || {}
     if (scan.itemId && Array.isArray(materials.Material)) {
@@ -134,6 +160,7 @@ module.exports = router => {
     }
 
     delete req.session.data.redactScan
+    delete req.session.data.redactCheck
 
     req.session.data.successBanner = {
       text: `${confirmed.length} redaction${confirmed.length !== 1 ? 's' : ''} confirmed for "${scan.title || 'document'}"`

@@ -1,0 +1,61 @@
+{# /cases/:caseId/material/redact/check #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %}</span>
+  <h1 class="govuk-heading-l">Check your redactions</h1>
+
+  <p class="govuk-body">Review the text to be redacted before confirming. Once confirmed, these terms will be removed from the document.</p>
+
+  {% if check.confirmed and check.confirmed.length %}
+
+    <table class="govuk-table">
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th scope="col" class="govuk-table__header">Text</th>
+          <th scope="col" class="govuk-table__header">Instances</th>
+          <th scope="col" class="govuk-table__header govuk-table__header--numeric"></th>
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body">
+        {% for term in check.confirmed %}
+          <tr class="govuk-table__row">
+            <td class="govuk-table__cell">{{ term }}</td>
+            <td class="govuk-table__cell">
+              {% set count = check.instanceCount[term] %}
+              {% if count %}
+                {{ count }} instance{{ "s" if count != "1" else "" }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell govuk-table__cell--numeric">
+              <a href="#" class="govuk-link">Change</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <form method="post" action="/cases/{{ _case.id }}/material/redact/confirm">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <div class="govuk-button-group govuk-!-margin-top-4">
+        {{ govukButton({ text: "Confirm redactions" }) }}
+        <a href="/cases/{{ _case.id }}/material/redact/review" class="govuk-link">Cancel</a>
+      </div>
+    </form>
+
+  {% else %}
+
+    <p class="govuk-body">No redactions selected.</p>
+    <a href="/cases/{{ _case.id }}/material/redact/review" class="govuk-link">Go back</a>
+
+  {% endif %}
+
+{% endblock %}
