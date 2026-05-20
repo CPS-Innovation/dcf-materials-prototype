@@ -27,27 +27,33 @@
       .map(function (cb) { return cb.value })
   }
 
-  function applyHighlights () {
-    if (!pdfApp) return
-    if (!panels.assisted || !panels.assisted.classList.contains('dcf-redact-panel--visible')) {
-      pdfApp.eventBus.dispatch('findbarclose', { source: {} })
-      return
-    }
-    var active = getActiveValues()
-    if (!active.length) {
-      pdfApp.eventBus.dispatch('findbarclose', { source: {} })
-      return
-    }
+  function dispatchFind (terms) {
     pdfApp.eventBus.dispatch('find', {
       source: {},
       type: '',
-      query: active,
+      query: terms,
       caseSensitive: false,
       entireWord: false,
       highlightAll: true,
       findPrevious: false,
       matchDiacritics: false
     })
+  }
+
+  function applyHighlights () {
+    if (!pdfApp) return
+    var assistedActive = panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')
+    var manualActive   = panels.manual   && panels.manual.classList.contains('dcf-redact-panel--visible')
+
+    if (assistedActive) {
+      var active = getActiveValues()
+      if (active.length) { dispatchFind(active); return }
+    }
+    if (manualActive) {
+      var terms = Array.from(manualItems.keys())
+      if (terms.length) { dispatchFind(terms); return }
+    }
+    pdfApp.eventBus.dispatch('findbarclose', { source: {} })
   }
 
   checkboxes.forEach(function (cb) {
@@ -86,15 +92,18 @@
   }
 
   function renderManualList () {
-    var list  = document.getElementById('dcf-manual-list')
-    var empty = document.getElementById('dcf-manual-empty')
+    var list   = document.getElementById('dcf-manual-list')
+    var empty  = document.getElementById('dcf-manual-empty')
+    var submit = document.getElementById('dcf-manual-submit')
     if (!list) return
     list.innerHTML = ''
     if (manualItems.size === 0) {
-      if (empty) empty.hidden = false
+      if (empty)  empty.hidden        = false
+      if (submit) submit.style.display = 'none'
       return
     }
-    if (empty) empty.hidden = true
+    if (empty)  empty.hidden        = true
+    if (submit) submit.style.display = ''
     manualItems.forEach(function (count, text) {
       var li = document.createElement('li')
       li.className = 'dcf-manual-list__item'
@@ -105,6 +114,7 @@
       li.querySelector('.dcf-manual-list__remove').addEventListener('click', function () {
         manualItems.delete(text)
         renderManualList()
+        applyHighlights()
       })
       list.appendChild(li)
     })
@@ -119,6 +129,7 @@
       if (manualItems.has(text)) return
       manualItems.set(text, countInDoc(text))
       renderManualList()
+      applyHighlights()
       sel.removeAllRanges()
     } catch (e) {}
   }
@@ -127,13 +138,20 @@
   if (manualForm) {
     manualForm.addEventListener('submit', function () {
       this.querySelectorAll('input[data-manual]').forEach(function (el) { el.remove() })
-      manualItems.forEach(function (_, text) {
+      manualItems.forEach(function (count, text) {
         var inp = document.createElement('input')
         inp.type  = 'hidden'
         inp.name  = 'confirmedRedactions'
         inp.setAttribute('data-manual', '1')
         inp.value = text
         manualForm.appendChild(inp)
+
+        var countInp = document.createElement('input')
+        countInp.type  = 'hidden'
+        countInp.name  = 'instanceCount[' + text + ']'
+        countInp.setAttribute('data-manual', '1')
+        countInp.value = count
+        manualForm.appendChild(countInp)
       })
     })
   }
@@ -164,7 +182,9 @@
         pdfApp = app
         extractFullText(app.pdfDocument)
         applyHighlights()
-        try { iframe.contentDocument.addEventListener('mouseup', onIframeMouseUp) } catch (e) {}
+        try {
+          iframe.contentDocument.addEventListener('mouseup', onIframeMouseUp)
+        } catch (e) {}
       })
     } catch (e) {}
   }
