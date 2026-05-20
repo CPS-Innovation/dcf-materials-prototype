@@ -1,4 +1,4 @@
-{# /cases/:caseId/material/redact/review #}
+{# /cases/:caseId/material/redact-review #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
@@ -13,6 +13,15 @@
   <h1 class="govuk-heading-l govuk-!-margin-bottom-4">
     Redact document
   </h1>
+
+  <div class="govuk-button-group dcf-redact-mode-btns govuk-!-margin-bottom-4">
+    <button type="button" class="govuk-button govuk-button--secondary" id="btn-assisted" data-panel="assisted">
+      Assisted redaction
+    </button>
+    <button type="button" class="govuk-button govuk-button--secondary" id="btn-manual" data-panel="manual">
+      Manual redaction
+    </button>
+  </div>
 
   <div class="dcf-redact-layout">
 
@@ -30,13 +39,13 @@
       {% endif %}
     </div>
 
-    {# ── Right: findings panel ───────────────────────────────── #}
-    <div class="dcf-redact-panel">
+    {# ── Right: assisted panel ───────────────────────────────── #}
+    <div class="dcf-redact-panel" id="panel-assisted">
 
       {% if scan.findings and scan.findings.length %}
 
         {{ govukInsetText({
-          html: '<strong>Identified by Claude AI.</strong> Deselect any instances that should not be redacted.'
+          html: 'Deselect any instances that should not be redacted.'
         }) }}
 
         <form method="post" action="/cases/{{ _case.id }}/material/redact/confirm">
@@ -57,7 +66,7 @@
             name: "confirmedRedactions",
             fieldset: {
               legend: {
-                text: "Select PII to redact",
+                text: "Suggested redactions",
                 classes: "govuk-fieldset__legend--s"
               }
             },
@@ -79,6 +88,27 @@
       {% endif %}
 
     </div>
+
+    {# ── Right: manual panel ─────────────────────────────────── #}
+    <div class="dcf-redact-panel" id="panel-manual">
+
+      {{ govukInsetText({
+        html: 'Select text in the document to mark it for redaction.'
+      }) }}
+
+      <p class="govuk-body" id="dcf-manual-empty">No text selected yet.</p>
+      <ul class="dcf-manual-list govuk-list" id="dcf-manual-list"></ul>
+
+      <form method="post" action="/cases/{{ _case.id }}/material/redact/confirm" id="dcf-manual-form">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="govuk-button-group govuk-!-margin-top-4">
+          {{ govukButton({ text: "Confirm redactions" }) }}
+          <a href="/cases/{{ _case.id }}/material" class="govuk-link">Cancel</a>
+        </div>
+      </form>
+
+    </div>
+
   </div>
 
 {% endblock %}

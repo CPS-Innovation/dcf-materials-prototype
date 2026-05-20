@@ -19,7 +19,32 @@
 }
 
 .dcf-redact-panel {
+  display: none;
   height: 100%;
   overflow-y: auto;
   padding-right: govuk-spacing(1);
+
+  &--visible {
+    display: block;
+  }
+}
+
+.dcf-manual-list__item {
+  border-bottom: 1px solid $govuk-border-colour;
+  padding: govuk-spacing(2) 0;
+
+  &:first-child { border-top: 1px solid $govuk-border-colour; }
+}
+
+.dcf-manual-list__text {
+  @include govuk-font($size: 19);
+}
+
+.dcf-manual-list__remove {
+  @include govuk-font($size: 16);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin-top: govuk-spacing(1);
 }
