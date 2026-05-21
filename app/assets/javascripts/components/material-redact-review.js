@@ -62,7 +62,11 @@
           .then(function (tc) { return tc.items.map(function (it) { return it.str }).join(' ') })
       )
     }
-    Promise.all(promises).then(function (texts) { fullDocText = texts.join(' ') })
+    Promise.all(promises).then(function (texts) {
+      fullDocText = texts.join(' ')
+      renderAssistedList()
+      renderManualList()
+    })
   }
 
   function countInDoc (text) {
@@ -79,13 +83,63 @@
       .replace(/"/g, '&quot;')
   }
 
+  function getContextSnippets (text) {
+    if (!fullDocText || !text) return null
+    var snippets = []
+    var escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    var re = new RegExp(escaped, 'gi')
+    var match
+    while ((match = re.exec(fullDocText)) !== null) {
+      var start = match.index
+      var end   = start + match[0].length
+      var before = fullDocText.slice(Math.max(0, start - 200), start)
+      var after  = fullDocText.slice(end, end + 200)
+      snippets.push({
+        before: before.trim().split(/\s+/).filter(Boolean).slice(-5).join(' '),
+        term:   match[0],
+        after:  after.trim().split(/\s+/).filter(Boolean).slice(0, 5).join(' ')
+      })
+    }
+    return snippets
+  }
+
   function makeListItem (text, count, onRemove) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
+
+    var snippets = getContextSnippets(text)
+    var detailsBody = ''
+    if (snippets === null) {
+      detailsBody = '<p class="govuk-body-s">Loading context…</p>'
+    } else if (snippets.length === 0) {
+      detailsBody = '<p class="govuk-body-s">No context available.</p>'
+    } else {
+      detailsBody = snippets.map(function (s, i) {
+        var html =
+          '<p class="govuk-body-s govuk-!-margin-bottom-0">' +
+            (s.before ? escHtml(s.before) + ' ' : '') +
+            '<strong>' + escHtml(s.term) + '</strong>' +
+            (s.after ? ' ' + escHtml(s.after) : '') +
+          '</p>'
+        if (i < snippets.length - 1) {
+          html += '<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">'
+        }
+        return html
+      }).join('')
+    }
+
     li.innerHTML =
-      '<strong class="dcf-manual-list__text">' + escHtml(text) + '</strong>' +
-      ' — appears ' + count + ' time' + (count !== 1 ? 's' : '') +
-      '<br><button type="button" class="dcf-manual-list__remove govuk-link">Remove</button>'
+      '<details class="govuk-details govuk-!-margin-bottom-1">' +
+        '<summary class="govuk-details__summary">' +
+          '<span class="govuk-details__summary-text">' +
+            '<strong>' + escHtml(text) + '</strong>' +
+            ' — appears ' + count + ' time' + (count !== 1 ? 's' : '') +
+          '</span>' +
+        '</summary>' +
+        '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
+      '</details>' +
+      '<button type="button" class="dcf-manual-list__remove govuk-link">Remove</button>'
+
     li.querySelector('.dcf-manual-list__remove').addEventListener('click', onRemove)
     return li
   }
