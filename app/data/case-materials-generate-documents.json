@@ -21,6 +21,11 @@
       "id": "action_plan",
       "label": "Action Plan",
       "lastGenerated": null
+    },
+    {
+      "id": "offences_taken_into_consideration",
+      "label": "Offences Taken Into Consideration (TIC)",
+      "lastGenerated": null
     }
   ],
   "defendants": [
