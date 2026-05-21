@@ -257,7 +257,6 @@
   var findings  = window.__assistedFindings || []
 
   if (restore && restore.mode === 'assisted') {
-    // returning from check page — restore survivors only
     var confirmedSet = new Set(restore.confirmed || [])
     findings.forEach(function (f) {
       if (confirmedSet.has(f.value)) {
@@ -265,7 +264,6 @@
       }
     })
   } else {
-    // fresh visit — all findings pre-loaded
     findings.forEach(function (f) { assistedItems.set(f.value, f.instances) })
   }
   renderAssistedList()
