@@ -24,7 +24,7 @@
     "lodash": "^4.17.21",
     "pdf-parse": "^1.1.1",
     "pdfjs-dist": "^5.4.296",
-    "postcss": "^8.5.6"
+    "postcss": "^8.5.10"
   },
   "devDependencies": {
     "prisma": "^6.16.2"
