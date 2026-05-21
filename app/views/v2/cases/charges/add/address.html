@@ -19,7 +19,7 @@
 
         {% call govukFieldset({
           legend: {
-            html: '<span class="govuk-caption-m">' + captionName + '</span>Where did the offence take place? (optional)',
+            html: '<span class="govuk-caption-m">' + captionName + '</span>Where did the offence take place?',
             isPageHeading: true,
             classes: "govuk-fieldset__legend--l"
           }
@@ -29,11 +29,10 @@
             id: "offenceAddress-line1",
             name: "offenceAddress[line1]",
             label: {
-              text: "Address line 1",
+              text: "Address line 1 (optional)",
               classes: "govuk-label--s"
             },
-            value: data.offenceAddress.line1 if data.offenceAddress else "",
-            autocomplete: "address-line1"
+            value: data.offenceAddress.line1 if data.offenceAddress[line1] else ""
           }) }}
 
           {{ govukInput({
@@ -43,7 +42,7 @@
               text: "Address line 2 (optional)",
               classes: "govuk-label--s"
             },
-            value: data.offenceAddress.line2 if data.offenceAddress else "",
+            value: data.offenceAddress.line2 if data.offenceAddress[line2] else "",
             autocomplete: "address-line2"
           }) }}
 
@@ -51,11 +50,10 @@
             id: "offenceAddress-town",
             name: "offenceAddress[town]",
             label: {
-              text: "Town or city",
+              text: "Town or city (optional)",
               classes: "govuk-label--s"
             },
-            value: data.offenceAddress.town if data.offenceAddress else "",
-            autocomplete: "address-level2",
+            value: data.offenceAddress.town if data.offenceAddress[town] else "",
             classes: "govuk-!-width-two-thirds"
           }) }}
 
@@ -63,11 +61,10 @@
             id: "offenceAddress-postcode",
             name: "offenceAddress[postcode]",
             label: {
-              text: "Postcode",
+              text: "Postcode (optional)",
               classes: "govuk-label--s"
             },
-            value: data.offenceAddress.postcode if data.offenceAddress else "",
-            autocomplete: "postal-code",
+            value: data.offenceAddress.postcode if data.offenceAddress[postcode] else "",
             classes: "govuk-input--width-10"
           }) }}
 

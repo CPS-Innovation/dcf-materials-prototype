@@ -32,7 +32,7 @@
 
 /* Optional: tiny spacing inside the right cluster */
 .dcf-viewer__toolbar-right > * + * {
-  margin-left: 4px;
+  margin-left: 8px;
 }
 
 .dcf-viewer__toolbar-right {
@@ -233,6 +233,9 @@
 
 /* compact inverse icon button */
 .dcf-viewer__ops-bar .govuk-button { margin: 0 !important; width: auto; }
+.dcf-viewer__ops-bar .govuk-link,
+.dcf-viewer__ops-bar .govuk-link:link,
+.dcf-viewer__ops-bar .govuk-link:visited { color: #fff; }
 .dcf-viewer__ops-bar .dcf-ops-iconbtn {
   display: inline-flex;
   align-items: center;

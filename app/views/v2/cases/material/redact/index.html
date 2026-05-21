@@ -1,0 +1,106 @@
+{# /cases/:caseId/material/redact/index #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %}</span>
+  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">
+    Redact document
+  </h1>
+
+  <div class="govuk-button-group dcf-redact-mode-btns govuk-!-margin-bottom-4">
+    <button type="button" class="govuk-button govuk-button--secondary" id="btn-assisted" data-panel="assisted">
+      Assisted redaction
+    </button>
+    <button type="button" class="govuk-button govuk-button--secondary" id="btn-manual" data-panel="manual">
+      Manual redaction
+    </button>
+  </div>
+
+  <div class="dcf-redact-layout">
+
+    {# ── Left: document viewer ───────────────────────────────── #}
+    <div class="dcf-redact-viewer">
+      {% if pdfViewerUrl %}
+        <iframe
+          id="redact-preview-iframe"
+          src="{{ pdfViewerUrl }}"
+          title="Document preview"
+          loading="lazy"
+        ></iframe>
+      {% else %}
+        <div class="govuk-inset-text">No document URL available.</div>
+      {% endif %}
+    </div>
+
+    {# ── Right: assisted panel ───────────────────────────────── #}
+    <div class="dcf-redact-panel" id="panel-assisted">
+
+      {% if scan.findings and scan.findings.length %}
+
+        <h3 class="govuk-heading-m">Redaction cart</h3>
+        {{ govukInsetText({
+          html: 'Remove any terms that should not be redacted.'
+        }) }}
+
+        <p class="govuk-body" id="dcf-assisted-empty" hidden>All suggested redactions have been removed.</p>
+        <ul class="dcf-manual-list govuk-list" id="dcf-assisted-list"></ul>
+
+        <form method="post" action="/cases/{{ _case.id }}/material/redact/check" id="dcf-assisted-form">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="mode" value="assisted">
+          <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-assisted-submit">
+            {{ govukButton({ text: "Accept suggestions" }) }}
+          </div>
+        </form>
+
+      {% else %}
+
+        <p class="govuk-body">No PII was identified in this document.</p>
+        <a href="/cases/{{ _case.id }}/material" class="govuk-link">Return to materials</a>
+
+      {% endif %}
+
+    </div>
+
+    {# ── Right: manual panel ─────────────────────────────────── #}
+    <div class="dcf-redact-panel" id="panel-manual">
+
+      <h3 class="govuk-heading-m">Redaction cart</h3>
+      {{ govukInsetText({
+        html: 'Select text in the document to mark it for redaction.'
+      }) }}
+
+      
+      <p class="govuk-body" id="dcf-manual-empty">No text selected yet.</p>
+      <ul class="dcf-manual-list govuk-list" id="dcf-manual-list"></ul>
+
+      <form method="post" action="/cases/{{ _case.id }}/material/redact/check" id="dcf-manual-form">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <input type="hidden" name="mode" value="manual">
+        <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-manual-submit" style="display:none">
+          {{ govukButton({ text: "Accept selections" }) }}
+        </div>
+      </form>
+
+    </div>
+
+  </div>
+
+{% endblock %}
+
+{% block pageScripts %}
+  <script>
+    window.__assistedFindings = {{ (scan.findings or []) | dump | safe }};
+    {% if redactCheck %}
+    window.__redactRestore = {{ redactCheck | dump | safe }};
+    {% endif %}
+  </script>
+  <script src="/public/javascripts/components/material-redact-review.js" defer></script>
+{% endblock %}

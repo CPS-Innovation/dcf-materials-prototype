@@ -276,14 +276,15 @@ module.exports = router => {
 
     req.session.data.newCharge = updatedCharge
 
+    if (victimId !== 'none' && !isPureVictim) {
+      // returnUrl stays in session — victim-status POST will honour it
+      return res.redirect(`/cases/${caseId}/charges/add/victim-status`)
+    }
+
     const returnUrl = req.session.data.newCharge.returnUrl
     if (returnUrl) {
       delete req.session.data.newCharge.returnUrl
       return res.redirect(returnUrl)
-    }
-
-    if (victimId !== 'none' && !isPureVictim) {
-      return res.redirect(`/cases/${caseId}/charges/add/victim-status`)
     }
     return res.redirect(`/cases/${caseId}/charges/add/particulars`)
   })
@@ -305,6 +306,11 @@ module.exports = router => {
 
   router.post('/cases/:caseId/charges/add/victim-status', (req, res) => {
     req.session.data.newCharge = { ...req.session.data.newCharge, victimIsVI: req.body.victimIsVI }
+    const returnUrl = req.session.data.newCharge.returnUrl
+    if (returnUrl) {
+      delete req.session.data.newCharge.returnUrl
+      return res.redirect(returnUrl)
+    }
     return res.redirect(`/cases/${req.params.caseId}/charges/add/particulars`)
   })
 
