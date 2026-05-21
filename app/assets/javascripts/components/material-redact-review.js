@@ -33,6 +33,43 @@
     })
   }
 
+  var _focusStyleEl = null
+
+  function setFocusGreen () {
+    try {
+      var doc = iframe.contentDocument
+      if (!_focusStyleEl) {
+        _focusStyleEl = doc.createElement('style')
+        _focusStyleEl.textContent =
+          '.textLayer .highlight{--highlight-selected-bg-color:rgb(0 170 0 / 0.55) !important}'
+        doc.head.appendChild(_focusStyleEl)
+      }
+    } catch (e) {}
+  }
+
+  function focusInstance (term, index) {
+    if (!pdfApp) return
+    setFocusGreen()
+
+    pdfApp.eventBus.dispatch('find', {
+      source: {}, type: '', query: term,
+      caseSensitive: false, entireWord: false,
+      highlightAll: true, findPrevious: false
+    })
+    if (index === 0) return
+    setTimeout(function () {
+      var step = 0
+      ;(function next () {
+        pdfApp.eventBus.dispatch('find', {
+          source: {}, type: 'again', query: term,
+          caseSensitive: false, entireWord: false,
+          highlightAll: true, findPrevious: false
+        })
+        if (++step < index) setTimeout(next, 60)
+      })()
+    }, 80)
+  }
+
   function applyHighlights () {
     if (!pdfApp) return
     var assistedActive = panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')
@@ -103,7 +140,7 @@
     return snippets
   }
 
-  function makeListItem (text, count, onRemove) {
+  function makeListItem (text, count, onRemoveAll, onRemoveInstance) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
@@ -116,11 +153,14 @@
     } else {
       detailsBody = snippets.map(function (s, i) {
         var html =
-          '<p class="govuk-body-s govuk-!-margin-bottom-0">' +
-            (s.before ? escHtml(s.before) + ' ' : '') +
-            '<strong>' + escHtml(s.term) + '</strong>' +
-            (s.after ? ' ' + escHtml(s.after) : '') +
-          '</p>'
+          '<div class="dcf-redact-instance">' +
+            '<button type="button" class="dcf-redact-instance__focus govuk-body-s">' +
+              (s.before ? escHtml(s.before) + ' ' : '') +
+              '<strong>' + escHtml(s.term) + '</strong>' +
+              (s.after ? ' ' + escHtml(s.after) : '') +
+            '</button>' +
+            '<button type="button" class="dcf-redact-instance__remove govuk-link">Remove instance</button>' +
+          '</div>'
         if (i < snippets.length - 1) {
           html += '<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">'
         }
@@ -138,9 +178,15 @@
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
       '</details>' +
-      '<button type="button" class="dcf-manual-list__remove govuk-link">Remove</button>'
+      '<button type="button" class="dcf-manual-list__remove govuk-link">Remove all</button>'
 
-    li.querySelector('.dcf-manual-list__remove').addEventListener('click', onRemove)
+    li.querySelector('.dcf-manual-list__remove').addEventListener('click', onRemoveAll)
+    li.querySelectorAll('.dcf-redact-instance__remove').forEach(function (btn) {
+      btn.addEventListener('click', onRemoveInstance)
+    })
+    li.querySelectorAll('.dcf-redact-instance__focus').forEach(function (btn, i) {
+      btn.addEventListener('click', function () { focusInstance(text, i) })
+    })
     return li
   }
 
@@ -161,11 +207,19 @@
     if (empty)  empty.hidden         = true
     if (submit) submit.style.display = ''
     assistedItems.forEach(function (count, text) {
-      list.appendChild(makeListItem(text, count, function () {
-        assistedItems.delete(text)
-        renderAssistedList()
-        applyHighlights()
-      }))
+      list.appendChild(makeListItem(text, count,
+        function () {
+          assistedItems.delete(text)
+          renderAssistedList()
+          applyHighlights()
+        },
+        function () {
+          var n = assistedItems.get(text) || 0
+          if (n <= 1) { assistedItems.delete(text) } else { assistedItems.set(text, n - 1) }
+          renderAssistedList()
+          applyHighlights()
+        }
+      ))
     })
   }
 
@@ -208,11 +262,19 @@
     if (empty)  empty.hidden         = true
     if (submit) submit.style.display = ''
     manualItems.forEach(function (count, text) {
-      list.appendChild(makeListItem(text, count, function () {
-        manualItems.delete(text)
-        renderManualList()
-        applyHighlights()
-      }))
+      list.appendChild(makeListItem(text, count,
+        function () {
+          manualItems.delete(text)
+          renderManualList()
+          applyHighlights()
+        },
+        function () {
+          var n = manualItems.get(text) || 0
+          if (n <= 1) { manualItems.delete(text) } else { manualItems.set(text, n - 1) }
+          renderManualList()
+          applyHighlights()
+        }
+      ))
     })
   }
 
