@@ -164,7 +164,7 @@ module.exports = router => {
       delete req.session.data.newCharge.returnUrl
       return res.redirect(returnUrl)
     }
-    return res.redirect(`/cases/${req.params.caseId}/charges/add/address`)
+    return res.redirect(`/cases/${req.params.caseId}/charges/add/do-you-want-to-add-address`)
   })
 
 
@@ -188,7 +188,31 @@ module.exports = router => {
       delete req.session.data.newCharge.returnUrl
       return res.redirect(returnUrl)
     }
-    return res.redirect(`/cases/${req.params.caseId}/charges/add/address`)
+    return res.redirect(`/cases/${req.params.caseId}/charges/add/do-you-want-to-add-address`)
+  })
+
+
+  // ------------------------------------------------------------------
+  // DO YOU WANT TO ADD ADDRESS?
+  // GET  /cases/:caseId/charges/add/do-you-want-to-add-address
+  // POST /cases/:caseId/charges/add/do-you-want-to-add-address  →  address | select-victim
+  router.get('/cases/:caseId/charges/add/do-you-want-to-add-address', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const newCharge = req.session.data.newCharge || {}
+    const defendant = newCharge.defendantId ? resolveDefendant(_case, newCharge.defendantId) : null
+
+    return res.render('v2/cases/charges/add/do-you-want-to-add-address', { _case, defendant, newCharge })
+  })
+
+  router.post('/cases/:caseId/charges/add/do-you-want-to-add-address', (req, res) => {
+    const base = `/cases/${req.params.caseId}/charges/add`
+    if (req.body.addOffenceAddress === 'Yes') {
+      return res.redirect(`${base}/address`)
+    }
+    req.session.data.newCharge = { ...req.session.data.newCharge, offenceAddress: null }
+    return res.redirect(`${base}/select-victim`)
   })
 
 
@@ -286,7 +310,7 @@ module.exports = router => {
       delete req.session.data.newCharge.returnUrl
       return res.redirect(returnUrl)
     }
-    return res.redirect(`/cases/${caseId}/charges/add/particulars`)
+    return res.redirect(`/cases/${caseId}/charges/add/do-you-want-to-add-particulars`)
   })
 
 
@@ -305,13 +329,38 @@ module.exports = router => {
   })
 
   router.post('/cases/:caseId/charges/add/victim-status', (req, res) => {
-    req.session.data.newCharge = { ...req.session.data.newCharge, victimIsVI: req.body.victimIsVI }
+    const victimIsVI = [].concat(req.body.victimIsVI || []).filter(v => v !== '_unchecked')
+    req.session.data.newCharge = { ...req.session.data.newCharge, victimIsVI }
     const returnUrl = req.session.data.newCharge.returnUrl
     if (returnUrl) {
       delete req.session.data.newCharge.returnUrl
       return res.redirect(returnUrl)
     }
-    return res.redirect(`/cases/${req.params.caseId}/charges/add/particulars`)
+    return res.redirect(`/cases/${req.params.caseId}/charges/add/do-you-want-to-add-particulars`)
+  })
+
+
+  // ------------------------------------------------------------------
+  // DO YOU WANT TO ADD PARTICULARS?
+  // GET  /cases/:caseId/charges/add/do-you-want-to-add-particulars
+  // POST /cases/:caseId/charges/add/do-you-want-to-add-particulars  →  particulars | check
+  router.get('/cases/:caseId/charges/add/do-you-want-to-add-particulars', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const newCharge = req.session.data.newCharge || {}
+    const defendant = newCharge.defendantId ? resolveDefendant(_case, newCharge.defendantId) : null
+
+    return res.render('v2/cases/charges/add/do-you-want-to-add-particulars', { _case, defendant, newCharge })
+  })
+
+  router.post('/cases/:caseId/charges/add/do-you-want-to-add-particulars', (req, res) => {
+    const base = `/cases/${req.params.caseId}/charges/add`
+    if (req.body.addOffenceParticulars === 'Yes') {
+      return res.redirect(`${base}/particulars`)
+    }
+    req.session.data.newCharge = { ...req.session.data.newCharge, particulars: null }
+    return res.redirect(`${base}/check`)
   })
 
 

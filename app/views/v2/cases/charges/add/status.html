@@ -1,4 +1,4 @@
-{# /cases/:caseId/charges/add/victim-status #}
+{# v2/cases/:caseId/charges/add/victim-status #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
@@ -17,11 +17,11 @@
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
-        {{ govukRadios({
+        {{ govukCheckboxes({
           name: "victimIsVI",
           fieldset: {
             legend: {
-              html: '<span class="govuk-caption-m">' + captionName + '</span>Is ' + (newCharge.victimName or "the victim") + ' vulnerable or intimidated?',
+              html: '<span class="govuk-caption-m">' + captionName + '</span>Is ' + (newCharge.victimName or "the victim") + ' vulnerable, intimidated, or both?',
               isPageHeading: true,
               classes: "govuk-fieldset__legend--l"
             }
@@ -30,12 +30,12 @@
             {
               value: "Vulnerable",
               text: "Vulnerable",
-              checked: data["victimIsVI"] == "Vulnerable"
+              checked: newCharge.victimIsVI and ("Vulnerable" in newCharge.victimIsVI)
             },
             {
               value: "Intimidated",
               text: "Intimidated",
-              checked: data["victimIsVI"] == "Intimidated"
+              checked: newCharge.victimIsVI and ("Intimidated" in newCharge.victimIsVI)
             }
           ]
         }) }}
