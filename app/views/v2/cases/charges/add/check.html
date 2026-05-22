@@ -1,4 +1,4 @@
-{# /cases/:caseId/charges/add/check #}
+{# v2/cases/:caseId/charges/add/check #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
@@ -89,8 +89,8 @@
 
       {% if newCharge.victimIsVI %}
         {% set _ = summaryRows.push({
-          key:   { text: "Intimidated or vulnerable" },
-          value: { text: newCharge.victimIsVI },
+          key:   { text: "Vulnerable or intimidated" },
+          value: { text: newCharge.victimIsVI | join(", ") if newCharge.victimIsVI | length else newCharge.victimIsVI },
           actions: { items: [{ href: base + "/victim-status", text: "Change", visuallyHiddenText: "victim vulnerability status" }] }
         }) %}
       {% endif %}
