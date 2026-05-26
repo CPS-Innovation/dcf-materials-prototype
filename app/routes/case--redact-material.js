@@ -32,42 +32,90 @@ const NOT_NAMES = new Set([
   'Number', 'Details', 'Full', 'Email', 'Phone', 'Mobile', 'Work'
 ])
 
-function extractNamesFromText (text) {
+function classifyFallback (value) {
+  const t = value.trim()
+  if (/^(\+44\s?|0)[\d\s\-]{9,12}$/.test(t)) return 'Phone number'
+  if (/[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}/i.test(t)) return 'Address'
+  if (/^\d+\s+[A-Za-z]/.test(t) || /\b(street|road|avenue|lane|drive|close|way|court|place|gardens?|crescent)\b/i.test(t)) return 'Address'
+  if (/^[A-Z][a-z]+(\s[A-Z][a-z]+)*$/.test(t)) return 'First name'
+  return 'Fragment'
+}
+
+function extractPiiFromText (text) {
   if (!text) return []
+  const findings = []
+
+  // First names — capitalised words appearing 2+ times
   const counts = {}
   const words = text.match(/\b[A-Z][a-z]{2,14}\b/g) || []
   words.forEach(w => {
     if (!NOT_NAMES.has(w)) counts[w] = (counts[w] || 0) + 1
   })
-  return Object.entries(counts)
+  Object.entries(counts)
     .filter(([, n]) => n >= 2)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
-    .map(([value, instances]) => ({ type: 'First name', value, instances }))
+    .forEach(([value, instances]) => findings.push({ type: 'First name', value, instances }))
+
+  // Phone numbers — UK landline and mobile formats
+  const phoneRe = /(\+44\s?|0)(\d[\s\-]?){9,10}\d/g
+  const phones = {}
+  let m
+  while ((m = phoneRe.exec(text)) !== null) {
+    const val = m[0].replace(/\s+/g, ' ').trim()
+    phones[val] = (phones[val] || 0) + 1
+  }
+  Object.entries(phones).forEach(([value, instances]) => findings.push({ type: 'Phone number', value, instances }))
+
+  // Postcodes — as a proxy for addresses
+  const postcodeRe = /\b[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}\b/gi
+  const postcodes = {}
+  while ((m = postcodeRe.exec(text)) !== null) {
+    const val = m[0].toUpperCase()
+    postcodes[val] = (postcodes[val] || 0) + 1
+  }
+  Object.entries(postcodes).forEach(([value, instances]) => findings.push({ type: 'Address', value, instances }))
+
+  return findings
 }
 
 async function scanForPii (text) {
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return extractNamesFromText(text)
+  if (!apiKey) return extractPiiFromText(text)
 
   try {
     const Anthropic = require('@anthropic-ai/sdk')
     const client = new Anthropic({ apiKey })
     const message = await client.messages.create({
       model: 'claude-opus-4-7',
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [{
         role: 'user',
         content:
-          'You are a legal document PII scanner. Find all first names (given names) of real people in the text below. ' +
-          'Return ONLY a JSON array with no other text. Each item: { "type": "First name", "value": string, "instances": number }. ' +
-          'Count exact occurrences of each first name. Exclude job titles, place names, and common words.\n\nText:\n' +
+          'You are a legal document redaction scanner. Find all sensitive information in the text below.\n' +
+          'Return ONLY a JSON array with no other text. Each item must follow this exact shape:\n' +
+          '  { "type": string, "value": string, "instances": number }\n\n' +
+          'Use exactly these type labels:\n' +
+          '- "First name": given names of real individuals\n' +
+          '- "Surname": family names of real individuals\n' +
+          '- "Address": full or partial street addresses (return each as a single string)\n' +
+          '- "Phone number": any telephone number including mobile, landline, or formatted variants\n' +
+          '- "Town": town or city names mentioned in connection with a person or event\n' +
+          '- "Place": named locations such as pubs, shops, buildings, or landmarks\n' +
+          '- "Item": physical objects relevant to the case (e.g. weapons, vehicles described as items, stolen goods)\n' +
+          '- "Car": vehicle registration numbers or specific vehicle descriptions tied to individuals\n' +
+          '- "Action": specific acts or incidents described that could identify a person or event\n\n' +
+          'Rules:\n' +
+          '- Count exact occurrences of each value (case-insensitive)\n' +
+          '- Do not duplicate values across types\n' +
+          '- Omit generic words, job titles, and organisation names unless directly identifying\n\n' +
+          'Text:\n' +
           text.slice(0, 8000)
       }]
     })
     return JSON.parse(message.content[0].text)
   } catch (e) {
-    return extractNamesFromText(text)
+    return extractPiiFromText(text)
   }
 }
 
@@ -98,6 +146,38 @@ module.exports = router => {
     res.redirect(`/cases/${req.params.caseId}/material/redact/review`)
   })
 
+
+  // ------------------------------------------------------------------
+  // CLASSIFY
+  // POST /cases/:caseId/material/redact/classify
+  router.post('/cases/:caseId/material/redact/classify', async (req, res) => {
+    const value = (req.body.value || '').trim()
+    if (!value) return res.json({ type: 'Fragment' })
+
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) return res.json({ type: classifyFallback(value) })
+
+    try {
+      const Anthropic = require('@anthropic-ai/sdk')
+      const client = new Anthropic({ apiKey })
+      const message = await client.messages.create({
+        model: 'claude-opus-4-7',
+        max_tokens: 64,
+        messages: [{
+          role: 'user',
+          content:
+            'Classify this text from a legal document as exactly one of: "First name", "Surname", "Address", "Phone number", "Town", "Place", "Item", "Car", "Action", "Fragment".\n' +
+            'Return ONLY a JSON object, e.g. {"type":"First name"}. No other text.\n' +
+            'Town = town or city name. Place = named venue or landmark. Item = physical object relevant to a case. Car = vehicle reg or description. Action = a specific act or incident. Fragment = partial word or unrecognisable text.\n\n' +
+            'Text: ' + JSON.stringify(value)
+        }]
+      })
+      const parsed = JSON.parse(message.content[0].text)
+      return res.json({ type: parsed.type || 'Fragment' })
+    } catch (e) {
+      return res.json({ type: classifyFallback(value) })
+    }
+  })
 
   // ------------------------------------------------------------------
   // REVIEW

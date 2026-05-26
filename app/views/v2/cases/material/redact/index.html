@@ -9,7 +9,7 @@
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
-  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %}</span>
+  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %} <strong class="govuk-tag govuk-tag--yellow" id="dcf-unsaved-tag" hidden>0 possible redactions</strong></span>
   <h1 class="govuk-heading-l govuk-!-margin-bottom-4">
     Redact document
   </h1>
@@ -46,7 +46,7 @@
 
         <h3 class="govuk-heading-m">Redaction cart</h3>
         {{ govukInsetText({
-          html: 'Remove any terms that should not be redacted.'
+          html: 'Reject any suggestions that should not be redacted. Suggestions are based on your organisation\'s redaction guidelines - you remain responsible for all final decisions.'
         }) }}
 
         <p class="govuk-body" id="dcf-assisted-empty" hidden>All suggested redactions have been removed.</p>
@@ -55,8 +55,9 @@
         <form method="post" action="/cases/{{ _case.id }}/material/redact/check" id="dcf-assisted-form">
           <input type="hidden" name="_csrf" value="{{ csrfToken }}">
           <input type="hidden" name="mode" value="assisted">
-          <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-assisted-submit">
-            {{ govukButton({ text: "Save and continue" }) }}
+          <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-assisted-submit" style="display:none">
+            {{ govukButton({ text: "Save suggestions" }) }}
+            <button type="button" class="govuk-button govuk-button--secondary" id="dcf-assisted-reset-btn">Reject suggestions</button>
           </div>
         </form>
 
@@ -85,7 +86,8 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <input type="hidden" name="mode" value="manual">
         <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-manual-submit" style="display:none">
-          {{ govukButton({ text: "Save and continue" }) }}
+          {{ govukButton({ text: "Save all selections" }) }}
+          <button type="button" class="govuk-button govuk-button--secondary" id="dcf-manual-reset-btn">Clear and reset</button>
         </div>
       </form>
 

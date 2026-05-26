@@ -120,6 +120,29 @@
       .replace(/"/g, '&quot;')
   }
 
+  function updateUnsavedTag () {
+    var tag = document.getElementById('dcf-unsaved-tag')
+    if (!tag) return
+    var count = assistedItems.size + manualItems.size
+    tag.hidden = count === 0
+    tag.textContent = count + ' possible redaction' + (count !== 1 ? 's' : '')
+  }
+
+  var caseIdMatch = window.location.pathname.match(/\/cases\/(\d+)\//)
+  var caseId = caseIdMatch ? caseIdMatch[1] : null
+
+  function classifySelection (text, cb) {
+    if (!caseId) return cb('Fragment')
+    fetch('/cases/' + caseId + '/material/redact/classify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: text })
+    })
+      .then(function (r) { return r.json() })
+      .then(function (data) { cb(data.type || 'Fragment') })
+      .catch(function () { cb('Fragment') })
+  }
+
   function getContextSnippets (text) {
     if (!fullDocText || !text) return null
     var snippets = []
@@ -140,7 +163,7 @@
     return snippets
   }
 
-  function makeListItem (text, count, onRemoveAll, onRemoveInstance) {
+  function makeListItem (text, count, type, onRemoveAll, onRemoveInstance) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
@@ -178,6 +201,7 @@
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
       '</details>' +
+      (type ? '<div class="govuk-!-margin-top-2 govuk-!-margin-bottom-2"><strong class="govuk-tag govuk-tag--red govuk-!-font-size-14">' + escHtml(type) + '</strong></div>' : '') +
       '<button type="button" class="dcf-manual-list__remove govuk-link">Reject all</button>'
 
     li.querySelector('.dcf-manual-list__remove').addEventListener('click', onRemoveAll)
@@ -192,6 +216,7 @@
 
   // ── Assisted: remove-link list ────────────────────────────────────────────
   var assistedItems = new Map()
+  var assistedTypes = new Map()
 
   function renderAssistedList () {
     var list   = document.getElementById('dcf-assisted-list')
@@ -202,12 +227,13 @@
     if (assistedItems.size === 0) {
       if (empty)  empty.hidden         = false
       if (submit) submit.style.display = 'none'
+      updateUnsavedTag()
       return
     }
     if (empty)  empty.hidden         = true
     if (submit) submit.style.display = ''
     assistedItems.forEach(function (count, text) {
-      list.appendChild(makeListItem(text, count,
+      list.appendChild(makeListItem(text, count, assistedTypes.get(text) || null,
         function () {
           assistedItems.delete(text)
           renderAssistedList()
@@ -220,6 +246,40 @@
           applyHighlights()
         }
       ))
+    })
+    updateUnsavedTag()
+  }
+
+  var manualResetBtn = document.getElementById('dcf-manual-reset-btn')
+  if (manualResetBtn) {
+    manualResetBtn.addEventListener('click', function () {
+      manualItems.clear()
+      manualTypes.clear()
+      renderManualList()
+      applyHighlights()
+    })
+  }
+
+  var assistedResetBtn = document.getElementById('dcf-assisted-reset-btn')
+  if (assistedResetBtn) {
+    assistedResetBtn.addEventListener('click', function () {
+      assistedItems.clear()
+      renderAssistedList()
+      applyHighlights()
+    })
+  }
+
+  var btnAssistedEl = document.getElementById('btn-assisted')
+  if (btnAssistedEl) {
+    btnAssistedEl.addEventListener('click', function () {
+      if (assistedItems.size === 0) {
+        findings.forEach(function (f) {
+          assistedItems.set(f.value, f.instances)
+          assistedTypes.set(f.value, f.type || null)
+        })
+        renderAssistedList()
+        applyHighlights()
+      }
     })
   }
 
@@ -247,6 +307,7 @@
 
   // ── Manual: text selection ────────────────────────────────────────────────
   var manualItems = new Map()
+  var manualTypes = new Map()
 
   function renderManualList () {
     var list   = document.getElementById('dcf-manual-list')
@@ -257,12 +318,13 @@
     if (manualItems.size === 0) {
       if (empty)  empty.hidden         = false
       if (submit) submit.style.display = 'none'
+      updateUnsavedTag()
       return
     }
     if (empty)  empty.hidden         = true
     if (submit) submit.style.display = ''
     manualItems.forEach(function (count, text) {
-      list.appendChild(makeListItem(text, count,
+      list.appendChild(makeListItem(text, count, manualTypes.get(text) || null,
         function () {
           manualItems.delete(text)
           renderManualList()
@@ -276,6 +338,7 @@
         }
       ))
     })
+    updateUnsavedTag()
   }
 
   function onIframeMouseUp () {
@@ -289,6 +352,10 @@
       renderManualList()
       applyHighlights()
       sel.removeAllRanges()
+      classifySelection(text, function (type) {
+        manualTypes.set(text, type)
+        renderManualList()
+      })
     } catch (e) {}
   }
 
@@ -323,12 +390,21 @@
     findings.forEach(function (f) {
       if (confirmedSet.has(f.value)) {
         assistedItems.set(f.value, Number((restore.instanceCount && restore.instanceCount[f.value]) || f.instances))
+        assistedTypes.set(f.value, f.type || null)
       }
     })
   } else {
-    findings.forEach(function (f) { assistedItems.set(f.value, f.instances) })
+    findings.forEach(function (f) {
+      assistedItems.set(f.value, f.instances)
+      assistedTypes.set(f.value, f.type || null)
+    })
   }
   renderAssistedList()
+
+  if (findings.length) {
+    var btnAssisted = document.getElementById('btn-assisted')
+    if (btnAssisted) btnAssisted.textContent = 'View AI suggestions'
+  }
 
   if (restore && restore.mode === 'manual') {
     ;(restore.confirmed || []).forEach(function (text) {
