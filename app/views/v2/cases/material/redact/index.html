@@ -56,7 +56,7 @@
           <input type="hidden" name="_csrf" value="{{ csrfToken }}">
           <input type="hidden" name="mode" value="assisted">
           <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-assisted-submit">
-            {{ govukButton({ text: "Accept suggestions" }) }}
+            {{ govukButton({ text: "Save and continue" }) }}
           </div>
         </form>
 
@@ -85,7 +85,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <input type="hidden" name="mode" value="manual">
         <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-manual-submit" style="display:none">
-          {{ govukButton({ text: "Accept selections" }) }}
+          {{ govukButton({ text: "Save and continue" }) }}
         </div>
       </form>
 

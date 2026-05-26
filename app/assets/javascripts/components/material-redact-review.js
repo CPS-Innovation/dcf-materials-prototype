@@ -159,7 +159,7 @@
               '<strong>' + escHtml(s.term) + '</strong>' +
               (s.after ? ' ' + escHtml(s.after) : '') +
             '</button>' +
-            '<button type="button" class="dcf-redact-instance__remove govuk-link">Remove instance</button>' +
+            '<button type="button" class="dcf-redact-instance__remove govuk-link">Reject instance</button>' +
           '</div>'
         if (i < snippets.length - 1) {
           html += '<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">'
@@ -178,7 +178,7 @@
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
       '</details>' +
-      '<button type="button" class="dcf-manual-list__remove govuk-link">Remove all</button>'
+      '<button type="button" class="dcf-manual-list__remove govuk-link">Reject all</button>'
 
     li.querySelector('.dcf-manual-list__remove').addEventListener('click', onRemoveAll)
     li.querySelectorAll('.dcf-redact-instance__remove').forEach(function (btn) {
