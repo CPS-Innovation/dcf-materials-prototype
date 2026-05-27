@@ -61,6 +61,7 @@
       {% else %}
         <div class="govuk-inset-text">No document URL available.</div>
       {% endif %}
+      <div class="dcf-area-overlay" id="dcf-area-overlay" aria-hidden="true"></div>
     </div>
 
     {# ── Right: assisted panel ───────────────────────────────── #}
@@ -102,7 +103,7 @@
         html: 'Select text in the document to mark it for redaction.'
       }) }}
 
-      
+
       <p class="govuk-body" id="dcf-manual-empty">No text selected yet.</p>
       <ul class="dcf-manual-list govuk-list" id="dcf-manual-list"></ul>
 
@@ -112,6 +113,32 @@
         <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-manual-submit" style="display:none">
           {{ govukButton({ text: "Save all selections" }) }}
           <button type="button" class="govuk-button govuk-button--secondary" id="dcf-manual-reset-btn">Clear and reset</button>
+        </div>
+      </form>
+
+    </div>
+
+    {# ── Right: area panel ───────────────────────────────────── #}
+    <div class="dcf-redact-panel" id="panel-area">
+
+      <h3 class="govuk-heading-m">Redaction cart</h3>
+      {{ govukInsetText({
+        html: 'Choose a redaction type from the <strong>Redact area</strong> menu above, then drag to mark an area on the document.'
+      }) }}
+
+      <p class="govuk-body" id="dcf-area-exit-draw" hidden>
+        <a href="#" class="govuk-link" id="dcf-area-cancel-draw">Exit drawing mode</a>
+      </p>
+
+      <p class="govuk-body" id="dcf-area-empty">No areas selected yet.</p>
+      <ul class="dcf-manual-list govuk-list" id="dcf-area-list"></ul>
+
+      <form method="post" action="/cases/{{ _case.id }}/material/redact/check" id="dcf-area-form">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <input type="hidden" name="mode" value="area">
+        <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-area-submit" style="display:none">
+          {{ govukButton({ text: "Save all areas" }) }}
+          <button type="button" class="govuk-button govuk-button--secondary" id="dcf-area-reset-btn">Clear and reset</button>
         </div>
       </form>
 

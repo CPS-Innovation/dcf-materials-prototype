@@ -5,7 +5,8 @@
   var modeButtons = document.querySelectorAll('[data-panel]')
   var panels = {
     assisted: document.getElementById('panel-assisted'),
-    manual:   document.getElementById('panel-manual')
+    manual:   document.getElementById('panel-manual'),
+    area:     document.getElementById('panel-area')
   }
 
   modeButtons.forEach(function (btn) {
@@ -14,6 +15,7 @@
       Object.values(panels).forEach(function (p) { if (p) p.classList.remove('dcf-redact-panel--visible') })
       if (panels[target]) panels[target].classList.add('dcf-redact-panel--visible')
       applyHighlights()
+      exitDrawMode()
     })
   })
 
@@ -123,7 +125,7 @@
   function updateUnsavedTag () {
     var tag = document.getElementById('dcf-unsaved-tag')
     if (!tag) return
-    var count = assistedItems.size + manualItems.size
+    var count = assistedItems.size + manualItems.size + areaItems.length
     tag.hidden = count === 0
     tag.textContent = count + ' possible redaction' + (count !== 1 ? 's' : '')
   }
@@ -305,6 +307,14 @@
     })
   }
 
+  // ── Area: state ───────────────────────────────────────────────────────────
+  var areaItems    = []
+  var areaCounter  = 0
+  var pendingAreaType = null
+  var isDrawing    = false
+  var drawStart    = null
+  var rubberBand   = null
+
   // ── Manual: text selection ────────────────────────────────────────────────
   var manualItems = new Map()
   var manualTypes = new Map()
@@ -381,6 +391,219 @@
     })
   }
 
+  // ── Area: draw mode + cart ────────────────────────────────────────────────
+
+  var areaOverlay = document.getElementById('dcf-area-overlay')
+
+  function getOverlayPos (e) {
+    var rect = areaOverlay.getBoundingClientRect()
+    return {
+      x: Math.max(0, Math.min(e.clientX - rect.left, rect.width)),
+      y: Math.max(0, Math.min(e.clientY - rect.top,  rect.height))
+    }
+  }
+
+  function enterDrawMode (type) {
+    pendingAreaType = type
+    Object.values(panels).forEach(function (p) { if (p) p.classList.remove('dcf-redact-panel--visible') })
+    if (panels.area) panels.area.classList.add('dcf-redact-panel--visible')
+    var exitRow = document.getElementById('dcf-area-exit-draw')
+    if (exitRow) exitRow.hidden = false
+    if (areaOverlay) areaOverlay.classList.add('dcf-area-overlay--active')
+    if (pdfApp) pdfApp.eventBus.dispatch('findbarclose', { source: {} })
+  }
+
+  function exitDrawMode () {
+    pendingAreaType = null
+    isDrawing = false
+    if (rubberBand && rubberBand.parentNode) {
+      rubberBand.parentNode.removeChild(rubberBand)
+      rubberBand = null
+    }
+    if (areaOverlay) areaOverlay.classList.remove('dcf-area-overlay--active')
+    var exitRow = document.getElementById('dcf-area-exit-draw')
+    if (exitRow) exitRow.hidden = true
+  }
+
+  function makeAreaListItem (item, onRemove) {
+    var li = document.createElement('li')
+    li.className = 'dcf-manual-list__item'
+    li.innerHTML =
+      '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + escHtml(item.label) + '</strong></p>' +
+      '<div class="govuk-!-margin-bottom-2"><strong class="govuk-tag govuk-tag--red govuk-!-font-size-14">' + escHtml(item.type) + '</strong></div>' +
+      '<button type="button" class="dcf-manual-list__remove govuk-link">Reject</button>'
+    li.querySelector('.dcf-manual-list__remove').addEventListener('click', onRemove)
+    return li
+  }
+
+  function getPdfScrollTop () {
+    try {
+      return (pdfApp && pdfApp.pdfViewer && pdfApp.pdfViewer.container)
+        ? pdfApp.pdfViewer.container.scrollTop
+        : 0
+    } catch (e) { return 0 }
+  }
+
+  function renderAreaRects () {
+    if (!areaOverlay) return
+    Array.prototype.forEach.call(areaOverlay.querySelectorAll('.dcf-area-rect-item'), function (el) {
+      areaOverlay.removeChild(el)
+    })
+    var scrollTop = getPdfScrollTop()
+    areaItems.forEach(function (item) {
+      var div = document.createElement('div')
+      div.className = 'dcf-area-rect-item'
+      div.style.left   = item.rect.xPct + '%'
+      div.style.top    = (item.rect.yAbsPx - scrollTop) + 'px'
+      div.style.width  = item.rect.wPct + '%'
+      div.style.height = item.rect.hPx + 'px'
+      areaOverlay.appendChild(div)
+    })
+  }
+
+  function renderAreaList () {
+    var list   = document.getElementById('dcf-area-list')
+    var empty  = document.getElementById('dcf-area-empty')
+    var submit = document.getElementById('dcf-area-submit')
+    if (!list) return
+    list.innerHTML = ''
+    renderAreaRects()
+    if (areaItems.length === 0) {
+      if (empty)  empty.hidden         = false
+      if (submit) submit.style.display = 'none'
+      updateUnsavedTag()
+      return
+    }
+    if (empty)  empty.hidden         = true
+    if (submit) submit.style.display = ''
+    areaItems.forEach(function (item) {
+      list.appendChild(makeAreaListItem(item, function () {
+        areaItems = areaItems.filter(function (a) { return a.id !== item.id })
+        renderAreaList()
+      }))
+    })
+    updateUnsavedTag()
+  }
+
+  // Intercept clicks on items inside the "Redact area" button menu
+  document.addEventListener('click', function (e) {
+    var link = e.target && e.target.closest('a')
+    if (!link) return
+    var menu = link.closest('.moj-button-menu')
+    if (!menu || !menu.querySelector('.dcf-btn-redact-area')) return
+    e.preventDefault()
+    var type = (link.textContent || '').trim()
+    if (!type) return
+    enterDrawMode(type)
+  }, false)
+
+  // Draw mode: mousedown on overlay starts a drag
+  if (areaOverlay) {
+    areaOverlay.addEventListener('mousedown', function (e) {
+      if (!pendingAreaType) return
+      e.preventDefault()
+      isDrawing = true
+      drawStart = getOverlayPos(e)
+      rubberBand = document.createElement('div')
+      rubberBand.className = 'dcf-area-rubber-band'
+      areaOverlay.appendChild(rubberBand)
+      updateRubberBand(drawStart, drawStart)
+    })
+  }
+
+  function updateRubberBand (start, end) {
+    if (!rubberBand) return
+    var x = Math.min(start.x, end.x)
+    var y = Math.min(start.y, end.y)
+    rubberBand.style.left   = x + 'px'
+    rubberBand.style.top    = y + 'px'
+    rubberBand.style.width  = Math.abs(end.x - start.x) + 'px'
+    rubberBand.style.height = Math.abs(end.y - start.y) + 'px'
+  }
+
+  document.addEventListener('mousemove', function (e) {
+    if (!isDrawing || !rubberBand) return
+    updateRubberBand(drawStart, getOverlayPos(e))
+  })
+
+  document.addEventListener('mouseup', function (e) {
+    if (!isDrawing) return
+    isDrawing = false
+    var end = getOverlayPos(e)
+    if (rubberBand && rubberBand.parentNode) {
+      rubberBand.parentNode.removeChild(rubberBand)
+      rubberBand = null
+    }
+    var w = Math.abs(end.x - drawStart.x)
+    var h = Math.abs(end.y - drawStart.y)
+    if (w < 10 || h < 10) return  // ignore accidental tiny drags
+    var overlayRect = areaOverlay.getBoundingClientRect()
+    var scrollTop   = getPdfScrollTop()
+    areaCounter++
+    areaItems.push({
+      id:    'area-' + areaCounter,
+      label: 'Area ' + areaCounter,
+      type:  pendingAreaType,
+      rect: {
+        xPct:   Math.min(drawStart.x, end.x) / overlayRect.width * 100,
+        yAbsPx: Math.min(drawStart.y, end.y) + scrollTop,
+        wPct:   w / overlayRect.width * 100,
+        hPx:    h
+      }
+    })
+    renderAreaList()
+    // Stay in draw mode so user can add more areas of the same type
+  })
+
+  // Escape cancels draw mode
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Escape' || e.key === 'Esc') && pendingAreaType) {
+      exitDrawMode()
+    }
+  })
+
+  // "Exit drawing mode" banner button
+  var cancelDrawBtn = document.getElementById('dcf-area-cancel-draw')
+  if (cancelDrawBtn) {
+    cancelDrawBtn.addEventListener('click', exitDrawMode)
+  }
+
+  // Clear and reset
+  var areaResetBtn = document.getElementById('dcf-area-reset-btn')
+  if (areaResetBtn) {
+    areaResetBtn.addEventListener('click', function () {
+      areaItems   = []
+      areaCounter = 0
+      exitDrawMode()
+      renderAreaList()
+    })
+  }
+
+  // Form submit — encode area data as hidden inputs
+  var areaForm = document.getElementById('dcf-area-form')
+  if (areaForm) {
+    areaForm.addEventListener('submit', function () {
+      this.querySelectorAll('input[data-area]').forEach(function (el) { el.remove() })
+      areaItems.forEach(function (item, i) {
+        ;[
+          ['type', item.type],
+          ['label', item.label],
+          ['rect.x', item.rect.x.toFixed(2)],
+          ['rect.y', item.rect.y.toFixed(2)],
+          ['rect.w', item.rect.w.toFixed(2)],
+          ['rect.h', item.rect.h.toFixed(2)]
+        ].forEach(function (pair) {
+          var inp = document.createElement('input')
+          inp.type  = 'hidden'
+          inp.name  = 'areaRedactions[' + i + '][' + pair[0] + ']'
+          inp.value = pair[1]
+          inp.setAttribute('data-area', '1')
+          areaForm.appendChild(inp)
+        })
+      })
+    })
+  }
+
   // ── Initialise assisted items from findings data ──────────────────────────
   var restore   = window.__redactRestore
   var findings  = window.__assistedFindings || []
@@ -446,6 +669,11 @@
         applyHighlights()
         try {
           iframe.contentDocument.addEventListener('mouseup', onIframeMouseUp)
+        } catch (e) {}
+        try {
+          pdfApp.pdfViewer.container.addEventListener('scroll', function () {
+            renderAreaRects()
+          })
         } catch (e) {}
       })
     } catch (e) {}

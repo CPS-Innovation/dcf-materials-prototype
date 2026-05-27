@@ -94,3 +94,32 @@
   cursor: pointer;
   display: block;
 }
+
+// ── Area redaction overlay ──────────────────────────────────────────────────
+
+.dcf-area-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  &--active {
+    pointer-events: auto;
+    cursor: crosshair;
+  }
+}
+
+.dcf-area-rubber-band {
+  position: absolute;
+  border: 2px dashed govuk-colour("red");
+  background: rgba(212, 53, 28, 0.08);
+  pointer-events: none;
+}
+
+.dcf-area-rect-item {
+  position: absolute;
+  border: 2px solid govuk-colour("red");
+  background: rgba(212, 53, 28, 0.15);
+  pointer-events: none;
+}
+
