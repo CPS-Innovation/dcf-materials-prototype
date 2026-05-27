@@ -444,7 +444,7 @@ module.exports = router => {
       data: {
         chargeCode:  newCharge.chargeCode  || '',
         description: newCharge.chargeDescription || '',
-        status:      'Put',
+        status:      'Pending add',
         offenceDate,
         particulars,
         defendantId: parseInt(newCharge.defendantId, 10),

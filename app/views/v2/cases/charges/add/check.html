@@ -22,12 +22,14 @@
     <div class="govuk-grid-column-two-thirds">
 
       {# ── Resolve date display ─────────────────────────────────── #}
+      {# Zero-pad helper macros to produce ISO YYYY-MM-DD for moment #}
+      {% macro pad(v) %}{{ ("0" if (v | string | length) == 1 else "") + v }}{% endmacro %}
       {% if data["dateType"] == "singleDate" %}
-        {% set singleDate = data["offenceDate-year"] + "-" + data["offenceDate-month"] + "-" + data["offenceDate-day"] %}
+        {% set singleDate = data["offenceDate-year"] + "-" + pad(data["offenceDate-month"]) + "-" + pad(data["offenceDate-day"]) %}
         {% set dateDisplay = singleDate | date("D MMMM YYYY") %}
       {% elif data["dateType"] == "multipleDates" %}
-        {% set dateFrom = data["offenceDateFrom-year"] + "-" + data["offenceDateFrom-month"] + "-" + data["offenceDateFrom-day"] %}
-        {% set dateTo   = data["offenceDateTo-year"]   + "-" + data["offenceDateTo-month"]   + "-" + data["offenceDateTo-day"] %}
+        {% set dateFrom = data["offenceDateFrom-year"] + "-" + pad(data["offenceDateFrom-month"]) + "-" + pad(data["offenceDateFrom-day"]) %}
+        {% set dateTo   = data["offenceDateTo-year"]   + "-" + pad(data["offenceDateTo-month"])   + "-" + pad(data["offenceDateTo-day"]) %}
         {% set dateDisplay = (dateFrom | date("D MMMM YYYY")) + " to " + (dateTo | date("D MMMM YYYY")) %}
       {% else %}
         {% set dateDisplay = "Not recorded" %}
@@ -89,7 +91,7 @@
 
       {% if newCharge.victimIsVI %}
         {% set _ = summaryRows.push({
-          key:   { text: "Vulnerable or intimidated" },
+          key:   { text: "Victim status" },
           value: { text: newCharge.victimIsVI | join(", ") if newCharge.victimIsVI | length else newCharge.victimIsVI },
           actions: { items: [{ href: base + "/victim-status", text: "Change", visuallyHiddenText: "victim vulnerability status" }] }
         }) %}

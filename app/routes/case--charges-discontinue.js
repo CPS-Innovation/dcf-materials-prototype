@@ -206,10 +206,14 @@ module.exports = router => {
       req.session.data.setReminderTitle = `Prepare INTIMIDATED victim letter for discontinued charge ${charge.chargeCode} on case ${_case.reference}`
     }
 
+    const reasonForDiscontinue = req.session.data.discontinueCharge?.reasonForDiscontinue || ''
+
     return res.render('v2/cases/charges/discontinue/set-reminder-details', {
       _case,
       charge,
-      defendant
+      defendant,
+      reasonForDiscontinue,
+      data: req.session.data
     })
   })
 

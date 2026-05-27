@@ -1,5 +1,6 @@
 {# /cases/:caseId/material/redact/index #}
 {% extends "_shared/layouts/main.html" %}
+{%- from "moj/components/button-menu/macro.njk" import mojButtonMenu -%}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -9,9 +10,9 @@
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
-  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %} <strong class="govuk-tag govuk-tag--yellow" id="dcf-unsaved-tag" hidden>0 possible redactions</strong></span>
+  <span class="govuk-caption-m">Redact document</span>
   <h1 class="govuk-heading-l govuk-!-margin-bottom-4">
-    Redact document
+    {% if scan.title %}{{ scan.title }}{% endif %} <strong class="govuk-tag govuk-tag--yellow" id="dcf-unsaved-tag" hidden>0 possible redactions</strong>
   </h1>
 
   <div class="govuk-button-group dcf-redact-mode-btns govuk-!-margin-bottom-4">
@@ -21,6 +22,29 @@
     <button type="button" class="govuk-button govuk-button--secondary" id="btn-manual" data-panel="manual">
       Manual redaction
     </button>
+    {{ mojButtonMenu({
+      button: {
+        text: "Redact area",
+        classes: "govuk-button--secondary dcf-btn-redact-area"
+      },
+      items: [
+        { text: "Address",                href: "#" },
+        { text: "Date of Birth",          href: "#" },
+        { text: "Named individual",       href: "#" },
+        { text: "Occupation",             href: "#" },
+        { text: "Phone number",           href: "#" },
+        { text: "Vehicle registration",   href: "#" },
+        { text: "Email address",          href: "#" },
+        { text: "Location",               href: "#" },
+        { text: "Bank details",           href: "#" },
+        { text: "Previous convictions",   href: "#" },
+        { text: "Relationship to others", href: "#" },
+        { text: "NHS number",             href: "#" },
+        { text: "NI number",              href: "#" },
+        { text: "Title",                  href: "#" },
+        { text: "Other",                  href: "#" }
+      ]
+    }) }}
   </div>
 
   <div class="dcf-redact-layout">
@@ -37,6 +61,7 @@
       {% else %}
         <div class="govuk-inset-text">No document URL available.</div>
       {% endif %}
+      <div class="dcf-area-overlay" id="dcf-area-overlay" aria-hidden="true"></div>
     </div>
 
     {# ── Right: assisted panel ───────────────────────────────── #}
@@ -78,7 +103,7 @@
         html: 'Select text in the document to mark it for redaction.'
       }) }}
 
-      
+
       <p class="govuk-body" id="dcf-manual-empty">No text selected yet.</p>
       <ul class="dcf-manual-list govuk-list" id="dcf-manual-list"></ul>
 
@@ -88,6 +113,32 @@
         <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-manual-submit" style="display:none">
           {{ govukButton({ text: "Save all selections" }) }}
           <button type="button" class="govuk-button govuk-button--secondary" id="dcf-manual-reset-btn">Clear and reset</button>
+        </div>
+      </form>
+
+    </div>
+
+    {# ── Right: area panel ───────────────────────────────────── #}
+    <div class="dcf-redact-panel" id="panel-area">
+
+      <h3 class="govuk-heading-m">Redaction cart</h3>
+      {{ govukInsetText({
+        html: 'Choose a redaction type from the <strong>Redact area</strong> menu above, then drag to mark an area on the document.'
+      }) }}
+
+      <p class="govuk-body" id="dcf-area-exit-draw" hidden>
+        <a href="#" class="govuk-link" id="dcf-area-cancel-draw">Exit drawing mode</a>
+      </p>
+
+      <p class="govuk-body" id="dcf-area-empty">No areas selected yet.</p>
+      <ul class="dcf-manual-list govuk-list" id="dcf-area-list"></ul>
+
+      <form method="post" action="/cases/{{ _case.id }}/material/redact/check" id="dcf-area-form">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <input type="hidden" name="mode" value="area">
+        <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-area-submit" style="display:none">
+          {{ govukButton({ text: "Save all areas" }) }}
+          <button type="button" class="govuk-button govuk-button--secondary" id="dcf-area-reset-btn">Clear and reset</button>
         </div>
       </form>
 

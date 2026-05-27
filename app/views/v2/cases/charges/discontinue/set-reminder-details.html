@@ -1,4 +1,4 @@
-{# /cases/:caseId/charges/discontinue/set-reminder-details #}
+{# v2/cases/:caseId/charges/discontinue/set-reminder-details #}
 {% extends "_shared/layouts/main.html" %}
 {% from "moj/components/date-picker/macro.njk" import mojDatePicker %}
 {% set navId = 'cases' %}
@@ -68,6 +68,10 @@
               {
                 key:   { text: "Linked victim" },
                 value: { text: (charge.victim.firstName + " " + charge.victim.lastName) if charge.victim else "Not recorded" }
+              },
+              {
+                key:   { text: "Reason for discontinuance" },
+                value: { text: reasonForDiscontinue if reasonForDiscontinue else "Not recorded" }
               }
             ]
           }) }}

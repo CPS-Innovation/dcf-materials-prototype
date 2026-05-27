@@ -1,4 +1,4 @@
-{# /cases/:caseId/charges/add/address #}
+{# v2/cases/:caseId/charges/add/address #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
@@ -32,7 +32,8 @@
               text: "Address line 1 (optional)",
               classes: "govuk-label--s"
             },
-            value: data.offenceAddress.line1 if data.offenceAddress[line1] else ""
+            value: data.offenceAddress.line1 if data.offenceAddress[line1] else "",
+            classes: "govuk-input--width-30"
           }) }}
 
           {{ govukInput({
@@ -43,6 +44,7 @@
               classes: "govuk-label--s"
             },
             value: data.offenceAddress.line2 if data.offenceAddress[line2] else "",
+            classes: "govuk-input--width-30",
             autocomplete: "address-line2"
           }) }}
 
@@ -54,7 +56,7 @@
               classes: "govuk-label--s"
             },
             value: data.offenceAddress.town if data.offenceAddress[town] else "",
-            classes: "govuk-!-width-two-thirds"
+            classes: "govuk-input--width-20"
           }) }}
 
           {{ govukInput({
@@ -66,6 +68,17 @@
             },
             value: data.offenceAddress.postcode if data.offenceAddress[postcode] else "",
             classes: "govuk-input--width-10"
+          }) }}
+
+          {{ govukInput({
+            id: "offenceAddress-country",
+            name: "offenceAddress[country]",
+            label: {
+              text: "Country (optional)",
+              classes: "govuk-label--s"
+            },
+            value: data.offenceAddress.country if data.offenceAddress[country] else "",
+            classes: "govuk-input--width-20"
           }) }}
 
         {% endcall %}

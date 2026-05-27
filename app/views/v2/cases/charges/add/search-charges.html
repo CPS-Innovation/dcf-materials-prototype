@@ -19,7 +19,7 @@
           {{ _case.reference }}
         {% endif %}
       </span>
-      <h1 class="govuk-heading-l">Select charge</h1>
+      <h1 class="govuk-heading-l">Select offence</h1>
 
       {% include "_shared/_includes/case/charges/add-search-form.njk" %}
 
@@ -35,9 +35,7 @@
               <input type="hidden" name="selectedChargeCode" value="{{ charge.chargeCode }}">
 
               <div class="govuk-summary-card">
-                <div class="govuk-summary-card__title-wrapper">
-                  <h2 class="govuk-summary-card__title">{{ charge.chargeCode }}</h2>
-                </div>
+               
                 <div class="govuk-summary-card__content">
                   {{ govukSummaryList({
                     classes: "govuk-summary-list--no-border",
@@ -60,7 +58,7 @@
                       }
                     ]
                   }) }}
-                  {{ govukButton({ text: "Select charge" }) }}
+                  {{ govukButton({ text: "Select offence" }) }}
                 </div>
               </div>
 
