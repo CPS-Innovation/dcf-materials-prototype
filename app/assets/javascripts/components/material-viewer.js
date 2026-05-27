@@ -210,16 +210,6 @@
       '<div id="dcf-viewer-tabs" class="dcf-viewer__tabs dcf-viewer__tabs--flush"></div>',
       '<div class="dcf-viewer__meta" data-meta-root></div>',
 
-      '<div class="dcf-viewer__ops-bar" data-ops-root>',
-        '<div class="dcf-ops-actions">',
-          '<a href="#" class="govuk-button govuk-button--inverse dcf-ops-iconbtn" data-action="ops-icon">',
-            '<span class="dcf-ops-icon" aria-hidden="true">',
-              '<img src="/public/files/marquee-blue.svg" alt="" width="20" height="20" />',
-            '</span>',
-            '<span class="govuk-visually-hidden">Primary action</span>',
-          '</a>',
-        '</div>',
-      '</div>',
 
       '<iframe class="dcf-viewer__frame" src="" title="Preview" loading="lazy" referrerpolicy="no-referrer"></iframe>'
     ].join('')
@@ -1681,10 +1671,7 @@ function buildMetaPanel (meta, bodyId) {
       return
     }
 
-    if (action === 'ops-icon') {
-      console.log('Ops icon clicked')
-      return
-    }
+
   }, false)
 
   // --------------------------------------

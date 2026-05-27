@@ -1,5 +1,6 @@
 {# /cases/:caseId/material/redact/index #}
 {% extends "_shared/layouts/main.html" %}
+{%- from "moj/components/button-menu/macro.njk" import mojButtonMenu -%}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'materials' %}
 {% set bodyClasses = "dcf-materials-wide" %}
@@ -9,9 +10,9 @@
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
-  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %} <strong class="govuk-tag govuk-tag--yellow" id="dcf-unsaved-tag" hidden>0 possible redactions</strong></span>
+  <span class="govuk-caption-m">Redact document</span>
   <h1 class="govuk-heading-l govuk-!-margin-bottom-4">
-    Redact document
+    {% if scan.title %}{{ scan.title }}{% endif %} <strong class="govuk-tag govuk-tag--yellow" id="dcf-unsaved-tag" hidden>0 possible redactions</strong>
   </h1>
 
   <div class="govuk-button-group dcf-redact-mode-btns govuk-!-margin-bottom-4">
@@ -21,6 +22,29 @@
     <button type="button" class="govuk-button govuk-button--secondary" id="btn-manual" data-panel="manual">
       Manual redaction
     </button>
+    {{ mojButtonMenu({
+      button: {
+        text: "Redact area",
+        classes: "govuk-button--secondary dcf-btn-redact-area"
+      },
+      items: [
+        { text: "Address",                href: "#" },
+        { text: "Date of Birth",          href: "#" },
+        { text: "Named individual",       href: "#" },
+        { text: "Occupation",             href: "#" },
+        { text: "Phone number",           href: "#" },
+        { text: "Vehicle registration",   href: "#" },
+        { text: "Email address",          href: "#" },
+        { text: "Location",               href: "#" },
+        { text: "Bank details",           href: "#" },
+        { text: "Previous convictions",   href: "#" },
+        { text: "Relationship to others", href: "#" },
+        { text: "NHS number",             href: "#" },
+        { text: "NI number",              href: "#" },
+        { text: "Title",                  href: "#" },
+        { text: "Other",                  href: "#" }
+      ]
+    }) }}
   </div>
 
   <div class="dcf-redact-layout">

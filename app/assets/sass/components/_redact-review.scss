@@ -1,3 +1,11 @@
+.dcf-btn-redact-area {
+  padding-left: govuk-spacing(7);
+  background-image: url('/public/files/marquee-blue.svg');
+  background-repeat: no-repeat;
+  background-position: govuk-spacing(2) center;
+  background-size: 16px 16px;
+}
+
 .dcf-redact-layout {
   display: grid;
   grid-template-columns: 1fr 380px;

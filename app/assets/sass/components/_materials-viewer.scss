@@ -112,7 +112,7 @@
 .dcf-viewer__meta {
   border-width: 12px 12px 0 12px;
   border-style: solid;
-  border-color: #3B64AC;      /* GOV.UK extended blue */
+  border-color: #000000;      /* GOV.UK extended blue */
   background: #fff;
   color: #000;
   padding: 12px 12px 0 12px;  /* bottom padding handled by meta bar */
@@ -161,7 +161,7 @@
   /* make it touch the blue border of .dcf-viewer__meta */
   margin: -12px -12px 0;      /* top/left/right = -meta padding */
   padding: 0px 0 10px 0;      /* vertical padding only */
-  background: #3B64AC;
+  background: #000000;
   color: #fff;
   display: flex;              /* host flex just to contain the row */
 }
