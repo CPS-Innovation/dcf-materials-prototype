@@ -68,6 +68,10 @@
               {
                 key:   { text: "Linked victim" },
                 value: { text: (charge.victim.firstName + " " + charge.victim.lastName) if charge.victim else "Not recorded" }
+              },
+              {
+                key:   { text: "Reason for discontinuance" },
+                value: { text: reasonForDiscontinue if reasonForDiscontinue else "Not recorded" }
               }
             ]
           }) }}
