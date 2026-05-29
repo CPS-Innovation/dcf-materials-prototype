@@ -1,0 +1,75 @@
+{# v2/cases/:caseId/charges/add/search-charges #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-one-half">
+
+      <span class="govuk-caption-m">
+        {% if defendant %}
+          Add charge - {{ defendant.firstName }} {{ defendant.lastName }}
+        {% else %}
+          {{ _case.reference }}
+        {% endif %}
+      </span>
+      <h1 class="govuk-heading-l">Select offence</h1>
+
+      {% include "_shared/_includes/case/charges/add-search-form.njk" %}
+
+      {# Search results (POST form — one form wraps all rows) #}
+      {% if precedentSearchKeywords %}
+        {% if precedentResults and precedentResults.length %}
+
+          <h2 class="govuk-heading-s">{{ precedentResults.length }} result{{ "s" if precedentResults.length != 1 }} found</h2>
+
+          {% for charge in precedentResults %}
+            <form method="post" action="/cases/{{ _case.id }}/charges/add/search-charges">
+              <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+              <input type="hidden" name="selectedChargeCode" value="{{ charge.chargeCode }}">
+
+              <div class="govuk-summary-card">
+               
+                <div class="govuk-summary-card__content">
+                  {{ govukSummaryList({
+                    classes: "govuk-summary-list--no-border",
+                    rows: [
+                      {
+                        key: { text: "CJS code" },
+                        value: { text: charge.chargeCode }
+                      },
+                      {
+                        key: { text: "Description" },
+                        value: { text: charge.label }
+                      },
+                      {
+                        key: { text: "Statute name and section" },
+                        value: { text: charge.statute.act + ", " + charge.statute.section }
+                      },
+                      {
+                        key: { text: "Effective from" },
+                        value: { text: charge.effectiveFromDate | date("D MMMM YYYY") if charge.effectiveFromDate else "—" }
+                      }
+                    ]
+                  }) }}
+                  {{ govukButton({ text: "Select offence" }) }}
+                </div>
+              </div>
+
+            </form>
+          {% endfor %}
+
+        {% else %}
+          <p class="govuk-body">No results found for <strong>{{ precedentSearchKeywords }}</strong>. Try a different search term or check the spelling.</p>
+        {% endif %}
+      {% endif %}
+
+    </div>
+  </div>
+{% endblock %}

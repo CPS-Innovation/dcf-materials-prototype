@@ -299,3 +299,18 @@ $statuses: (
 .govuk-skip-link:not(:focus):not(:active) {
   top: -9999px;
 }
+
+/* Button rendered as a link (e.g. table action column) */
+.app-button-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  color: $govuk-link-colour;
+
+  &:hover {
+    color: $govuk-link-hover-colour;
+  }
+}

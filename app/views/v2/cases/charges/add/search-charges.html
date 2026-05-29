@@ -1,4 +1,4 @@
-{# /cases/:caseId/charges/add/search-charges #}
+{# v2/cases/:caseId/charges/add/search-charges #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
@@ -23,53 +23,51 @@
 
       {% include "_shared/_includes/case/charges/add-search-form.njk" %}
 
-      {# Search results (POST form — one form wraps all rows) #}
-      {% if precedentSearchKeywords %}
+    </div>
+  </div>
+
+  {# Search results #}
+  {% if precedentSearchKeywords %}
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-three-quarters">
+
         {% if precedentResults and precedentResults.length %}
 
           <h2 class="govuk-heading-s">{{ precedentResults.length }} result{{ "s" if precedentResults.length != 1 }} found</h2>
 
-          {% for charge in precedentResults %}
-            <form method="post" action="/cases/{{ _case.id }}/charges/add/search-charges">
-              <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-              <input type="hidden" name="selectedChargeCode" value="{{ charge.chargeCode }}">
-
-              <div class="govuk-summary-card">
-               
-                <div class="govuk-summary-card__content">
-                  {{ govukSummaryList({
-                    classes: "govuk-summary-list--no-border",
-                    rows: [
-                      {
-                        key: { text: "CJS code" },
-                        value: { text: charge.chargeCode }
-                      },
-                      {
-                        key: { text: "Description" },
-                        value: { text: charge.label }
-                      },
-                      {
-                        key: { text: "Statute name and section" },
-                        value: { text: charge.statute.act + ", " + charge.statute.section }
-                      },
-                      {
-                        key: { text: "Effective from" },
-                        value: { text: charge.effectiveFromDate | date("D MMMM YYYY") if charge.effectiveFromDate else "—" }
-                      }
-                    ]
-                  }) }}
-                  {{ govukButton({ text: "Select offence" }) }}
-                </div>
-              </div>
-
-            </form>
-          {% endfor %}
+          <form method="post" action="/cases/{{ _case.id }}/charges/add/search-charges">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <table class="govuk-table">
+              <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                  <th scope="col" class="govuk-table__header">CJS code</th>
+                  <th scope="col" class="govuk-table__header">Description</th>
+                  <th scope="col" class="govuk-table__header">Statute name and section</th>
+                  <th scope="col" class="govuk-table__header">Effective from</th>
+                  <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Action</span></th>
+                </tr>
+              </thead>
+              <tbody class="govuk-table__body">
+                {% for charge in precedentResults %}
+                  <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">{{ charge.chargeCode }}</td>
+                    <td class="govuk-table__cell">{{ charge.label }}</td>
+                    <td class="govuk-table__cell">{{ charge.statute.act }}, {{ charge.statute.section }}</td>
+                    <td class="govuk-table__cell">{{ charge.effectiveFromDate | date("D MMMM YYYY") if charge.effectiveFromDate else "—" }}</td>
+                    <td class="govuk-table__cell govuk-table__cell--numeric">
+                      <button type="submit" name="selectedChargeCode" value="{{ charge.chargeCode }}" class="govuk-link app-button-link">Select offence</button>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </form>
 
         {% else %}
           <p class="govuk-body">No results found for <strong>{{ precedentSearchKeywords }}</strong>. Try a different search term or check the spelling.</p>
         {% endif %}
-      {% endif %}
 
+      </div>
     </div>
-  </div>
+  {% endif %}
 {% endblock %}
