@@ -23,6 +23,32 @@ function formatVictimName (raw) {
   return `${first} ${last[0]}${last.slice(1).toLowerCase()}`
 }
 
+// Annotates each victim with isPure.
+// Primary: victim is pure if their name doesn't appear in the witness list.
+// Fallback A (multi-victim, all pure): make first victim pure, rest non-pure.
+// Fallback B (single victim or all pure after A): inject the first witness as a
+//   synthetic non-pure option (id prefixed "w-") so both flows are always demoable.
+function annotateVictims (victims, witnesses) {
+  const witnessNames = new Set((witnesses || []).map(w => `${w.firstName} ${w.lastName}`))
+  let annotated = victims.map(v => ({
+    ...v,
+    isPure: !witnessNames.has(`${v.firstName} ${v.lastName}`)
+  }))
+
+  const hasNonPure = () => annotated.some(v => !v.isPure)
+
+  if (!hasNonPure() && annotated.length > 1) {
+    annotated = annotated.map((v, i) => ({ ...v, isPure: i === 0 }))
+  }
+
+  if (!hasNonPure() && (witnesses || []).length > 0) {
+    const w = witnesses[0]
+    annotated.push({ id: `w-${w.id}`, firstName: w.firstName, lastName: w.lastName, isPure: false })
+  }
+
+  return annotated
+}
+
 module.exports = router => {
 
   // ------------------------------------------------------------------
@@ -323,19 +349,7 @@ module.exports = router => {
       }
     }
 
-    // Start with case-linked victims (current victim stays in list — pre-checked by template)
-    const caseVictims = _case.victims || []
-    const caseVictimIds = new Set(caseVictims.map(v => v.id))
-
-    // Top up to 5 with additional DB victims when the case pool is small
-    let victims = caseVictims
-    if (caseVictims.length < 5) {
-      const extra = await prisma.victim.findMany({
-        where: { id: { notIn: Array.from(caseVictimIds) } },
-        take: 5 - caseVictims.length
-      })
-      victims = [...caseVictims, ...extra]
-    }
+    const victims = annotateVictims(_case.victims || [], _case.witnesses || [])
 
     return res.render('v2/cases/charges/edit/select-victim', {
       _case,
@@ -346,25 +360,61 @@ module.exports = router => {
   })
 
   router.post('/cases/:caseId/charges/:chargeId/edit/select-victim', async (req, res) => {
-    const selectedId = parseInt(req.body.victimId, 10)
-    const selectedVictim = isNaN(selectedId)
-      ? null
-      : await prisma.victim.findUnique({ where: { id: selectedId } })
-    req.session.data.editCharge = {
-      ...req.session.data.editCharge,
-      victimId:   req.body.victimId,
-      victimName: selectedVictim
-        ? `${selectedVictim.firstName} ${selectedVictim.lastName}`
-        : null
+    const { caseId, chargeId } = req.params
+    const victimId = req.body.victimId
+    const _case = await getCaseWithCharges(caseId)
+    const victims = annotateVictims(_case ? (_case.victims || []) : [], _case ? (_case.witnesses || []) : [])
+
+    let victimName = null
+    let isPureVictim = false
+    if (victimId !== 'none') {
+      const victim = victims.find(v => String(v.id) === String(victimId))
+      if (victim) {
+        victimName = `${victim.firstName} ${victim.lastName}`
+        isPureVictim = victim.isPure
+      }
     }
 
-    const returnUrl = req.session.data.editCharge?.returnUrl
+    const updatedCharge = { ...req.session.data.editCharge, victimId, victimName }
+    if (victimId === 'none' || isPureVictim) delete updatedCharge.victimIsVI
+    req.session.data.editCharge = updatedCharge
+
+    if (victimId !== 'none' && !isPureVictim) {
+      // returnUrl stays in session — victim-status POST will honour it
+      return res.redirect(`/cases/${caseId}/charges/${chargeId}/edit/victim-status`)
+    }
+
+    const returnUrl = req.session.data.editCharge.returnUrl
     if (returnUrl) {
       delete req.session.data.editCharge.returnUrl
       return res.redirect(returnUrl)
     }
+    return res.redirect(`/cases/${caseId}/charges/${chargeId}/edit/check`)
+  })
 
-    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/summary`)
+
+  // ------------------------------------------------------------------
+  // VICTIM STATUS (V&I — only shown for non-pure victims)
+  // GET  /cases/:caseId/charges/:chargeId/edit/victim-status
+  // POST →  check (returnUrl) | check
+  router.get('/cases/:caseId/charges/:chargeId/edit/victim-status', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
+    if (!charge) return res.status(404).render('not-found')
+    const editCharge = req.session.data.editCharge || {}
+    return res.render('v2/cases/charges/edit/status', { _case, charge, defendant, editCharge })
+  })
+
+  router.post('/cases/:caseId/charges/:chargeId/edit/victim-status', (req, res) => {
+    const victimIsVI = [].concat(req.body.victimIsVI || []).filter(v => v !== '_unchecked')
+    req.session.data.editCharge = { ...req.session.data.editCharge, victimIsVI }
+    const returnUrl = req.session.data.editCharge.returnUrl
+    if (returnUrl) {
+      delete req.session.data.editCharge.returnUrl
+      return res.redirect(returnUrl)
+    }
+    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/check`)
   })
 
 

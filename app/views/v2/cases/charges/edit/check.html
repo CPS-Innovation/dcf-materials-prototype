@@ -60,54 +60,47 @@
           | replace("[victim]", victimDisplay) %}
       {% endif %}
 
-      {{ govukSummaryList({
-        rows: [
-          {
-            key:   { text: "Charge" },
-            value: { text: charge.description }
-          },
-          {
-            key:   { text: "Offence date" },
-            value: { text: dateDisplay },
-            actions: {
-              items: [{
-                href: base + "/date-type?returnUrl=" + checkUrl,
-                text: "Edit",
-                visuallyHiddenText: "offence date"
-              }]
-            }
-          },
-          {
-            key:   { text: "Victim" },
-            value: { text: victimDisplay },
-            actions: {
-              items: [{
-                href: base + "/select-victim?returnUrl=" + checkUrl,
-                text: "Edit",
-                visuallyHiddenText: "victim"
-              }]
-            }
-          },
-          {
-            key:   { text: "Particulars" },
-            value: { text: particularsDisplay },
-            actions: {
-              items: [{
-                href: base + "/particulars?returnUrl=" + checkUrl,
-                text: "Edit",
-                visuallyHiddenText: "charge particulars"
-              }]
-            }
-          }
-        ]
-      }) }}
+      {% set summaryRows = [] %}
+
+      {% set _ = summaryRows.push({
+        key:   { text: "Charge" },
+        value: { text: charge.description }
+      }) %}
+
+      {% set _ = summaryRows.push({
+        key:   { text: "Offence date" },
+        value: { text: dateDisplay },
+        actions: { items: [{ href: base + "/date-type?returnUrl=" + checkUrl, text: "Edit", visuallyHiddenText: "offence date" }] }
+      }) %}
+
+      {% set _ = summaryRows.push({
+        key:   { text: "Victim" },
+        value: { text: victimDisplay },
+        actions: { items: [{ href: base + "/select-victim?returnUrl=" + checkUrl, text: "Edit", visuallyHiddenText: "victim" }] }
+      }) %}
+
+      {% if editCharge.victimIsVI is defined %}
+        {% set viDisplay = editCharge.victimIsVI | join(", ") if editCharge.victimIsVI.length else "None" %}
+        {% set _ = summaryRows.push({
+          key:   { text: "Victim status" },
+          value: { text: viDisplay },
+          actions: { items: [{ href: base + "/victim-status?returnUrl=" + checkUrl, text: "Edit", visuallyHiddenText: "victim status" }] }
+        }) %}
+      {% endif %}
+
+      {% set _ = summaryRows.push({
+        key:   { text: "Particulars" },
+        value: { text: particularsDisplay },
+        actions: { items: [{ href: base + "/particulars?returnUrl=" + checkUrl, text: "Edit", visuallyHiddenText: "charge particulars" }] }
+      }) %}
+
+      {{ govukSummaryList({ rows: summaryRows }) }}
 
       <form method="post">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         
          <div class="govuk-button-group">
           {{ govukButton({ text: "Save details" }) }}
-          <a href="#" class="govuk-link">Cancel</a>
          </div> 
       </form>
 
