@@ -1,4 +1,4 @@
-{# /cases/:caseId/charges/edit/select-victim #}
+{# v2/cases/:caseId/charges/edit/select-victim #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
@@ -24,6 +24,7 @@
           {% set _ = victimItems.push({
             value: victim.id | string,
             text: victim.firstName + " " + victim.lastName,
+            hint: { text: "Pure victim" } if victim.isPure,
             checked: data["victimId"] == victim.id | string
           }) %}
         {% endfor %}
@@ -49,7 +50,6 @@
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}
-          <a href="#" class="govuk-link">Cancel</a>
         </div>
 
       </form>
