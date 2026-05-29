@@ -310,7 +310,7 @@ module.exports = router => {
       delete req.session.data.newCharge.returnUrl
       return res.redirect(returnUrl)
     }
-    return res.redirect(`/cases/${caseId}/charges/add/do-you-want-to-add-particulars`)
+    return res.redirect(`/cases/${caseId}/charges/add/particulars`)
   })
 
 
@@ -336,7 +336,7 @@ module.exports = router => {
       delete req.session.data.newCharge.returnUrl
       return res.redirect(returnUrl)
     }
-    return res.redirect(`/cases/${req.params.caseId}/charges/add/do-you-want-to-add-particulars`)
+    return res.redirect(`/cases/${req.params.caseId}/charges/add/particulars`)
   })
 
 
