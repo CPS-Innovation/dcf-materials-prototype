@@ -624,11 +624,6 @@
   }
   renderAssistedList()
 
-  if (findings.length) {
-    var btnAssisted = document.getElementById('btn-assisted')
-    if (btnAssisted) btnAssisted.textContent = 'View AI suggestions'
-  }
-
   if (restore && restore.mode === 'manual') {
     ;(restore.confirmed || []).forEach(function (text) {
       manualItems.set(text, Number((restore.instanceCount && restore.instanceCount[text]) || 0))

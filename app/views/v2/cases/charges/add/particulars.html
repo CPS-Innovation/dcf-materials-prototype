@@ -32,76 +32,104 @@
         <input type="hidden" id="static-date" value="{{ datePrefill }}">
         <input type="hidden" id="static-victim" value="{{ newCharge.victimName }}">
 
+          {{ govukInput({
+            id: "",
+            name: "",
+            classes: "govuk-input--width-20",
+            label: {
+              text: "Label text",
+              classes: "govuk-label--s govuk-visually-hidden"
+            }
+          }) }}
 
-        <div class="app-particulars-builder">
+          {{ govukInput({
+            id: "",
+            name: "",
+            classes: "govuk-input--width-20",
+            label: {
+              text: "Label text",
+              classes: "govuk-label--s govuk-visually-hidden"
+            }
+          }) }}
 
-          <div class="app-particulars-builder__row">
-            <span class="app-particulars-builder__label">Date (optional)</span>
-            <p class="app-particulars-builder__value">{{ datePrefill or "Not recorded" }}</p>
-          </div>
+          {{ govukSelect({
+            id: "sort",
+            name: "sort",
+            classes: "govuk-input--width-20",
+            label: {
+              text: "Sort by",
+              classes: "govuk-label--s govuk-visually-hidden govuk-input--width-20"
+            },
+            items: [
+              {
+                value: "published",
+                text: "Recently published"
+              },
+              {
+                value: "updated",
+                text: "Recently updated",
+                selected: true
+              },
+              {
+                value: "views",
+                text: "Most views"
+              },
+              {
+                value: "comments",
+                text: "Most comments"
+              }
+            ]
+          }) }}
 
-          <div class="app-particulars-builder__row">
-            {{ govukSelect({
-              id: "builder_location",
-              name: "builder_location",
-              label: { text: "Location (optional)", classes: "app-particulars-builder__label" },
-              items: [
-                { value: "", text: "Select location" },
-                { value: "Birmingham", text: "Birmingham" },
-                { value: "Bradford", text: "Bradford" },
-                { value: "Bristol", text: "Bristol" },
-                { value: "Leeds", text: "Leeds" },
-                { value: "Liverpool", text: "Liverpool" },
-                { value: "London", text: "London" },
-                { value: "Manchester", text: "Manchester" },
-                { value: "Newcastle", text: "Newcastle" },
-                { value: "Nottingham", text: "Nottingham" },
-                { value: "Sheffield", text: "Sheffield" }
-              ]
-            }) }}
-          </div>
+          {{ govukInput({
+            id: "",
+            name: "",
+            classes: "govuk-input--width-20",
+            label: {
+              text: "Label text",
+              classes: "govuk-label--s govuk-visually-hidden"
+            }
+          }) }}
 
-          <div class="app-particulars-builder__row">
-            <span class="app-particulars-builder__label">Victim (optional)</span>
-            <p class="app-particulars-builder__value">{{ newCharge.victimName or "No victim" }}</p>
-          </div>
-
-          <div class="app-particulars-builder__row">
-            {{ govukSelect({
-              id: "builder_action",
-              name: "builder_action",
-              label: { text: "Action (optional)", classes: "app-particulars-builder__label" },
-              items: [
-                { value: "", text: "Select action" },
-                { value: "assaulted", text: "Assaulted" },
-                { value: "robbed", text: "Robbed" },
-                { value: "threatened", text: "Threatened" },
-                { value: "possessed", text: "Possessed" }
-              ]
-            }) }}
-          </div>
-
-          <div class="app-particulars-builder__row">
-            {{ govukInput({
-              id: "builder_details",
-              name: "builder_details",
-              label: { text: "Details (optional)  ", classes: "app-particulars-builder__label" },
-              hint: { text: "Describe the specific act, e.g. by beating, with a knife, by false representation." }
-            }) }}
-          </div>
+          {{ govukSelect({
+            id: "sort",
+            name: "sort",
+            classes: "govuk-input--width-20",
+            label: {
+              text: "Sort by",
+              classes: "govuk-label--s govuk-visually-hidden"
+            },
+            items: [
+              {
+                value: "published",
+                text: "Recently published"
+              },
+              {
+                value: "updated",
+                text: "Recently updated",
+                selected: true
+              },
+              {
+                value: "views",
+                text: "Most views"
+              },
+              {
+                value: "comments",
+                text: "Most comments"
+              }
+            ]
+          }) }}
 
           <button type="button" id="generate-particulars" class="govuk-button govuk-button--secondary">
             Generate summary of charge particulars
           </button>
-        
-        </div>
 
         {{ govukTextarea({
           id: "particulars",
           name: "particulars",
           rows: 8,
           label: {
-            text: "Summary of charge particulars (optional)",
+            text: "Summary of charge particulars",
             classes: "govuk-label--s"
           },
           hint: { text: "Describe the circumstances of the offence." },

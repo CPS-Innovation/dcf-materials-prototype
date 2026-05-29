@@ -11,7 +11,7 @@
     link.href = '#'
     link.className = 'govuk-link govuk-!-margin-right-3'
     link.setAttribute('data-action', 'redact-document')
-    link.textContent = 'Redact document'
+    link.textContent = 'Redact this document'
 
     toolbarRight.insertBefore(link, docActions)
   }
