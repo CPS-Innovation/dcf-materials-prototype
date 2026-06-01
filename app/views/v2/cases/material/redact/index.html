@@ -10,10 +10,8 @@
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
-  <span class="govuk-caption-m">Redact document - {% if scan.title %}{{ scan.title }}{% endif %}</span>
-  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Add redactions to cart 
-     <strong class="govuk-tag govuk-tag--yellow" id="dcf-unsaved-tag" hidden>0 possible redactions</strong>
-  </h1>
+  <span class="govuk-caption-m">Redact document - {% if scan.title %}{{ scan.title }}{% endif %}{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--yellow">{{ scan.findings | length }} AI suggestion{{ "s" if scan.findings | length != 1 else "" }}</strong>{% endif %}</span>
+  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Add redactions to cart <span id="dcf-cart-count" hidden>(0)</span></h1>
 
   <div class="govuk-button-group dcf-redact-mode-btns govuk-!-margin-bottom-4">
     <button type="button" class="govuk-button govuk-button--secondary" id="btn-assisted" data-panel="assisted">

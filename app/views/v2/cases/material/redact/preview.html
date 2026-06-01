@@ -10,8 +10,7 @@
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
  <span class="govuk-caption-m">Redact document - {% if scan.title %}{{ scan.title }}{% endif %}</span>
-  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Preview and commit redactions  
-  </h1>
+  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Preview and commit redactions{% if check.confirmed and check.confirmed | length %} ({{ check.confirmed | length }}){% endif %}</h1>
 
   <div class="dcf-redact-layout">
 
@@ -32,10 +31,91 @@
     {# ── Right: summary and commit ── #}
     <div class="dcf-redact-panel dcf-redact-panel--visible">
 
-      <h2 class="govuk-heading-m">Preview redactions</h2>
+      <h2 class="govuk-heading-m">Redaction log</h2>
 
-      {{ govukInsetText({
-        html: 'Redacted content is shown as black bars. Review the document, then commit when you are satisfied.'
+      {{ govukSelect({
+        classes: "govuk-!-margin-bottom-2",
+        id: "CPS-area",
+        name: "CPS area",
+        label: {
+          text: "CPS area or central casework division",
+          classes: "govuk-label--s"
+        },
+        items: [
+          {
+            value: "Mersey - Cheshire",
+            text: "Mersey - Cheshire",
+            selected: true
+          }
+        ]
+      }) }}
+
+      {{ govukSelect({
+        classes: "govuk-!-margin-bottom-2",
+        id: "CPS-business-unit",
+        name: "CPS business unit",
+        label: {
+          text: "CPS business unit",
+          classes: "govuk-label--s"
+        },
+        items: [
+          {
+            value: "Magistrates court",
+            text: "Magistrates court",
+            selected: true
+          }
+        ]
+      }) }}
+
+       {{ govukSelect({
+        classes: "govuk-!-margin-bottom-2",
+        id: "Investigative-agency",
+        name: "Investigative agency",
+        label: {
+          text: "Investigative agency",
+          classes: "govuk-label--s"
+        },
+        items: [
+          {
+            value: "South Yorkshie Police",
+            text: "South Yorkshie Police",
+            selected: true
+          }
+        ]
+      }) }}
+
+       {{ govukSelect({
+        classes: "govuk-!-margin-bottom-2",
+        id: "Charge-status",
+        name: "Charge status",
+        label: {
+          text: "Charge status",
+          classes: "govuk-label--s"
+        },
+        items: [
+          {
+            value: "Post-charge",
+            text: "Post-charge",
+            selected: true
+          }
+        ]
+      }) }}
+
+       {{ govukSelect({
+        classes: "govuk-!-margin-bottom-2",
+        id: "document-type",
+        name: "Document type",
+        label: {
+          text: "Document type",
+          classes: "govuk-label--s"
+        },
+        items: [
+          {
+            value: "MG 4",
+            text: "MG 4",
+            selected: true
+          }
+        ]
       }) }}
 
       {% if check.confirmed and check.confirmed.length %}
@@ -71,6 +151,18 @@
       {% endif %}
 
       <form method="post" action="/cases/{{ _case.id }}/material/redact/confirm">
+
+        {{ govukCharacterCount({
+          name: "moreRedactionDetails",
+          id: "more-redaction-details",
+          maxlength: 200,
+          label: {
+            text: "Supporting notes (optional)",
+            classes: "govuk-label--s",
+            isPageHeading: false
+          }
+        }) }}
+
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <div class="govuk-button-group govuk-!-margin-top-4">
           {{ govukButton({ text: "Commit redactions" }) }}
