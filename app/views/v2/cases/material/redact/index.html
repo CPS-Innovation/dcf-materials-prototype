@@ -81,8 +81,8 @@
           <input type="hidden" name="_csrf" value="{{ csrfToken }}">
           <input type="hidden" name="mode" value="assisted">
           <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-assisted-submit" style="display:none">
-            {{ govukButton({ text: "Save suggestions" }) }}
-            <button type="button" class="govuk-button govuk-button--secondary" id="dcf-assisted-reset-btn">Reject suggestions</button>
+            {{ govukButton({ text: "Preview redactions" }) }}
+            <button type="button" class="govuk-button govuk-button--secondary" id="dcf-assisted-reset-btn">Clear and reset</button>
           </div>
         </form>
 
@@ -111,7 +111,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <input type="hidden" name="mode" value="manual">
         <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-manual-submit" style="display:none">
-          {{ govukButton({ text: "Save all selections" }) }}
+          {{ govukButton({ text: "Keep redactions" }) }}
           <button type="button" class="govuk-button govuk-button--secondary" id="dcf-manual-reset-btn">Clear and reset</button>
         </div>
       </form>
@@ -137,7 +137,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <input type="hidden" name="mode" value="area">
         <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-area-submit" style="display:none">
-          {{ govukButton({ text: "Save all areas" }) }}
+          {{ govukButton({ text: "Preview redactions" }) }}
           <button type="button" class="govuk-button govuk-button--secondary" id="dcf-area-reset-btn">Clear and reset</button>
         </div>
       </form>

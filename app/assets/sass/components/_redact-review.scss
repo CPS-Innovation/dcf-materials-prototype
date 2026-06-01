@@ -29,7 +29,6 @@
 .dcf-redact-panel {
   display: none;
   height: 100%;
-  overflow-y: auto;
   padding-right: govuk-spacing(1);
 
   &--visible {
@@ -40,22 +39,10 @@
 .dcf-manual-list__item {
   border-bottom: 1px solid $govuk-border-colour;
   padding: govuk-spacing(3) 0;
-
-  &:first-child { border-top: 1px solid $govuk-border-colour; }
 }
 
 .dcf-manual-list__text {
   @include govuk-font($size: 19);
-}
-
-.dcf-manual-list__remove {
-  @include govuk-font($size: 16);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  margin-top: govuk-spacing(1);
-  display: block;
 }
 
 .dcf-redact-context {
@@ -86,13 +73,72 @@
   &:hover { text-decoration: underline; }
 }
 
+// ── Instance action buttons (Accept / Reject pair) ───────────────────────────
+
+.dcf-redact-instance__actions {
+  display: flex;
+  gap: govuk-spacing(3);
+  margin-top: govuk-spacing(1);
+}
+
+.dcf-redact-instance__accept,
 .dcf-redact-instance__remove {
   @include govuk-font($size: 16);
   background: none;
   border: none;
-  padding: govuk-spacing(1) 0 0;
+  padding: 0;
   cursor: pointer;
   display: block;
+}
+
+// ── Cart focus flash (triggered when clicking a PDF highlight) ────────────────
+
+@keyframes dcf-cart-flash {
+  0%   { background-color: govuk-colour("yellow"); }
+  100% { background-color: transparent; }
+}
+
+.dcf-cart-focused {
+  animation: dcf-cart-flash 1.4s ease-out forwards;
+  border-radius: 3px;
+}
+
+// ── Type buckets ─────────────────────────────────────────────────────────────
+
+.dcf-redact-bucket {
+  border-top: 1px solid $govuk-border-colour;
+  padding-top: govuk-spacing(3);
+  margin-bottom: govuk-spacing(4);
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.dcf-redact-bucket__heading {
+  margin-bottom: govuk-spacing(2);
+}
+
+.dcf-bucket-terms {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  .dcf-manual-list__item:first-child { border-top: none; }
+}
+
+.dcf-bucket-controls {
+  display: flex;
+  gap: govuk-spacing(4);
+  margin-top: govuk-spacing(2);
+  padding-top: govuk-spacing(2);
+}
+
+.dcf-bucket__reject-all,
+.dcf-bucket__accept-all {
+  @include govuk-font($size: 16);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 // ── Area redaction overlay ──────────────────────────────────────────────────

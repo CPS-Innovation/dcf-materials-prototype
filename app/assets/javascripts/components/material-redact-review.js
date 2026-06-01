@@ -1,4 +1,4 @@
-(() => {
+;(() => {
   var iframe = document.getElementById('redact-preview-iframe')
 
   // ── Mode panels & toggle ──────────────────────────────────────────────────
@@ -103,8 +103,24 @@
     }
     Promise.all(promises).then(function (texts) {
       fullDocText = texts.join(' ')
+      // Sync state totals to actual document snippet counts now that text is loaded
+      syncStateTotals(assistedItems, assistedInstState)
+      syncStateTotals(manualItems, manualInstState)
       renderAssistedList()
       renderManualList()
+    })
+  }
+
+  function syncStateTotals (itemsMap, stateMap) {
+    itemsMap.forEach(function (count, text) {
+      var snippets = getContextSnippets(text)
+      if (!snippets || snippets.length === 0) return
+      var actual = snippets.length
+      var s = stateMap.get(text)
+      if (!s || s.total === actual) return
+      s.total = actual
+      var used = s.accepted + s.rejected
+      if (used > actual) s.accepted = Math.max(0, actual - s.rejected)
     })
   }
 
@@ -165,18 +181,71 @@
     return snippets
   }
 
-  function makeListItem (text, count, type, onRemoveAll, onRemoveInstance) {
+  // ── Per-instance state ────────────────────────────────────────────────────
+  // Each state entry: { accepted: n, rejected: n, total: n }
+  // pending = total - accepted - rejected
+  var assistedInstState = new Map()
+  var manualInstState   = new Map()
+
+  function initInstState (stateMap, text, total) {
+    stateMap.set(text, { accepted: 0, rejected: 0, total: total })
+  }
+
+  function getPending (stateMap, itemsMap, text) {
+    var s = stateMap.get(text)
+    if (!s) return itemsMap.get(text) || 0
+    return Math.max(0, s.total - s.accepted - s.rejected)
+  }
+
+  function getAccepted (stateMap, text) {
+    var s = stateMap.get(text)
+    return s ? s.accepted : 0
+  }
+
+  // ── Cart focus (click highlight in PDF → open term in cart) ─────────────────
+  function focusCartItem (term) {
+    var assistedActive = panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')
+    var manualActive   = panels.manual   && panels.manual.classList.contains('dcf-redact-panel--visible')
+    var listId = assistedActive ? 'dcf-assisted-list' : manualActive ? 'dcf-manual-list' : null
+    if (!listId) return
+    var list = document.getElementById(listId)
+    if (!list) return
+
+    var targetDetails = null
+    list.querySelectorAll('.govuk-details').forEach(function (d) {
+      var strong = d.querySelector('.govuk-details__summary-text strong')
+      if (strong && strong.textContent.trim() === term) targetDetails = d
+    })
+    if (!targetDetails) return
+
+    targetDetails.open = true
+    targetDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    targetDetails.classList.add('dcf-cart-focused')
+    setTimeout(function () { targetDetails.classList.remove('dcf-cart-focused') }, 1400)
+  }
+
+  function updateSubmitGates () {}
+
+  // ── List item (text redactions) ───────────────────────────────────────────
+  // Renders a single term's <details> with Accept/Reject per pending instance.
+  // No type tag (moves to bucket heading). No outer Reject all (moves to bucket controls).
+  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onRejectInstance) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
+    var pending  = getPending(stateMap, itemsMap, text)
     var snippets = getContextSnippets(text)
+    var shownSnippets = snippets ? snippets.slice(0, pending) : null
+
     var detailsBody = ''
-    if (snippets === null) {
+    if (shownSnippets === null) {
       detailsBody = '<p class="govuk-body-s">Loading context…</p>'
-    } else if (snippets.length === 0) {
+    } else if (pending === 0) {
+      detailsBody = '<p class="govuk-body-s govuk-!-colour-secondary">All instances reviewed.</p>'
+    } else if (shownSnippets.length === 0) {
       detailsBody = '<p class="govuk-body-s">No context available.</p>'
     } else {
-      detailsBody = snippets.map(function (s, i) {
+      detailsBody = shownSnippets.map(function (s, i) {
         var html =
           '<div class="dcf-redact-instance">' +
             '<button type="button" class="dcf-redact-instance__focus govuk-body-s">' +
@@ -184,9 +253,12 @@
               '<strong>' + escHtml(s.term) + '</strong>' +
               (s.after ? ' ' + escHtml(s.after) : '') +
             '</button>' +
-            '<button type="button" class="dcf-redact-instance__remove govuk-link">Reject instance</button>' +
+            '<div class="dcf-redact-instance__actions">' +
+              '<button type="button" class="dcf-redact-instance__accept govuk-link">Accept</button>' +
+              '<button type="button" class="dcf-redact-instance__remove govuk-link">Reject</button>' +
+            '</div>' +
           '</div>'
-        if (i < snippets.length - 1) {
+        if (i < shownSnippets.length - 1) {
           html += '<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">'
         }
         return html
@@ -198,17 +270,17 @@
         '<summary class="govuk-details__summary">' +
           '<span class="govuk-details__summary-text">' +
             '<strong>' + escHtml(text) + '</strong>' +
-            ' — appears ' + count + ' time' + (count !== 1 ? 's' : '') +
+            ' — ' + pending + ' instance' + (pending !== 1 ? 's' : '') + ' to review' +
           '</span>' +
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
-      '</details>' +
-      (type ? '<div class="govuk-!-margin-top-2 govuk-!-margin-bottom-2"><strong class="govuk-tag govuk-tag--red govuk-!-font-size-14">' + escHtml(type) + '</strong></div>' : '') +
-      '<button type="button" class="dcf-manual-list__remove govuk-link">Reject all</button>'
+      '</details>'
 
-    li.querySelector('.dcf-manual-list__remove').addEventListener('click', onRemoveAll)
-    li.querySelectorAll('.dcf-redact-instance__remove').forEach(function (btn) {
-      btn.addEventListener('click', onRemoveInstance)
+    li.querySelectorAll('.dcf-redact-instance__accept').forEach(function (btn, i) {
+      btn.addEventListener('click', function () { onAcceptInstance(i) })
+    })
+    li.querySelectorAll('.dcf-redact-instance__remove').forEach(function (btn, i) {
+      btn.addEventListener('click', function () { onRejectInstance(i) })
     })
     li.querySelectorAll('.dcf-redact-instance__focus').forEach(function (btn, i) {
       btn.addEventListener('click', function () { focusInstance(text, i) })
@@ -216,7 +288,81 @@
     return li
   }
 
-  // ── Assisted: remove-link list ────────────────────────────────────────────
+  // ── Bucket section (groups terms of the same type) ────────────────────────
+  function makeBucketSection (type, terms, itemsMap, stateMap, renderFn) {
+    var section = document.createElement('section')
+    section.className = 'dcf-redact-bucket'
+
+    var tagDiv = document.createElement('div')
+    tagDiv.className = 'dcf-redact-bucket__heading'
+    tagDiv.innerHTML = '<strong class="govuk-tag govuk-tag--red govuk-!-font-size-14">' + escHtml(type) + '</strong>'
+    section.appendChild(tagDiv)
+
+    var ul = document.createElement('ul')
+    ul.className = 'dcf-bucket-terms govuk-list'
+    terms.forEach(function (text) {
+      ul.appendChild(makeListItem(text, stateMap, itemsMap,
+        function () {
+          var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+          if (getPending(stateMap, itemsMap, text) > 0) { s.accepted++; stateMap.set(text, s) }
+          renderFn()
+        },
+        function () {
+          var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+          if (getPending(stateMap, itemsMap, text) > 0) { s.rejected++; stateMap.set(text, s) }
+          renderFn()
+        }
+      ))
+    })
+    section.appendChild(ul)
+
+    var controls = document.createElement('div')
+    controls.className = 'dcf-bucket-controls'
+
+    var rejectAllBtn = document.createElement('button')
+    rejectAllBtn.type      = 'button'
+    rejectAllBtn.className = 'govuk-link dcf-bucket__reject-all'
+    rejectAllBtn.textContent = 'Reject all'
+    rejectAllBtn.addEventListener('click', function () {
+      terms.forEach(function (text) { itemsMap.delete(text); stateMap.delete(text) })
+      renderFn()
+    })
+
+    var acceptAllBtn = document.createElement('button')
+    acceptAllBtn.type      = 'button'
+    acceptAllBtn.className = 'govuk-link dcf-bucket__accept-all'
+    acceptAllBtn.textContent = 'Accept all'
+    acceptAllBtn.addEventListener('click', function () {
+      terms.forEach(function (text) {
+        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+        s.accepted += getPending(stateMap, itemsMap, text)
+        stateMap.set(text, s)
+      })
+      renderFn()
+    })
+
+    controls.appendChild(rejectAllBtn)
+    controls.appendChild(acceptAllBtn)
+    section.appendChild(controls)
+    return section
+  }
+
+  // ── Group items by type ───────────────────────────────────────────────────
+  function groupByType (itemsMap, typesMap) {
+    var groups = new Map()
+    itemsMap.forEach(function (count, text) {
+      var type = typesMap.get(text) || 'Unclassified'
+      if (!groups.has(type)) groups.set(type, [])
+      groups.get(type).push(text)
+    })
+    return Array.from(groups.entries()).sort(function (a, b) {
+      if (a[0] === 'Unclassified') return 1
+      if (b[0] === 'Unclassified') return -1
+      return 0
+    })
+  }
+
+  // ── Assisted ──────────────────────────────────────────────────────────────
   var assistedItems = new Map()
   var assistedTypes = new Map()
 
@@ -230,26 +376,19 @@
       if (empty)  empty.hidden         = false
       if (submit) submit.style.display = 'none'
       updateUnsavedTag()
+      updateSubmitGates()
       return
     }
     if (empty)  empty.hidden         = true
     if (submit) submit.style.display = ''
-    assistedItems.forEach(function (count, text) {
-      list.appendChild(makeListItem(text, count, assistedTypes.get(text) || null,
-        function () {
-          assistedItems.delete(text)
-          renderAssistedList()
-          applyHighlights()
-        },
-        function () {
-          var n = assistedItems.get(text) || 0
-          if (n <= 1) { assistedItems.delete(text) } else { assistedItems.set(text, n - 1) }
-          renderAssistedList()
-          applyHighlights()
-        }
-      ))
+    groupByType(assistedItems, assistedTypes).forEach(function (entry) {
+      list.appendChild(makeBucketSection(entry[0], entry[1], assistedItems, assistedInstState, function () {
+        renderAssistedList()
+        applyHighlights()
+      }))
     })
     updateUnsavedTag()
+    updateSubmitGates()
   }
 
   var manualResetBtn = document.getElementById('dcf-manual-reset-btn')
@@ -257,6 +396,7 @@
     manualResetBtn.addEventListener('click', function () {
       manualItems.clear()
       manualTypes.clear()
+      manualInstState.clear()
       renderManualList()
       applyHighlights()
     })
@@ -266,6 +406,7 @@
   if (assistedResetBtn) {
     assistedResetBtn.addEventListener('click', function () {
       assistedItems.clear()
+      assistedInstState.clear()
       renderAssistedList()
       applyHighlights()
     })
@@ -278,6 +419,7 @@
         findings.forEach(function (f) {
           assistedItems.set(f.value, f.instances)
           assistedTypes.set(f.value, f.type || null)
+          initInstState(assistedInstState, f.value, f.instances)
         })
         renderAssistedList()
         applyHighlights()
@@ -290,6 +432,8 @@
     assistedForm.addEventListener('submit', function () {
       this.querySelectorAll('input[data-assisted]').forEach(function (el) { el.remove() })
       assistedItems.forEach(function (count, text) {
+        var toSubmit = getAccepted(assistedInstState, text) + getPending(assistedInstState, assistedItems, text)
+        if (toSubmit === 0) return
         var inp = document.createElement('input')
         inp.type  = 'hidden'
         inp.name  = 'confirmedRedactions'
@@ -301,21 +445,22 @@
         countInp.type  = 'hidden'
         countInp.name  = 'instanceCount[' + text + ']'
         countInp.setAttribute('data-assisted', '1')
-        countInp.value = count
+        countInp.value = toSubmit
         assistedForm.appendChild(countInp)
       })
     })
   }
 
   // ── Area: state ───────────────────────────────────────────────────────────
-  var areaItems    = []
-  var areaCounter  = 0
+  var areaItems      = []
+  var areaCounter    = 0
+  var areaItemStates = new Map()  // id → 'pending'|'accepted'
   var pendingAreaType = null
-  var isDrawing    = false
-  var drawStart    = null
-  var rubberBand   = null
+  var isDrawing      = false
+  var drawStart      = null
+  var rubberBand     = null
 
-  // ── Manual: text selection ────────────────────────────────────────────────
+  // ── Manual ────────────────────────────────────────────────────────────────
   var manualItems = new Map()
   var manualTypes = new Map()
 
@@ -329,26 +474,19 @@
       if (empty)  empty.hidden         = false
       if (submit) submit.style.display = 'none'
       updateUnsavedTag()
+      updateSubmitGates()
       return
     }
     if (empty)  empty.hidden         = true
     if (submit) submit.style.display = ''
-    manualItems.forEach(function (count, text) {
-      list.appendChild(makeListItem(text, count, manualTypes.get(text) || null,
-        function () {
-          manualItems.delete(text)
-          renderManualList()
-          applyHighlights()
-        },
-        function () {
-          var n = manualItems.get(text) || 0
-          if (n <= 1) { manualItems.delete(text) } else { manualItems.set(text, n - 1) }
-          renderManualList()
-          applyHighlights()
-        }
-      ))
+    groupByType(manualItems, manualTypes).forEach(function (entry) {
+      list.appendChild(makeBucketSection(entry[0], entry[1], manualItems, manualInstState, function () {
+        renderManualList()
+        applyHighlights()
+      }))
     })
     updateUnsavedTag()
+    updateSubmitGates()
   }
 
   function onIframeMouseUp () {
@@ -358,7 +496,9 @@
       var text = sel ? sel.toString().trim() : ''
       if (!text || text.length < 2) return
       if (manualItems.has(text)) return
-      manualItems.set(text, countInDoc(text))
+      var count = countInDoc(text)
+      manualItems.set(text, count)
+      initInstState(manualInstState, text, count)
       renderManualList()
       applyHighlights()
       sel.removeAllRanges()
@@ -374,6 +514,8 @@
     manualForm.addEventListener('submit', function () {
       this.querySelectorAll('input[data-manual]').forEach(function (el) { el.remove() })
       manualItems.forEach(function (count, text) {
+        var toSubmit = getAccepted(manualInstState, text) + getPending(manualInstState, manualItems, text)
+        if (toSubmit === 0) return
         var inp = document.createElement('input')
         inp.type  = 'hidden'
         inp.name  = 'confirmedRedactions'
@@ -385,7 +527,7 @@
         countInp.type  = 'hidden'
         countInp.name  = 'instanceCount[' + text + ']'
         countInp.setAttribute('data-manual', '1')
-        countInp.value = count
+        countInp.value = toSubmit
         manualForm.appendChild(countInp)
       })
     })
@@ -425,15 +567,68 @@
     if (exitRow) exitRow.hidden = true
   }
 
-  function makeAreaListItem (item, onRemove) {
-    var li = document.createElement('li')
-    li.className = 'dcf-manual-list__item'
-    li.innerHTML =
-      '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + escHtml(item.label) + '</strong></p>' +
-      '<div class="govuk-!-margin-bottom-2"><strong class="govuk-tag govuk-tag--red govuk-!-font-size-14">' + escHtml(item.type) + '</strong></div>' +
-      '<button type="button" class="dcf-manual-list__remove govuk-link">Reject</button>'
-    li.querySelector('.dcf-manual-list__remove').addEventListener('click', onRemove)
-    return li
+  function makeAreaBucketSection (type, items, renderFn) {
+    var section = document.createElement('section')
+    section.className = 'dcf-redact-bucket'
+
+    var tagDiv = document.createElement('div')
+    tagDiv.className = 'dcf-redact-bucket__heading'
+    tagDiv.innerHTML = '<strong class="govuk-tag govuk-tag--red govuk-!-font-size-14">' + escHtml(type) + '</strong>'
+    section.appendChild(tagDiv)
+
+    var ul = document.createElement('ul')
+    ul.className = 'dcf-bucket-terms govuk-list'
+    items.forEach(function (item) {
+      var li = document.createElement('li')
+      li.className = 'dcf-manual-list__item'
+      li.innerHTML =
+        '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + escHtml(item.label) + '</strong></p>' +
+        '<div class="dcf-redact-instance__actions">' +
+          '<button type="button" class="dcf-redact-instance__accept govuk-link">Accept</button>' +
+          '<button type="button" class="dcf-redact-instance__remove govuk-link">Reject</button>' +
+        '</div>'
+      li.querySelector('.dcf-redact-instance__accept').addEventListener('click', function () {
+        areaItemStates.set(item.id, 'accepted')
+        renderFn()
+      })
+      li.querySelector('.dcf-redact-instance__remove').addEventListener('click', function () {
+        areaItems = areaItems.filter(function (a) { return a.id !== item.id })
+        areaItemStates.delete(item.id)
+        renderFn()
+      })
+      ul.appendChild(li)
+    })
+    section.appendChild(ul)
+
+    var controls = document.createElement('div')
+    controls.className = 'dcf-bucket-controls'
+
+    var rejectAllBtn = document.createElement('button')
+    rejectAllBtn.type      = 'button'
+    rejectAllBtn.className = 'govuk-link dcf-bucket__reject-all'
+    rejectAllBtn.textContent = 'Reject all'
+    rejectAllBtn.addEventListener('click', function () {
+      var idsToRemove = new Set(items.map(function (item) { return item.id }))
+      areaItems = areaItems.filter(function (a) { return !idsToRemove.has(a.id) })
+      idsToRemove.forEach(function (id) { areaItemStates.delete(id) })
+      renderFn()
+    })
+
+    var acceptAllBtn = document.createElement('button')
+    acceptAllBtn.type      = 'button'
+    acceptAllBtn.className = 'govuk-link dcf-bucket__accept-all'
+    acceptAllBtn.textContent = 'Accept all'
+    acceptAllBtn.addEventListener('click', function () {
+      items.forEach(function (item) {
+        if (areaItemStates.get(item.id) === 'pending') areaItemStates.set(item.id, 'accepted')
+      })
+      renderFn()
+    })
+
+    controls.appendChild(rejectAllBtn)
+    controls.appendChild(acceptAllBtn)
+    section.appendChild(controls)
+    return section
   }
 
   function getPdfScrollTop () {
@@ -472,17 +667,24 @@
       if (empty)  empty.hidden         = false
       if (submit) submit.style.display = 'none'
       updateUnsavedTag()
+      updateSubmitGates()
       return
     }
     if (empty)  empty.hidden         = true
     if (submit) submit.style.display = ''
+
+    var groups = new Map()
     areaItems.forEach(function (item) {
-      list.appendChild(makeAreaListItem(item, function () {
-        areaItems = areaItems.filter(function (a) { return a.id !== item.id })
+      if (!groups.has(item.type)) groups.set(item.type, [])
+      groups.get(item.type).push(item)
+    })
+    groups.forEach(function (items, type) {
+      list.appendChild(makeAreaBucketSection(type, items, function () {
         renderAreaList()
       }))
     })
     updateUnsavedTag()
+    updateSubmitGates()
   }
 
   // Intercept clicks on items inside the "Redact area" button menu
@@ -540,8 +742,9 @@
     var overlayRect = areaOverlay.getBoundingClientRect()
     var scrollTop   = getPdfScrollTop()
     areaCounter++
+    var newId = 'area-' + areaCounter
     areaItems.push({
-      id:    'area-' + areaCounter,
+      id:    newId,
       label: 'Area ' + areaCounter,
       type:  pendingAreaType,
       rect: {
@@ -551,6 +754,7 @@
         hPx:    h
       }
     })
+    areaItemStates.set(newId, 'pending')
     renderAreaList()
     // Stay in draw mode so user can add more areas of the same type
   })
@@ -574,33 +778,36 @@
     areaResetBtn.addEventListener('click', function () {
       areaItems   = []
       areaCounter = 0
+      areaItemStates.clear()
       exitDrawMode()
       renderAreaList()
     })
   }
 
-  // Form submit — encode area data as hidden inputs
+  // Form submit — encode area data as hidden inputs (accepted items only)
   var areaForm = document.getElementById('dcf-area-form')
   if (areaForm) {
     areaForm.addEventListener('submit', function () {
       this.querySelectorAll('input[data-area]').forEach(function (el) { el.remove() })
-      areaItems.forEach(function (item, i) {
-        ;[
-          ['type', item.type],
-          ['label', item.label],
-          ['rect.x', item.rect.x.toFixed(2)],
-          ['rect.y', item.rect.y.toFixed(2)],
-          ['rect.w', item.rect.w.toFixed(2)],
-          ['rect.h', item.rect.h.toFixed(2)]
-        ].forEach(function (pair) {
-          var inp = document.createElement('input')
-          inp.type  = 'hidden'
-          inp.name  = 'areaRedactions[' + i + '][' + pair[0] + ']'
-          inp.value = pair[1]
-          inp.setAttribute('data-area', '1')
-          areaForm.appendChild(inp)
+      areaItems
+        .filter(function (item) { var s = areaItemStates.get(item.id); return s === 'accepted' || s === 'pending' })
+        .forEach(function (item, i) {
+          ;[
+            ['type', item.type],
+            ['label', item.label],
+            ['rect.x', item.rect.x.toFixed(2)],
+            ['rect.y', item.rect.y.toFixed(2)],
+            ['rect.w', item.rect.w.toFixed(2)],
+            ['rect.h', item.rect.h.toFixed(2)]
+          ].forEach(function (pair) {
+            var inp = document.createElement('input')
+            inp.type  = 'hidden'
+            inp.name  = 'areaRedactions[' + i + '][' + pair[0] + ']'
+            inp.value = pair[1]
+            inp.setAttribute('data-area', '1')
+            areaForm.appendChild(inp)
+          })
         })
-      })
     })
   }
 
@@ -612,21 +819,28 @@
     var confirmedSet = new Set(restore.confirmed || [])
     findings.forEach(function (f) {
       if (confirmedSet.has(f.value)) {
-        assistedItems.set(f.value, Number((restore.instanceCount && restore.instanceCount[f.value]) || f.instances))
+        var count = Number((restore.instanceCount && restore.instanceCount[f.value]) || f.instances)
+        assistedItems.set(f.value, count)
         assistedTypes.set(f.value, f.type || null)
+        // Pre-accept restored items (previously confirmed by user)
+        assistedInstState.set(f.value, { accepted: count, rejected: 0, total: count })
       }
     })
   } else {
     findings.forEach(function (f) {
       assistedItems.set(f.value, f.instances)
       assistedTypes.set(f.value, f.type || null)
+      initInstState(assistedInstState, f.value, f.instances)
     })
   }
   renderAssistedList()
 
   if (restore && restore.mode === 'manual') {
     ;(restore.confirmed || []).forEach(function (text) {
-      manualItems.set(text, Number((restore.instanceCount && restore.instanceCount[text]) || 0))
+      var count = Number((restore.instanceCount && restore.instanceCount[text]) || 0)
+      manualItems.set(text, count)
+      // Pre-accept restored items
+      manualInstState.set(text, { accepted: count, rejected: 0, total: count })
     })
     renderManualList()
   }
@@ -664,6 +878,17 @@
         applyHighlights()
         try {
           iframe.contentDocument.addEventListener('mouseup', onIframeMouseUp)
+          iframe.contentDocument.addEventListener('click', function (e) {
+            var el = e.target
+            while (el) {
+              if (el.classList && el.classList.contains('highlight')) {
+                var term = el.textContent.trim()
+                if (term) focusCartItem(term)
+                break
+              }
+              el = el.parentElement
+            }
+          }, false)
         } catch (e) {}
         try {
           pdfApp.pdfViewer.container.addEventListener('scroll', function () {

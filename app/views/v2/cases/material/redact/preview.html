@@ -1,0 +1,96 @@
+{# /cases/:caseId/material/redact/preview #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'materials' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <span class="govuk-caption-m">Redact document</span>
+  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">
+    {% if scan.title %}{{ scan.title }}{% endif %}
+  </h1>
+
+  <div class="dcf-redact-layout">
+
+    {# ── Left: document viewer with redactions shown as black bars ── #}
+    <div class="dcf-redact-viewer">
+      {% if pdfViewerUrl %}
+        <iframe
+          id="redact-preview-iframe"
+          src="{{ pdfViewerUrl }}"
+          title="Document preview with redactions applied"
+          loading="lazy"
+        ></iframe>
+      {% else %}
+        <div class="govuk-inset-text">No document URL available.</div>
+      {% endif %}
+    </div>
+
+    {# ── Right: summary and commit ── #}
+    <div class="dcf-redact-panel dcf-redact-panel--visible">
+
+      <h2 class="govuk-heading-m">Preview redactions</h2>
+
+      {{ govukInsetText({
+        html: 'Redacted content is shown as black bars. Review the document, then commit when you are satisfied.'
+      }) }}
+
+      {% if check.confirmed and check.confirmed.length %}
+
+        <p class="govuk-body">
+          <strong>{{ check.confirmed | length }}</strong>
+          term{{ "s" if check.confirmed | length != 1 else "" }} will be redacted.
+        </p>
+
+        <details class="govuk-details">
+          <summary class="govuk-details__summary">
+            <span class="govuk-details__summary-text">View redaction list</span>
+          </summary>
+          <div class="govuk-details__text">
+            <ul class="govuk-list">
+              {% for term in check.confirmed %}
+                <li class="govuk-!-margin-bottom-1">
+                  <strong>{{ term }}</strong>
+                  {% set count = check.instanceCount[term] %}
+                  {% if count %}
+                    &nbsp;<span class="govuk-hint govuk-!-display-inline govuk-!-margin-bottom-0">{{ count }} instance{{ "s" if count != "1" else "" }}</span>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </details>
+
+      {% else %}
+
+        <p class="govuk-body">No redactions selected.</p>
+
+      {% endif %}
+
+      <form method="post" action="/cases/{{ _case.id }}/material/redact/confirm">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="govuk-button-group govuk-!-margin-top-4">
+          {{ govukButton({ text: "Commit redactions" }) }}
+          <a href="/cases/{{ _case.id }}/material/redact/review" class="govuk-link">Back to cart</a>
+        </div>
+      </form>
+
+    </div>
+
+  </div>
+
+{% endblock %}
+
+{% block pageScripts %}
+  <script>
+    window.__previewData = {
+      terms: {{ (check.confirmed or []) | dump | safe }},
+      mode:  {{ (check.mode or 'assisted') | dump | safe }}
+    };
+  </script>
+  <script src="/public/javascripts/components/material-redact-preview.js" defer></script>
+{% endblock %}
