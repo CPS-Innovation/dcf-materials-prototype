@@ -33,10 +33,6 @@
 
       <h2 class="govuk-heading-m">Preview redactions</h2>
 
-      {{ govukInsetText({
-        html: 'Redacted content is shown as black bars. Review the document, then commit when you are satisfied.'
-      }) }}
-
       {% if check.confirmed and check.confirmed.length %}
 
         <p class="govuk-body">

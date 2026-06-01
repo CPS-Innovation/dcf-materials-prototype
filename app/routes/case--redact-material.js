@@ -263,12 +263,14 @@ module.exports = router => {
   // CHECK
   // POST /cases/:caseId/material/redact/check
   router.post('/cases/:caseId/material/redact/check', (req, res) => {
-    const confirmed = [].concat(req.body.confirmedRedactions || []).filter(v => v !== '_unchecked')
-    const instanceCount = req.body.instanceCount || {}
-    const mode = req.body.mode || 'assisted'
+    const confirmed      = [].concat(req.body.confirmedRedactions || []).filter(v => v !== '_unchecked')
+    const instanceCount  = req.body.instanceCount  || {}
+    const acceptedCount  = req.body.acceptedCount  || {}
+    const rejectedCount  = req.body.rejectedCount  || {}
+    const mode           = req.body.mode || 'assisted'
     const areaRedactions = req.body.areaRedactions || []
 
-    req.session.data.redactCheck = { confirmed, instanceCount, mode, areaRedactions }
+    req.session.data.redactCheck = { confirmed, instanceCount, acceptedCount, rejectedCount, mode, areaRedactions }
     res.redirect(`/cases/${req.params.caseId}/material/redact/preview`)
   })
 

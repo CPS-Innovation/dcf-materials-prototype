@@ -443,21 +443,29 @@
     assistedForm.addEventListener('submit', function () {
       this.querySelectorAll('input[data-assisted]').forEach(function (el) { el.remove() })
       assistedItems.forEach(function (count, text) {
-        var toSubmit = getAccepted(assistedInstState, text) + getPending(assistedInstState, assistedItems, text)
+        var s        = assistedInstState.get(text) || { accepted: 0, rejected: 0, total: count }
+        var toSubmit = s.accepted + getPending(assistedInstState, assistedItems, text)
         if (toSubmit === 0) return
+
         var inp = document.createElement('input')
-        inp.type  = 'hidden'
-        inp.name  = 'confirmedRedactions'
-        inp.setAttribute('data-assisted', '1')
-        inp.value = text
+        inp.type = 'hidden'; inp.name = 'confirmedRedactions'
+        inp.setAttribute('data-assisted', '1'); inp.value = text
         assistedForm.appendChild(inp)
 
         var countInp = document.createElement('input')
-        countInp.type  = 'hidden'
-        countInp.name  = 'instanceCount[' + text + ']'
-        countInp.setAttribute('data-assisted', '1')
-        countInp.value = toSubmit
+        countInp.type = 'hidden'; countInp.name = 'instanceCount[' + text + ']'
+        countInp.setAttribute('data-assisted', '1'); countInp.value = toSubmit
         assistedForm.appendChild(countInp)
+
+        var accInp = document.createElement('input')
+        accInp.type = 'hidden'; accInp.name = 'acceptedCount[' + text + ']'
+        accInp.setAttribute('data-assisted', '1'); accInp.value = s.accepted
+        assistedForm.appendChild(accInp)
+
+        var rejInp = document.createElement('input')
+        rejInp.type = 'hidden'; rejInp.name = 'rejectedCount[' + text + ']'
+        rejInp.setAttribute('data-assisted', '1'); rejInp.value = s.rejected
+        assistedForm.appendChild(rejInp)
       })
     })
   }
@@ -526,21 +534,29 @@
     manualForm.addEventListener('submit', function () {
       this.querySelectorAll('input[data-manual]').forEach(function (el) { el.remove() })
       manualItems.forEach(function (count, text) {
-        var toSubmit = getAccepted(manualInstState, text) + getPending(manualInstState, manualItems, text)
+        var s        = manualInstState.get(text) || { accepted: 0, rejected: 0, total: count }
+        var toSubmit = s.accepted + getPending(manualInstState, manualItems, text)
         if (toSubmit === 0) return
+
         var inp = document.createElement('input')
-        inp.type  = 'hidden'
-        inp.name  = 'confirmedRedactions'
-        inp.setAttribute('data-manual', '1')
-        inp.value = text
+        inp.type = 'hidden'; inp.name = 'confirmedRedactions'
+        inp.setAttribute('data-manual', '1'); inp.value = text
         manualForm.appendChild(inp)
 
         var countInp = document.createElement('input')
-        countInp.type  = 'hidden'
-        countInp.name  = 'instanceCount[' + text + ']'
-        countInp.setAttribute('data-manual', '1')
-        countInp.value = toSubmit
+        countInp.type = 'hidden'; countInp.name = 'instanceCount[' + text + ']'
+        countInp.setAttribute('data-manual', '1'); countInp.value = toSubmit
         manualForm.appendChild(countInp)
+
+        var accInp = document.createElement('input')
+        accInp.type = 'hidden'; accInp.name = 'acceptedCount[' + text + ']'
+        accInp.setAttribute('data-manual', '1'); accInp.value = s.accepted
+        manualForm.appendChild(accInp)
+
+        var rejInp = document.createElement('input')
+        rejInp.type = 'hidden'; rejInp.name = 'rejectedCount[' + text + ']'
+        rejInp.setAttribute('data-manual', '1'); rejInp.value = s.rejected
+        manualForm.appendChild(rejInp)
       })
     })
   }
@@ -831,11 +847,13 @@
     var confirmedSet = new Set(restore.confirmed || [])
     findings.forEach(function (f) {
       if (confirmedSet.has(f.value)) {
-        var count = Number((restore.instanceCount && restore.instanceCount[f.value]) || f.instances)
-        assistedItems.set(f.value, count)
+        var rejected  = Number((restore.rejectedCount  && restore.rejectedCount[f.value])  || 0)
+        var accepted  = Number((restore.acceptedCount  && restore.acceptedCount[f.value])  || 0)
+        var submitted = Number((restore.instanceCount  && restore.instanceCount[f.value])  || f.instances)
+        var total     = submitted + rejected
+        assistedItems.set(f.value, total)
         assistedTypes.set(f.value, f.type || null)
-        // Pre-accept restored items (previously confirmed by user)
-        assistedInstState.set(f.value, { accepted: count, rejected: 0, total: count })
+        assistedInstState.set(f.value, { accepted: accepted, rejected: rejected, total: total })
       }
     })
   } else {
@@ -849,10 +867,12 @@
 
   if (restore && restore.mode === 'manual') {
     ;(restore.confirmed || []).forEach(function (text) {
-      var count = Number((restore.instanceCount && restore.instanceCount[text]) || 0)
-      manualItems.set(text, count)
-      // Pre-accept restored items
-      manualInstState.set(text, { accepted: count, rejected: 0, total: count })
+      var rejected  = Number((restore.rejectedCount  && restore.rejectedCount[text])  || 0)
+      var accepted  = Number((restore.acceptedCount  && restore.acceptedCount[text])  || 0)
+      var submitted = Number((restore.instanceCount  && restore.instanceCount[text])  || 0)
+      var total     = submitted + rejected
+      manualItems.set(text, total)
+      manualInstState.set(text, { accepted: accepted, rejected: rejected, total: total })
     })
     renderManualList()
   }
