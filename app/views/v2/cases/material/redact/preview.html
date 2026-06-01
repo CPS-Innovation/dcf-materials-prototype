@@ -10,8 +10,7 @@
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
  <span class="govuk-caption-m">Redact document - {% if scan.title %}{{ scan.title }}{% endif %}</span>
-  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Preview and commit redactions  
-  </h1>
+  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Preview and commit redactions{% if check.confirmed and check.confirmed | length %} ({{ check.confirmed | length }}){% endif %}</h1>
 
   <div class="dcf-redact-layout">
 

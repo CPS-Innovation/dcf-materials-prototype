@@ -139,11 +139,22 @@
   }
 
   function updateUnsavedTag () {
-    var tag = document.getElementById('dcf-unsaved-tag')
-    if (!tag) return
-    var count = assistedItems.size + manualItems.size + areaItems.length
-    tag.hidden = count === 0
-    tag.textContent = count + ' possible redaction' + (count !== 1 ? 's' : '')
+    var count = 0
+    assistedItems.forEach(function (total, text) {
+      var s = assistedInstState.get(text)
+      count += s ? Math.max(0, s.total - s.rejected) : total
+    })
+    manualItems.forEach(function (total, text) {
+      var s = manualInstState.get(text)
+      count += s ? Math.max(0, s.total - s.rejected) : total
+    })
+    count += areaItems.length
+
+    var counter = document.getElementById('dcf-cart-count')
+    if (counter) {
+      counter.hidden = count === 0
+      counter.textContent = '(' + count + ')'
+    }
   }
 
   var caseIdMatch = window.location.pathname.match(/\/cases\/(\d+)\//)
@@ -499,6 +510,7 @@
       var count = countInDoc(text)
       manualItems.set(text, count)
       initInstState(manualInstState, text, count)
+      syncStateTotals(manualItems, manualInstState)
       renderManualList()
       applyHighlights()
       sel.removeAllRanges()
