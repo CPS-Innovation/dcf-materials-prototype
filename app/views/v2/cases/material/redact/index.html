@@ -27,7 +27,9 @@
       },
       items: [
         { text: "Address",                href: "#" },
+        { text: "Date",                   href: "#" },
         { text: "Date of Birth",          href: "#" },
+        { text: "Time",                   href: "#" },
         { text: "Named individual",       href: "#" },
         { text: "Occupation",             href: "#" },
         { text: "Phone number",           href: "#" },
@@ -109,7 +111,7 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <input type="hidden" name="mode" value="manual">
         <div class="govuk-button-group govuk-!-margin-top-4" id="dcf-manual-submit" style="display:none">
-          {{ govukButton({ text: "Keep redactions" }) }}
+          {{ govukButton({ text: "Preview redactions" }) }}
           <button type="button" class="govuk-button govuk-button--secondary" id="dcf-manual-reset-btn">Clear and reset</button>
         </div>
       </form>

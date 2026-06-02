@@ -39,6 +39,7 @@ function classifyFallback (value) {
   if (/^\d{3}\s\d{3}\s\d{4}$/.test(t)) return 'NHS number'
   if (/^[A-Z]{2}\d{2}\s?[A-Z]{3}$/i.test(t)) return 'Vehicle registration'
   if (/^(\+44\s?|0)[\d\s\-]{9,12}$/.test(t)) return 'Phone number'
+  if (/^\d{1,2}:\d{2}(:\d{2})?(\s*(am|pm))?$/i.test(t)) return 'Time'
   if (/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(t)) return 'Date of birth'
   if (/^\d{2}-\d{2}-\d{2}$/.test(t)) return 'Bank details'
   if (/[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}/i.test(t)) return 'Address'
@@ -107,6 +108,14 @@ function extractPiiFromText (text) {
   }
   Object.entries(vehicles).forEach(([value, instances]) => findings.push({ type: 'Vehicle registration', value, instances }))
 
+  // Times — hh:mm or hh:mm:ss (with optional am/pm)
+  const timeRe = /\b\d{1,2}:\d{2}(:\d{2})?(\s*(am|pm))?\b/gi
+  const times = {}
+  while ((m = timeRe.exec(text)) !== null) {
+    times[m[0]] = (times[m[0]] || 0) + 1
+  }
+  Object.entries(times).forEach(([value, instances]) => findings.push({ type: 'Time', value, instances }))
+
   // Dates of birth — dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy
   const dobRe = /\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b/g
   const dobs = {}
@@ -155,7 +164,9 @@ async function scanForPii (text) {
           '- "Email address": any email address\n' +
           '- "Address": street addresses, full or partial\n' +
           '- "Phone number": any telephone number\n' +
+          '- "Date": any date other than a date of birth\n' +
           '- "Date of birth": dates of birth\n' +
+          '- "Time": times of day\n' +
           '- "Vehicle registration": vehicle registration numbers\n' +
           '- "NI number": National Insurance numbers\n' +
           '- "NHS number": NHS numbers\n' +
@@ -225,9 +236,9 @@ module.exports = router => {
         messages: [{
           role: 'user',
           content:
-            'Classify this text from a legal document as exactly one of: "Full name", "Email address", "Address", "Phone number", "Date of birth", "Vehicle registration", "NI number", "NHS number", "Bank details", "Occupation", "Location", "Relationship to others", "Previous convictions", "Fragment".\n' +
+            'Classify this text from a legal document as exactly one of: "Full name", "Email address", "Address", "Phone number", "Date", "Date of birth", "Time", "Vehicle registration", "NI number", "NHS number", "Bank details", "Occupation", "Location", "Relationship to others", "Previous convictions", "Fragment".\n' +
             'Return ONLY a JSON object, e.g. {"type":"Full name"}. No other text.\n' +
-            'Full name = any individual\'s name (first name only, surname only, or both). Location = town, city, or named place. Occupation = job title or profession. Relationship to others = how people are connected. Previous convictions = prior offences. Fragment = unrecognisable or partial text.\n\n' +
+            'Full name = any individual\'s name. Date = any date other than a date of birth. Time = time of day. Location = town, city, or named place. Occupation = job title or profession. Relationship to others = how people are connected. Previous convictions = prior offences. Fragment = unrecognisable or partial text.\n\n' +
             'Text: ' + JSON.stringify(value)
         }]
       })
