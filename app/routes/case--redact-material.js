@@ -43,8 +43,7 @@ function classifyFallback (value) {
   if (/^\d{2}-\d{2}-\d{2}$/.test(t)) return 'Bank details'
   if (/[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}/i.test(t)) return 'Address'
   if (/^\d+\s+[A-Za-z]/.test(t) || /\b(street|road|avenue|lane|drive|close|way|court|place|gardens?|crescent)\b/i.test(t)) return 'Address'
-  if (/^[A-Z][A-Za-z]*(\s[A-Z][A-Za-z]*)+$/.test(t)) return 'Full name'
-  if (/^[A-Z][A-Za-z]*$/.test(t)) return 'First name'
+  if (/^[A-Z][A-Za-z]*(\s[A-Z][A-Za-z]*)*$/.test(t)) return 'Full name'
   return 'Fragment'
 }
 
@@ -63,7 +62,7 @@ function extractPiiFromText (text) {
     .filter(([, n]) => n >= 2)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
-    .forEach(([value, instances]) => findings.push({ type: 'First name', value, instances }))
+    .forEach(([value, instances]) => findings.push({ type: 'Full name', value, instances }))
 
   // Email addresses
   const emailRe = /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/g
@@ -152,9 +151,7 @@ async function scanForPii (text) {
           'You are a legal document redaction scanner. Find all sensitive personal information in the text below.\n' +
           'Return ONLY a JSON array with no other text. Each item: { "type": string, "value": string, "instances": number }\n\n' +
           'Use exactly these type labels:\n' +
-          '- "Full name": first name and surname together\n' +
-          '- "First name": given name only, no surname present\n' +
-          '- "Surname": family name only, no given name present\n' +
+          '- "Full name": any individual\'s name, whether first name only, surname only, or both together\n' +
           '- "Email address": any email address\n' +
           '- "Address": street addresses, full or partial\n' +
           '- "Phone number": any telephone number\n' +
@@ -228,9 +225,9 @@ module.exports = router => {
         messages: [{
           role: 'user',
           content:
-            'Classify this text from a legal document as exactly one of: "Full name", "First name", "Surname", "Email address", "Address", "Phone number", "Date of birth", "Vehicle registration", "NI number", "NHS number", "Bank details", "Occupation", "Location", "Relationship to others", "Previous convictions", "Fragment".\n' +
-            'Return ONLY a JSON object, e.g. {"type":"First name"}. No other text.\n' +
-            'Full name = first and last name together. Location = town, city, or named place. Occupation = job title or profession. Relationship to others = how people are connected. Previous convictions = prior offences. Fragment = unrecognisable or partial text.\n\n' +
+            'Classify this text from a legal document as exactly one of: "Full name", "Email address", "Address", "Phone number", "Date of birth", "Vehicle registration", "NI number", "NHS number", "Bank details", "Occupation", "Location", "Relationship to others", "Previous convictions", "Fragment".\n' +
+            'Return ONLY a JSON object, e.g. {"type":"Full name"}. No other text.\n' +
+            'Full name = any individual\'s name (first name only, surname only, or both). Location = town, city, or named place. Occupation = job title or profession. Relationship to others = how people are connected. Previous convictions = prior offences. Fragment = unrecognisable or partial text.\n\n' +
             'Text: ' + JSON.stringify(value)
         }]
       })
