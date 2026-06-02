@@ -72,6 +72,9 @@
         data-raw-status="{{ _status }}"
         {% if (_status | lower) != 'new' %}hidden{% endif %}
       >New</span>
+      {% if m.Title and 'REDACTED' in m.Title %}
+        <strong class="govuk-tag govuk-tag--yellow govuk-!-font-size-14 govuk-!-margin-bottom-2" style="align-self:flex-start">Redacted</strong>
+      {% endif %}
 
       <h3 class="dcf-material-card__title">
 

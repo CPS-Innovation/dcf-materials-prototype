@@ -322,19 +322,40 @@ module.exports = router => {
 
     const materials = req.session.data.caseMaterials || {}
     if (scan.itemId && Array.isArray(materials.Material)) {
+      const original = materials.Material.find(m => String(m.ItemId) === String(scan.itemId))
+
+      // Mark the original as redacted
       materials.Material = materials.Material.map(m =>
         String(m.ItemId) === String(scan.itemId)
           ? { ...m, RedactionStatus: 'Redacted', RedactedCount: confirmed.length }
           : m
       )
+
+      // Push a "REDACTED" copy into the same folder as a prototype illusion
+      if (original) {
+        const redactedTitle = (scan.title || original.Title || 'Document') + ' - REDACTED'
+        const redactedCopy = {
+          ...original,
+          ItemId:          String(scan.itemId) + '-redacted',
+          Title:           redactedTitle,
+          RedactionStatus: 'Redacted',
+          RedactedCount:   confirmed.length,
+          isRedactedCopy:  'yes'
+        }
+        // Avoid duplicates if confirmed multiple times
+        materials.Material = materials.Material.filter(m => m.ItemId !== redactedCopy.ItemId)
+        materials.Material.push(redactedCopy)
+      }
+
       req.session.data.caseMaterials = materials
     }
 
     delete req.session.data.redactScan
     delete req.session.data.redactCheck
 
+    const docName = scan.title || 'Document'
     req.session.data.successBanner = {
-      text: `${confirmed.length} redaction${confirmed.length !== 1 ? 's' : ''} confirmed for "${scan.title || 'document'}"`
+      text: `"${docName}" redacted and redaction log saved`
     }
 
     res.redirect(`/cases/${req.params.caseId}/material`)
