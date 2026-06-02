@@ -16,6 +16,7 @@
       if (panels[target]) panels[target].classList.add('dcf-redact-panel--visible')
       applyHighlights()
       exitDrawMode()
+      updateUnsavedTag()
     })
   })
 
@@ -140,15 +141,13 @@
 
   function updateUnsavedTag () {
     var count = 0
-    assistedItems.forEach(function (total, text) {
-      var s = assistedInstState.get(text)
-      count += s ? Math.max(0, s.total - s.rejected) : total
-    })
-    manualItems.forEach(function (total, text) {
-      var s = manualInstState.get(text)
-      count += s ? Math.max(0, s.total - s.rejected) : total
-    })
-    count += areaItems.length
+    if (panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')) {
+      count = assistedItems.size
+    } else if (panels.manual && panels.manual.classList.contains('dcf-redact-panel--visible')) {
+      count = manualItems.size
+    } else if (panels.area && panels.area.classList.contains('dcf-redact-panel--visible')) {
+      count = areaItems.length
+    }
 
     var counter = document.getElementById('dcf-cart-count')
     if (counter) {
