@@ -29,12 +29,6 @@
           }) %}
         {% endfor %}
 
-        {% set _ = victimItems.push({ divider: "or" }) %}
-        {% set _ = victimItems.push({
-          value: "none",
-          text: "No victim",
-          checked: data["victimId"] == "none"
-        }) %}
 
         {{ govukRadios({
           name: "victimId",

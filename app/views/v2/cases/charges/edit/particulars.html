@@ -1,4 +1,4 @@
-{# /cases/:caseId/charges/edit/particulars #}
+{# v2/cases/:caseId/charges/edit/particulars #}
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
@@ -73,6 +73,13 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
         {# Keep the raw template in the textarea (for editing) #}
+        {% if particularsHint %}
+          {{ govukWarningText({
+            text: particularsHint.text,
+            iconFallbackText: "Warning"
+          }) }}
+        {% endif %}
+
         {{ govukTextarea({
           id: "particulars",
           name: "particulars",
@@ -82,7 +89,6 @@
             isPageHeading: false,
             classes: "govuk-label--s"
           },
-          hint: particularsHint,
           value: (data.editCharge.particulars if data.editCharge) or generatedParticulars or particulars
         }) }}
 
