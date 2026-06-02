@@ -238,9 +238,7 @@
   function updateSubmitGates () {}
 
   // ── List item (text redactions) ───────────────────────────────────────────
-  // Renders a single term's <details> with Accept/Reject per pending instance.
-  // No type tag (moves to bucket heading). No outer Reject all (moves to bucket controls).
-  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onRejectInstance) {
+  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onRejectInstance, onAcceptAll, onRejectAll) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
@@ -276,6 +274,13 @@
       }).join('')
     }
 
+    var termControlsHtml = pending > 1
+      ? '<div class="dcf-bucket-controls dcf-bucket-controls--term">' +
+          '<button type="button" class="govuk-link dcf-bucket__reject-all">Reject all</button>' +
+          '<button type="button" class="govuk-link dcf-bucket__accept-all">Accept all</button>' +
+        '</div>'
+      : ''
+
     li.innerHTML =
       '<details class="govuk-details govuk-!-margin-bottom-1">' +
         '<summary class="govuk-details__summary">' +
@@ -285,7 +290,8 @@
           '</span>' +
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
-      '</details>'
+      '</details>' +
+      termControlsHtml
 
     li.querySelectorAll('.dcf-redact-instance__accept').forEach(function (btn, i) {
       btn.addEventListener('click', function () { onAcceptInstance(i) })
@@ -296,6 +302,11 @@
     li.querySelectorAll('.dcf-redact-instance__focus').forEach(function (btn, i) {
       btn.addEventListener('click', function () { focusInstance(text, i) })
     })
+    var rejectAllBtn = li.querySelector('.dcf-bucket__reject-all')
+    if (rejectAllBtn) rejectAllBtn.addEventListener('click', onRejectAll)
+    var acceptAllBtn = li.querySelector('.dcf-bucket__accept-all')
+    if (acceptAllBtn) acceptAllBtn.addEventListener('click', onAcceptAll)
+
     return li
   }
 
@@ -314,47 +325,37 @@
     terms.forEach(function (text) {
       ul.appendChild(makeListItem(text, stateMap, itemsMap,
         function () {
+          // Accept one instance
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
           if (getPending(stateMap, itemsMap, text) > 0) { s.accepted++; stateMap.set(text, s) }
           renderFn()
         },
         function () {
+          // Reject one instance — auto-remove term if nothing accepted or pending remains
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
           if (getPending(stateMap, itemsMap, text) > 0) { s.rejected++; stateMap.set(text, s) }
+          if (getPending(stateMap, itemsMap, text) === 0 && getAccepted(stateMap, text) === 0) {
+            itemsMap.delete(text)
+            stateMap.delete(text)
+          }
+          renderFn()
+        },
+        function () {
+          // Accept all pending instances of this term
+          var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+          s.accepted += getPending(stateMap, itemsMap, text)
+          stateMap.set(text, s)
+          renderFn()
+        },
+        function () {
+          // Reject all — remove this term entirely
+          itemsMap.delete(text)
+          stateMap.delete(text)
           renderFn()
         }
       ))
     })
     section.appendChild(ul)
-
-    var controls = document.createElement('div')
-    controls.className = 'dcf-bucket-controls'
-
-    var rejectAllBtn = document.createElement('button')
-    rejectAllBtn.type      = 'button'
-    rejectAllBtn.className = 'govuk-link dcf-bucket__reject-all'
-    rejectAllBtn.textContent = 'Reject all'
-    rejectAllBtn.addEventListener('click', function () {
-      terms.forEach(function (text) { itemsMap.delete(text); stateMap.delete(text) })
-      renderFn()
-    })
-
-    var acceptAllBtn = document.createElement('button')
-    acceptAllBtn.type      = 'button'
-    acceptAllBtn.className = 'govuk-link dcf-bucket__accept-all'
-    acceptAllBtn.textContent = 'Accept all'
-    acceptAllBtn.addEventListener('click', function () {
-      terms.forEach(function (text) {
-        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
-        s.accepted += getPending(stateMap, itemsMap, text)
-        stateMap.set(text, s)
-      })
-      renderFn()
-    })
-
-    controls.appendChild(rejectAllBtn)
-    controls.appendChild(acceptAllBtn)
-    section.appendChild(controls)
     return section
   }
 
