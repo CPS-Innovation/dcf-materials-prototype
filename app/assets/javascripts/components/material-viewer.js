@@ -195,7 +195,6 @@
               'Document actions <span class="dcf-action-menu__icon" aria-hidden="true">▾</span>',
             '</summary>',
             '<ul class="dcf-action-menu__list" role="list">',
-              '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link">Log an under or over redaction</a></li>',
               '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link">Rotate pages</a></li>',
               '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link">Discard pages</a></li>',
               '<li class="dcf-action-menu__item"><a href="#" class="govuk-link dcf-action-menu__link" data-action="mark-read">Mark as read</a></li>',
