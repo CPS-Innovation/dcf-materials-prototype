@@ -39,7 +39,8 @@ function classifyFallback (value) {
   if (/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(t)) return 'Date of birth'
   if (/[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}/i.test(t)) return 'Address'
   if (/^\d+\s+[A-Za-z]/.test(t) || /\b(street|road|avenue|lane|drive|close|way|court|place|gardens?|crescent)\b/i.test(t)) return 'Address'
-  if (/^[A-Z][A-Za-z]*(\s[A-Z][A-Za-z]*)*$/.test(t)) return 'Full name'
+  if (/^[A-Z][A-Za-z]*(\s[A-Z][A-Za-z]*)*$/.test(t)) return 'Name'
+  if (/^[A-Z]{2,}(\s[A-Z]{2,})*$/.test(t)) return 'Name'
   return 'Fragment'
 }
 
@@ -58,7 +59,7 @@ function extractPiiFromText (text) {
     .filter(([, n]) => n >= 2)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
-    .forEach(([value, instances]) => findings.push({ type: 'Full name', value, instances }))
+    .forEach(([value, instances]) => findings.push({ type: 'Name', value, instances }))
 
   // Email addresses
   const emailRe = /\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/g
@@ -97,6 +98,31 @@ function extractPiiFromText (text) {
   return findings
 }
 
+function deduplicateNames (findings) {
+  const names  = findings.filter(f => f.type === 'Name')
+  const others = findings.filter(f => f.type !== 'Name')
+
+  const merged = new Map()
+  names.forEach(f => {
+    const key = f.value.toLowerCase()
+    if (merged.has(key)) {
+      merged.get(key).instances += f.instances
+    } else {
+      merged.set(key, { type: 'Name', value: f.value, instances: f.instances })
+    }
+  })
+
+  const mergedNames = Array.from(merged.values())
+  const filtered = mergedNames.filter(f =>
+    !mergedNames.some(other =>
+      other.value !== f.value &&
+      other.value.toLowerCase().includes(f.value.toLowerCase())
+    )
+  )
+
+  return filtered.concat(others)
+}
+
 async function scanForPii (text) {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return extractPiiFromText(text)
@@ -105,7 +131,7 @@ async function scanForPii (text) {
     const Anthropic = require('@anthropic-ai/sdk')
     const client = new Anthropic({ apiKey })
     const message = await client.messages.create({
-      model: 'claude-opus-4-7',
+      model: 'claude-opus-4-8',
       max_tokens: 2048,
       messages: [{
         role: 'user',
@@ -113,7 +139,7 @@ async function scanForPii (text) {
           'You are a legal document redaction scanner. Find all sensitive personal information in the text below.\n' +
           'Return ONLY a JSON array with no other text. Each item: { "type": string, "value": string, "instances": number }\n\n' +
           'Use exactly these type labels:\n' +
-          '- "Full name": any individual\'s name, whether first name only, surname only, or both together\n' +
+          '- "Name": any individual\'s name — full name, first name, or surname.\n' +
           '- "Email address": any email address\n' +
           '- "Address": street addresses, full or partial\n' +
           '- "Phone number": any telephone number\n' +
@@ -128,7 +154,7 @@ async function scanForPii (text) {
           text.slice(0, 8000)
       }]
     })
-    return JSON.parse(message.content[0].text)
+    return deduplicateNames(JSON.parse(message.content[0].text))
   } catch (e) {
     return extractPiiFromText(text)
   }
@@ -176,14 +202,14 @@ module.exports = router => {
       const Anthropic = require('@anthropic-ai/sdk')
       const client = new Anthropic({ apiKey })
       const message = await client.messages.create({
-        model: 'claude-opus-4-7',
+        model: 'claude-opus-4-8',
         max_tokens: 64,
         messages: [{
           role: 'user',
           content:
-            'Classify this text from a legal document as exactly one of: "Full name", "Email address", "Address", "Phone number", "Date of birth", "Location", "Relationship to others", "Fragment".\n' +
-            'Return ONLY a JSON object, e.g. {"type":"Full name"}. No other text.\n' +
-            'Full name = any individual\'s name. Location = town, city, or named place. Relationship to others = how people are connected. Fragment = unrecognisable or partial text.\n\n' +
+            'Classify this text from a legal document as exactly one of: "Name", "Email address", "Address", "Phone number", "Date of birth", "Location", "Relationship to others", "Fragment".\n' +
+            'Return ONLY a JSON object, e.g. {"type":"Name"}. No other text.\n' +
+            'Name = any individual\'s name, including a standalone surname or first name (e.g. "MCLOVE", "BYRNE", "Lucy"). Location = town, city, or named place. Relationship to others = how people are connected. Fragment = unrecognisable or partial text (numbers, codes, single letters).\n\n' +
             'Text: ' + JSON.stringify(value)
         }]
       })

@@ -1,22 +1,16 @@
-.dcf-btn-redact-area {
-  padding-left: govuk-spacing(7);
-  background-image: url('/public/files/marquee-blue.svg');
-  background-repeat: no-repeat;
-  background-position: govuk-spacing(2) center;
-  background-size: 16px 16px;
-}
+.dcf-btn-redact-area {}
 
 .dcf-redact-layout {
   display: grid;
   grid-template-columns: 1fr 380px;
   gap: govuk-spacing(6);
-  height: calc(100vh - 220px);
-  min-height: 1500px;
+  align-items: start;
 }
 
 .dcf-redact-viewer {
   position: relative;
-  height: 100%;
+  height: calc(100vh - 220px);
+  min-height: 1500px;
 
   &__actions {
     position: absolute;
@@ -43,8 +37,11 @@
 }
 
 .dcf-manual-list__item {
-  border-bottom: 1px solid $govuk-border-colour;
   padding: govuk-spacing(3) 0;
+
+  & + & {
+    border-top: 1px solid $govuk-border-colour;
+  }
 }
 
 .dcf-manual-list__text {
@@ -94,8 +91,8 @@
   margin-top: govuk-spacing(1);
 }
 
-.dcf-redact-instance__accept,
-.dcf-redact-instance__remove {
+.dcf-redact-instance__accept:not(.govuk-button),
+.dcf-redact-instance__remove:not(.govuk-button) {
   @include govuk-font($size: 16);
   background: none;
   border: none;
@@ -154,8 +151,8 @@
   }
 }
 
-.dcf-bucket__reject-all,
-.dcf-bucket__accept-all {
+.dcf-bucket__reject-all:not(.govuk-button),
+.dcf-bucket__accept-all:not(.govuk-button) {
   @include govuk-font($size: 16);
   background: none;
   border: none;
@@ -212,6 +209,12 @@
   position: absolute;
   border: 2px solid govuk-colour("red");
   background: rgba(212, 53, 28, 0.15);
+  pointer-events: none;
+}
+
+.dcf-area-preview-rect {
+  position: absolute;
+  background: #000;
   pointer-events: none;
 }
 
