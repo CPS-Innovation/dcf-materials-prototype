@@ -237,7 +237,7 @@
   function updateSubmitGates () {}
 
   // ── List item (text redactions) ───────────────────────────────────────────
-  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance) {
+  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance, onAcceptAll, onIgnoreAll) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
@@ -253,6 +253,11 @@
     } else if (shownSnippets.length === 0) {
       detailsBody = '<p class="govuk-body-s">No context available.</p>'
     } else {
+      var singleInstance = shownSnippets.length === 1
+      var acceptClass = singleInstance ? 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0' : 'govuk-link'
+      var ignoreClass = singleInstance ? 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0' : 'govuk-link'
+      var actionsClass = singleInstance ? 'govuk-button-group govuk-!-margin-top-3 govuk-!-margin-bottom-0' : 'dcf-redact-instance__actions'
+
       detailsBody = shownSnippets.map(function (s, i) {
         var html =
           '<div class="dcf-redact-instance">' +
@@ -261,9 +266,9 @@
               '<strong>' + escHtml(s.term) + '</strong>' +
               (s.after ? ' ' + escHtml(s.after) : '') +
             '</button>' +
-            '<div class="dcf-redact-instance__actions">' +
-              '<button type="button" class="dcf-redact-instance__accept govuk-link">Accept</button>' +
-              '<button type="button" class="dcf-redact-instance__remove govuk-link">Ignore</button>' +
+            '<div class="' + actionsClass + '">' +
+              '<button type="button" class="dcf-redact-instance__accept ' + acceptClass + '">Accept</button>' +
+              '<button type="button" class="dcf-redact-instance__remove ' + ignoreClass + '">Ignore</button>' +
             '</div>' +
           '</div>'
         if (i < shownSnippets.length - 1) {
@@ -271,6 +276,14 @@
         }
         return html
       }).join('')
+
+      if (pending > 1 && onAcceptAll && onIgnoreAll) {
+        detailsBody +=
+          '<div class="govuk-button-group govuk-!-margin-top-3 govuk-!-margin-bottom-0">' +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Accept all</button>' +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Ignore all</button>' +
+          '</div>'
+      }
     }
 
     li.innerHTML =
@@ -293,6 +306,10 @@
     li.querySelectorAll('.dcf-redact-instance__focus').forEach(function (btn, i) {
       btn.addEventListener('click', function () { focusInstance(text, i) })
     })
+    var termAcceptAll = li.querySelector('.dcf-term-accept-all')
+    if (termAcceptAll) termAcceptAll.addEventListener('click', onAcceptAll)
+    var termIgnoreAll = li.querySelector('.dcf-term-ignore-all')
+    if (termIgnoreAll) termIgnoreAll.addEventListener('click', onIgnoreAll)
 
     return li
   }
@@ -335,42 +352,23 @@
             stateMap.delete(text)
           }
           renderFn()
+        },
+        function () {
+          // Accept all pending instances of this term
+          var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+          s.accepted += getPending(stateMap, itemsMap, text)
+          stateMap.set(text, s)
+          renderFn()
+        },
+        function () {
+          // Ignore all — remove this term entirely
+          itemsMap.delete(text)
+          stateMap.delete(text)
+          renderFn()
         }
       ))
     })
     section.appendChild(ul)
-
-    var controls = document.createElement('div')
-    controls.className = 'dcf-bucket-controls'
-
-    var ignoreAllBtn = document.createElement('button')
-    ignoreAllBtn.type      = 'button'
-    ignoreAllBtn.className = 'govuk-link dcf-bucket__reject-all'
-    ignoreAllBtn.textContent = 'Ignore all'
-    ignoreAllBtn.addEventListener('click', function () {
-      terms.forEach(function (text) {
-        itemsMap.delete(text)
-        stateMap.delete(text)
-      })
-      renderFn()
-    })
-
-    var acceptAllBtn = document.createElement('button')
-    acceptAllBtn.type      = 'button'
-    acceptAllBtn.className = 'govuk-link dcf-bucket__accept-all'
-    acceptAllBtn.textContent = 'Accept all'
-    acceptAllBtn.addEventListener('click', function () {
-      terms.forEach(function (text) {
-        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
-        s.accepted += getPending(stateMap, itemsMap, text)
-        stateMap.set(text, s)
-      })
-      renderFn()
-    })
-
-    controls.appendChild(ignoreAllBtn)
-    controls.appendChild(acceptAllBtn)
-    section.appendChild(controls)
 
     return section
   }
@@ -398,17 +396,19 @@
     var list   = document.getElementById('dcf-assisted-list')
     var empty  = document.getElementById('dcf-assisted-empty')
     var submit = document.getElementById('dcf-assisted-submit')
+    var header = document.getElementById('dcf-assisted-header')
     if (!list) return
     list.innerHTML = ''
     if (assistedItems.size === 0) {
-      if (empty)  empty.hidden         = false
-      if (submit) submit.style.display = 'none'
+      if (empty)  empty.hidden          = true
+      if (submit) submit.style.display  = 'none'
       updateUnsavedTag()
       updateSubmitGates()
       return
     }
-    if (empty)  empty.hidden         = true
-    if (submit) submit.style.display = ''
+    if (header) header.hidden         = false
+    if (empty)  empty.hidden          = true
+    if (submit) submit.style.display  = ''
     groupByType(assistedItems, assistedTypes).forEach(function (entry) {
       list.appendChild(makeBucketSection(entry[0], entry[1], assistedItems, assistedInstState, function () {
         renderAssistedList()
@@ -425,6 +425,8 @@
       manualItems.clear()
       manualTypes.clear()
       manualInstState.clear()
+      var h = document.getElementById('dcf-manual-header')
+      if (h) h.hidden = true
       renderManualList()
       applyHighlights()
     })
@@ -435,6 +437,8 @@
     assistedResetBtn.addEventListener('click', function () {
       assistedItems.clear()
       assistedInstState.clear()
+      var h = document.getElementById('dcf-assisted-header')
+      if (h) h.hidden = true
       renderAssistedList()
       applyHighlights()
     })
@@ -504,17 +508,19 @@
     var list   = document.getElementById('dcf-manual-list')
     var empty  = document.getElementById('dcf-manual-empty')
     var submit = document.getElementById('dcf-manual-submit')
+    var header = document.getElementById('dcf-manual-header')
     if (!list) return
     list.innerHTML = ''
     if (manualItems.size === 0) {
-      if (empty)  empty.hidden         = false
-      if (submit) submit.style.display = 'none'
+      if (empty)  empty.hidden          = true
+      if (submit) submit.style.display  = 'none'
       updateUnsavedTag()
       updateSubmitGates()
       return
     }
-    if (empty)  empty.hidden         = true
-    if (submit) submit.style.display = ''
+    if (header) header.hidden         = false
+    if (empty)  empty.hidden          = true
+    if (submit) submit.style.display  = ''
     groupByType(manualItems, manualTypes).forEach(function (entry) {
       list.appendChild(makeBucketSection(entry[0], entry[1], manualItems, manualInstState, function () {
         renderManualList()
@@ -625,6 +631,10 @@
       '</strong>'
     section.appendChild(heading)
 
+    var single = items.length === 1
+    var itemBtnClass    = single ? 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0' : 'govuk-link'
+    var itemActionsClass = single ? 'govuk-button-group govuk-!-margin-top-3 govuk-!-margin-bottom-0' : 'dcf-redact-instance__actions'
+
     var ul = document.createElement('ul')
     ul.className = 'dcf-bucket-terms govuk-list'
     items.forEach(function (item) {
@@ -632,9 +642,9 @@
       li.className = 'dcf-manual-list__item'
       li.innerHTML =
         '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + escHtml(item.label) + '</strong></p>' +
-        '<div class="dcf-redact-instance__actions">' +
-          '<button type="button" class="dcf-redact-instance__accept govuk-link">Accept</button>' +
-          '<button type="button" class="dcf-redact-instance__remove govuk-link">Ignore</button>' +
+        '<div class="' + itemActionsClass + '">' +
+          '<button type="button" class="dcf-redact-instance__accept ' + itemBtnClass + '">Accept</button>' +
+          '<button type="button" class="dcf-redact-instance__remove ' + itemBtnClass + '">Ignore</button>' +
         '</div>'
       li.querySelector('.dcf-redact-instance__accept').addEventListener('click', function () {
         areaItemStates.set(item.id, 'accepted')
@@ -649,34 +659,37 @@
     })
     section.appendChild(ul)
 
-    var controls = document.createElement('div')
-    controls.className = 'dcf-bucket-controls'
+    if (!single) {
+      var controls = document.createElement('div')
+      controls.className = 'govuk-button-group govuk-!-margin-top-3'
 
-    var ignoreAllBtn = document.createElement('button')
-    ignoreAllBtn.type      = 'button'
-    ignoreAllBtn.className = 'govuk-link dcf-bucket__reject-all'
-    ignoreAllBtn.textContent = 'Ignore all'
-    ignoreAllBtn.addEventListener('click', function () {
-      var idsToRemove = new Set(items.map(function (item) { return item.id }))
-      areaItems = areaItems.filter(function (a) { return !idsToRemove.has(a.id) })
-      idsToRemove.forEach(function (id) { areaItemStates.delete(id) })
-      renderFn()
-    })
-
-    var acceptAllBtn = document.createElement('button')
-    acceptAllBtn.type      = 'button'
-    acceptAllBtn.className = 'govuk-link dcf-bucket__accept-all'
-    acceptAllBtn.textContent = 'Accept all'
-    acceptAllBtn.addEventListener('click', function () {
-      items.forEach(function (item) {
-        if (areaItemStates.get(item.id) === 'pending') areaItemStates.set(item.id, 'accepted')
+      var ignoreAllBtn = document.createElement('button')
+      ignoreAllBtn.type      = 'button'
+      ignoreAllBtn.className = 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-bucket__reject-all'
+      ignoreAllBtn.textContent = 'Ignore all'
+      ignoreAllBtn.addEventListener('click', function () {
+        var idsToRemove = new Set(items.map(function (item) { return item.id }))
+        areaItems = areaItems.filter(function (a) { return !idsToRemove.has(a.id) })
+        idsToRemove.forEach(function (id) { areaItemStates.delete(id) })
+        renderFn()
       })
-      renderFn()
-    })
 
-    controls.appendChild(ignoreAllBtn)
-    controls.appendChild(acceptAllBtn)
-    section.appendChild(controls)
+      var acceptAllBtn = document.createElement('button')
+      acceptAllBtn.type      = 'button'
+      acceptAllBtn.className = 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-bucket__accept-all'
+      acceptAllBtn.textContent = 'Accept all'
+      acceptAllBtn.addEventListener('click', function () {
+        items.forEach(function (item) {
+          if (areaItemStates.get(item.id) === 'pending') areaItemStates.set(item.id, 'accepted')
+        })
+        renderFn()
+      })
+
+      controls.appendChild(ignoreAllBtn)
+      controls.appendChild(acceptAllBtn)
+      section.appendChild(controls)
+    }
+
     return section
   }
 
@@ -709,18 +722,20 @@
     var list   = document.getElementById('dcf-area-list')
     var empty  = document.getElementById('dcf-area-empty')
     var submit = document.getElementById('dcf-area-submit')
+    var header = document.getElementById('dcf-area-header')
     if (!list) return
     list.innerHTML = ''
     renderAreaRects()
     if (areaItems.length === 0) {
-      if (empty)  empty.hidden         = false
-      if (submit) submit.style.display = 'none'
+      if (empty)  empty.hidden          = true
+      if (submit) submit.style.display  = 'none'
       updateUnsavedTag()
       updateSubmitGates()
       return
     }
-    if (empty)  empty.hidden         = true
-    if (submit) submit.style.display = ''
+    if (header) header.hidden         = false
+    if (empty)  empty.hidden          = true
+    if (submit) submit.style.display  = ''
 
     var groups = new Map()
     areaItems.forEach(function (item) {
@@ -828,6 +843,8 @@
       areaItems   = []
       areaCounter = 0
       areaItemStates.clear()
+      var h = document.getElementById('dcf-area-header')
+      if (h) h.hidden = true
       exitDrawMode()
       renderAreaList()
     })
@@ -844,10 +861,10 @@
           ;[
             ['type', item.type],
             ['label', item.label],
-            ['rect.x', item.rect.x.toFixed(2)],
-            ['rect.y', item.rect.y.toFixed(2)],
-            ['rect.w', item.rect.w.toFixed(2)],
-            ['rect.h', item.rect.h.toFixed(2)]
+            ['rect.xPct',   item.rect.xPct.toFixed(2)],
+            ['rect.yAbsPx', item.rect.yAbsPx.toFixed(2)],
+            ['rect.wPct',   item.rect.wPct.toFixed(2)],
+            ['rect.hPx',    item.rect.hPx.toFixed(2)]
           ].forEach(function (pair) {
             var inp = document.createElement('input')
             inp.type  = 'hidden'
