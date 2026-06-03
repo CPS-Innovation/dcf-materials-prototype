@@ -1,4 +1,4 @@
-{# /cases/:caseId/material/redact/index #}
+{# v2/cases/:caseId/material/redact/index #}
 {% extends "_shared/layouts/main.html" %}
 {%- from "moj/components/button-menu/macro.njk" import mojButtonMenu -%}
 {% set navId = 'cases' %}
@@ -26,23 +26,28 @@
         classes: "govuk-button--secondary"
       },
       items: [
-        { text: "Address",                href: "#" },
-        { text: "Date",                   href: "#" },
-        { text: "Date of Birth",          href: "#" },
-        { text: "Time",                   href: "#" },
-        { text: "Named individual",       href: "#" },
-        { text: "Occupation",             href: "#" },
-        { text: "Phone number",           href: "#" },
-        { text: "Vehicle registration",   href: "#" },
+        { text: "Full name",              href: "#" },
         { text: "Email address",          href: "#" },
+        { text: "Address",                href: "#" },
+        { text: "Phone number",           href: "#" },
+        { text: "Date of birth",          href: "#" },
         { text: "Location",               href: "#" },
-        { text: "Bank details",           href: "#" },
-        { text: "Previous convictions",   href: "#" },
-        { text: "Relationship to others", href: "#" },
-        { text: "NHS number",             href: "#" },
-        { text: "NI number",              href: "#" },
-        { text: "Title",                  href: "#" },
-        { text: "Other",                  href: "#" }
+        { text: "Relationship to others", href: "#" }
+      ]
+    }) }}
+
+    {{ mojButtonMenu({
+      button: {
+        text: "Document actions",
+        classes: "govuk-button--secondary"
+      },
+      items: [
+        { text: "Rotate pages",                href: "#" },
+        { text: "Discard pages",               href: "#" },
+        { text: "Mark as read",                href: "#" },
+        { text: "Mark as unread",              href: "#" },
+        { text: "Rename",                      href: "#" },
+        { text: "Delete page",                 href: "#" }
       ]
     }) }}
   </div>
@@ -69,10 +74,15 @@
 
       {% if scan.findings and scan.findings.length %}
 
-        <h3 class="govuk-heading-m">Redaction cart</h3>
-        {{ govukInsetText({
-          html: 'Reject any suggestions that should not be redacted. Suggestions are based on your organisation\'s redaction guidelines - you remain responsible for all final decisions.'
-        }) }}
+        <div class="dcf-ai-card">
+          <div class="dcf-ai-card__header">
+            <h3 class="govuk-heading-m govuk-!-margin-bottom-0">Redaction cart</h3>
+            <strong class="govuk-tag govuk-tag--yellow">AI assistant</strong>
+          </div>
+          {{ govukInsetText({
+            html: 'Reject any suggestions that should not be redacted. Suggestions are based on your organisation\'s redaction guidelines - you remain responsible for all final decisions.'
+          }) }}
+        </div>
 
         <p class="govuk-body" id="dcf-assisted-empty" hidden>All suggested redactions have been removed.</p>
         <ul class="dcf-manual-list govuk-list" id="dcf-assisted-list"></ul>

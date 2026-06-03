@@ -237,7 +237,7 @@
   function updateSubmitGates () {}
 
   // ── List item (text redactions) ───────────────────────────────────────────
-  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onRejectInstance, onAcceptAll, onRejectAll) {
+  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
@@ -263,7 +263,7 @@
             '</button>' +
             '<div class="dcf-redact-instance__actions">' +
               '<button type="button" class="dcf-redact-instance__accept govuk-link">Accept</button>' +
-              '<button type="button" class="dcf-redact-instance__remove govuk-link">Reject</button>' +
+              '<button type="button" class="dcf-redact-instance__remove govuk-link">Ignore</button>' +
             '</div>' +
           '</div>'
         if (i < shownSnippets.length - 1) {
@@ -273,38 +273,26 @@
       }).join('')
     }
 
-    var termControlsHtml = pending > 1
-      ? '<div class="dcf-bucket-controls dcf-bucket-controls--term">' +
-          '<button type="button" class="govuk-link dcf-bucket__reject-all">Reject all</button>' +
-          '<button type="button" class="govuk-link dcf-bucket__accept-all">Accept all</button>' +
-        '</div>'
-      : ''
-
     li.innerHTML =
       '<details class="govuk-details govuk-!-margin-bottom-1">' +
         '<summary class="govuk-details__summary">' +
           '<span class="govuk-details__summary-text">' +
             '<strong>' + escHtml(text) + '</strong>' +
-            ' — ' + pending + ' instance' + (pending !== 1 ? 's' : '') + ' to review' +
+            ' (' + pending + ')' +
           '</span>' +
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
-      '</details>' +
-      termControlsHtml
+      '</details>'
 
     li.querySelectorAll('.dcf-redact-instance__accept').forEach(function (btn, i) {
       btn.addEventListener('click', function () { onAcceptInstance(i) })
     })
     li.querySelectorAll('.dcf-redact-instance__remove').forEach(function (btn, i) {
-      btn.addEventListener('click', function () { onRejectInstance(i) })
+      btn.addEventListener('click', function () { onIgnoreInstance(i) })
     })
     li.querySelectorAll('.dcf-redact-instance__focus').forEach(function (btn, i) {
       btn.addEventListener('click', function () { focusInstance(text, i) })
     })
-    var rejectAllBtn = li.querySelector('.dcf-bucket__reject-all')
-    if (rejectAllBtn) rejectAllBtn.addEventListener('click', onRejectAll)
-    var acceptAllBtn = li.querySelector('.dcf-bucket__accept-all')
-    if (acceptAllBtn) acceptAllBtn.addEventListener('click', onAcceptAll)
 
     return li
   }
@@ -314,10 +302,19 @@
     var section = document.createElement('section')
     section.className = 'dcf-redact-bucket'
 
-    var tagDiv = document.createElement('div')
-    tagDiv.className = 'dcf-redact-bucket__heading'
-    tagDiv.innerHTML = '<strong class="govuk-tag govuk-tag--red govuk-!-font-size-14">' + escHtml(type) + '</strong>'
-    section.appendChild(tagDiv)
+    var totalOccurrences = terms.reduce(function (sum, text) {
+      var s = stateMap.get(text)
+      return sum + (s ? s.total : (itemsMap.get(text) || 0))
+    }, 0)
+
+    var heading = document.createElement('h3')
+    heading.className = 'govuk-heading-s dcf-redact-bucket__heading'
+    heading.innerHTML =
+      escHtml(type) +
+      ' <strong class="govuk-tag govuk-tag--blue govuk-!-font-size-14 govuk-!-margin-left-1">' +
+        totalOccurrences + ' occurrence' + (totalOccurrences !== 1 ? 's' : '') +
+      '</strong>'
+    section.appendChild(heading)
 
     var ul = document.createElement('ul')
     ul.className = 'dcf-bucket-terms govuk-list'
@@ -330,7 +327,7 @@
           renderFn()
         },
         function () {
-          // Reject one instance — auto-remove term if nothing accepted or pending remains
+          // Ignore one instance — auto-remove term if nothing accepted or pending remains
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
           if (getPending(stateMap, itemsMap, text) > 0) { s.rejected++; stateMap.set(text, s) }
           if (getPending(stateMap, itemsMap, text) === 0 && getAccepted(stateMap, text) === 0) {
@@ -338,23 +335,43 @@
             stateMap.delete(text)
           }
           renderFn()
-        },
-        function () {
-          // Accept all pending instances of this term
-          var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
-          s.accepted += getPending(stateMap, itemsMap, text)
-          stateMap.set(text, s)
-          renderFn()
-        },
-        function () {
-          // Reject all — remove this term entirely
-          itemsMap.delete(text)
-          stateMap.delete(text)
-          renderFn()
         }
       ))
     })
     section.appendChild(ul)
+
+    var controls = document.createElement('div')
+    controls.className = 'dcf-bucket-controls'
+
+    var ignoreAllBtn = document.createElement('button')
+    ignoreAllBtn.type      = 'button'
+    ignoreAllBtn.className = 'govuk-link dcf-bucket__reject-all'
+    ignoreAllBtn.textContent = 'Ignore all'
+    ignoreAllBtn.addEventListener('click', function () {
+      terms.forEach(function (text) {
+        itemsMap.delete(text)
+        stateMap.delete(text)
+      })
+      renderFn()
+    })
+
+    var acceptAllBtn = document.createElement('button')
+    acceptAllBtn.type      = 'button'
+    acceptAllBtn.className = 'govuk-link dcf-bucket__accept-all'
+    acceptAllBtn.textContent = 'Accept all'
+    acceptAllBtn.addEventListener('click', function () {
+      terms.forEach(function (text) {
+        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+        s.accepted += getPending(stateMap, itemsMap, text)
+        stateMap.set(text, s)
+      })
+      renderFn()
+    })
+
+    controls.appendChild(ignoreAllBtn)
+    controls.appendChild(acceptAllBtn)
+    section.appendChild(controls)
+
     return section
   }
 
@@ -599,10 +616,14 @@
     var section = document.createElement('section')
     section.className = 'dcf-redact-bucket'
 
-    var tagDiv = document.createElement('div')
-    tagDiv.className = 'dcf-redact-bucket__heading'
-    tagDiv.innerHTML = '<strong class="govuk-tag govuk-tag--red govuk-!-font-size-14">' + escHtml(type) + '</strong>'
-    section.appendChild(tagDiv)
+    var heading = document.createElement('h3')
+    heading.className = 'govuk-heading-s dcf-redact-bucket__heading'
+    heading.innerHTML =
+      escHtml(type) +
+      ' <strong class="govuk-tag govuk-tag--blue govuk-!-font-size-14 govuk-!-margin-left-1">' +
+        items.length + ' occurrence' + (items.length !== 1 ? 's' : '') +
+      '</strong>'
+    section.appendChild(heading)
 
     var ul = document.createElement('ul')
     ul.className = 'dcf-bucket-terms govuk-list'
@@ -613,7 +634,7 @@
         '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + escHtml(item.label) + '</strong></p>' +
         '<div class="dcf-redact-instance__actions">' +
           '<button type="button" class="dcf-redact-instance__accept govuk-link">Accept</button>' +
-          '<button type="button" class="dcf-redact-instance__remove govuk-link">Reject</button>' +
+          '<button type="button" class="dcf-redact-instance__remove govuk-link">Ignore</button>' +
         '</div>'
       li.querySelector('.dcf-redact-instance__accept').addEventListener('click', function () {
         areaItemStates.set(item.id, 'accepted')
@@ -631,11 +652,11 @@
     var controls = document.createElement('div')
     controls.className = 'dcf-bucket-controls'
 
-    var rejectAllBtn = document.createElement('button')
-    rejectAllBtn.type      = 'button'
-    rejectAllBtn.className = 'govuk-link dcf-bucket__reject-all'
-    rejectAllBtn.textContent = 'Reject all'
-    rejectAllBtn.addEventListener('click', function () {
+    var ignoreAllBtn = document.createElement('button')
+    ignoreAllBtn.type      = 'button'
+    ignoreAllBtn.className = 'govuk-link dcf-bucket__reject-all'
+    ignoreAllBtn.textContent = 'Ignore all'
+    ignoreAllBtn.addEventListener('click', function () {
       var idsToRemove = new Set(items.map(function (item) { return item.id }))
       areaItems = areaItems.filter(function (a) { return !idsToRemove.has(a.id) })
       idsToRemove.forEach(function (id) { areaItemStates.delete(id) })
@@ -653,7 +674,7 @@
       renderFn()
     })
 
-    controls.appendChild(rejectAllBtn)
+    controls.appendChild(ignoreAllBtn)
     controls.appendChild(acceptAllBtn)
     section.appendChild(controls)
     return section

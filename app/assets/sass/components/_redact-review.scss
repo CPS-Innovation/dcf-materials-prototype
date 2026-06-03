@@ -18,6 +18,13 @@
   position: relative;
   height: 100%;
 
+  &__actions {
+    position: absolute;
+    top: govuk-spacing(2);
+    right: govuk-spacing(2);
+    z-index: 10;
+  }
+
   iframe {
     width: 100%;
     height: 100%;
@@ -70,6 +77,13 @@
   color: $govuk-text-colour;
 
   &:hover { text-decoration: underline; }
+
+  &:focus-visible {
+    outline: 3px solid $govuk-focus-colour;
+    outline-offset: 0;
+    background-color: $govuk-focus-colour;
+    color: $govuk-focus-text-colour;
+  }
 }
 
 // ── Instance action buttons (Accept / Reject pair) ───────────────────────────
@@ -113,6 +127,10 @@
 }
 
 .dcf-redact-bucket__heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: govuk-spacing(1);
   margin-bottom: govuk-spacing(2);
 }
 
@@ -143,6 +161,30 @@
   border: none;
   padding: 0;
   cursor: pointer;
+}
+
+// ── AI assistant card (assisted mode header) ─────────────────────────────────
+
+.dcf-ai-card {
+  background: #f7f2f8;
+  border-top: 4px solid #864297;
+  padding: govuk-spacing(4);
+  margin-bottom: govuk-spacing(4);
+
+  .govuk-inset-text {
+    margin-top: govuk-spacing(3);
+    margin-bottom: 0;
+  }
+}
+
+.dcf-ai-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  .govuk-heading-m {
+    color: #864297;
+  }
 }
 
 // ── Area redaction overlay ──────────────────────────────────────────────────

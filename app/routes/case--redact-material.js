@@ -35,13 +35,8 @@ const NOT_NAMES = new Set([
 function classifyFallback (value) {
   const t = value.trim()
   if (t.includes('@')) return 'Email address'
-  if (/^[A-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]$/i.test(t)) return 'NI number'
-  if (/^\d{3}\s\d{3}\s\d{4}$/.test(t)) return 'NHS number'
-  if (/^[A-Z]{2}\d{2}\s?[A-Z]{3}$/i.test(t)) return 'Vehicle registration'
   if (/^(\+44\s?|0)[\d\s\-]{9,12}$/.test(t)) return 'Phone number'
-  if (/^\d{1,2}:\d{2}(:\d{2})?(\s*(am|pm))?$/i.test(t)) return 'Time'
   if (/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(t)) return 'Date of birth'
-  if (/^\d{2}-\d{2}-\d{2}$/.test(t)) return 'Bank details'
   if (/[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}/i.test(t)) return 'Address'
   if (/^\d+\s+[A-Za-z]/.test(t) || /\b(street|road|avenue|lane|drive|close|way|court|place|gardens?|crescent)\b/i.test(t)) return 'Address'
   if (/^[A-Z][A-Za-z]*(\s[A-Z][A-Za-z]*)*$/.test(t)) return 'Full name'
@@ -82,40 +77,6 @@ function extractPiiFromText (text) {
   }
   Object.entries(phones).forEach(([value, instances]) => findings.push({ type: 'Phone number', value, instances }))
 
-  // NI numbers — AB 12 34 56 C format
-  const niRe = /\b[A-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]\b/gi
-  const niNums = {}
-  while ((m = niRe.exec(text)) !== null) {
-    const val = m[0].toUpperCase().replace(/\s+/g, ' ').trim()
-    niNums[val] = (niNums[val] || 0) + 1
-  }
-  Object.entries(niNums).forEach(([value, instances]) => findings.push({ type: 'NI number', value, instances }))
-
-  // NHS numbers — xxx xxx xxxx (10 digits)
-  const nhsRe = /\b\d{3}\s\d{3}\s\d{4}\b/g
-  const nhsNums = {}
-  while ((m = nhsRe.exec(text)) !== null) {
-    nhsNums[m[0]] = (nhsNums[m[0]] || 0) + 1
-  }
-  Object.entries(nhsNums).forEach(([value, instances]) => findings.push({ type: 'NHS number', value, instances }))
-
-  // Vehicle registrations — UK post-2001 format (AB12 ABC)
-  const vehicleRe = /\b[A-Z]{2}\d{2}\s?[A-Z]{3}\b/g
-  const vehicles = {}
-  while ((m = vehicleRe.exec(text)) !== null) {
-    const val = m[0].toUpperCase()
-    vehicles[val] = (vehicles[val] || 0) + 1
-  }
-  Object.entries(vehicles).forEach(([value, instances]) => findings.push({ type: 'Vehicle registration', value, instances }))
-
-  // Times — hh:mm or hh:mm:ss (with optional am/pm)
-  const timeRe = /\b\d{1,2}:\d{2}(:\d{2})?(\s*(am|pm))?\b/gi
-  const times = {}
-  while ((m = timeRe.exec(text)) !== null) {
-    times[m[0]] = (times[m[0]] || 0) + 1
-  }
-  Object.entries(times).forEach(([value, instances]) => findings.push({ type: 'Time', value, instances }))
-
   // Dates of birth — dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy
   const dobRe = /\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b/g
   const dobs = {}
@@ -123,14 +84,6 @@ function extractPiiFromText (text) {
     dobs[m[0]] = (dobs[m[0]] || 0) + 1
   }
   Object.entries(dobs).forEach(([value, instances]) => findings.push({ type: 'Date of birth', value, instances }))
-
-  // Bank details — sort codes (12-34-56)
-  const sortRe = /\b\d{2}-\d{2}-\d{2}\b/g
-  const sortCodes = {}
-  while ((m = sortRe.exec(text)) !== null) {
-    sortCodes[m[0]] = (sortCodes[m[0]] || 0) + 1
-  }
-  Object.entries(sortCodes).forEach(([value, instances]) => findings.push({ type: 'Bank details', value, instances }))
 
   // Postcodes — as a proxy for addresses
   const postcodeRe = /\b[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}\b/gi
@@ -164,17 +117,9 @@ async function scanForPii (text) {
           '- "Email address": any email address\n' +
           '- "Address": street addresses, full or partial\n' +
           '- "Phone number": any telephone number\n' +
-          '- "Date": any date other than a date of birth\n' +
           '- "Date of birth": dates of birth\n' +
-          '- "Time": times of day\n' +
-          '- "Vehicle registration": vehicle registration numbers\n' +
-          '- "NI number": National Insurance numbers\n' +
-          '- "NHS number": NHS numbers\n' +
-          '- "Bank details": sort codes or bank account numbers\n' +
-          '- "Occupation": job titles or professions tied to an individual\n' +
           '- "Location": towns, cities, named venues or landmarks\n' +
-          '- "Relationship to others": descriptions of relationships between people\n' +
-          '- "Previous convictions": references to prior offences or convictions\n\n' +
+          '- "Relationship to others": descriptions of relationships between people\n\n' +
           'Rules:\n' +
           '- Count exact occurrences of each value (case-insensitive)\n' +
           '- Do not duplicate values across types\n' +
@@ -236,9 +181,9 @@ module.exports = router => {
         messages: [{
           role: 'user',
           content:
-            'Classify this text from a legal document as exactly one of: "Full name", "Email address", "Address", "Phone number", "Date", "Date of birth", "Time", "Vehicle registration", "NI number", "NHS number", "Bank details", "Occupation", "Location", "Relationship to others", "Previous convictions", "Fragment".\n' +
+            'Classify this text from a legal document as exactly one of: "Full name", "Email address", "Address", "Phone number", "Date of birth", "Location", "Relationship to others", "Fragment".\n' +
             'Return ONLY a JSON object, e.g. {"type":"Full name"}. No other text.\n' +
-            'Full name = any individual\'s name. Date = any date other than a date of birth. Time = time of day. Location = town, city, or named place. Occupation = job title or profession. Relationship to others = how people are connected. Previous convictions = prior offences. Fragment = unrecognisable or partial text.\n\n' +
+            'Full name = any individual\'s name. Location = town, city, or named place. Relationship to others = how people are connected. Fragment = unrecognisable or partial text.\n\n' +
             'Text: ' + JSON.stringify(value)
         }]
       })
