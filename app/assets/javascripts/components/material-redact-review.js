@@ -9,11 +9,25 @@
     area:     document.getElementById('panel-area')
   }
 
+  function updateCartMode (mode) {
+    var cartDiv = document.getElementById('dcf-redaction-cart')
+    var tag     = document.getElementById('dcf-cart-mode-tag')
+    if (!cartDiv) return
+    if (mode === 'manual') {
+      cartDiv.classList.add('dcf-ai-card--manual')
+      if (tag) { tag.textContent = 'Manual'; tag.className = 'govuk-tag dcf-cart-tag--manual' }
+    } else {
+      cartDiv.classList.remove('dcf-ai-card--manual')
+      if (tag) { tag.textContent = 'AI assistant'; tag.className = 'govuk-tag govuk-tag--yellow' }
+    }
+  }
+
   modeButtons.forEach(function (btn) {
     btn.addEventListener('click', function () {
       var target = btn.getAttribute('data-panel')
       Object.values(panels).forEach(function (p) { if (p) p.classList.remove('dcf-redact-panel--visible') })
       if (panels[target]) panels[target].classList.add('dcf-redact-panel--visible')
+      updateCartMode(target)
       applyHighlights()
       exitDrawMode()
       updateUnsavedTag()
@@ -77,15 +91,17 @@
     if (!pdfApp) return
     var assistedActive = panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')
     var manualActive   = panels.manual   && panels.manual.classList.contains('dcf-redact-panel--visible')
+    var cartKeys = Array.from(cartItems.keys())
 
     if (assistedActive) {
-      var assistedTerms = Array.from(assistedItems.keys())
+      var assistedTerms = Array.from(assistedItems.keys()).concat(cartKeys)
       if (assistedTerms.length) { dispatchFind(assistedTerms); return }
     }
     if (manualActive) {
-      var manualTerms = Array.from(manualItems.keys())
+      var manualTerms = Array.from(manualItems.keys()).concat(cartKeys)
       if (manualTerms.length) { dispatchFind(manualTerms); return }
     }
+    if (cartKeys.length) { dispatchFind(cartKeys); return }
     pdfApp.eventBus.dispatch('findbarclose', { source: {} })
   }
 
@@ -140,15 +156,7 @@
   }
 
   function updateUnsavedTag () {
-    var count = 0
-    if (panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')) {
-      count = assistedItems.size
-    } else if (panels.manual && panels.manual.classList.contains('dcf-redact-panel--visible')) {
-      count = manualItems.size
-    } else if (panels.area && panels.area.classList.contains('dcf-redact-panel--visible')) {
-      count = areaItems.length
-    }
-
+    var count = cartItems.size
     var counter = document.getElementById('dcf-cart-count')
     if (counter) {
       counter.hidden = count === 0
@@ -196,6 +204,7 @@
   // pending = total - accepted - rejected
   var assistedInstState = new Map()
   var manualInstState   = new Map()
+  var cartItems         = new Map()   // text → { count, type, source: 'assisted'|'manual' }
 
   function initInstState (stateMap, text, total) {
     stateMap.set(text, { accepted: 0, rejected: 0, total: total })
@@ -212,8 +221,123 @@
     return s ? s.accepted : 0
   }
 
+  // ── Shared cart ───────────────────────────────────────────────────────────────
+  function getActiveForm () {
+    if (panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible'))
+      return document.getElementById('dcf-assisted-form')
+    if (panels.manual && panels.manual.classList.contains('dcf-redact-panel--visible'))
+      return document.getElementById('dcf-manual-form')
+    if (panels.area && panels.area.classList.contains('dcf-redact-panel--visible'))
+      return document.getElementById('dcf-area-form')
+    return document.getElementById('dcf-assisted-form')
+  }
+
+  function resetAll () {
+    cartItems.clear()
+    assistedItems.clear()
+    assistedInstState.clear()
+    manualItems.clear()
+    manualTypes.clear()
+    manualInstState.clear()
+    findings.forEach(function (f) {
+      assistedItems.set(f.value, f.instances)
+      assistedTypes.set(f.value, f.type || null)
+      initInstState(assistedInstState, f.value, f.instances)
+    })
+    renderCart()
+    renderAssistedList()
+    renderManualList()
+    applyHighlights()
+  }
+
+  function renderCart () {
+    var cartDiv  = document.getElementById('dcf-redaction-cart')
+    var cartList = document.getElementById('dcf-cart-list')
+    var emptyMsg = document.getElementById('dcf-cart-empty-msg')
+    if (!cartList) return
+    cartList.innerHTML = ''
+    var hasItems = cartItems.size > 0
+    if (emptyMsg) emptyMsg.hidden = hasItems
+
+    cartItems.forEach(function (item, text) {
+      var li = document.createElement('li')
+      li.className = 'dcf-cart-item'
+      li.innerHTML =
+        '<span class="govuk-body-s">' + escHtml(text) + ' (' + item.count + ')</span>' +
+        '<button type="button" class="dcf-cart-remove">Remove</button>'
+      li.querySelector('.dcf-cart-remove').addEventListener('click', function () {
+        removeFromCart(text)
+      })
+      cartList.appendChild(li)
+    })
+
+    var existingActions = cartDiv ? cartDiv.querySelector('.dcf-cart-actions') : null
+    if (existingActions) existingActions.remove()
+
+    if (hasItems && cartDiv) {
+      var actions = document.createElement('div')
+      actions.className = 'dcf-cart-actions'
+      actions.innerHTML =
+        '<button type="button" class="govuk-button dcf-cart-preview">Preview redactions</button>' +
+        '<button type="button" class="govuk-button govuk-button--secondary dcf-cart-reset">Clear and reset</button>'
+      actions.querySelector('.dcf-cart-preview').addEventListener('click', function () {
+        var form = getActiveForm()
+        if (form) form.requestSubmit()
+      })
+      actions.querySelector('.dcf-cart-reset').addEventListener('click', resetAll)
+      cartDiv.appendChild(actions)
+    }
+
+    updateUnsavedTag()
+  }
+
+  function addToCart (text, source) {
+    var stateMap = source === 'assisted' ? assistedInstState : manualInstState
+    var itemsMap = source === 'assisted' ? assistedItems     : manualItems
+    var typesMap = source === 'assisted' ? assistedTypes     : manualTypes
+    var count = getAccepted(stateMap, text) + getPending(stateMap, itemsMap, text)
+    if (count === 0) return
+    var type = typesMap.get(text) || 'Unclassified'
+    cartItems.set(text, { count: count, type: type, source: source })
+    itemsMap.delete(text)
+    renderCart()
+    if (source === 'assisted') renderAssistedList()
+    else renderManualList()
+    applyHighlights()
+  }
+
+  function removeFromCart (text) {
+    var item = cartItems.get(text)
+    if (!item) return
+    var itemsMap = item.source === 'assisted' ? assistedItems : manualItems
+    var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
+    var s = stateMap.get(text)
+    var total = s ? s.total : item.count
+    itemsMap.set(text, total)
+    stateMap.set(text, { accepted: 0, rejected: 0, total: total })
+    cartItems.delete(text)
+    renderCart()
+    if (item.source === 'assisted') renderAssistedList()
+    else renderManualList()
+    applyHighlights()
+  }
+
   // ── Cart focus (click highlight in PDF → open term in cart) ─────────────────
   function focusCartItem (term) {
+    var cartList = document.getElementById('dcf-cart-list')
+    if (cartList && cartItems.has(term)) {
+      var cartLi = null
+      cartList.querySelectorAll('li').forEach(function (li) {
+        var strong = li.querySelector('strong')
+        if (strong && strong.textContent.trim() === term) cartLi = li
+      })
+      if (cartLi) {
+        cartLi.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        cartLi.classList.add('dcf-cart-focused')
+        setTimeout(function () { cartLi.classList.remove('dcf-cart-focused') }, 1400)
+        return
+      }
+    }
     var assistedActive = panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')
     var manualActive   = panels.manual   && panels.manual.classList.contains('dcf-redact-panel--visible')
     var listId = assistedActive ? 'dcf-assisted-list' : manualActive ? 'dcf-manual-list' : null
@@ -237,7 +361,7 @@
   function updateSubmitGates () {}
 
   // ── List item (text redactions) ───────────────────────────────────────────
-  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance, onAcceptAll, onIgnoreAll) {
+  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance, onAcceptAll, onIgnoreAll, onAddToCart, onUndo) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
@@ -267,7 +391,7 @@
               (s.after ? ' ' + escHtml(s.after) : '') +
             '</button>' +
             '<div class="' + actionsClass + '">' +
-              '<button type="button" class="dcf-redact-instance__accept ' + acceptClass + '">Accept</button>' +
+              '<button type="button" class="dcf-redact-instance__accept ' + acceptClass + '">Add to cart</button>' +
               '<button type="button" class="dcf-redact-instance__remove ' + ignoreClass + '">Ignore</button>' +
             '</div>' +
           '</div>'
@@ -295,7 +419,13 @@
           '</span>' +
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
-      '</details>'
+      '</details>' +
+      (onAddToCart
+        ? '<div class="dcf-bucket-controls dcf-bucket-controls--term">' +
+            '<button type="button" class="govuk-link dcf-add-to-cart">Add to cart</button>' +
+            (onUndo ? ' <button type="button" class="govuk-link dcf-undo-selection">Undo</button>' : '') +
+          '</div>'
+        : '')
 
     li.querySelectorAll('.dcf-redact-instance__accept').forEach(function (btn, i) {
       btn.addEventListener('click', function () { onAcceptInstance(i) })
@@ -310,12 +440,16 @@
     if (termAcceptAll) termAcceptAll.addEventListener('click', onAcceptAll)
     var termIgnoreAll = li.querySelector('.dcf-term-ignore-all')
     if (termIgnoreAll) termIgnoreAll.addEventListener('click', onIgnoreAll)
+    var addToCartBtn = li.querySelector('.dcf-add-to-cart')
+    if (addToCartBtn && onAddToCart) addToCartBtn.addEventListener('click', function () { onAddToCart() })
+    var undoBtn = li.querySelector('.dcf-undo-selection')
+    if (undoBtn && onUndo) undoBtn.addEventListener('click', function () { onUndo() })
 
     return li
   }
 
   // ── Bucket section (groups terms of the same type) ────────────────────────
-  function makeBucketSection (type, terms, itemsMap, stateMap, renderFn) {
+  function makeBucketSection (type, terms, itemsMap, stateMap, renderFn, onAddToCartForTerm, onUndoForTerm, source) {
     var section = document.createElement('section')
     section.className = 'dcf-redact-bucket'
 
@@ -338,34 +472,52 @@
     terms.forEach(function (text) {
       ul.appendChild(makeListItem(text, stateMap, itemsMap,
         function () {
-          // Accept one instance
+          // Accept one instance — update cart with running accepted count
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
           if (getPending(stateMap, itemsMap, text) > 0) { s.accepted++; stateMap.set(text, s) }
+          if (source && s.accepted > 0) {
+            var typesMap = source === 'assisted' ? assistedTypes : manualTypes
+            cartItems.set(text, { count: s.accepted, type: typesMap.get(text) || 'Unclassified', source: source })
+            renderCart()
+          }
+          if (getPending(stateMap, itemsMap, text) === 0) itemsMap.delete(text)
           renderFn()
         },
         function () {
-          // Ignore one instance — auto-remove term if nothing accepted or pending remains
+          // Ignore one instance
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
           if (getPending(stateMap, itemsMap, text) > 0) { s.rejected++; stateMap.set(text, s) }
-          if (getPending(stateMap, itemsMap, text) === 0 && getAccepted(stateMap, text) === 0) {
+          if (getPending(stateMap, itemsMap, text) === 0) {
             itemsMap.delete(text)
-            stateMap.delete(text)
+            if (getAccepted(stateMap, text) === 0) {
+              stateMap.delete(text)
+              if (source) { cartItems.delete(text); renderCart() }
+            }
           }
           renderFn()
         },
         function () {
-          // Accept all pending instances of this term
+          // Accept all — move whole term to cart
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
           s.accepted += getPending(stateMap, itemsMap, text)
           stateMap.set(text, s)
+          if (source && s.accepted > 0) {
+            var typesMap = source === 'assisted' ? assistedTypes : manualTypes
+            cartItems.set(text, { count: s.accepted, type: typesMap.get(text) || 'Unclassified', source: source })
+            itemsMap.delete(text)
+            renderCart()
+          }
           renderFn()
         },
         function () {
-          // Ignore all — remove this term entirely
+          // Ignore all — remove entirely (including any cart entry)
           itemsMap.delete(text)
           stateMap.delete(text)
+          if (source) { cartItems.delete(text); renderCart() }
           renderFn()
-        }
+        },
+        onAddToCartForTerm ? function () { onAddToCartForTerm(text) } : null,
+        onUndoForTerm      ? function () { onUndoForTerm(text)      } : null
       ))
     })
     section.appendChild(ul)
@@ -393,65 +545,39 @@
   var assistedTypes = new Map()
 
   function renderAssistedList () {
-    var list   = document.getElementById('dcf-assisted-list')
-    var empty  = document.getElementById('dcf-assisted-empty')
-    var submit = document.getElementById('dcf-assisted-submit')
-    var header = document.getElementById('dcf-assisted-header')
+    var list  = document.getElementById('dcf-assisted-list')
+    var empty = document.getElementById('dcf-assisted-empty')
     if (!list) return
     list.innerHTML = ''
     if (assistedItems.size === 0) {
-      if (empty)  empty.hidden          = true
-      if (submit) submit.style.display  = 'none'
-      updateUnsavedTag()
-      updateSubmitGates()
+      if (empty) empty.hidden = false
       return
     }
-    if (header) header.hidden         = false
-    if (empty)  empty.hidden          = true
-    if (submit) submit.style.display  = ''
+    if (empty) empty.hidden = true
     groupByType(assistedItems, assistedTypes).forEach(function (entry) {
-      list.appendChild(makeBucketSection(entry[0], entry[1], assistedItems, assistedInstState, function () {
-        renderAssistedList()
-        applyHighlights()
-      }))
-    })
-    updateUnsavedTag()
-    updateSubmitGates()
-  }
-
-  var manualResetBtn = document.getElementById('dcf-manual-reset-btn')
-  if (manualResetBtn) {
-    manualResetBtn.addEventListener('click', function () {
-      manualItems.clear()
-      manualTypes.clear()
-      manualInstState.clear()
-      var h = document.getElementById('dcf-manual-header')
-      if (h) h.hidden = true
-      renderManualList()
-      applyHighlights()
+      list.appendChild(makeBucketSection(entry[0], entry[1], assistedItems, assistedInstState,
+        function () {
+          renderAssistedList()
+          applyHighlights()
+        },
+        function (text) { addToCart(text, 'assisted') },
+        null,
+        'assisted'
+      ))
     })
   }
 
-  var assistedResetBtn = document.getElementById('dcf-assisted-reset-btn')
-  if (assistedResetBtn) {
-    assistedResetBtn.addEventListener('click', function () {
-      assistedItems.clear()
-      assistedInstState.clear()
-      var h = document.getElementById('dcf-assisted-header')
-      if (h) h.hidden = true
-      renderAssistedList()
-      applyHighlights()
-    })
-  }
 
   var btnAssistedEl = document.getElementById('btn-assisted')
   if (btnAssistedEl) {
     btnAssistedEl.addEventListener('click', function () {
       if (assistedItems.size === 0) {
         findings.forEach(function (f) {
-          assistedItems.set(f.value, f.instances)
-          assistedTypes.set(f.value, f.type || null)
-          initInstState(assistedInstState, f.value, f.instances)
+          if (!cartItems.has(f.value)) {
+            assistedItems.set(f.value, f.instances)
+            assistedTypes.set(f.value, f.type || null)
+            initInstState(assistedInstState, f.value, f.instances)
+          }
         })
         renderAssistedList()
         applyHighlights()
@@ -462,30 +588,29 @@
   var assistedForm = document.getElementById('dcf-assisted-form')
   if (assistedForm) {
     assistedForm.addEventListener('submit', function () {
-      this.querySelectorAll('input[data-assisted]').forEach(function (el) { el.remove() })
-      assistedItems.forEach(function (count, text) {
-        var s        = assistedInstState.get(text) || { accepted: 0, rejected: 0, total: count }
-        var toSubmit = s.accepted + getPending(assistedInstState, assistedItems, text)
-        if (toSubmit === 0) return
+      this.querySelectorAll('input[data-cart]').forEach(function (el) { el.remove() })
+      cartItems.forEach(function (item, text) {
+        var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
+        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: item.count }
 
         var inp = document.createElement('input')
         inp.type = 'hidden'; inp.name = 'confirmedRedactions'
-        inp.setAttribute('data-assisted', '1'); inp.value = text
+        inp.setAttribute('data-cart', '1'); inp.value = text
         assistedForm.appendChild(inp)
 
         var countInp = document.createElement('input')
         countInp.type = 'hidden'; countInp.name = 'instanceCount[' + text + ']'
-        countInp.setAttribute('data-assisted', '1'); countInp.value = toSubmit
+        countInp.setAttribute('data-cart', '1'); countInp.value = item.count
         assistedForm.appendChild(countInp)
 
         var accInp = document.createElement('input')
         accInp.type = 'hidden'; accInp.name = 'acceptedCount[' + text + ']'
-        accInp.setAttribute('data-assisted', '1'); accInp.value = s.accepted
+        accInp.setAttribute('data-cart', '1'); accInp.value = s.accepted
         assistedForm.appendChild(accInp)
 
         var rejInp = document.createElement('input')
         rejInp.type = 'hidden'; rejInp.name = 'rejectedCount[' + text + ']'
-        rejInp.setAttribute('data-assisted', '1'); rejInp.value = s.rejected
+        rejInp.setAttribute('data-cart', '1'); rejInp.value = s.rejected
         assistedForm.appendChild(rejInp)
       })
     })
@@ -505,30 +630,27 @@
   var manualTypes = new Map()
 
   function renderManualList () {
-    var list   = document.getElementById('dcf-manual-list')
-    var empty  = document.getElementById('dcf-manual-empty')
-    var submit = document.getElementById('dcf-manual-submit')
-    var header = document.getElementById('dcf-manual-header')
+    var list = document.getElementById('dcf-manual-list')
     if (!list) return
     list.innerHTML = ''
-    if (manualItems.size === 0) {
-      if (empty)  empty.hidden          = true
-      if (submit) submit.style.display  = 'none'
-      updateUnsavedTag()
-      updateSubmitGates()
-      return
-    }
-    if (header) header.hidden         = false
-    if (empty)  empty.hidden          = true
-    if (submit) submit.style.display  = ''
+    if (manualItems.size === 0) return
     groupByType(manualItems, manualTypes).forEach(function (entry) {
-      list.appendChild(makeBucketSection(entry[0], entry[1], manualItems, manualInstState, function () {
-        renderManualList()
-        applyHighlights()
-      }))
+      list.appendChild(makeBucketSection(entry[0], entry[1], manualItems, manualInstState,
+        function () {
+          renderManualList()
+          applyHighlights()
+        },
+        function (text) { addToCart(text, 'manual') },
+        function (text) {
+          manualItems.delete(text)
+          manualInstState.delete(text)
+          manualTypes.delete(text)
+          renderManualList()
+          applyHighlights()
+        },
+        'manual'
+      ))
     })
-    updateUnsavedTag()
-    updateSubmitGates()
   }
 
   function onIframeMouseUp () {
@@ -555,30 +677,29 @@
   var manualForm = document.getElementById('dcf-manual-form')
   if (manualForm) {
     manualForm.addEventListener('submit', function () {
-      this.querySelectorAll('input[data-manual]').forEach(function (el) { el.remove() })
-      manualItems.forEach(function (count, text) {
-        var s        = manualInstState.get(text) || { accepted: 0, rejected: 0, total: count }
-        var toSubmit = s.accepted + getPending(manualInstState, manualItems, text)
-        if (toSubmit === 0) return
+      this.querySelectorAll('input[data-cart]').forEach(function (el) { el.remove() })
+      cartItems.forEach(function (item, text) {
+        var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
+        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: item.count }
 
         var inp = document.createElement('input')
         inp.type = 'hidden'; inp.name = 'confirmedRedactions'
-        inp.setAttribute('data-manual', '1'); inp.value = text
+        inp.setAttribute('data-cart', '1'); inp.value = text
         manualForm.appendChild(inp)
 
         var countInp = document.createElement('input')
         countInp.type = 'hidden'; countInp.name = 'instanceCount[' + text + ']'
-        countInp.setAttribute('data-manual', '1'); countInp.value = toSubmit
+        countInp.setAttribute('data-cart', '1'); countInp.value = item.count
         manualForm.appendChild(countInp)
 
         var accInp = document.createElement('input')
         accInp.type = 'hidden'; accInp.name = 'acceptedCount[' + text + ']'
-        accInp.setAttribute('data-manual', '1'); accInp.value = s.accepted
+        accInp.setAttribute('data-cart', '1'); accInp.value = s.accepted
         manualForm.appendChild(accInp)
 
         var rejInp = document.createElement('input')
         rejInp.type = 'hidden'; rejInp.name = 'rejectedCount[' + text + ']'
-        rejInp.setAttribute('data-manual', '1'); rejInp.value = s.rejected
+        rejInp.setAttribute('data-cart', '1'); rejInp.value = s.rejected
         manualForm.appendChild(rejInp)
       })
     })
@@ -889,9 +1010,13 @@
         var accepted  = Number((restore.acceptedCount  && restore.acceptedCount[f.value])  || 0)
         var submitted = Number((restore.instanceCount  && restore.instanceCount[f.value])  || f.instances)
         var total     = submitted + rejected
-        assistedItems.set(f.value, total)
+        cartItems.set(f.value, { count: submitted, type: f.type || 'Unclassified', source: 'assisted' })
         assistedTypes.set(f.value, f.type || null)
         assistedInstState.set(f.value, { accepted: accepted, rejected: rejected, total: total })
+      } else {
+        assistedItems.set(f.value, f.instances)
+        assistedTypes.set(f.value, f.type || null)
+        initInstState(assistedInstState, f.value, f.instances)
       }
     })
   } else {
@@ -901,6 +1026,7 @@
       initInstState(assistedInstState, f.value, f.instances)
     })
   }
+  renderCart()
   renderAssistedList()
 
   if (restore && restore.mode === 'manual') {
@@ -909,15 +1035,17 @@
       var accepted  = Number((restore.acceptedCount  && restore.acceptedCount[text])  || 0)
       var submitted = Number((restore.instanceCount  && restore.instanceCount[text])  || 0)
       var total     = submitted + rejected
-      manualItems.set(text, total)
+      cartItems.set(text, { count: submitted, type: 'Unclassified', source: 'manual' })
       manualInstState.set(text, { accepted: accepted, rejected: rejected, total: total })
     })
+    renderCart()
     renderManualList()
   }
 
   if (restore) {
     var targetBtn = document.querySelector('[data-panel="' + restore.mode + '"]')
     if (targetBtn) targetBtn.click()
+    else updateCartMode(restore.mode)
   }
 
   // ── Iframe init ───────────────────────────────────────────────────────────

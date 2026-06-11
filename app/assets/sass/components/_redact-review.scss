@@ -160,6 +160,47 @@
   cursor: pointer;
 }
 
+// ── "Add to cart" and cart "Remove" link-buttons ─────────────────────────────
+
+.dcf-cart-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: govuk-spacing(3);
+  margin-top: govuk-spacing(6);
+
+  .govuk-button { @include govuk-font($size: 16); }
+}
+
+.dcf-cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid $govuk-border-colour;
+  padding: govuk-spacing(2) 0;
+}
+
+.dcf-add-to-cart,
+.dcf-cart-remove,
+.dcf-undo-selection {
+  @include govuk-font($size: 16);
+  color: $govuk-link-colour;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover { color: $govuk-link-hover-colour; }
+
+  &:focus-visible {
+    outline: 3px solid $govuk-focus-colour;
+    outline-offset: 0;
+    background-color: $govuk-focus-colour;
+    color: $govuk-focus-text-colour;
+  }
+}
+
 // ── AI assistant card (assisted mode header) ─────────────────────────────────
 
 .dcf-ai-card {
@@ -172,6 +213,13 @@
     margin-top: govuk-spacing(3);
     margin-bottom: 0;
   }
+
+  &--manual {
+    background: #f4f8fb;
+    border-top-color: #1d70b8;
+
+    .dcf-ai-card__header .govuk-heading-m { color: #1d70b8; }
+  }
 }
 
 .dcf-ai-card__header {
@@ -182,6 +230,11 @@
   .govuk-heading-m {
     color: #864297;
   }
+}
+
+.dcf-cart-tag--manual {
+  background-color: #1d70b8;
+  color: #ffffff;
 }
 
 // ── Area redaction overlay ──────────────────────────────────────────────────
