@@ -221,14 +221,19 @@
     manualItems.clear()
     manualTypes.clear()
     manualInstState.clear()
+    areaItems = []
+    areaCounter = 0
+    areaItemStates.clear()
     findings.forEach(function (f) {
       assistedItems.set(f.value, f.instances)
       assistedTypes.set(f.value, f.type || null)
       initInstState(assistedInstState, f.value, f.instances)
     })
+    exitDrawMode()
     renderCart()
     renderAssistedList()
     renderManualList()
+    renderAreaList()
     applyHighlights()
   }
 
@@ -291,13 +296,19 @@
   function removeFromCart (text) {
     var item = cartItems.get(text)
     if (!item) return
+    cartItems.delete(text)
+    if (item.source === 'area') {
+      areaItemStates.set(item.areaId, 'pending')
+      renderCart()
+      renderAreaList()
+      return
+    }
     var itemsMap = item.source === 'assisted' ? assistedItems : manualItems
     var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
     var s = stateMap.get(text)
     var total = s ? s.total : item.count
     itemsMap.set(text, total)
     stateMap.set(text, { accepted: 0, rejected: 0, total: total })
-    cartItems.delete(text)
     renderCart()
     if (item.source === 'assisted') renderAssistedList()
     else renderManualList()
@@ -733,15 +744,11 @@
     var heading = document.createElement('h3')
     heading.className = 'govuk-heading-s dcf-redact-bucket__heading'
     heading.innerHTML =
-      escHtml(type) +
-      ' <strong class="govuk-tag govuk-tag--blue govuk-!-font-size-14 govuk-!-margin-left-1">' +
+      '<strong class="govuk-tag govuk-tag--purple">' + escHtml(type) + '</strong>' +
+      ' <span class="govuk-body-s govuk-!-margin-left-1 govuk-!-margin-bottom-0">' +
         items.length + ' occurrence' + (items.length !== 1 ? 's' : '') +
-      '</strong>'
+      '</span>'
     section.appendChild(heading)
-
-    var single = items.length === 1
-    var itemBtnClass    = single ? 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0' : 'govuk-link'
-    var itemActionsClass = single ? 'govuk-button-group govuk-!-margin-top-3 govuk-!-margin-bottom-0' : 'dcf-redact-instance__actions'
 
     var ul = document.createElement('ul')
     ul.className = 'dcf-bucket-terms govuk-list'
@@ -750,15 +757,17 @@
       li.className = 'dcf-manual-list__item'
       li.innerHTML =
         '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + escHtml(item.label) + '</strong></p>' +
-        '<div class="' + itemActionsClass + '">' +
-          '<button type="button" class="dcf-redact-instance__accept ' + itemBtnClass + '">Accept</button>' +
-          '<button type="button" class="dcf-redact-instance__remove ' + itemBtnClass + '">Ignore</button>' +
+        '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-area-accept">Add to cart</button>' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-area-ignore">Ignore</button>' +
         '</div>'
-      li.querySelector('.dcf-redact-instance__accept').addEventListener('click', function () {
+      li.querySelector('.dcf-area-accept').addEventListener('click', function () {
         areaItemStates.set(item.id, 'accepted')
+        cartItems.set(item.label, { count: 1, type: item.type, source: 'area', areaId: item.id })
+        renderCart()
         renderFn()
       })
-      li.querySelector('.dcf-redact-instance__remove').addEventListener('click', function () {
+      li.querySelector('.dcf-area-ignore').addEventListener('click', function () {
         areaItems = areaItems.filter(function (a) { return a.id !== item.id })
         areaItemStates.delete(item.id)
         renderFn()
@@ -766,37 +775,6 @@
       ul.appendChild(li)
     })
     section.appendChild(ul)
-
-    if (!single) {
-      var controls = document.createElement('div')
-      controls.className = 'govuk-button-group govuk-!-margin-top-3'
-
-      var ignoreAllBtn = document.createElement('button')
-      ignoreAllBtn.type      = 'button'
-      ignoreAllBtn.className = 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-bucket__reject-all'
-      ignoreAllBtn.textContent = 'Ignore all'
-      ignoreAllBtn.addEventListener('click', function () {
-        var idsToRemove = new Set(items.map(function (item) { return item.id }))
-        areaItems = areaItems.filter(function (a) { return !idsToRemove.has(a.id) })
-        idsToRemove.forEach(function (id) { areaItemStates.delete(id) })
-        renderFn()
-      })
-
-      var acceptAllBtn = document.createElement('button')
-      acceptAllBtn.type      = 'button'
-      acceptAllBtn.className = 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-bucket__accept-all'
-      acceptAllBtn.textContent = 'Accept all'
-      acceptAllBtn.addEventListener('click', function () {
-        items.forEach(function (item) {
-          if (areaItemStates.get(item.id) === 'pending') areaItemStates.set(item.id, 'accepted')
-        })
-        renderFn()
-      })
-
-      controls.appendChild(ignoreAllBtn)
-      controls.appendChild(acceptAllBtn)
-      section.appendChild(controls)
-    }
 
     return section
   }
@@ -827,26 +805,30 @@
   }
 
   function renderAreaList () {
-    var list   = document.getElementById('dcf-area-list')
-    var empty  = document.getElementById('dcf-area-empty')
-    var submit = document.getElementById('dcf-area-submit')
-    var header = document.getElementById('dcf-area-header')
+    var list  = document.getElementById('dcf-area-list')
+    var empty = document.getElementById('dcf-area-empty')
+    var panel = document.getElementById('panel-area')
     if (!list) return
     list.innerHTML = ''
     renderAreaRects()
-    if (areaItems.length === 0) {
-      if (empty)  empty.hidden          = true
-      if (submit) submit.style.display  = 'none'
+
+    var existing = panel ? panel.querySelector('.dcf-area-actions') : null
+    if (existing) existing.remove()
+
+    var pendingItems = areaItems.filter(function (item) {
+      return areaItemStates.get(item.id) !== 'accepted'
+    })
+
+    if (pendingItems.length === 0) {
+      if (empty) empty.hidden = areaItems.length > 0
       updateUnsavedTag()
-      updateSubmitGates()
+      renderCart()
       return
     }
-    if (header) header.hidden         = false
-    if (empty)  empty.hidden          = true
-    if (submit) submit.style.display  = ''
+    if (empty) empty.hidden = true
 
     var groups = new Map()
-    areaItems.forEach(function (item) {
+    pendingItems.forEach(function (item) {
       if (!groups.has(item.type)) groups.set(item.type, [])
       groups.get(item.type).push(item)
     })
@@ -855,21 +837,17 @@
         renderAreaList()
       }))
     })
+
     updateUnsavedTag()
-    updateSubmitGates()
+    renderCart()
   }
 
-  // Intercept clicks on items inside the "Redact area" button menu
-  document.addEventListener('click', function (e) {
-    var link = e.target && e.target.closest('a')
-    if (!link) return
-    var menu = link.closest('.moj-button-menu')
-    if (!menu || !menu.querySelector('.dcf-btn-redact-area')) return
-    e.preventDefault()
-    var type = (link.textContent || '').trim()
-    if (!type) return
-    enterDrawMode(type)
-  }, false)
+  var btnAreaDraw = document.getElementById('btn-area-draw')
+  if (btnAreaDraw) {
+    btnAreaDraw.addEventListener('click', function () {
+      enterDrawMode('Other')
+    })
+  }
 
   // Draw mode: mousedown on overlay starts a drag
   if (areaOverlay) {
@@ -942,20 +920,6 @@
   var cancelDrawBtn = document.getElementById('dcf-area-cancel-draw')
   if (cancelDrawBtn) {
     cancelDrawBtn.addEventListener('click', exitDrawMode)
-  }
-
-  // Clear and reset
-  var areaResetBtn = document.getElementById('dcf-area-reset-btn')
-  if (areaResetBtn) {
-    areaResetBtn.addEventListener('click', function () {
-      areaItems   = []
-      areaCounter = 0
-      areaItemStates.clear()
-      var h = document.getElementById('dcf-area-header')
-      if (h) h.hidden = true
-      exitDrawMode()
-      renderAreaList()
-    })
   }
 
   // Form submit — encode area data as hidden inputs (accepted items only)

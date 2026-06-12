@@ -20,23 +20,11 @@
     <button type="button" class="govuk-button govuk-button--secondary" id="btn-manual" data-panel="manual">
       Manual redaction
     </button>
-    {{ mojButtonMenu({
-      button: {
-        text: "Redact an area",
-        classes: "govuk-button--secondary dcf-btn-redact-area"
-      },
-      items: [
-        { text: "Name",                   href: "#" },
-        { text: "Email address",          href: "#" },
-        { text: "Address",                href: "#" },
-        { text: "Phone number",           href: "#" },
-        { text: "Date of birth",          href: "#" },
-        { text: "Location",               href: "#" },
-        { text: "Relationship to others", href: "#" },
-        { text: "Other",                  href: "#" }
-      ]
-    }) }}
+    <button type="button" class="govuk-button govuk-button--secondary dcf-btn-redact-area" id="btn-area-draw">
+      Redact an area
+    </button>
 
+    {# Document actions hidden for now
     {{ mojButtonMenu({
       button: {
         text: "Document actions",
@@ -51,6 +39,7 @@
         { text: "Delete page",                 href: "#" }
       ]
     }) }}
+    #}
   </div>
 
   <div class="dcf-redact-layout">
@@ -124,26 +113,21 @@
     <div class="dcf-redact-panel" id="panel-area">
 
       <div id="dcf-area-header">
-        <h3 class="govuk-heading-m">Redaction cart</h3>
         {{ govukInsetText({
-          html: 'Choose a redaction type from the <strong>Redact area</strong> menu above, then drag to mark an area on the document.'
+          html: '<strong>Drag crosshair</strong> to mark an area on the document.'
         }) }}
       </div>
+
+      <p class="govuk-body" id="dcf-area-empty">No areas selected yet.</p>
+      <ul class="dcf-manual-list govuk-list" id="dcf-area-list"></ul>
 
       <p class="govuk-body" id="dcf-area-exit-draw" hidden>
         <a href="#" class="govuk-link" id="dcf-area-cancel-draw">Exit drawing mode</a>
       </p>
 
-      <p class="govuk-body" id="dcf-area-empty">No areas selected yet.</p>
-      <ul class="dcf-manual-list govuk-list" id="dcf-area-list"></ul>
-
       <form method="post" action="/cases/{{ _case.id }}/material/redact/check" id="dcf-area-form">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <input type="hidden" name="mode" value="area">
-        <div class="govuk-button-group govuk-!-margin-top-8" id="dcf-area-submit" style="display:none">
-          {{ govukButton({ text: "Preview redactions" }) }}
-          <button type="button" class="govuk-button govuk-button--secondary" id="dcf-area-reset-btn">Clear and reset</button>
-        </div>
       </form>
 
     </div>
