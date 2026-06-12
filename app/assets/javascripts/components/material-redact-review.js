@@ -36,13 +36,80 @@
     })
   }
 
+  var _highlightObserver = null
+
+  function classifyHighlights () {
+    try {
+      var doc = iframe.contentDocument
+      if (!doc) return
+      // Only turn yellow for terms fully committed to cart (no pending instances remaining)
+      var committedTerms = Array.from(cartItems.keys())
+        .filter(function (term) {
+          var item = cartItems.get(term)
+          if (item && item.source === 'area') return false
+          return !assistedItems.has(term) && !manualItems.has(term)
+        })
+        .map(function (t) { return t.toLowerCase() })
+      doc.querySelectorAll('.textLayer .highlight').forEach(function (span) {
+        var spanText = span.textContent.toLowerCase().trim()
+        var isCarted = committedTerms.length > 0 && committedTerms.some(function (term) {
+          return term === spanText ||
+                 (spanText.length > 3 && term.startsWith(spanText + ' ')) ||
+                 (spanText.length > 3 && term.endsWith(' ' + spanText))
+        })
+        span.classList.toggle('dcf-highlight--carted', isCarted)
+      })
+    } catch (e) {}
+  }
+
+  function setupHighlightObserver () {
+    if (_highlightObserver) _highlightObserver.disconnect()
+    try {
+      var doc = iframe.contentDocument
+      if (!doc) return
+      _highlightObserver = new doc.defaultView.MutationObserver(function (mutations) {
+        var relevant = mutations.some(function (m) {
+          if (m.type === 'childList') {
+            return Array.from(m.addedNodes).some(function (n) {
+              return (n.classList && n.classList.contains('highlight')) ||
+                     (n.querySelectorAll && n.querySelectorAll('.highlight').length > 0)
+            })
+          }
+          if (m.type === 'attributes' && m.attributeName === 'class') {
+            return m.target.classList && m.target.classList.contains('highlight')
+          }
+          return false
+        })
+        if (relevant) classifyHighlights()
+      })
+      _highlightObserver.observe(doc.body, {
+        childList: true, subtree: true,
+        attributes: true, attributeFilter: ['class']
+      })
+    } catch (e) {}
+  }
+
   function injectHighlightStyle () {
     try {
       var doc = iframe.contentDocument
       var el = doc.createElement('style')
+      var wave = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 1.5 Q1.5 0 3 1.5 Q4.5 3 6 1.5' fill='none' stroke='%231d70b8' stroke-width='1.5'/%3E%3C/svg%3E"
+      var waveSelected = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 1.5 Q1.5 0 3 1.5 Q4.5 3 6 1.5' fill='none' stroke='%23003078' stroke-width='1.5'/%3E%3C/svg%3E"
       el.textContent =
-        '.textLayer .highlight { background-color: rgba(219,255,60,0.45) !important; }' +
-        '.textLayer .highlight.selected { background-color: rgba(219,255,60,0.75) !important; }'
+        '.textLayer .highlight {' +
+          'background: url("' + wave + '") repeat-x left bottom / 6px 3px, rgba(29,112,184,0.12) !important;' +
+          'padding-bottom: 2px !important;' +
+        '}' +
+        '.textLayer .highlight.selected {' +
+          'background: url("' + waveSelected + '") repeat-x left bottom / 6px 3px, rgba(29,112,184,0.25) !important;' +
+          'padding-bottom: 2px !important;' +
+        '}' +
+        '.textLayer .highlight.dcf-highlight--carted {' +
+          'background: url("' + wave + '") repeat-x left bottom / 6px 3px, rgba(209,255,5,0.45) !important;' +
+        '}' +
+        '.textLayer .highlight.dcf-highlight--carted.selected {' +
+          'background: url("' + waveSelected + '") repeat-x left bottom / 6px 3px, rgba(209,255,5,0.75) !important;' +
+        '}'
       doc.head.appendChild(el)
     } catch (e) {}
   }
@@ -276,6 +343,7 @@
     }
 
     updateUnsavedTag()
+    classifyHighlights()
   }
 
   function addToCart (text, source) {
@@ -479,13 +547,14 @@
           // Accept one instance — update cart with running accepted count
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
           if (getPending(stateMap, itemsMap, text) > 0) { s.accepted++; stateMap.set(text, s) }
+          if (getPending(stateMap, itemsMap, text) === 0) itemsMap.delete(text)
           if (source && s.accepted > 0) {
             var typesMap = source === 'assisted' ? assistedTypes : manualTypes
             cartItems.set(text, { count: s.accepted, type: typesMap.get(text) || 'Unclassified', source: source })
             renderCart()
           }
-          if (getPending(stateMap, itemsMap, text) === 0) itemsMap.delete(text)
           renderFn()
+          classifyHighlights()
         },
         function () {
           // Ignore one instance
@@ -499,6 +568,7 @@
             }
           }
           renderFn()
+          classifyHighlights()
         },
         function () {
           // Accept all — move whole term to cart
@@ -512,6 +582,7 @@
             renderCart()
           }
           renderFn()
+          classifyHighlights()
         },
         function () {
           // Ignore all — remove entirely (including any cart entry)
@@ -519,6 +590,7 @@
           stateMap.delete(text)
           if (source) { cartItems.delete(text); renderCart() }
           renderFn()
+          classifyHighlights()
         },
         onAddToCartForTerm ? function () { onAddToCartForTerm(text) } : null,
         onUndoForTerm      ? function () { onUndoForTerm(text)      } : null
@@ -589,35 +661,54 @@
     })
   }
 
-  var assistedForm = document.getElementById('dcf-assisted-form')
-  if (assistedForm) {
-    assistedForm.addEventListener('submit', function () {
-      this.querySelectorAll('input[data-cart]').forEach(function (el) { el.remove() })
-      cartItems.forEach(function (item, text) {
-        var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
-        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: item.count }
+  function serialiseAllToForm (form) {
+    form.querySelectorAll('input[data-redaction]').forEach(function (el) { el.remove() })
 
+    // Text redactions from shared cart (assisted + manual)
+    cartItems.forEach(function (item, text) {
+      if (item.source === 'area') return
+      var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
+      var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: item.count }
+      ;[
+        ['confirmedRedactions', text],
+        ['instanceCount[' + text + ']', item.count],
+        ['acceptedCount[' + text + ']', s.accepted],
+        ['rejectedCount[' + text + ']', s.rejected]
+      ].forEach(function (pair) {
         var inp = document.createElement('input')
-        inp.type = 'hidden'; inp.name = 'confirmedRedactions'
-        inp.setAttribute('data-cart', '1'); inp.value = text
-        assistedForm.appendChild(inp)
-
-        var countInp = document.createElement('input')
-        countInp.type = 'hidden'; countInp.name = 'instanceCount[' + text + ']'
-        countInp.setAttribute('data-cart', '1'); countInp.value = item.count
-        assistedForm.appendChild(countInp)
-
-        var accInp = document.createElement('input')
-        accInp.type = 'hidden'; accInp.name = 'acceptedCount[' + text + ']'
-        accInp.setAttribute('data-cart', '1'); accInp.value = s.accepted
-        assistedForm.appendChild(accInp)
-
-        var rejInp = document.createElement('input')
-        rejInp.type = 'hidden'; rejInp.name = 'rejectedCount[' + text + ']'
-        rejInp.setAttribute('data-cart', '1'); rejInp.value = s.rejected
-        assistedForm.appendChild(rejInp)
+        inp.type = 'hidden'; inp.name = pair[0]; inp.value = pair[1]
+        inp.setAttribute('data-redaction', '1')
+        form.appendChild(inp)
       })
     })
+
+    // Area redactions (accepted items with rect data)
+    var areaIndex = 0
+    areaItems
+      .filter(function (item) { return areaItemStates.get(item.id) === 'accepted' })
+      .forEach(function (item) {
+        ;[
+          ['type',        item.type],
+          ['label',       item.label],
+          ['rect.xPct',   item.rect.xPct.toFixed(2)],
+          ['rect.yAbsPx', item.rect.yAbsPx.toFixed(2)],
+          ['rect.wPct',   item.rect.wPct.toFixed(2)],
+          ['rect.hPx',    item.rect.hPx.toFixed(2)]
+        ].forEach(function (pair) {
+          var inp = document.createElement('input')
+          inp.type = 'hidden'
+          inp.name = 'areaRedactions[' + areaIndex + '][' + pair[0] + ']'
+          inp.value = pair[1]
+          inp.setAttribute('data-redaction', '1')
+          form.appendChild(inp)
+        })
+        areaIndex++
+      })
+  }
+
+  var assistedForm = document.getElementById('dcf-assisted-form')
+  if (assistedForm) {
+    assistedForm.addEventListener('submit', function () { serialiseAllToForm(this) })
   }
 
   // ── Area: state ───────────────────────────────────────────────────────────
@@ -674,33 +765,7 @@
 
   var manualForm = document.getElementById('dcf-manual-form')
   if (manualForm) {
-    manualForm.addEventListener('submit', function () {
-      this.querySelectorAll('input[data-cart]').forEach(function (el) { el.remove() })
-      cartItems.forEach(function (item, text) {
-        var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
-        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: item.count }
-
-        var inp = document.createElement('input')
-        inp.type = 'hidden'; inp.name = 'confirmedRedactions'
-        inp.setAttribute('data-cart', '1'); inp.value = text
-        manualForm.appendChild(inp)
-
-        var countInp = document.createElement('input')
-        countInp.type = 'hidden'; countInp.name = 'instanceCount[' + text + ']'
-        countInp.setAttribute('data-cart', '1'); countInp.value = item.count
-        manualForm.appendChild(countInp)
-
-        var accInp = document.createElement('input')
-        accInp.type = 'hidden'; accInp.name = 'acceptedCount[' + text + ']'
-        accInp.setAttribute('data-cart', '1'); accInp.value = s.accepted
-        manualForm.appendChild(accInp)
-
-        var rejInp = document.createElement('input')
-        rejInp.type = 'hidden'; rejInp.name = 'rejectedCount[' + text + ']'
-        rejInp.setAttribute('data-cart', '1'); rejInp.value = s.rejected
-        manualForm.appendChild(rejInp)
-      })
-    })
+    manualForm.addEventListener('submit', function () { serialiseAllToForm(this) })
   }
 
   // ── Area: draw mode + cart ────────────────────────────────────────────────
@@ -925,28 +990,7 @@
   // Form submit — encode area data as hidden inputs (accepted items only)
   var areaForm = document.getElementById('dcf-area-form')
   if (areaForm) {
-    areaForm.addEventListener('submit', function () {
-      this.querySelectorAll('input[data-area]').forEach(function (el) { el.remove() })
-      areaItems
-        .filter(function (item) { var s = areaItemStates.get(item.id); return s === 'accepted' || s === 'pending' })
-        .forEach(function (item, i) {
-          ;[
-            ['type', item.type],
-            ['label', item.label],
-            ['rect.xPct',   item.rect.xPct.toFixed(2)],
-            ['rect.yAbsPx', item.rect.yAbsPx.toFixed(2)],
-            ['rect.wPct',   item.rect.wPct.toFixed(2)],
-            ['rect.hPx',    item.rect.hPx.toFixed(2)]
-          ].forEach(function (pair) {
-            var inp = document.createElement('input')
-            inp.type  = 'hidden'
-            inp.name  = 'areaRedactions[' + i + '][' + pair[0] + ']'
-            inp.value = pair[1]
-            inp.setAttribute('data-area', '1')
-            areaForm.appendChild(inp)
-          })
-        })
-    })
+    areaForm.addEventListener('submit', function () { serialiseAllToForm(this) })
   }
 
   // ── Initialise assisted items from findings data ──────────────────────────
@@ -1023,6 +1067,7 @@
       waitForPdfApp(iframe.contentWindow, function (app) {
         pdfApp = app
         injectHighlightStyle()
+        setupHighlightObserver()
         extractFullText(app.pdfDocument)
         applyHighlights()
         try {
