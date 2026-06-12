@@ -36,23 +36,86 @@
     })
   }
 
-  var _focusStyleEl = null
+  var _highlightObserver = null
 
-  function setFocusGreen () {
+  function classifyHighlights () {
     try {
       var doc = iframe.contentDocument
-      if (!_focusStyleEl) {
-        _focusStyleEl = doc.createElement('style')
-        _focusStyleEl.textContent =
-          '.textLayer .highlight{--highlight-selected-bg-color:rgb(0 170 0 / 0.55) !important}'
-        doc.head.appendChild(_focusStyleEl)
-      }
+      if (!doc) return
+      // Only turn yellow for terms fully committed to cart (no pending instances remaining)
+      var committedTerms = Array.from(cartItems.keys())
+        .filter(function (term) {
+          var item = cartItems.get(term)
+          if (item && item.source === 'area') return false
+          return !assistedItems.has(term) && !manualItems.has(term)
+        })
+        .map(function (t) { return t.toLowerCase() })
+      doc.querySelectorAll('.textLayer .highlight').forEach(function (span) {
+        var spanText = span.textContent.toLowerCase().trim()
+        var isCarted = committedTerms.length > 0 && committedTerms.some(function (term) {
+          return term === spanText ||
+                 (spanText.length > 3 && term.startsWith(spanText + ' ')) ||
+                 (spanText.length > 3 && term.endsWith(' ' + spanText))
+        })
+        span.classList.toggle('dcf-highlight--carted', isCarted)
+      })
+    } catch (e) {}
+  }
+
+  function setupHighlightObserver () {
+    if (_highlightObserver) _highlightObserver.disconnect()
+    try {
+      var doc = iframe.contentDocument
+      if (!doc) return
+      _highlightObserver = new doc.defaultView.MutationObserver(function (mutations) {
+        var relevant = mutations.some(function (m) {
+          if (m.type === 'childList') {
+            return Array.from(m.addedNodes).some(function (n) {
+              return (n.classList && n.classList.contains('highlight')) ||
+                     (n.querySelectorAll && n.querySelectorAll('.highlight').length > 0)
+            })
+          }
+          if (m.type === 'attributes' && m.attributeName === 'class') {
+            return m.target.classList && m.target.classList.contains('highlight')
+          }
+          return false
+        })
+        if (relevant) classifyHighlights()
+      })
+      _highlightObserver.observe(doc.body, {
+        childList: true, subtree: true,
+        attributes: true, attributeFilter: ['class']
+      })
+    } catch (e) {}
+  }
+
+  function injectHighlightStyle () {
+    try {
+      var doc = iframe.contentDocument
+      var el = doc.createElement('style')
+      var wave = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 1.5 Q1.5 0 3 1.5 Q4.5 3 6 1.5' fill='none' stroke='%231d70b8' stroke-width='1.5'/%3E%3C/svg%3E"
+      var waveSelected = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='3'%3E%3Cpath d='M0 1.5 Q1.5 0 3 1.5 Q4.5 3 6 1.5' fill='none' stroke='%23003078' stroke-width='1.5'/%3E%3C/svg%3E"
+      el.textContent =
+        '.textLayer .highlight {' +
+          'background: url("' + wave + '") repeat-x left bottom / 6px 3px, rgba(29,112,184,0.12) !important;' +
+          'padding-bottom: 2px !important;' +
+        '}' +
+        '.textLayer .highlight.selected {' +
+          'background: url("' + waveSelected + '") repeat-x left bottom / 6px 3px, rgba(29,112,184,0.25) !important;' +
+          'padding-bottom: 2px !important;' +
+        '}' +
+        '.textLayer .highlight.dcf-highlight--carted {' +
+          'background: url("' + wave + '") repeat-x left bottom / 6px 3px, rgba(209,255,5,0.45) !important;' +
+        '}' +
+        '.textLayer .highlight.dcf-highlight--carted.selected {' +
+          'background: url("' + waveSelected + '") repeat-x left bottom / 6px 3px, rgba(209,255,5,0.75) !important;' +
+        '}'
+      doc.head.appendChild(el)
     } catch (e) {}
   }
 
   function focusInstance (term, index) {
     if (!pdfApp) return
-    setFocusGreen()
 
     pdfApp.eventBus.dispatch('find', {
       source: {}, type: '', query: term,
@@ -77,15 +140,17 @@
     if (!pdfApp) return
     var assistedActive = panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')
     var manualActive   = panels.manual   && panels.manual.classList.contains('dcf-redact-panel--visible')
+    var cartKeys = Array.from(cartItems.keys())
 
     if (assistedActive) {
-      var assistedTerms = Array.from(assistedItems.keys())
+      var assistedTerms = Array.from(assistedItems.keys()).concat(cartKeys)
       if (assistedTerms.length) { dispatchFind(assistedTerms); return }
     }
     if (manualActive) {
-      var manualTerms = Array.from(manualItems.keys())
+      var manualTerms = Array.from(manualItems.keys()).concat(cartKeys)
       if (manualTerms.length) { dispatchFind(manualTerms); return }
     }
+    if (cartKeys.length) { dispatchFind(cartKeys); return }
     pdfApp.eventBus.dispatch('findbarclose', { source: {} })
   }
 
@@ -140,15 +205,7 @@
   }
 
   function updateUnsavedTag () {
-    var count = 0
-    if (panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')) {
-      count = assistedItems.size
-    } else if (panels.manual && panels.manual.classList.contains('dcf-redact-panel--visible')) {
-      count = manualItems.size
-    } else if (panels.area && panels.area.classList.contains('dcf-redact-panel--visible')) {
-      count = areaItems.length
-    }
-
+    var count = cartItems.size
     var counter = document.getElementById('dcf-cart-count')
     if (counter) {
       counter.hidden = count === 0
@@ -160,15 +217,15 @@
   var caseId = caseIdMatch ? caseIdMatch[1] : null
 
   function classifySelection (text, cb) {
-    if (!caseId) return cb('Fragment')
+    if (!caseId) return cb('Unclassified')
     fetch('/cases/' + caseId + '/material/redact/classify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: text })
     })
       .then(function (r) { return r.json() })
-      .then(function (data) { cb(data.type || 'Fragment') })
-      .catch(function () { cb('Fragment') })
+      .then(function (data) { cb(data.type || 'Unclassified') })
+      .catch(function () { cb('Unclassified') })
   }
 
   function getContextSnippets (text) {
@@ -196,6 +253,7 @@
   // pending = total - accepted - rejected
   var assistedInstState = new Map()
   var manualInstState   = new Map()
+  var cartItems         = new Map()   // text → { count, type, source: 'assisted'|'manual' }
 
   function initInstState (stateMap, text, total) {
     stateMap.set(text, { accepted: 0, rejected: 0, total: total })
@@ -212,8 +270,135 @@
     return s ? s.accepted : 0
   }
 
+  // ── Shared cart ───────────────────────────────────────────────────────────────
+  function getActiveForm () {
+    if (panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible'))
+      return document.getElementById('dcf-assisted-form')
+    if (panels.manual && panels.manual.classList.contains('dcf-redact-panel--visible'))
+      return document.getElementById('dcf-manual-form')
+    if (panels.area && panels.area.classList.contains('dcf-redact-panel--visible'))
+      return document.getElementById('dcf-area-form')
+    return document.getElementById('dcf-assisted-form')
+  }
+
+  function resetAll () {
+    cartItems.clear()
+    assistedItems.clear()
+    assistedInstState.clear()
+    manualItems.clear()
+    manualTypes.clear()
+    manualInstState.clear()
+    areaItems = []
+    areaCounter = 0
+    areaItemStates.clear()
+    findings.forEach(function (f) {
+      assistedItems.set(f.value, f.instances)
+      assistedTypes.set(f.value, f.type || null)
+      initInstState(assistedInstState, f.value, f.instances)
+    })
+    exitDrawMode()
+    renderCart()
+    renderAssistedList()
+    renderManualList()
+    renderAreaList()
+    applyHighlights()
+  }
+
+  function renderCart () {
+    var cartDiv  = document.getElementById('dcf-redaction-cart')
+    var cartList = document.getElementById('dcf-cart-list')
+    var emptyMsg = document.getElementById('dcf-cart-empty-msg')
+    if (!cartList) return
+    cartList.innerHTML = ''
+    var hasItems = cartItems.size > 0
+    if (emptyMsg) emptyMsg.hidden = hasItems
+
+    cartItems.forEach(function (item, text) {
+      var li = document.createElement('li')
+      li.className = 'dcf-cart-item'
+      li.innerHTML =
+        '<span class="govuk-body-s">' + escHtml(text) + ' (' + item.count + ')</span>' +
+        '<button type="button" class="dcf-cart-remove">Remove</button>'
+      li.querySelector('.dcf-cart-remove').addEventListener('click', function () {
+        removeFromCart(text)
+      })
+      cartList.appendChild(li)
+    })
+
+    var existingActions = cartDiv ? cartDiv.querySelector('.dcf-cart-actions') : null
+    if (existingActions) existingActions.remove()
+
+    if (hasItems && cartDiv) {
+      var actions = document.createElement('div')
+      actions.className = 'govuk-button-group govuk-!-margin-top-6 govuk-!-margin-bottom-0 dcf-cart-actions'
+      actions.innerHTML =
+        '<button type="button" class="govuk-button dcf-cart-preview">Preview redactions</button>' +
+        '<button type="button" class="govuk-link dcf-cart-reset">Clear cart</button>'
+      actions.querySelector('.dcf-cart-preview').addEventListener('click', function () {
+        var form = getActiveForm()
+        if (form) form.requestSubmit()
+      })
+      actions.querySelector('.dcf-cart-reset').addEventListener('click', resetAll)
+      cartDiv.appendChild(actions)
+    }
+
+    updateUnsavedTag()
+    classifyHighlights()
+  }
+
+  function addToCart (text, source) {
+    var stateMap = source === 'assisted' ? assistedInstState : manualInstState
+    var itemsMap = source === 'assisted' ? assistedItems     : manualItems
+    var typesMap = source === 'assisted' ? assistedTypes     : manualTypes
+    var count = getAccepted(stateMap, text) + getPending(stateMap, itemsMap, text)
+    if (count === 0) return
+    var type = typesMap.get(text) || 'Unclassified'
+    cartItems.set(text, { count: count, type: type, source: source })
+    itemsMap.delete(text)
+    renderCart()
+    if (source === 'assisted') renderAssistedList()
+    else renderManualList()
+    applyHighlights()
+  }
+
+  function removeFromCart (text) {
+    var item = cartItems.get(text)
+    if (!item) return
+    cartItems.delete(text)
+    if (item.source === 'area') {
+      areaItemStates.set(item.areaId, 'pending')
+      renderCart()
+      renderAreaList()
+      return
+    }
+    var itemsMap = item.source === 'assisted' ? assistedItems : manualItems
+    var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
+    var s = stateMap.get(text)
+    var total = s ? s.total : item.count
+    itemsMap.set(text, total)
+    stateMap.set(text, { accepted: 0, rejected: 0, total: total })
+    renderCart()
+    if (item.source === 'assisted') renderAssistedList()
+    else renderManualList()
+    applyHighlights()
+  }
+
   // ── Cart focus (click highlight in PDF → open term in cart) ─────────────────
   function focusCartItem (term) {
+    var cartList = document.getElementById('dcf-cart-list')
+    if (cartList && cartItems.has(term)) {
+      var cartLi = null
+      cartList.querySelectorAll('li').forEach(function (li) {
+        var strong = li.querySelector('strong')
+        if (strong && strong.textContent.trim() === term) cartLi = li
+      })
+      if (cartLi) {
+        cartLi.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        cartLi.classList.add('dcf-cart-focused')
+        setTimeout(function () { cartLi.classList.remove('dcf-cart-focused') }, 1400)
+        return
+      }
+    }
     var assistedActive = panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible')
     var manualActive   = panels.manual   && panels.manual.classList.contains('dcf-redact-panel--visible')
     var listId = assistedActive ? 'dcf-assisted-list' : manualActive ? 'dcf-manual-list' : null
@@ -237,7 +422,7 @@
   function updateSubmitGates () {}
 
   // ── List item (text redactions) ───────────────────────────────────────────
-  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance, onAcceptAll, onIgnoreAll) {
+  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance, onAcceptAll, onIgnoreAll, onAddToCart, onUndo) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
@@ -252,12 +437,17 @@
       detailsBody = '<p class="govuk-body-s govuk-!-colour-secondary">All instances reviewed.</p>'
     } else if (shownSnippets.length === 0) {
       detailsBody = '<p class="govuk-body-s">No context available.</p>'
+    } else if (shownSnippets.length === 1) {
+      var s0 = shownSnippets[0]
+      detailsBody =
+        '<div class="dcf-redact-instance">' +
+          '<button type="button" class="dcf-redact-instance__focus govuk-body-s">' +
+            (s0.before ? escHtml(s0.before) + ' ' : '') +
+            '<strong>' + escHtml(s0.term) + '</strong>' +
+            (s0.after ? ' ' + escHtml(s0.after) : '') +
+          '</button>' +
+        '</div>'
     } else {
-      var singleInstance = shownSnippets.length === 1
-      var acceptClass = singleInstance ? 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0' : 'govuk-link'
-      var ignoreClass = singleInstance ? 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0' : 'govuk-link'
-      var actionsClass = singleInstance ? 'govuk-button-group govuk-!-margin-top-3 govuk-!-margin-bottom-0' : 'dcf-redact-instance__actions'
-
       detailsBody = shownSnippets.map(function (s, i) {
         var html =
           '<div class="dcf-redact-instance">' +
@@ -266,9 +456,9 @@
               '<strong>' + escHtml(s.term) + '</strong>' +
               (s.after ? ' ' + escHtml(s.after) : '') +
             '</button>' +
-            '<div class="' + actionsClass + '">' +
-              '<button type="button" class="dcf-redact-instance__accept ' + acceptClass + '">Accept</button>' +
-              '<button type="button" class="dcf-redact-instance__remove ' + ignoreClass + '">Ignore</button>' +
+            '<div class="dcf-redact-instance__actions">' +
+              '<button type="button" class="dcf-redact-instance__accept govuk-link">Add to cart</button>' +
+              '<button type="button" class="dcf-redact-instance__remove govuk-link">Ignore</button>' +
             '</div>' +
           '</div>'
         if (i < shownSnippets.length - 1) {
@@ -276,15 +466,14 @@
         }
         return html
       }).join('')
-
-      if (pending > 1 && onAcceptAll && onIgnoreAll) {
-        detailsBody +=
-          '<div class="govuk-button-group govuk-!-margin-top-3 govuk-!-margin-bottom-0">' +
-            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Accept all</button>' +
-            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Ignore all</button>' +
-          '</div>'
-      }
     }
+
+    var singleInstanceBtns = (shownSnippets && shownSnippets.length === 1 && pending === 1)
+      ? '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-1">' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__accept">Add to cart</button>' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__remove">Ignore</button>' +
+        '</div>'
+      : ''
 
     li.innerHTML =
       '<details class="govuk-details govuk-!-margin-bottom-1">' +
@@ -295,7 +484,20 @@
           '</span>' +
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
-      '</details>'
+      '</details>' +
+      singleInstanceBtns +
+      (pending > 1 && onAcceptAll && onIgnoreAll
+        ? '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-1">' +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Add all to cart</button>' +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Ignore all</button>' +
+          '</div>'
+        : '') +
+      ((onAddToCart || onUndo)
+        ? '<div class="dcf-bucket-controls dcf-bucket-controls--term">' +
+            (onAddToCart ? '<button type="button" class="govuk-link dcf-add-to-cart">Add to cart</button>' : '') +
+            (onUndo ? '<button type="button" class="govuk-link dcf-undo-selection">Undo</button>' : '') +
+          '</div>'
+        : '')
 
     li.querySelectorAll('.dcf-redact-instance__accept').forEach(function (btn, i) {
       btn.addEventListener('click', function () { onAcceptInstance(i) })
@@ -310,12 +512,16 @@
     if (termAcceptAll) termAcceptAll.addEventListener('click', onAcceptAll)
     var termIgnoreAll = li.querySelector('.dcf-term-ignore-all')
     if (termIgnoreAll) termIgnoreAll.addEventListener('click', onIgnoreAll)
+    var addToCartBtn = li.querySelector('.dcf-add-to-cart')
+    if (addToCartBtn && onAddToCart) addToCartBtn.addEventListener('click', function () { onAddToCart() })
+    var undoBtn = li.querySelector('.dcf-undo-selection')
+    if (undoBtn && onUndo) undoBtn.addEventListener('click', function () { onUndo() })
 
     return li
   }
 
   // ── Bucket section (groups terms of the same type) ────────────────────────
-  function makeBucketSection (type, terms, itemsMap, stateMap, renderFn) {
+  function makeBucketSection (type, terms, itemsMap, stateMap, renderFn, onAddToCartForTerm, onUndoForTerm, source) {
     var section = document.createElement('section')
     section.className = 'dcf-redact-bucket'
 
@@ -327,10 +533,10 @@
     var heading = document.createElement('h3')
     heading.className = 'govuk-heading-s dcf-redact-bucket__heading'
     heading.innerHTML =
-      escHtml(type) +
-      ' <strong class="govuk-tag govuk-tag--blue govuk-!-font-size-14 govuk-!-margin-left-1">' +
+      '<strong class="govuk-tag govuk-tag--purple">' + escHtml(type) + '</strong>' +
+      ' <span class="govuk-body-s govuk-!-margin-left-1 govuk-!-margin-bottom-0">' +
         totalOccurrences + ' occurrence' + (totalOccurrences !== 1 ? 's' : '') +
-      '</strong>'
+      '</span>'
     section.appendChild(heading)
 
     var ul = document.createElement('ul')
@@ -338,34 +544,56 @@
     terms.forEach(function (text) {
       ul.appendChild(makeListItem(text, stateMap, itemsMap,
         function () {
-          // Accept one instance
+          // Accept one instance — update cart with running accepted count
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
           if (getPending(stateMap, itemsMap, text) > 0) { s.accepted++; stateMap.set(text, s) }
-          renderFn()
-        },
-        function () {
-          // Ignore one instance — auto-remove term if nothing accepted or pending remains
-          var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
-          if (getPending(stateMap, itemsMap, text) > 0) { s.rejected++; stateMap.set(text, s) }
-          if (getPending(stateMap, itemsMap, text) === 0 && getAccepted(stateMap, text) === 0) {
-            itemsMap.delete(text)
-            stateMap.delete(text)
+          if (getPending(stateMap, itemsMap, text) === 0) itemsMap.delete(text)
+          if (source && s.accepted > 0) {
+            var typesMap = source === 'assisted' ? assistedTypes : manualTypes
+            cartItems.set(text, { count: s.accepted, type: typesMap.get(text) || 'Unclassified', source: source })
+            renderCart()
           }
           renderFn()
+          classifyHighlights()
         },
         function () {
-          // Accept all pending instances of this term
+          // Ignore one instance
+          var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+          if (getPending(stateMap, itemsMap, text) > 0) { s.rejected++; stateMap.set(text, s) }
+          if (getPending(stateMap, itemsMap, text) === 0) {
+            itemsMap.delete(text)
+            if (getAccepted(stateMap, text) === 0) {
+              stateMap.delete(text)
+              if (source) { cartItems.delete(text); renderCart() }
+            }
+          }
+          renderFn()
+          classifyHighlights()
+        },
+        function () {
+          // Accept all — move whole term to cart
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
           s.accepted += getPending(stateMap, itemsMap, text)
           stateMap.set(text, s)
+          if (source && s.accepted > 0) {
+            var typesMap = source === 'assisted' ? assistedTypes : manualTypes
+            cartItems.set(text, { count: s.accepted, type: typesMap.get(text) || 'Unclassified', source: source })
+            itemsMap.delete(text)
+            renderCart()
+          }
           renderFn()
+          classifyHighlights()
         },
         function () {
-          // Ignore all — remove this term entirely
+          // Ignore all — remove entirely (including any cart entry)
           itemsMap.delete(text)
           stateMap.delete(text)
+          if (source) { cartItems.delete(text); renderCart() }
           renderFn()
-        }
+          classifyHighlights()
+        },
+        onAddToCartForTerm ? function () { onAddToCartForTerm(text) } : null,
+        onUndoForTerm      ? function () { onUndoForTerm(text)      } : null
       ))
     })
     section.appendChild(ul)
@@ -393,65 +621,39 @@
   var assistedTypes = new Map()
 
   function renderAssistedList () {
-    var list   = document.getElementById('dcf-assisted-list')
-    var empty  = document.getElementById('dcf-assisted-empty')
-    var submit = document.getElementById('dcf-assisted-submit')
-    var header = document.getElementById('dcf-assisted-header')
+    var list  = document.getElementById('dcf-assisted-list')
+    var empty = document.getElementById('dcf-assisted-empty')
     if (!list) return
     list.innerHTML = ''
     if (assistedItems.size === 0) {
-      if (empty)  empty.hidden          = true
-      if (submit) submit.style.display  = 'none'
-      updateUnsavedTag()
-      updateSubmitGates()
+      if (empty) empty.hidden = false
       return
     }
-    if (header) header.hidden         = false
-    if (empty)  empty.hidden          = true
-    if (submit) submit.style.display  = ''
+    if (empty) empty.hidden = true
     groupByType(assistedItems, assistedTypes).forEach(function (entry) {
-      list.appendChild(makeBucketSection(entry[0], entry[1], assistedItems, assistedInstState, function () {
-        renderAssistedList()
-        applyHighlights()
-      }))
-    })
-    updateUnsavedTag()
-    updateSubmitGates()
-  }
-
-  var manualResetBtn = document.getElementById('dcf-manual-reset-btn')
-  if (manualResetBtn) {
-    manualResetBtn.addEventListener('click', function () {
-      manualItems.clear()
-      manualTypes.clear()
-      manualInstState.clear()
-      var h = document.getElementById('dcf-manual-header')
-      if (h) h.hidden = true
-      renderManualList()
-      applyHighlights()
+      list.appendChild(makeBucketSection(entry[0], entry[1], assistedItems, assistedInstState,
+        function () {
+          renderAssistedList()
+          applyHighlights()
+        },
+        null,
+        null,
+        'assisted'
+      ))
     })
   }
 
-  var assistedResetBtn = document.getElementById('dcf-assisted-reset-btn')
-  if (assistedResetBtn) {
-    assistedResetBtn.addEventListener('click', function () {
-      assistedItems.clear()
-      assistedInstState.clear()
-      var h = document.getElementById('dcf-assisted-header')
-      if (h) h.hidden = true
-      renderAssistedList()
-      applyHighlights()
-    })
-  }
 
   var btnAssistedEl = document.getElementById('btn-assisted')
   if (btnAssistedEl) {
     btnAssistedEl.addEventListener('click', function () {
       if (assistedItems.size === 0) {
         findings.forEach(function (f) {
-          assistedItems.set(f.value, f.instances)
-          assistedTypes.set(f.value, f.type || null)
-          initInstState(assistedInstState, f.value, f.instances)
+          if (!cartItems.has(f.value)) {
+            assistedItems.set(f.value, f.instances)
+            assistedTypes.set(f.value, f.type || null)
+            initInstState(assistedInstState, f.value, f.instances)
+          }
         })
         renderAssistedList()
         applyHighlights()
@@ -459,36 +661,54 @@
     })
   }
 
-  var assistedForm = document.getElementById('dcf-assisted-form')
-  if (assistedForm) {
-    assistedForm.addEventListener('submit', function () {
-      this.querySelectorAll('input[data-assisted]').forEach(function (el) { el.remove() })
-      assistedItems.forEach(function (count, text) {
-        var s        = assistedInstState.get(text) || { accepted: 0, rejected: 0, total: count }
-        var toSubmit = s.accepted + getPending(assistedInstState, assistedItems, text)
-        if (toSubmit === 0) return
+  function serialiseAllToForm (form) {
+    form.querySelectorAll('input[data-redaction]').forEach(function (el) { el.remove() })
 
+    // Text redactions from shared cart (assisted + manual)
+    cartItems.forEach(function (item, text) {
+      if (item.source === 'area') return
+      var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
+      var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: item.count }
+      ;[
+        ['confirmedRedactions', text],
+        ['instanceCount[' + text + ']', item.count],
+        ['acceptedCount[' + text + ']', s.accepted],
+        ['rejectedCount[' + text + ']', s.rejected]
+      ].forEach(function (pair) {
         var inp = document.createElement('input')
-        inp.type = 'hidden'; inp.name = 'confirmedRedactions'
-        inp.setAttribute('data-assisted', '1'); inp.value = text
-        assistedForm.appendChild(inp)
-
-        var countInp = document.createElement('input')
-        countInp.type = 'hidden'; countInp.name = 'instanceCount[' + text + ']'
-        countInp.setAttribute('data-assisted', '1'); countInp.value = toSubmit
-        assistedForm.appendChild(countInp)
-
-        var accInp = document.createElement('input')
-        accInp.type = 'hidden'; accInp.name = 'acceptedCount[' + text + ']'
-        accInp.setAttribute('data-assisted', '1'); accInp.value = s.accepted
-        assistedForm.appendChild(accInp)
-
-        var rejInp = document.createElement('input')
-        rejInp.type = 'hidden'; rejInp.name = 'rejectedCount[' + text + ']'
-        rejInp.setAttribute('data-assisted', '1'); rejInp.value = s.rejected
-        assistedForm.appendChild(rejInp)
+        inp.type = 'hidden'; inp.name = pair[0]; inp.value = pair[1]
+        inp.setAttribute('data-redaction', '1')
+        form.appendChild(inp)
       })
     })
+
+    // Area redactions (accepted items with rect data)
+    var areaIndex = 0
+    areaItems
+      .filter(function (item) { return areaItemStates.get(item.id) === 'accepted' })
+      .forEach(function (item) {
+        ;[
+          ['type',        item.type],
+          ['label',       item.label],
+          ['rect.xPct',   item.rect.xPct.toFixed(2)],
+          ['rect.yAbsPx', item.rect.yAbsPx.toFixed(2)],
+          ['rect.wPct',   item.rect.wPct.toFixed(2)],
+          ['rect.hPx',    item.rect.hPx.toFixed(2)]
+        ].forEach(function (pair) {
+          var inp = document.createElement('input')
+          inp.type = 'hidden'
+          inp.name = 'areaRedactions[' + areaIndex + '][' + pair[0] + ']'
+          inp.value = pair[1]
+          inp.setAttribute('data-redaction', '1')
+          form.appendChild(inp)
+        })
+        areaIndex++
+      })
+  }
+
+  var assistedForm = document.getElementById('dcf-assisted-form')
+  if (assistedForm) {
+    assistedForm.addEventListener('submit', function () { serialiseAllToForm(this) })
   }
 
   // ── Area: state ───────────────────────────────────────────────────────────
@@ -505,30 +725,21 @@
   var manualTypes = new Map()
 
   function renderManualList () {
-    var list   = document.getElementById('dcf-manual-list')
-    var empty  = document.getElementById('dcf-manual-empty')
-    var submit = document.getElementById('dcf-manual-submit')
-    var header = document.getElementById('dcf-manual-header')
+    var list = document.getElementById('dcf-manual-list')
     if (!list) return
     list.innerHTML = ''
-    if (manualItems.size === 0) {
-      if (empty)  empty.hidden          = true
-      if (submit) submit.style.display  = 'none'
-      updateUnsavedTag()
-      updateSubmitGates()
-      return
-    }
-    if (header) header.hidden         = false
-    if (empty)  empty.hidden          = true
-    if (submit) submit.style.display  = ''
+    if (manualItems.size === 0) return
     groupByType(manualItems, manualTypes).forEach(function (entry) {
-      list.appendChild(makeBucketSection(entry[0], entry[1], manualItems, manualInstState, function () {
-        renderManualList()
-        applyHighlights()
-      }))
+      list.appendChild(makeBucketSection(entry[0], entry[1], manualItems, manualInstState,
+        function () {
+          renderManualList()
+          applyHighlights()
+        },
+        null,
+        null,
+        'manual'
+      ))
     })
-    updateUnsavedTag()
-    updateSubmitGates()
   }
 
   function onIframeMouseUp () {
@@ -554,34 +765,7 @@
 
   var manualForm = document.getElementById('dcf-manual-form')
   if (manualForm) {
-    manualForm.addEventListener('submit', function () {
-      this.querySelectorAll('input[data-manual]').forEach(function (el) { el.remove() })
-      manualItems.forEach(function (count, text) {
-        var s        = manualInstState.get(text) || { accepted: 0, rejected: 0, total: count }
-        var toSubmit = s.accepted + getPending(manualInstState, manualItems, text)
-        if (toSubmit === 0) return
-
-        var inp = document.createElement('input')
-        inp.type = 'hidden'; inp.name = 'confirmedRedactions'
-        inp.setAttribute('data-manual', '1'); inp.value = text
-        manualForm.appendChild(inp)
-
-        var countInp = document.createElement('input')
-        countInp.type = 'hidden'; countInp.name = 'instanceCount[' + text + ']'
-        countInp.setAttribute('data-manual', '1'); countInp.value = toSubmit
-        manualForm.appendChild(countInp)
-
-        var accInp = document.createElement('input')
-        accInp.type = 'hidden'; accInp.name = 'acceptedCount[' + text + ']'
-        accInp.setAttribute('data-manual', '1'); accInp.value = s.accepted
-        manualForm.appendChild(accInp)
-
-        var rejInp = document.createElement('input')
-        rejInp.type = 'hidden'; rejInp.name = 'rejectedCount[' + text + ']'
-        rejInp.setAttribute('data-manual', '1'); rejInp.value = s.rejected
-        manualForm.appendChild(rejInp)
-      })
-    })
+    manualForm.addEventListener('submit', function () { serialiseAllToForm(this) })
   }
 
   // ── Area: draw mode + cart ────────────────────────────────────────────────
@@ -625,15 +809,11 @@
     var heading = document.createElement('h3')
     heading.className = 'govuk-heading-s dcf-redact-bucket__heading'
     heading.innerHTML =
-      escHtml(type) +
-      ' <strong class="govuk-tag govuk-tag--blue govuk-!-font-size-14 govuk-!-margin-left-1">' +
+      '<strong class="govuk-tag govuk-tag--purple">' + escHtml(type) + '</strong>' +
+      ' <span class="govuk-body-s govuk-!-margin-left-1 govuk-!-margin-bottom-0">' +
         items.length + ' occurrence' + (items.length !== 1 ? 's' : '') +
-      '</strong>'
+      '</span>'
     section.appendChild(heading)
-
-    var single = items.length === 1
-    var itemBtnClass    = single ? 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0' : 'govuk-link'
-    var itemActionsClass = single ? 'govuk-button-group govuk-!-margin-top-3 govuk-!-margin-bottom-0' : 'dcf-redact-instance__actions'
 
     var ul = document.createElement('ul')
     ul.className = 'dcf-bucket-terms govuk-list'
@@ -642,15 +822,17 @@
       li.className = 'dcf-manual-list__item'
       li.innerHTML =
         '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + escHtml(item.label) + '</strong></p>' +
-        '<div class="' + itemActionsClass + '">' +
-          '<button type="button" class="dcf-redact-instance__accept ' + itemBtnClass + '">Accept</button>' +
-          '<button type="button" class="dcf-redact-instance__remove ' + itemBtnClass + '">Ignore</button>' +
+        '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-area-accept">Add to cart</button>' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-area-ignore">Ignore</button>' +
         '</div>'
-      li.querySelector('.dcf-redact-instance__accept').addEventListener('click', function () {
+      li.querySelector('.dcf-area-accept').addEventListener('click', function () {
         areaItemStates.set(item.id, 'accepted')
+        cartItems.set(item.label, { count: 1, type: item.type, source: 'area', areaId: item.id })
+        renderCart()
         renderFn()
       })
-      li.querySelector('.dcf-redact-instance__remove').addEventListener('click', function () {
+      li.querySelector('.dcf-area-ignore').addEventListener('click', function () {
         areaItems = areaItems.filter(function (a) { return a.id !== item.id })
         areaItemStates.delete(item.id)
         renderFn()
@@ -658,37 +840,6 @@
       ul.appendChild(li)
     })
     section.appendChild(ul)
-
-    if (!single) {
-      var controls = document.createElement('div')
-      controls.className = 'govuk-button-group govuk-!-margin-top-3'
-
-      var ignoreAllBtn = document.createElement('button')
-      ignoreAllBtn.type      = 'button'
-      ignoreAllBtn.className = 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-bucket__reject-all'
-      ignoreAllBtn.textContent = 'Ignore all'
-      ignoreAllBtn.addEventListener('click', function () {
-        var idsToRemove = new Set(items.map(function (item) { return item.id }))
-        areaItems = areaItems.filter(function (a) { return !idsToRemove.has(a.id) })
-        idsToRemove.forEach(function (id) { areaItemStates.delete(id) })
-        renderFn()
-      })
-
-      var acceptAllBtn = document.createElement('button')
-      acceptAllBtn.type      = 'button'
-      acceptAllBtn.className = 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-bucket__accept-all'
-      acceptAllBtn.textContent = 'Accept all'
-      acceptAllBtn.addEventListener('click', function () {
-        items.forEach(function (item) {
-          if (areaItemStates.get(item.id) === 'pending') areaItemStates.set(item.id, 'accepted')
-        })
-        renderFn()
-      })
-
-      controls.appendChild(ignoreAllBtn)
-      controls.appendChild(acceptAllBtn)
-      section.appendChild(controls)
-    }
 
     return section
   }
@@ -719,26 +870,30 @@
   }
 
   function renderAreaList () {
-    var list   = document.getElementById('dcf-area-list')
-    var empty  = document.getElementById('dcf-area-empty')
-    var submit = document.getElementById('dcf-area-submit')
-    var header = document.getElementById('dcf-area-header')
+    var list  = document.getElementById('dcf-area-list')
+    var empty = document.getElementById('dcf-area-empty')
+    var panel = document.getElementById('panel-area')
     if (!list) return
     list.innerHTML = ''
     renderAreaRects()
-    if (areaItems.length === 0) {
-      if (empty)  empty.hidden          = true
-      if (submit) submit.style.display  = 'none'
+
+    var existing = panel ? panel.querySelector('.dcf-area-actions') : null
+    if (existing) existing.remove()
+
+    var pendingItems = areaItems.filter(function (item) {
+      return areaItemStates.get(item.id) !== 'accepted'
+    })
+
+    if (pendingItems.length === 0) {
+      if (empty) empty.hidden = areaItems.length > 0
       updateUnsavedTag()
-      updateSubmitGates()
+      renderCart()
       return
     }
-    if (header) header.hidden         = false
-    if (empty)  empty.hidden          = true
-    if (submit) submit.style.display  = ''
+    if (empty) empty.hidden = true
 
     var groups = new Map()
-    areaItems.forEach(function (item) {
+    pendingItems.forEach(function (item) {
       if (!groups.has(item.type)) groups.set(item.type, [])
       groups.get(item.type).push(item)
     })
@@ -747,21 +902,17 @@
         renderAreaList()
       }))
     })
+
     updateUnsavedTag()
-    updateSubmitGates()
+    renderCart()
   }
 
-  // Intercept clicks on items inside the "Redact area" button menu
-  document.addEventListener('click', function (e) {
-    var link = e.target && e.target.closest('a')
-    if (!link) return
-    var menu = link.closest('.moj-button-menu')
-    if (!menu || !menu.querySelector('.dcf-btn-redact-area')) return
-    e.preventDefault()
-    var type = (link.textContent || '').trim()
-    if (!type) return
-    enterDrawMode(type)
-  }, false)
+  var btnAreaDraw = document.getElementById('btn-area-draw')
+  if (btnAreaDraw) {
+    btnAreaDraw.addEventListener('click', function () {
+      enterDrawMode('Other')
+    })
+  }
 
   // Draw mode: mousedown on overlay starts a drag
   if (areaOverlay) {
@@ -836,45 +987,10 @@
     cancelDrawBtn.addEventListener('click', exitDrawMode)
   }
 
-  // Clear and reset
-  var areaResetBtn = document.getElementById('dcf-area-reset-btn')
-  if (areaResetBtn) {
-    areaResetBtn.addEventListener('click', function () {
-      areaItems   = []
-      areaCounter = 0
-      areaItemStates.clear()
-      var h = document.getElementById('dcf-area-header')
-      if (h) h.hidden = true
-      exitDrawMode()
-      renderAreaList()
-    })
-  }
-
   // Form submit — encode area data as hidden inputs (accepted items only)
   var areaForm = document.getElementById('dcf-area-form')
   if (areaForm) {
-    areaForm.addEventListener('submit', function () {
-      this.querySelectorAll('input[data-area]').forEach(function (el) { el.remove() })
-      areaItems
-        .filter(function (item) { var s = areaItemStates.get(item.id); return s === 'accepted' || s === 'pending' })
-        .forEach(function (item, i) {
-          ;[
-            ['type', item.type],
-            ['label', item.label],
-            ['rect.xPct',   item.rect.xPct.toFixed(2)],
-            ['rect.yAbsPx', item.rect.yAbsPx.toFixed(2)],
-            ['rect.wPct',   item.rect.wPct.toFixed(2)],
-            ['rect.hPx',    item.rect.hPx.toFixed(2)]
-          ].forEach(function (pair) {
-            var inp = document.createElement('input')
-            inp.type  = 'hidden'
-            inp.name  = 'areaRedactions[' + i + '][' + pair[0] + ']'
-            inp.value = pair[1]
-            inp.setAttribute('data-area', '1')
-            areaForm.appendChild(inp)
-          })
-        })
-    })
+    areaForm.addEventListener('submit', function () { serialiseAllToForm(this) })
   }
 
   // ── Initialise assisted items from findings data ──────────────────────────
@@ -889,9 +1005,13 @@
         var accepted  = Number((restore.acceptedCount  && restore.acceptedCount[f.value])  || 0)
         var submitted = Number((restore.instanceCount  && restore.instanceCount[f.value])  || f.instances)
         var total     = submitted + rejected
-        assistedItems.set(f.value, total)
+        cartItems.set(f.value, { count: submitted, type: f.type || 'Unclassified', source: 'assisted' })
         assistedTypes.set(f.value, f.type || null)
         assistedInstState.set(f.value, { accepted: accepted, rejected: rejected, total: total })
+      } else {
+        assistedItems.set(f.value, f.instances)
+        assistedTypes.set(f.value, f.type || null)
+        initInstState(assistedInstState, f.value, f.instances)
       }
     })
   } else {
@@ -901,6 +1021,7 @@
       initInstState(assistedInstState, f.value, f.instances)
     })
   }
+  renderCart()
   renderAssistedList()
 
   if (restore && restore.mode === 'manual') {
@@ -909,9 +1030,10 @@
       var accepted  = Number((restore.acceptedCount  && restore.acceptedCount[text])  || 0)
       var submitted = Number((restore.instanceCount  && restore.instanceCount[text])  || 0)
       var total     = submitted + rejected
-      manualItems.set(text, total)
+      cartItems.set(text, { count: submitted, type: 'Unclassified', source: 'manual' })
       manualInstState.set(text, { accepted: accepted, rejected: rejected, total: total })
     })
+    renderCart()
     renderManualList()
   }
 
@@ -944,6 +1066,8 @@
     try {
       waitForPdfApp(iframe.contentWindow, function (app) {
         pdfApp = app
+        injectHighlightStyle()
+        setupHighlightObserver()
         extractFullText(app.pdfDocument)
         applyHighlights()
         try {

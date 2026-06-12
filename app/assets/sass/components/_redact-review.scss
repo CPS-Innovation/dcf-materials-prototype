@@ -2,7 +2,7 @@
 
 .dcf-redact-layout {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 420px;
   gap: govuk-spacing(6);
   align-items: start;
 }
@@ -118,21 +118,21 @@
 .dcf-redact-bucket {
   border-top: 1px solid $govuk-border-colour;
   padding-top: govuk-spacing(3);
-  margin-bottom: govuk-spacing(4);
-
-  &:last-child { margin-bottom: 0; }
+  margin-bottom: 0;
 }
 
 .dcf-redact-bucket__heading {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   flex-wrap: wrap;
   gap: govuk-spacing(1);
-  margin-bottom: govuk-spacing(2);
+  margin-bottom: govuk-spacing(1);
+
+  .govuk-tag { @include govuk-font($size: 16); }
 }
 
 .dcf-bucket-terms {
-  margin: 0;
+  margin: 0 !important;
   padding: 0;
   list-style: none;
 
@@ -160,11 +160,45 @@
   cursor: pointer;
 }
 
+// ── "Add to cart" and cart "Remove" link-buttons ─────────────────────────────
+
+
+.dcf-cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid $govuk-border-colour;
+  padding: govuk-spacing(2) 0;
+}
+
+.dcf-add-to-cart,
+.dcf-cart-remove,
+.dcf-cart-reset,
+.dcf-undo-selection {
+  @include govuk-font($size: 16);
+  color: $govuk-link-colour;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover { color: $govuk-link-hover-colour; }
+
+  &:focus-visible {
+    outline: 3px solid $govuk-focus-colour;
+    outline-offset: 0;
+    background-color: $govuk-focus-colour;
+    color: $govuk-focus-text-colour;
+  }
+}
+
 // ── AI assistant card (assisted mode header) ─────────────────────────────────
 
 .dcf-ai-card {
-  background: #f7f2f8;
-  border-top: 4px solid #864297;
+  background: #f4f8fb;
+  border-top: 4px solid #cecece;
+  border-bottom: 4px solid #cecece;
   padding: govuk-spacing(4);
   margin-bottom: govuk-spacing(4);
 
@@ -180,8 +214,13 @@
   align-items: flex-start;
 
   .govuk-heading-m {
-    color: #864297;
+    color: #0b0c0c;
   }
+}
+
+.dcf-cart-tag--assisted {
+  background-color: #54319f;
+  color: #ffffff;
 }
 
 // ── Area redaction overlay ──────────────────────────────────────────────────

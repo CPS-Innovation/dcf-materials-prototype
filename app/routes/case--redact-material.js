@@ -41,7 +41,7 @@ function classifyFallback (value) {
   if (/^\d+\s+[A-Za-z]/.test(t) || /\b(street|road|avenue|lane|drive|close|way|court|place|gardens?|crescent)\b/i.test(t)) return 'Address'
   if (/^[A-Z][A-Za-z]*(\s[A-Z][A-Za-z]*)*$/.test(t)) return 'Name'
   if (/^[A-Z]{2,}(\s[A-Z]{2,})*$/.test(t)) return 'Name'
-  return 'Fragment'
+  return 'Unclassified'
 }
 
 function extractPiiFromText (text) {
@@ -193,7 +193,7 @@ module.exports = router => {
   // POST /cases/:caseId/material/redact/classify
   router.post('/cases/:caseId/material/redact/classify', async (req, res) => {
     const value = (req.body.value || '').trim()
-    if (!value) return res.json({ type: 'Fragment' })
+    if (!value) return res.json({ type: 'Unclassified' })
 
     const apiKey = process.env.ANTHROPIC_API_KEY
     if (!apiKey) return res.json({ type: classifyFallback(value) })
@@ -214,7 +214,7 @@ module.exports = router => {
         }]
       })
       const parsed = JSON.parse(message.content[0].text)
-      return res.json({ type: parsed.type || 'Fragment' })
+      return res.json({ type: (parsed.type === 'Fragment' ? 'Unclassified' : parsed.type) || 'Unclassified' })
     } catch (e) {
       return res.json({ type: classifyFallback(value) })
     }
