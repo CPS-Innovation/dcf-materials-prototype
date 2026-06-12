@@ -28,7 +28,7 @@
       {% set selectedCaseIds = selections.caseDocuments or [] %}
 
       {% set caseValueHtml %}
-        {% if selectedCaseIds | length == 0 %}
+        {% if selectedCaseIds | length == 0 or "none" in selectedCaseIds %}
           <span class="govuk-hint">No case documents selected</span>
         {% else %}
           <ul class="govuk-list">

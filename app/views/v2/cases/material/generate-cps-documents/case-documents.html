@@ -37,6 +37,12 @@
           hint: { text: hintText }
         }), checkboxItems) %}
       {% endfor %}
+      {% set checkboxItems = (checkboxItems.push({ divider: "or" }), checkboxItems) %}
+      {% set checkboxItems = (checkboxItems.push({
+        value: "none",
+        text: "I do not want to select any case documents",
+        behaviour: "exclusive"
+      }), checkboxItems) %}
 
       <form method="post" action="">
 

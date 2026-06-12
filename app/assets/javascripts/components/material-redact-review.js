@@ -787,7 +787,7 @@
     var exitRow = document.getElementById('dcf-area-exit-draw')
     if (exitRow) exitRow.hidden = false
     if (areaOverlay) areaOverlay.classList.add('dcf-area-overlay--active')
-    if (pdfApp) pdfApp.eventBus.dispatch('findbarclose', { source: {} })
+    applyHighlights()
   }
 
   function exitDrawMode () {
@@ -859,8 +859,9 @@
     })
     var scrollTop = getPdfScrollTop()
     areaItems.forEach(function (item) {
+      var isCarted = areaItemStates.get(item.id) === 'accepted'
       var div = document.createElement('div')
-      div.className = 'dcf-area-rect-item'
+      div.className = 'dcf-area-rect-item' + (isCarted ? ' dcf-area-rect-item--carted' : '')
       div.style.left   = item.rect.xPct + '%'
       div.style.top    = (item.rect.yAbsPx - scrollTop) + 'px'
       div.style.width  = item.rect.wPct + '%'

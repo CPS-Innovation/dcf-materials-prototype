@@ -39,7 +39,7 @@
          CASE DOCUMENTS
          ----------------------------- #}
 
-      {% if selectedCaseIds | length == 0 %}
+      {% if selectedCaseIds | length == 0 or "none" in selectedCaseIds %}
 
         <h2 class="govuk-heading-m govuk-!-margin-top-6">Case documents</h2>
         <p class="govuk-body govuk-hint">No case documents selected</p>
@@ -54,13 +54,15 @@
         {% set caseValueHtml %}
           <ul class="govuk-list">
             {% for selectedId in selectedCaseIds %}
-              {% set label = selectedId %}
-              {% for d in caseDocs %}
-                {% if (d.id | string) == (selectedId | string) %}
-                  {% set label = d.label %}
-                {% endif %}
-              {% endfor %}
-              <li>{{ label }}</li>
+              {% if selectedId != "none" %}
+                {% set label = selectedId %}
+                {% for d in caseDocs %}
+                  {% if (d.id | string) == (selectedId | string) %}
+                    {% set label = d.label %}
+                  {% endif %}
+                {% endfor %}
+                <li>{{ label }}</li>
+              {% endif %}
             {% endfor %}
           </ul>
         {% endset %}
