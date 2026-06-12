@@ -10,7 +10,7 @@
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
-  <span class="govuk-caption-m">Redact document - {% if scan.title %}{{ scan.title }}{% endif %}{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--yellow">{{ scan.findings | length }} AI suggestion{{ "s" if scan.findings | length != 1 else "" }}</strong>{% endif %}</span>
+  <span class="govuk-caption-m">Redact document - {% if scan.title %}{{ scan.title }}{% endif %}{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--purple">{{ scan.findings | length }} AI suggestion{{ "s" if scan.findings | length != 1 else "" }}</strong>{% endif %}</span>
   <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Add redactions to cart <span id="dcf-cart-count" hidden>(0)</span></h1>
 
   <div class="govuk-button-group dcf-redact-mode-btns govuk-!-margin-bottom-4">
@@ -75,7 +75,6 @@
       <div class="dcf-ai-card" id="dcf-redaction-cart">
         <div class="dcf-ai-card__header">
           <h3 class="govuk-heading-m govuk-!-margin-bottom-0">Redaction cart</h3>
-          <strong class="govuk-tag govuk-tag--yellow" id="dcf-cart-mode-tag">AI assistant</strong>
         </div>
         <p class="govuk-body-s govuk-!-margin-top-3 govuk-!-margin-bottom-0" id="dcf-cart-empty-msg">No redactions added yet.</p>
         <ul class="govuk-list govuk-!-margin-top-4" id="dcf-cart-list"></ul>
@@ -86,7 +85,7 @@
 
       {% if scan.findings and scan.findings.length %}
 
-        <h3 class="govuk-heading-s">Possible redactions</h3>
+        <h3 class="govuk-heading-m">Possible redactions <strong class="govuk-tag dcf-cart-tag--assisted govuk-!-margin-left-1">AI assistant</strong></h3>
         <p class="govuk-body" id="dcf-assisted-empty" hidden>No pending suggestions.</p>
         <ul class="dcf-manual-list govuk-list" id="dcf-assisted-list"></ul>
 

@@ -9,25 +9,11 @@
     area:     document.getElementById('panel-area')
   }
 
-  function updateCartMode (mode) {
-    var cartDiv = document.getElementById('dcf-redaction-cart')
-    var tag     = document.getElementById('dcf-cart-mode-tag')
-    if (!cartDiv) return
-    if (mode === 'manual') {
-      cartDiv.classList.add('dcf-ai-card--manual')
-      if (tag) { tag.textContent = 'Manual'; tag.className = 'govuk-tag dcf-cart-tag--manual' }
-    } else {
-      cartDiv.classList.remove('dcf-ai-card--manual')
-      if (tag) { tag.textContent = 'AI assistant'; tag.className = 'govuk-tag govuk-tag--yellow' }
-    }
-  }
-
   modeButtons.forEach(function (btn) {
     btn.addEventListener('click', function () {
       var target = btn.getAttribute('data-panel')
       Object.values(panels).forEach(function (p) { if (p) p.classList.remove('dcf-redact-panel--visible') })
       if (panels[target]) panels[target].classList.add('dcf-redact-panel--visible')
-      updateCartMode(target)
       applyHighlights()
       exitDrawMode()
       updateUnsavedTag()
@@ -50,23 +36,19 @@
     })
   }
 
-  var _focusStyleEl = null
-
-  function setFocusGreen () {
+  function injectHighlightStyle () {
     try {
       var doc = iframe.contentDocument
-      if (!_focusStyleEl) {
-        _focusStyleEl = doc.createElement('style')
-        _focusStyleEl.textContent =
-          '.textLayer .highlight{--highlight-selected-bg-color:rgb(0 170 0 / 0.55) !important}'
-        doc.head.appendChild(_focusStyleEl)
-      }
+      var el = doc.createElement('style')
+      el.textContent =
+        '.textLayer .highlight { background-color: rgba(219,255,60,0.45) !important; }' +
+        '.textLayer .highlight.selected { background-color: rgba(219,255,60,0.75) !important; }'
+      doc.head.appendChild(el)
     } catch (e) {}
   }
 
   function focusInstance (term, index) {
     if (!pdfApp) return
-    setFocusGreen()
 
     pdfApp.eventBus.dispatch('find', {
       source: {}, type: '', query: term,
@@ -376,12 +358,17 @@
       detailsBody = '<p class="govuk-body-s govuk-!-colour-secondary">All instances reviewed.</p>'
     } else if (shownSnippets.length === 0) {
       detailsBody = '<p class="govuk-body-s">No context available.</p>'
+    } else if (shownSnippets.length === 1) {
+      var s0 = shownSnippets[0]
+      detailsBody =
+        '<div class="dcf-redact-instance">' +
+          '<button type="button" class="dcf-redact-instance__focus govuk-body-s">' +
+            (s0.before ? escHtml(s0.before) + ' ' : '') +
+            '<strong>' + escHtml(s0.term) + '</strong>' +
+            (s0.after ? ' ' + escHtml(s0.after) : '') +
+          '</button>' +
+        '</div>'
     } else {
-      var singleInstance = shownSnippets.length === 1
-      var acceptClass = singleInstance ? 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0' : 'govuk-link'
-      var ignoreClass = singleInstance ? 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0' : 'govuk-link'
-      var actionsClass = singleInstance ? 'govuk-button-group govuk-!-margin-top-3 govuk-!-margin-bottom-0' : 'dcf-redact-instance__actions'
-
       detailsBody = shownSnippets.map(function (s, i) {
         var html =
           '<div class="dcf-redact-instance">' +
@@ -390,9 +377,9 @@
               '<strong>' + escHtml(s.term) + '</strong>' +
               (s.after ? ' ' + escHtml(s.after) : '') +
             '</button>' +
-            '<div class="' + actionsClass + '">' +
-              '<button type="button" class="dcf-redact-instance__accept ' + acceptClass + '">Add to cart</button>' +
-              '<button type="button" class="dcf-redact-instance__remove ' + ignoreClass + '">Ignore</button>' +
+            '<div class="dcf-redact-instance__actions">' +
+              '<button type="button" class="dcf-redact-instance__accept govuk-link">Add to cart</button>' +
+              '<button type="button" class="dcf-redact-instance__remove govuk-link">Ignore</button>' +
             '</div>' +
           '</div>'
         if (i < shownSnippets.length - 1) {
@@ -400,15 +387,14 @@
         }
         return html
       }).join('')
-
-      if (pending > 1 && onAcceptAll && onIgnoreAll) {
-        detailsBody +=
-          '<div class="govuk-button-group govuk-!-margin-top-3 govuk-!-margin-bottom-0">' +
-            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Accept all</button>' +
-            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Ignore all</button>' +
-          '</div>'
-      }
     }
+
+    var singleInstanceBtns = (shownSnippets && shownSnippets.length === 1 && pending === 1)
+      ? '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-1">' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__accept">Add to cart</button>' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__remove">Ignore</button>' +
+        '</div>'
+      : ''
 
     li.innerHTML =
       '<details class="govuk-details govuk-!-margin-bottom-1">' +
@@ -420,10 +406,17 @@
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
       '</details>' +
-      (onAddToCart
+      singleInstanceBtns +
+      (pending > 1 && onAcceptAll && onIgnoreAll
+        ? '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-1">' +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Add all to cart</button>' +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Ignore all</button>' +
+          '</div>'
+        : '') +
+      ((onAddToCart || onUndo)
         ? '<div class="dcf-bucket-controls dcf-bucket-controls--term">' +
-            '<button type="button" class="govuk-link dcf-add-to-cart">Add to cart</button>' +
-            (onUndo ? ' <button type="button" class="govuk-link dcf-undo-selection">Undo</button>' : '') +
+            (onAddToCart ? '<button type="button" class="govuk-link dcf-add-to-cart">Add to cart</button>' : '') +
+            (onUndo ? '<button type="button" class="govuk-link dcf-undo-selection">Undo</button>' : '') +
           '</div>'
         : '')
 
@@ -461,10 +454,10 @@
     var heading = document.createElement('h3')
     heading.className = 'govuk-heading-s dcf-redact-bucket__heading'
     heading.innerHTML =
-      escHtml(type) +
-      ' <strong class="govuk-tag govuk-tag--blue govuk-!-font-size-14 govuk-!-margin-left-1">' +
+      '<strong class="govuk-tag govuk-tag--purple">' + escHtml(type) + '</strong>' +
+      ' <span class="govuk-body-s govuk-!-margin-left-1 govuk-!-margin-bottom-0">' +
         totalOccurrences + ' occurrence' + (totalOccurrences !== 1 ? 's' : '') +
-      '</strong>'
+      '</span>'
     section.appendChild(heading)
 
     var ul = document.createElement('ul')
@@ -560,7 +553,7 @@
           renderAssistedList()
           applyHighlights()
         },
-        function (text) { addToCart(text, 'assisted') },
+        null,
         null,
         'assisted'
       ))
@@ -640,14 +633,8 @@
           renderManualList()
           applyHighlights()
         },
-        function (text) { addToCart(text, 'manual') },
-        function (text) {
-          manualItems.delete(text)
-          manualInstState.delete(text)
-          manualTypes.delete(text)
-          renderManualList()
-          applyHighlights()
-        },
+        null,
+        null,
         'manual'
       ))
     })
@@ -1045,7 +1032,6 @@
   if (restore) {
     var targetBtn = document.querySelector('[data-panel="' + restore.mode + '"]')
     if (targetBtn) targetBtn.click()
-    else updateCartMode(restore.mode)
   }
 
   // ── Iframe init ───────────────────────────────────────────────────────────
@@ -1072,6 +1058,7 @@
     try {
       waitForPdfApp(iframe.contentWindow, function (app) {
         pdfApp = app
+        injectHighlightStyle()
         extractFullText(app.pdfDocument)
         applyHighlights()
         try {
