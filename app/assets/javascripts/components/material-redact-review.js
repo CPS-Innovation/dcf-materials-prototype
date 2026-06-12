@@ -150,15 +150,15 @@
   var caseId = caseIdMatch ? caseIdMatch[1] : null
 
   function classifySelection (text, cb) {
-    if (!caseId) return cb('Fragment')
+    if (!caseId) return cb('Unclassified')
     fetch('/cases/' + caseId + '/material/redact/classify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ value: text })
     })
       .then(function (r) { return r.json() })
-      .then(function (data) { cb(data.type || 'Fragment') })
-      .catch(function () { cb('Fragment') })
+      .then(function (data) { cb(data.type || 'Unclassified') })
+      .catch(function () { cb('Unclassified') })
   }
 
   function getContextSnippets (text) {
@@ -258,10 +258,10 @@
 
     if (hasItems && cartDiv) {
       var actions = document.createElement('div')
-      actions.className = 'dcf-cart-actions'
+      actions.className = 'govuk-button-group govuk-!-margin-top-6 govuk-!-margin-bottom-0 dcf-cart-actions'
       actions.innerHTML =
         '<button type="button" class="govuk-button dcf-cart-preview">Preview redactions</button>' +
-        '<button type="button" class="govuk-button govuk-button--secondary dcf-cart-reset">Clear and reset</button>'
+        '<button type="button" class="govuk-link dcf-cart-reset">Clear cart</button>'
       actions.querySelector('.dcf-cart-preview').addEventListener('click', function () {
         var form = getActiveForm()
         if (form) form.requestSubmit()

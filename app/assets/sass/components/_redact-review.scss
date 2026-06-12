@@ -162,15 +162,6 @@
 
 // ── "Add to cart" and cart "Remove" link-buttons ─────────────────────────────
 
-.dcf-cart-actions {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: govuk-spacing(3);
-  margin-top: govuk-spacing(6);
-
-  .govuk-button { margin-bottom: 0; }
-}
 
 .dcf-cart-item {
   display: flex;
@@ -182,6 +173,7 @@
 
 .dcf-add-to-cart,
 .dcf-cart-remove,
+.dcf-cart-reset,
 .dcf-undo-selection {
   @include govuk-font($size: 16);
   color: $govuk-link-colour;
@@ -206,6 +198,7 @@
 .dcf-ai-card {
   background: #f4f8fb;
   border-top: 4px solid #cecece;
+  border-bottom: 4px solid #cecece;
   padding: govuk-spacing(4);
   margin-bottom: govuk-spacing(4);
 
