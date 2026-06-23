@@ -270,6 +270,11 @@
     return s ? s.accepted : 0
   }
 
+  function getItemDisplayState (stateMap, itemsMap, text) {
+    if (getPending(stateMap, itemsMap, text) > 0) return 'pending'
+    return getAccepted(stateMap, text) > 0 ? 'saved' : 'not-required'
+  }
+
   // ── Shared cart ───────────────────────────────────────────────────────────────
   function getActiveForm () {
     if (panels.assisted && panels.assisted.classList.contains('dcf-redact-panel--visible'))
@@ -422,19 +427,24 @@
   function updateSubmitGates () {}
 
   // ── List item (text redactions) ───────────────────────────────────────────
-  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance, onAcceptAll, onIgnoreAll, onAddToCart, onUndo) {
+  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance, onAcceptAll, onIgnoreAll, onAddToCart, onUndo, source) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
-    var pending  = getPending(stateMap, itemsMap, text)
+    var pending      = getPending(stateMap, itemsMap, text)
+    var displayState = getItemDisplayState(stateMap, itemsMap, text)
     var snippets = getContextSnippets(text)
-    var shownSnippets = snippets ? snippets.slice(0, pending) : null
+    var shownSnippets = snippets ? (displayState === 'pending' ? snippets.slice(0, pending) : snippets) : null
+
+    var stateTag = displayState !== 'pending'
+      ? '<div class="govuk-!-margin-top-2"><strong class="govuk-tag govuk-tag--' +
+          (displayState === 'saved' ? 'green">Saved' : 'orange">Not required') +
+        '</strong></div>'
+      : ''
 
     var detailsBody = ''
     if (shownSnippets === null) {
       detailsBody = '<p class="govuk-body-s">Loading context…</p>'
-    } else if (pending === 0) {
-      detailsBody = '<p class="govuk-body-s govuk-!-colour-secondary">All instances reviewed.</p>'
     } else if (shownSnippets.length === 0) {
       detailsBody = '<p class="govuk-body-s">No context available.</p>'
     } else if (shownSnippets.length === 1) {
@@ -446,6 +456,7 @@
             '<strong>' + escHtml(s0.term) + '</strong>' +
             (s0.after ? ' ' + escHtml(s0.after) : '') +
           '</button>' +
+          stateTag +
         '</div>'
     } else {
       detailsBody = shownSnippets.map(function (s, i) {
@@ -456,31 +467,38 @@
               '<strong>' + escHtml(s.term) + '</strong>' +
               (s.after ? ' ' + escHtml(s.after) : '') +
             '</button>' +
-            '<div class="dcf-redact-instance__actions">' +
-              '<button type="button" class="dcf-redact-instance__accept govuk-link">Add to cart</button>' +
-              '<button type="button" class="dcf-redact-instance__remove govuk-link">Ignore</button>' +
-            '</div>' +
+            (displayState === 'pending'
+              ? '<div class="dcf-redact-instance__actions">' +
+                  '<button type="button" class="dcf-redact-instance__accept govuk-link">Add to cart</button>' +
+                  '<button type="button" class="dcf-redact-instance__remove govuk-link">Not required</button>' +
+                '</div>'
+              : '') +
           '</div>'
         if (i < shownSnippets.length - 1) {
           html += '<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">'
         }
         return html
       }).join('')
+      if (displayState !== 'pending') detailsBody += stateTag
     }
 
-    var singleInstanceBtns = (shownSnippets && shownSnippets.length === 1 && pending === 1)
+    var singleInstanceBtns = (displayState === 'pending' && shownSnippets && shownSnippets.length === 1 && pending === 1)
       ? '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-1">' +
           '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__accept">Add to cart</button>' +
-          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__remove">Ignore</button>' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__remove">Not required</button>' +
         '</div>'
       : ''
 
     li.innerHTML =
-      '<details class="govuk-details govuk-!-margin-bottom-1">' +
+      '<details class="govuk-details govuk-!-margin-bottom-1" data-term="' + escHtml(text) + '">' +
         '<summary class="govuk-details__summary">' +
           '<span class="govuk-details__summary-text">' +
             '<strong>' + escHtml(text) + '</strong>' +
-            ' (' + pending + ')' +
+            (displayState === 'pending'
+              ? ' (' + pending + ')'
+              : displayState === 'saved'
+                ? ' <strong class="govuk-tag govuk-tag--green govuk-!-margin-left-1">Saved</strong>'
+                : ' <strong class="govuk-tag govuk-tag--orange govuk-!-margin-left-1">Not required</strong>') +
           '</span>' +
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
@@ -489,21 +507,69 @@
       (pending > 1 && onAcceptAll && onIgnoreAll
         ? '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-1">' +
             '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Add all to cart</button>' +
-            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Ignore all</button>' +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Not required</button>' +
           '</div>'
         : '') +
-      ((onAddToCart || onUndo)
+      (displayState === 'pending' && (onAddToCart || onUndo)
         ? '<div class="dcf-bucket-controls dcf-bucket-controls--term">' +
             (onAddToCart ? '<button type="button" class="govuk-link dcf-add-to-cart">Add to cart</button>' : '') +
             (onUndo ? '<button type="button" class="govuk-link dcf-undo-selection">Undo</button>' : '') +
           '</div>'
         : '')
 
-    li.querySelectorAll('.dcf-redact-instance__accept').forEach(function (btn, i) {
-      btn.addEventListener('click', function () { onAcceptInstance(i) })
+    li.querySelectorAll('.dcf-redact-instance__accept').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+        if (getPending(stateMap, itemsMap, text) > 0) { s.accepted++; stateMap.set(text, s) }
+        if (source && s.accepted > 0) {
+          var typesMap = source === 'assisted' ? assistedTypes : manualTypes
+          cartItems.set(text, { count: s.accepted, type: typesMap.get(text) || 'Unclassified', source: source })
+          renderCart()
+        }
+        var original = btn.parentNode
+        var container = original.parentNode
+        var wrapper = document.createElement('div')
+        wrapper.className = 'dcf-instance-state govuk-!-margin-top-2'
+        wrapper.innerHTML =
+          '<strong class="govuk-tag govuk-tag--green dcf-instance-tag">Saved</strong>' +
+          '<button type="button" class="govuk-link dcf-undo-instance">Undo</button>'
+        container.replaceChild(wrapper, original)
+        wrapper.querySelector('.dcf-undo-instance').addEventListener('click', function () {
+          if (s.accepted > 0) { s.accepted--; stateMap.set(text, s) }
+          if (source) {
+            if (s.accepted > 0) {
+              var typesMap = source === 'assisted' ? assistedTypes : manualTypes
+              cartItems.set(text, { count: s.accepted, type: typesMap.get(text) || 'Unclassified', source: source })
+            } else {
+              cartItems.delete(text)
+            }
+            renderCart()
+          }
+          container.replaceChild(original, wrapper)
+          classifyHighlights()
+        })
+        classifyHighlights()
+      })
     })
-    li.querySelectorAll('.dcf-redact-instance__remove').forEach(function (btn, i) {
-      btn.addEventListener('click', function () { onIgnoreInstance(i) })
+    li.querySelectorAll('.dcf-redact-instance__remove').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+        if (getPending(stateMap, itemsMap, text) > 0) { s.rejected++; stateMap.set(text, s) }
+        var original = btn.parentNode
+        var container = original.parentNode
+        var wrapper = document.createElement('div')
+        wrapper.className = 'dcf-instance-state govuk-!-margin-top-2'
+        wrapper.innerHTML =
+          '<strong class="govuk-tag govuk-tag--orange dcf-instance-tag">Not required</strong>' +
+          '<button type="button" class="govuk-link dcf-undo-instance">Undo</button>'
+        container.replaceChild(wrapper, original)
+        wrapper.querySelector('.dcf-undo-instance').addEventListener('click', function () {
+          if (s.rejected > 0) { s.rejected--; stateMap.set(text, s) }
+          container.replaceChild(original, wrapper)
+          classifyHighlights()
+        })
+        classifyHighlights()
+      })
     })
     li.querySelectorAll('.dcf-redact-instance__focus').forEach(function (btn, i) {
       btn.addEventListener('click', function () { focusInstance(text, i) })
@@ -543,33 +609,8 @@
     ul.className = 'dcf-bucket-terms govuk-list'
     terms.forEach(function (text) {
       ul.appendChild(makeListItem(text, stateMap, itemsMap,
-        function () {
-          // Accept one instance — update cart with running accepted count
-          var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
-          if (getPending(stateMap, itemsMap, text) > 0) { s.accepted++; stateMap.set(text, s) }
-          if (getPending(stateMap, itemsMap, text) === 0) itemsMap.delete(text)
-          if (source && s.accepted > 0) {
-            var typesMap = source === 'assisted' ? assistedTypes : manualTypes
-            cartItems.set(text, { count: s.accepted, type: typesMap.get(text) || 'Unclassified', source: source })
-            renderCart()
-          }
-          renderFn()
-          classifyHighlights()
-        },
-        function () {
-          // Ignore one instance
-          var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
-          if (getPending(stateMap, itemsMap, text) > 0) { s.rejected++; stateMap.set(text, s) }
-          if (getPending(stateMap, itemsMap, text) === 0) {
-            itemsMap.delete(text)
-            if (getAccepted(stateMap, text) === 0) {
-              stateMap.delete(text)
-              if (source) { cartItems.delete(text); renderCart() }
-            }
-          }
-          renderFn()
-          classifyHighlights()
-        },
+        null,
+        null,
         function () {
           // Accept all — move whole term to cart
           var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
@@ -578,22 +619,22 @@
           if (source && s.accepted > 0) {
             var typesMap = source === 'assisted' ? assistedTypes : manualTypes
             cartItems.set(text, { count: s.accepted, type: typesMap.get(text) || 'Unclassified', source: source })
-            itemsMap.delete(text)
             renderCart()
           }
           renderFn()
           classifyHighlights()
         },
         function () {
-          // Ignore all — remove entirely (including any cart entry)
-          itemsMap.delete(text)
-          stateMap.delete(text)
+          // Ignore all — mark all instances as rejected, keep item in list
+          var total = (stateMap.get(text) || {}).total || itemsMap.get(text) || 0
+          stateMap.set(text, { accepted: 0, rejected: total, total: total })
           if (source) { cartItems.delete(text); renderCart() }
           renderFn()
           classifyHighlights()
         },
         onAddToCartForTerm ? function () { onAddToCartForTerm(text) } : null,
-        onUndoForTerm      ? function () { onUndoForTerm(text)      } : null
+        onUndoForTerm      ? function () { onUndoForTerm(text)      } : null,
+        source
       ))
     })
     section.appendChild(ul)
@@ -723,12 +764,17 @@
   // ── Manual ────────────────────────────────────────────────────────────────
   var manualItems = new Map()
   var manualTypes = new Map()
+  var pendingAutoOpen = null
 
   function renderManualList () {
     var list = document.getElementById('dcf-manual-list')
     if (!list) return
+    var openTerms = new Set()
+    list.querySelectorAll('details[open][data-term]').forEach(function (d) {
+      openTerms.add(d.getAttribute('data-term'))
+    })
     list.innerHTML = ''
-    if (manualItems.size === 0) return
+    if (manualItems.size === 0) { pendingAutoOpen = null; return }
     groupByType(manualItems, manualTypes).forEach(function (entry) {
       list.appendChild(makeBucketSection(entry[0], entry[1], manualItems, manualInstState,
         function () {
@@ -740,6 +786,11 @@
         'manual'
       ))
     })
+    list.querySelectorAll('details[data-term]').forEach(function (d) {
+      var term = d.getAttribute('data-term')
+      if (openTerms.has(term) || term === pendingAutoOpen) d.open = true
+    })
+    pendingAutoOpen = null
   }
 
   function onIframeMouseUp () {
@@ -753,6 +804,7 @@
       manualItems.set(text, count)
       initInstState(manualInstState, text, count)
       syncStateTotals(manualItems, manualInstState)
+      pendingAutoOpen = text
       renderManualList()
       applyHighlights()
       sel.removeAllRanges()
