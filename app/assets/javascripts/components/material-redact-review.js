@@ -328,12 +328,33 @@
     var hasItems = cartItems.size > 0
     if (emptyMsg) emptyMsg.hidden = hasItems
 
+    // Group text items by term — one cart line per unique term
+    var termGroups = new Map()
     cartItems.forEach(function (item, key) {
-      var displayText = item.text || key
+      if (item.source === 'area') return
+      if (!termGroups.has(item.text)) termGroups.set(item.text, { keys: [], item: item })
+      termGroups.get(item.text).keys.push(key)
+    })
+    termGroups.forEach(function (group, text) {
+      var count = group.keys.length
+      var li = document.createElement('li')
+      li.className = 'dcf-cart-item'
+      li.setAttribute('data-term', text)
+      li.innerHTML =
+        '<span class="govuk-body-s">' + escHtml(text) + (count > 1 ? ' (' + count + ')' : '') + '</span>' +
+        '<button type="button" class="dcf-cart-remove">' + (count > 1 ? 'Remove all' : 'Remove') + '</button>'
+      li.querySelector('.dcf-cart-remove').addEventListener('click', function () {
+        removeFromCart(group.keys[0])
+      })
+      cartList.appendChild(li)
+    })
+    // Area items render individually
+    cartItems.forEach(function (item, key) {
+      if (item.source !== 'area') return
       var li = document.createElement('li')
       li.className = 'dcf-cart-item'
       li.innerHTML =
-        '<span class="govuk-body-s">' + escHtml(displayText) + '</span>' +
+        '<span class="govuk-body-s">' + escHtml(key) + '</span>' +
         '<button type="button" class="dcf-cart-remove">Remove</button>'
       li.querySelector('.dcf-cart-remove').addEventListener('click', function () {
         removeFromCart(key)
@@ -380,17 +401,21 @@
   function removeFromCart (key) {
     var item = cartItems.get(key)
     if (!item) return
-    cartItems.delete(key)
     if (item.source === 'area') {
+      cartItems.delete(key)
       areaItemStates.set(item.areaId, 'pending')
       renderCart()
       renderAreaList()
       return
     }
     var text = item.text
+    // Remove all cart entries for this term and reset to fully pending
+    var keysToDelete = []
+    cartItems.forEach(function (ci, ck) { if (ci.text === text) keysToDelete.push(ck) })
+    keysToDelete.forEach(function (k) { cartItems.delete(k) })
     var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
     var s = stateMap.get(text)
-    if (s && s.accepted > 0) { s.accepted--; stateMap.set(text, s) }
+    if (s) { s.accepted = 0; s.rejected = 0; stateMap.set(text, s) }
     renderCart()
     if (item.source === 'assisted') renderAssistedList()
     else renderManualList()
@@ -403,11 +428,7 @@
     var _termInCart = false
     cartItems.forEach(function (item, key) { if ((item.text || key) === term) _termInCart = true })
     if (cartList && _termInCart) {
-      var cartLi = null
-      cartList.querySelectorAll('li').forEach(function (li) {
-        var span = li.querySelector('span')
-        if (span && span.textContent.trim() === term) cartLi = li
-      })
+      var cartLi = cartList.querySelector('li[data-term="' + term.replace(/"/g, '\\"') + '"]')
       if (cartLi) {
         cartLi.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
         cartLi.classList.add('dcf-cart-focused')
@@ -494,7 +515,7 @@
     }
 
     var singleInstanceBtns = (displayState === 'pending' && shownSnippets && shownSnippets.length === 1 && pending === 1)
-      ? '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-1">' +
+      ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1">' +
           '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__accept">Add to cart</button>' +
           '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__remove">Not required</button>' +
         '</div>'
@@ -516,7 +537,7 @@
       '</details>' +
       singleInstanceBtns +
       (pending > 1 && onAcceptAll && onIgnoreAll
-        ? '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-1">' +
+        ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1">' +
             '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Add all to cart</button>' +
             '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Not required</button>' +
           '</div>'
@@ -565,7 +586,7 @@
             classifyHighlights()
           })
         } else {
-          // Main button (singleInstanceBtns): undo link only; add tag inside <details>
+          // Main button (singleInstanceBtns): secondary undo button; add tag inside <details>
           var addedTag = null
           var detailsEl = li.querySelector('.govuk-details')
           if (detailsEl) {
@@ -577,9 +598,10 @@
               instanceEl.appendChild(addedTag)
             }
           }
-          wrapper.innerHTML = '<button type="button" class="govuk-link dcf-undo-instance">Undo</button>'
+          wrapper.className = 'govuk-!-margin-top-4 govuk-!-margin-bottom-1'
+          wrapper.innerHTML = '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-undo-term">Undo</button>'
           container.replaceChild(wrapper, original)
-          wrapper.querySelector('.dcf-undo-instance').addEventListener('click', function () {
+          wrapper.querySelector('.dcf-undo-term').addEventListener('click', function () {
             if (s.rejected > 0) { s.rejected--; stateMap.set(text, s) }
             if (addedTag && addedTag.parentNode) addedTag.parentNode.removeChild(addedTag)
             container.replaceChild(original, wrapper)
@@ -614,15 +636,71 @@
           }
           renderCart()
         }
-        // Overwrite ALL instance divs with green "Saved" tag
+        // Overwrite ALL instance divs with green "Saved" tag + per-instance Undo link
         li.querySelectorAll('.dcf-redact-instance').forEach(function (instanceDiv) {
           var focusBtn = instanceDiv.querySelector('.dcf-redact-instance__focus')
-          var tag = document.createElement('div')
-          tag.className = 'govuk-!-margin-top-2'
-          tag.innerHTML = '<strong class="govuk-tag govuk-tag--green">Saved</strong>'
           while (instanceDiv.lastChild) instanceDiv.removeChild(instanceDiv.lastChild)
           if (focusBtn) instanceDiv.appendChild(focusBtn)
-          instanceDiv.appendChild(tag)
+
+          var savedWrapper = document.createElement('div')
+          savedWrapper.className = 'govuk-!-margin-top-2'
+          savedWrapper.innerHTML =
+            '<strong class="govuk-tag govuk-tag--green">Saved</strong>' +
+            ' <button type="button" class="govuk-link dcf-undo-instance">Undo</button>'
+          instanceDiv.appendChild(savedWrapper)
+
+          savedWrapper.querySelector('.dcf-undo-instance').addEventListener('click', function () {
+            // Remove one cart entry for this term
+            var keyToRemove = null
+            cartItems.forEach(function (ci, ck) { if (!keyToRemove && ci.text === text) keyToRemove = ck })
+            if (keyToRemove) cartItems.delete(keyToRemove)
+            var s2 = stateMap.get(text)
+            if (s2 && s2.accepted > 0) { s2.accepted--; stateMap.set(text, s2) }
+            renderCart()
+
+            // Reinstate per-instance action buttons
+            var actionsDiv = document.createElement('div')
+            actionsDiv.className = 'dcf-redact-instance__actions'
+            actionsDiv.innerHTML =
+              '<button type="button" class="dcf-redact-instance__accept govuk-link">Add to cart</button>' +
+              '<button type="button" class="dcf-redact-instance__remove govuk-link">Not required</button>'
+
+            actionsDiv.querySelector('.dcf-redact-instance__accept').addEventListener('click', function () {
+              var s3 = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+              if (getPending(stateMap, itemsMap, text) > 0) { s3.accepted++; stateMap.set(text, s3) }
+              if (source) {
+                var typesMap = source === 'assisted' ? assistedTypes : manualTypes
+                var cKey = text + '|' + (++cartInstanceCounter)
+                cartItems.set(cKey, { text: text, type: typesMap.get(text) || 'Unclassified', source: source })
+                renderCart()
+              }
+              var greenTag = document.createElement('div')
+              greenTag.className = 'govuk-!-margin-top-2'
+              greenTag.innerHTML = '<strong class="govuk-tag govuk-tag--green">Saved</strong>'
+              instanceDiv.replaceChild(greenTag, actionsDiv)
+              classifyHighlights()
+            })
+
+            actionsDiv.querySelector('.dcf-redact-instance__remove').addEventListener('click', function () {
+              var s3 = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+              if (getPending(stateMap, itemsMap, text) > 0) { s3.rejected++; stateMap.set(text, s3) }
+              var notReqWrapper = document.createElement('div')
+              notReqWrapper.className = 'govuk-!-margin-top-2'
+              notReqWrapper.innerHTML =
+                '<strong class="govuk-tag govuk-tag--orange">Not required</strong>' +
+                ' <button type="button" class="govuk-link dcf-undo-instance">Undo</button>'
+              instanceDiv.replaceChild(notReqWrapper, actionsDiv)
+              notReqWrapper.querySelector('.dcf-undo-instance').addEventListener('click', function () {
+                if (s3.rejected > 0) { s3.rejected--; stateMap.set(text, s3) }
+                instanceDiv.replaceChild(actionsDiv, notReqWrapper)
+                classifyHighlights()
+              })
+              classifyHighlights()
+            })
+
+            instanceDiv.replaceChild(actionsDiv, savedWrapper)
+            classifyHighlights()
+          })
         })
         // Replace button group with Undo secondary button
         var btnGroup = termAcceptAll.parentNode
