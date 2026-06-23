@@ -10,8 +10,8 @@
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
-  <span class="govuk-caption-m">Redact document - {% if scan.title %}{{ scan.title }}{% endif %}{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--purple">{{ scan.findings | length }} AI suggestion{{ "s" if scan.findings | length != 1 else "" }}</strong>{% endif %}</span>
-  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Add redactions to cart <span id="dcf-cart-count" hidden>(0)</span></h1>
+  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %}{% if scan.findings and scan.findings.length %} {% endif %}</span>
+  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Redact document <span id="dcf-cart-count" hidden>(0)</span></h1>
 
   <div class="dcf-redact-banner govuk-!-margin-bottom-4">
     <div class="dcf-redact-banner__mode" role="group" aria-labelledby="redact-mode-label">
@@ -24,6 +24,7 @@
           { value: "assisted", text: "Assisted" }
         ]
       }) }}
+      <strong class="govuk-tag govuk-tag--purple dcf-redact-ai-tag">{{ scan.findings | length }} AI suggestion{{ "s" if scan.findings | length != 1 else "" }}</strong>
     </div>
     <button type="button" class="dcf-redact-banner__area-btn dcf-btn-redact-area" id="btn-area-draw">
       Redact an area

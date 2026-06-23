@@ -16,6 +16,12 @@
     margin-bottom: 0;
   }
 
+  // margin-bottom on the first radio item inflates the container height,
+  // pushing the circles above the banner's visual centre
+  .govuk-radios__item {
+    margin-bottom: 0;
+  }
+
   // White label text on blue background
   .govuk-label {
     color: govuk-colour("white");
@@ -32,12 +38,18 @@
   .govuk-radios__label::after {
     border-color: govuk-colour("black");
   }
+
 }
 
 .dcf-redact-banner__mode {
   display: flex;
   align-items: center;
   gap: govuk-spacing(4);
+}
+
+// Pull tag 10px closer to Assisted radio (gap is 20px, 50% reduction)
+.dcf-redact-ai-tag {
+  margin-left: -(govuk-spacing(2));
 }
 
 .dcf-redact-banner__label {
