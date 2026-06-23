@@ -242,16 +242,6 @@
   padding: govuk-spacing(2) 0;
 }
 
-.dcf-instance-state {
-  display: flex;
-  align-items: center;
-  gap: govuk-spacing(2);
-}
-
-.dcf-instance-tag {
-  @include govuk-font($size: 16);
-}
-
 .dcf-add-to-cart,
 .dcf-cart-remove,
 .dcf-cart-reset,
