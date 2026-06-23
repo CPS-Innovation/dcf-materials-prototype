@@ -13,33 +13,21 @@
   <span class="govuk-caption-m">Redact document - {% if scan.title %}{{ scan.title }}{% endif %}{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--purple">{{ scan.findings | length }} AI suggestion{{ "s" if scan.findings | length != 1 else "" }}</strong>{% endif %}</span>
   <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Add redactions to cart <span id="dcf-cart-count" hidden>(0)</span></h1>
 
-  <div class="govuk-button-group dcf-redact-mode-btns govuk-!-margin-bottom-4">
-    <button type="button" class="govuk-button govuk-button--secondary" id="btn-assisted" data-panel="assisted">
-      Assisted redaction
-    </button>
-    <button type="button" class="govuk-button govuk-button--secondary" id="btn-manual" data-panel="manual">
-      Manual redaction
-    </button>
-    <button type="button" class="govuk-button govuk-button--secondary dcf-btn-redact-area" id="btn-area-draw">
+  <div class="dcf-redact-banner govuk-!-margin-bottom-4">
+    <div class="dcf-redact-banner__mode" role="group" aria-labelledby="redact-mode-label">
+      <span class="dcf-redact-banner__label" id="redact-mode-label">Redaction mode</span>
+      {{ govukRadios({
+        classes: "govuk-radios--inline",
+        name: "redact-mode",
+        items: [
+          { value: "manual",   text: "Manual",   checked: true },
+          { value: "assisted", text: "Assisted" }
+        ]
+      }) }}
+    </div>
+    <button type="button" class="dcf-redact-banner__area-btn dcf-btn-redact-area" id="btn-area-draw">
       Redact an area
     </button>
-
-    {# Document actions hidden for now
-    {{ mojButtonMenu({
-      button: {
-        text: "Document actions",
-        classes: "govuk-button--secondary"
-      },
-      items: [
-        { text: "Rotate pages",                href: "#" },
-        { text: "Discard pages",               href: "#" },
-        { text: "Mark as read",                href: "#" },
-        { text: "Mark as unread",              href: "#" },
-        { text: "Rename",                      href: "#" },
-        { text: "Delete page",                 href: "#" }
-      ]
-    }) }}
-    #}
   </div>
 
   <div class="dcf-redact-layout">

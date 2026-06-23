@@ -2,16 +2,16 @@
   var iframe = document.getElementById('redact-preview-iframe')
 
   // ── Mode panels & toggle ──────────────────────────────────────────────────
-  var modeButtons = document.querySelectorAll('[data-panel]')
+  var modeRadios = document.querySelectorAll('input[name="redact-mode"]')
   var panels = {
     assisted: document.getElementById('panel-assisted'),
     manual:   document.getElementById('panel-manual'),
     area:     document.getElementById('panel-area')
   }
 
-  modeButtons.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var target = btn.getAttribute('data-panel')
+  modeRadios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      var target = radio.value
       Object.values(panels).forEach(function (p) { if (p) p.classList.remove('dcf-redact-panel--visible') })
       if (panels[target]) panels[target].classList.add('dcf-redact-panel--visible')
       applyHighlights()
@@ -1038,9 +1038,11 @@
     renderManualList()
   }
 
-  if (restore) {
-    var targetBtn = document.querySelector('[data-panel="' + restore.mode + '"]')
-    if (targetBtn) targetBtn.click()
+  var initialMode = (restore && restore.mode) ? restore.mode : 'manual'
+  var targetRadio = document.querySelector('input[name="redact-mode"][value="' + initialMode + '"]')
+  if (targetRadio) {
+    targetRadio.checked = true
+    targetRadio.dispatchEvent(new Event('change'))
   }
 
   // ── Iframe init ───────────────────────────────────────────────────────────
