@@ -574,17 +574,30 @@
     li.querySelectorAll('.dcf-redact-instance__accept').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
+        var cKey = null
         if (getPending(stateMap, itemsMap, text) > 0) { s.accepted++; stateMap.set(text, s) }
         if (source && s.accepted > 0) {
           var typesMap = source === 'assisted' ? assistedTypes : manualTypes
-          var cKey = text + '|' + (++cartInstanceCounter)
+          cKey = text + '|' + (++cartInstanceCounter)
           cartItems.set(cKey, { text: text, type: typesMap.get(text) || 'Unclassified', source: source })
           renderCart()
         }
-        var tag = document.createElement('div')
-        tag.className = 'govuk-!-margin-top-2'
-        tag.innerHTML = '<strong class="govuk-tag govuk-tag--green">Saved</strong>'
-        btn.parentNode.parentNode.replaceChild(tag, btn.parentNode)
+        var original = btn.parentNode
+        var container = original.parentNode
+        var savedWrapper = document.createElement('div')
+        savedWrapper.className = 'govuk-!-margin-top-2'
+        savedWrapper.innerHTML =
+          '<strong class="govuk-tag govuk-tag--green">Saved</strong>' +
+          ' <button type="button" class="govuk-link dcf-undo-instance">Undo</button>'
+        container.replaceChild(savedWrapper, original)
+        savedWrapper.querySelector('.dcf-undo-instance').addEventListener('click', function () {
+          if (cKey) cartItems.delete(cKey)
+          var s2 = stateMap.get(text)
+          if (s2 && s2.accepted > 0) { s2.accepted--; stateMap.set(text, s2) }
+          renderCart()
+          container.replaceChild(original, savedWrapper)
+          classifyHighlights()
+        })
         classifyHighlights()
       })
     })
@@ -729,7 +742,7 @@
         var btnGroupParent = btnGroup.parentNode
         var undoAcceptDiv = document.createElement('div')
         undoAcceptDiv.className = 'govuk-!-margin-top-2 govuk-!-margin-bottom-1'
-        undoAcceptDiv.innerHTML = '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-undo-term">Undo</button>'
+        undoAcceptDiv.innerHTML = '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-undo-term">Undo all</button>'
         btnGroupParent.replaceChild(undoAcceptDiv, btnGroup)
         undoAcceptDiv.querySelector('.dcf-undo-term').addEventListener('click', function () {
           // Back to full pending
@@ -770,7 +783,7 @@
         var btnGroupParent = btnGroup.parentNode
         var undoIgnoreDiv = document.createElement('div')
         undoIgnoreDiv.className = 'govuk-!-margin-top-2 govuk-!-margin-bottom-1'
-        undoIgnoreDiv.innerHTML = '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-undo-term">Undo</button>'
+        undoIgnoreDiv.innerHTML = '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-undo-term">Undo all</button>'
         btnGroupParent.replaceChild(undoIgnoreDiv, btnGroup)
         undoIgnoreDiv.querySelector('.dcf-undo-term').addEventListener('click', function () {
           // Back to full pending
