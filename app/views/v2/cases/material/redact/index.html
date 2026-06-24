@@ -21,7 +21,7 @@
         name: "redact-mode",
         items: [
           { value: "manual",   text: "Manual",   checked: true },
-          { value: "assisted", html: 'Assisted <strong class="govuk-tag govuk-tag--yellow dcf-redact-ai-tag">' ~ (scan.findings | length) ~ ' AI suggestion' ~ ('s' if scan.findings | length != 1 else '') ~ '</strong>' }
+          { value: "assisted", html: 'Assisted <strong class="govuk-tag govuk-tag--orange dcf-redact-ai-tag">' ~ (scan.findings | length) ~ ' AI suggestion' ~ ('s' if scan.findings | length != 1 else '') ~ '</strong>' }
         ]
       }) }}
     </div>
