@@ -1,71 +1,43 @@
-.dcf-btn-redact-area {}
+.dcf-btn-redact-area {
+  align-self: flex-end;
+}
 
 // ── Redaction mode banner ─────────────────────────────────────────────────────
 
 .dcf-redact-banner {
-  background-color: govuk-colour("blue");
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  padding: govuk-spacing(3) govuk-spacing(4);
   position: sticky;
   top: 0;
   z-index: 100;
+  width: calc(100% - 420px - #{govuk-spacing(6)});
 
   .govuk-form-group {
     margin-bottom: 0;
   }
 
-  // margin-bottom on the first radio item inflates the container height,
-  // pushing the circles above the banner's visual centre
   .govuk-radios__item {
     margin-bottom: 0;
-  }
-
-  // White label text on blue background
-  .govuk-label {
-    color: govuk-colour("white");
-  }
-
-  // GOV.UK radio circles use currentColor for borders/fill, which would inherit
-  // white from the label. Pin them to the standard dark-on-white appearance instead.
-  .govuk-radios__label::before {
-    border-color: govuk-colour("black");
-    background: govuk-colour("white");
-  }
-
-  // Inner dot is also currentColor (border + background) — override to dark
-  .govuk-radios__label::after {
-    border-color: govuk-colour("black");
   }
 
 }
 
 .dcf-redact-banner__mode {
   display: flex;
-  align-items: center;
-  gap: govuk-spacing(4);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: govuk-spacing(1);
 }
 
 
 .dcf-redact-banner__label {
   @include govuk-font($size: 19, $weight: bold);
-  color: govuk-colour("white");
+  color: $govuk-text-colour;
   white-space: nowrap;
 }
 
-.dcf-redact-banner__area-btn {
-  @include govuk-font($size: 19);
-  background-color: govuk-colour("white");
-  color: govuk-colour("black");
-  border: 2px solid transparent;
-  padding: govuk-spacing(2) govuk-spacing(3);
-  cursor: pointer;
-
-  &:hover {
-    background-color: #f3f2f1;
-  }
-}
 
 .dcf-redact-layout {
   display: grid;
