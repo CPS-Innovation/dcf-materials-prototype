@@ -21,10 +21,9 @@
         name: "redact-mode",
         items: [
           { value: "manual",   text: "Manual",   checked: true },
-          { value: "assisted", text: "Assisted" }
+          { value: "assisted", html: 'Assisted <strong class="govuk-tag govuk-tag--yellow dcf-redact-ai-tag">' ~ (scan.findings | length) ~ ' AI suggestion' ~ ('s' if scan.findings | length != 1 else '') ~ '</strong>' }
         ]
       }) }}
-      <strong class="govuk-tag govuk-tag--purple dcf-redact-ai-tag">{{ scan.findings | length }} AI suggestion{{ "s" if scan.findings | length != 1 else "" }}</strong>
     </div>
     <button type="button" class="dcf-redact-banner__area-btn dcf-btn-redact-area" id="btn-area-draw">
       Redact an area
@@ -128,7 +127,7 @@
 {% endblock %}
 
 {% block pageScripts %}
-  <script>
+  <script>  
     window.__assistedFindings = {{ (scan.findings or []) | dump | safe }};
     {% if redactCheck %}
     window.__redactRestore = {{ redactCheck | dump | safe }};

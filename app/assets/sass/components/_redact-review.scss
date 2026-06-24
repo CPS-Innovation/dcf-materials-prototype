@@ -47,10 +47,6 @@
   gap: govuk-spacing(4);
 }
 
-// Pull tag 10px closer to Assisted radio (gap is 20px, 50% reduction)
-.dcf-redact-ai-tag {
-  margin-left: -(govuk-spacing(2));
-}
 
 .dcf-redact-banner__label {
   @include govuk-font($size: 19, $weight: bold);
