@@ -111,10 +111,14 @@
   }
 }
 
-// Scale all govuk-buttons within redaction lists to match body-s
+// Scale all govuk-buttons and govuk-tags within redaction lists to match body-s
 .dcf-manual-list .govuk-button {
   @include govuk-font($size: 16);
   padding: govuk-spacing(1) govuk-spacing(2);
+}
+
+.dcf-manual-list .govuk-tag {
+  @include govuk-font($size: 16);
 }
 
 .dcf-manual-list__text {

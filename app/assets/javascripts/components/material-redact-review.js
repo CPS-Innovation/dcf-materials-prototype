@@ -42,26 +42,30 @@
     try {
       var doc = iframe.contentDocument
       if (!doc) return
-      // Only turn yellow for terms fully committed to cart (no pending instances remaining)
-      var _seen2 = new Set()
-      var committedTerms = []
-      cartItems.forEach(function (item, key) {
-        if (item.source === 'area') return
-        var t = item.text || key
-        if (_seen2.has(t)) return
-        _seen2.add(t)
-        var sm = item.source === 'assisted' ? assistedInstState : manualInstState
-        var im = item.source === 'assisted' ? assistedItems : manualItems
-        if (getPending(sm, im, t) === 0) committedTerms.push(t.toLowerCase())
-      })
-      doc.querySelectorAll('.textLayer .highlight').forEach(function (span) {
-        var spanText = span.textContent.toLowerCase().trim()
-        var isCarted = committedTerms.length > 0 && committedTerms.some(function (term) {
-          return term === spanText ||
-                 (spanText.length > 3 && term.startsWith(spanText + ' ')) ||
-                 (spanText.length > 3 && term.endsWith(' ' + spanText))
+
+      var allTerms = new Map()
+      ;[manualInstHighlight, assistedInstHighlight].forEach(function (hlMap) {
+        hlMap.forEach(function (indexMap, text) {
+          if (!allTerms.has(text)) allTerms.set(text, indexMap)
         })
-        span.classList.toggle('dcf-highlight--carted', isCarted)
+      })
+      if (allTerms.size === 0) return
+
+      allTerms.forEach(function (indexMap, text) {
+        var tl = text.toLowerCase()
+        var spans = []
+        doc.querySelectorAll('.textLayer .highlight').forEach(function (span) {
+          var st = span.textContent.toLowerCase().trim()
+          if (st === tl || (st.length > 3 && tl.startsWith(st + ' ')) || (st.length > 3 && tl.endsWith(' ' + st))) {
+            spans.push(span)
+          }
+        })
+        spans.forEach(function (span, i) {
+          span.classList.remove('dcf-highlight--saved', 'dcf-highlight--rejected')
+          var state = indexMap.get(i)
+          if (state === 'saved')    span.classList.add('dcf-highlight--saved')
+          if (state === 'rejected') span.classList.add('dcf-highlight--rejected')
+        })
       })
     } catch (e) {}
   }
@@ -108,11 +112,21 @@
           'background: url("' + waveSelected + '") repeat-x left bottom / 6px 3px, rgba(29,112,184,0.25) !important;' +
           'padding-bottom: 2px !important;' +
         '}' +
-        '.textLayer .highlight.dcf-highlight--carted {' +
-          'background: url("' + wave + '") repeat-x left bottom / 6px 3px, rgba(209,255,5,0.45) !important;' +
+        '.textLayer .highlight.dcf-highlight--saved {' +
+          'background: url("' + wave + '") repeat-x left bottom / 6px 3px, rgba(0,112,60,0.20) !important;' +
+          'padding-bottom: 2px !important;' +
         '}' +
-        '.textLayer .highlight.dcf-highlight--carted.selected {' +
-          'background: url("' + waveSelected + '") repeat-x left bottom / 6px 3px, rgba(209,255,5,0.75) !important;' +
+        '.textLayer .highlight.dcf-highlight--saved.selected {' +
+          'background: url("' + waveSelected + '") repeat-x left bottom / 6px 3px, rgba(0,112,60,0.35) !important;' +
+          'padding-bottom: 2px !important;' +
+        '}' +
+        '.textLayer .highlight.dcf-highlight--rejected {' +
+          'background: rgba(244,119,56,0.25) !important;' +
+          'padding-bottom: 2px !important;' +
+        '}' +
+        '.textLayer .highlight.dcf-highlight--rejected.selected {' +
+          'background: rgba(244,119,56,0.45) !important;' +
+          'padding-bottom: 2px !important;' +
         '}'
       doc.head.appendChild(el)
     } catch (e) {}
@@ -264,6 +278,14 @@
   var manualInstState   = new Map()
   var cartItems         = new Map()   // key → { text, type, source } or area: { count, type, source:'area', areaId }
   var cartInstanceCounter = 0
+  var manualInstHighlight   = new Map()  // text → Map<instanceIndex, 'saved'|'rejected'>
+  var assistedInstHighlight = new Map()
+
+  function getInstHighlight (source, text) {
+    var m = source === 'assisted' ? assistedInstHighlight : manualInstHighlight
+    if (!m.has(text)) m.set(text, new Map())
+    return m.get(text)
+  }
 
   function initInstState (stateMap, text, total) {
     stateMap.set(text, { accepted: 0, rejected: 0, total: total })
@@ -501,8 +523,8 @@
             '</button>' +
             (displayState === 'pending'
               ? '<div class="dcf-redact-instance__actions">' +
-                  '<button type="button" class="dcf-redact-instance__accept govuk-link">Add to cart</button>' +
-                  '<button type="button" class="dcf-redact-instance__remove govuk-link">Not required</button>' +
+                  '<button type="button" class="dcf-redact-instance__accept govuk-link" data-instance-index="' + i + '">Save</button>' +
+                  '<button type="button" class="dcf-redact-instance__remove govuk-link" data-instance-index="' + i + '">Ignore</button>' +
                 '</div>'
               : '') +
           '</div>'
@@ -516,8 +538,8 @@
 
     var singleInstanceBtns = (displayState === 'pending' && shownSnippets && shownSnippets.length === 1 && pending === 1)
       ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1">' +
-          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__accept">Add to cart</button>' +
-          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__remove">Not required</button>' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__accept">Save</button>' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__remove">Ignore</button>' +
         '</div>'
       : ''
 
@@ -538,13 +560,13 @@
       singleInstanceBtns +
       (pending > 1 && onAcceptAll && onIgnoreAll
         ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1">' +
-            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Add all to cart</button>' +
-            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Not required</button>' +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Save all</button>' +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Ignore all</button>' +
           '</div>'
         : '') +
       (displayState === 'pending' && (onAddToCart || onUndo)
         ? '<div class="dcf-bucket-controls dcf-bucket-controls--term">' +
-            (onAddToCart ? '<button type="button" class="govuk-link dcf-add-to-cart">Add to cart</button>' : '') +
+            (onAddToCart ? '<button type="button" class="govuk-link dcf-add-to-cart">Save</button>' : '') +
             (onUndo ? '<button type="button" class="govuk-link dcf-undo-selection">Undo</button>' : '') +
           '</div>'
         : '')
@@ -662,8 +684,8 @@
             var actionsDiv = document.createElement('div')
             actionsDiv.className = 'dcf-redact-instance__actions'
             actionsDiv.innerHTML =
-              '<button type="button" class="dcf-redact-instance__accept govuk-link">Add to cart</button>' +
-              '<button type="button" class="dcf-redact-instance__remove govuk-link">Not required</button>'
+              '<button type="button" class="dcf-redact-instance__accept govuk-link">Save</button>' +
+              '<button type="button" class="dcf-redact-instance__remove govuk-link">Ignore</button>'
 
             actionsDiv.querySelector('.dcf-redact-instance__accept').addEventListener('click', function () {
               var s3 = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
@@ -1064,7 +1086,7 @@
       li.innerHTML =
         '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + escHtml(item.label) + '</strong></p>' +
         '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">' +
-          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-area-accept">Add to cart</button>' +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-area-accept">Save</button>' +
           '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-area-ignore">Ignore</button>' +
         '</div>'
       li.querySelector('.dcf-area-accept').addEventListener('click', function () {
