@@ -1,0 +1,350 @@
+// _calendar.scss
+// GOV.UK Prototype Kit – Case Calendar component
+//
+// Requires govuk-frontend to be on your SCSS load path.
+// Add to app/assets/sass/application.scss:
+//   @use "calendar";
+// ─────────────────────────────────────────────────────────────────
+
+// ── Event type tokens ─────────────────────────────────────────────
+// These sit outside the GOV.UK palette intentionally — they are
+// domain-specific and should be updated to match your design sign-off.
+
+$cal-color-direction:    #f47738;
+$cal-color-direction-bg: #fef2e8;
+
+$cal-color-task:         #f3b518;
+$cal-color-task-bg:      #fef9e6;
+
+$cal-color-hearing:      #5694ca;
+$cal-color-hearing-bg:   #eaf2fb;
+
+$cal-color-ctl:          #b39cd6;
+$cal-color-ctl-bg:       #f4f0fa;
+
+$cal-color-note:         #79c9a1;
+$cal-color-note-bg:      #edf8f3;
+
+// ── Structural tokens ─────────────────────────────────────────────
+
+$cal-color-today-border: govuk-colour("blue");
+$cal-color-today-bg:     #e8f1fb;
+$cal-border:             govuk-colour("mid-grey");
+$cal-cell-min-height:    7rem;
+$cal-mobile-breakpoint:  640px;
+
+// ── Event type map ────────────────────────────────────────────────
+// Used to generate chip and agenda modifiers in a single loop,
+// keeping colour definitions in one place.
+
+$cal-event-types: (
+  "direction": ($cal-color-direction, $cal-color-direction-bg),
+  "task":      ($cal-color-task,      $cal-color-task-bg),
+  "hearing":   ($cal-color-hearing,   $cal-color-hearing-bg),
+  "ctl":       ($cal-color-ctl,       $cal-color-ctl-bg),
+  "note":      ($cal-color-note,      $cal-color-note-bg),
+);
+
+// ── Wrapper ───────────────────────────────────────────────────────
+
+.cal-wrapper {
+  font-family: $govuk-font-family;
+}
+
+// ── Header ────────────────────────────────────────────────────────
+
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: govuk-spacing(3);
+  margin-bottom: govuk-spacing(3);
+}
+
+.cal-heading {
+  @include govuk-font($size: 27, $weight: bold);
+  margin: 0;
+  color: govuk-colour("black");
+}
+
+// ── Navigation ────────────────────────────────────────────────────
+
+.cal-nav {
+  display: flex;
+  gap: govuk-spacing(2);
+  align-items: center;
+}
+
+.cal-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: govuk-spacing(1) govuk-spacing(2);
+  background: govuk-colour("white");
+  border: 1px solid govuk-colour("black");
+  cursor: pointer;
+  @include govuk-font($size: 16);
+  color: govuk-colour("black");
+  text-decoration: none;
+
+  &:hover {
+    background: govuk-colour("light-grey");
+  }
+
+  &:focus {
+    @include govuk-focused-text;
+  }
+}
+
+// ── Controls toolbar ──────────────────────────────────────────────
+
+.cal-controls {
+  display: flex;
+  align-items: center;
+  gap: govuk-spacing(2);
+}
+
+.cal-view-switcher {
+  display: flex;
+}
+
+.cal-view-btn {
+  display: inline-block;
+  padding: govuk-spacing(1) govuk-spacing(2);
+  border: 1px solid govuk-colour("black");
+  border-left: none;
+  @include govuk-font($size: 16);
+  color: govuk-colour("black");
+  text-decoration: none;
+  background: govuk-colour("white");
+
+  &:first-child {
+    border-left: 1px solid govuk-colour("black");
+  }
+
+  &:hover {
+    background: govuk-colour("light-grey");
+  }
+
+  &--active {
+    background: govuk-colour("blue");
+    color: govuk-colour("white");
+    border-color: govuk-colour("blue");
+
+    &:hover {
+      background: govuk-shade(govuk-colour("blue"), 10);
+    }
+  }
+}
+
+.cal-today-btn {
+  @include govuk-font($size: 16);
+  color: $govuk-link-colour;
+  text-decoration: underline;
+
+  &:hover {
+    color: $govuk-link-hover-colour;
+  }
+}
+
+// ── Legend ────────────────────────────────────────────────────────
+
+.cal-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: govuk-spacing(2) govuk-spacing(4);
+  margin: 0 0 govuk-spacing(4);
+  padding: govuk-spacing(3) govuk-spacing(4);
+  list-style: none;
+  border: 1px solid $cal-border;
+  background: govuk-colour("light-grey");
+}
+
+.cal-legend-item {
+  display: flex;
+  align-items: center;
+  gap: govuk-spacing(1);
+  @include govuk-font($size: 16);
+  color: govuk-colour("black");
+}
+
+.cal-legend-dot {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+
+  @each $type, $colors in $cal-event-types {
+    &--#{$type} {
+      background-color: nth($colors, 1);
+    }
+  }
+}
+
+// ── Grid table ────────────────────────────────────────────────────
+
+.cal-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  th {
+    background: govuk-colour("light-grey");
+    @include govuk-font($size: 16, $weight: bold);
+    text-align: center;
+    padding: govuk-spacing(2) govuk-spacing(1);
+    border: 1px solid $cal-border;
+    color: govuk-colour("black");
+  }
+}
+
+// ── Grid cells ────────────────────────────────────────────────────
+
+.cal-cell {
+  vertical-align: top;
+  border: 1px solid $cal-border;
+  padding: govuk-spacing(1) govuk-spacing(1) govuk-spacing(2);
+  min-height: $cal-cell-min-height;
+  height: $cal-cell-min-height;
+  background: govuk-colour("white");
+  position: relative;
+
+  &--empty {
+    background: govuk-colour("light-grey");
+  }
+
+  &--today {
+    background: $cal-color-today-bg;
+    outline: 2px solid $cal-color-today-border;
+    outline-offset: -2px;
+  }
+}
+
+.cal-date {
+  display: block;
+  text-align: right;
+  @include govuk-font($size: 14);
+  color: $govuk-secondary-text-colour;
+  margin-bottom: govuk-spacing(1);
+  line-height: 1.2;
+
+  .cal-cell--today & {
+    font-weight: bold;
+    color: $cal-color-today-border;
+  }
+}
+
+// ── Event chips (grid view) ───────────────────────────────────────
+
+.cal-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cal-event {
+  display: flex;
+  align-items: center;
+  gap: govuk-spacing(1);
+  @include govuk-font($size: 14);
+  padding: 2px govuk-spacing(1);
+  border-radius: 2px;
+  line-height: 1.3;
+  color: govuk-colour("black");
+
+  &__count {
+    font-weight: bold;
+    min-width: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  @each $type, $colors in $cal-event-types {
+    &--#{$type} {
+      background: nth($colors, 2);
+      border-left: 3px solid nth($colors, 1);
+    }
+  }
+}
+
+// ── Agenda (mobile) ───────────────────────────────────────────────
+
+.cal-agenda {
+  display: none;
+
+  &-day {
+    border-top: 2px solid govuk-colour("black");
+    padding: govuk-spacing(3) 0;
+
+    &:last-child {
+      border-bottom: 1px solid $cal-border;
+    }
+
+    &--today {
+      background: $cal-color-today-bg;
+      border-top-color: $cal-color-today-border;
+      border-left: 4px solid $cal-color-today-border;
+      padding-left: govuk-spacing(3);
+    }
+  }
+
+  &-date {
+    @include govuk-font($size: 19, $weight: bold);
+    color: govuk-colour("black");
+    margin-bottom: govuk-spacing(2);
+  }
+
+  &-events {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: govuk-spacing(1);
+  }
+
+  &-event {
+    display: flex;
+    align-items: center;
+    gap: govuk-spacing(2);
+    @include govuk-font($size: 19);
+    padding: govuk-spacing(1) govuk-spacing(2);
+    border-radius: 2px;
+    color: govuk-colour("black");
+
+    @each $type, $colors in $cal-event-types {
+      &--#{$type} {
+        background: nth($colors, 2);
+        border-left: 4px solid nth($colors, 1);
+      }
+    }
+  }
+}
+
+// ── Responsive ────────────────────────────────────────────────────
+
+@media (max-width: $cal-mobile-breakpoint) {
+  .cal-grid-container {
+    display: none;
+  }
+
+  .cal-agenda {
+    display: block;
+  }
+
+  .cal-heading {
+    @include govuk-font($size: 24, $weight: bold);
+  }
+}
+
+// ── Reduced motion ────────────────────────────────────────────────
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-wrapper * {
+    transition: none !important;
+  }
+}

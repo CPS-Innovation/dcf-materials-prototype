@@ -1,4 +1,4 @@
-{# _includes/task/main-tabs.njk #}
+{# _shared/_includes/task/main-tabs.njk #}
 
 
 {# -----------------------------
@@ -248,7 +248,8 @@
 {% endset -%}
 
 {% set manageTasksHtml %}
-  <h3 class="govuk-heading-m">Manage tasks</h3>
+  {# <h3 class="govuk-heading-m">Manage tasks</h3> #}
+  {% include "_shared/_includes/task/calendar.njk" %}
 {% endset -%}
 
 {{ govukTabs({
