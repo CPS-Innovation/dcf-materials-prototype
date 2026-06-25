@@ -128,13 +128,6 @@ $cal-event-types: (
   }
 
   &--active {
-    background: govuk-colour("blue");
-    color: govuk-colour("white");
-    border-color: govuk-colour("blue");
-
-    &:hover {
-      background: govuk-shade(govuk-colour("blue"), 10);
-    }
   }
 }
 
