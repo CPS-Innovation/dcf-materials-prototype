@@ -15,37 +15,43 @@
 
   <div class="dcf-redact-layout">
 
-    <div class="dcf-redact-banner">
-      <div class="dcf-redact-banner__mode" role="group" aria-labelledby="assisted-mode-label">
-        <span class="dcf-redact-banner__label" id="assisted-mode-label">Assisted mode{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--purple dcf-redact-ai-tag">{{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }}</strong>{% endif %}</span>
-        {{ govukRadios({
-          classes: "govuk-radios--inline",
-          name: "assisted-mode",
-          items: [
-            { value: "on",  text: "On" },
-            { value: "off", text: "Off", checked: true }
-          ]
-        }) }}
+    <div class="dcf-redact-left">
+
+      <div class="dcf-redact-banner">
+        <div class="dcf-redact-banner__mode" role="group" aria-labelledby="assisted-mode-label">
+          <span class="dcf-redact-banner__label" id="assisted-mode-label">Assisted mode{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--purple dcf-redact-ai-tag">{{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }}</strong>{% endif %}</span>
+          {{ govukRadios({
+            classes: "govuk-radios--inline",
+            name: "assisted-mode",
+            items: [
+              { value: "on",  text: "On" },
+              { value: "off", text: "Off", checked: true }
+            ]
+          }) }}
+        </div>
+        <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-btn-redact-area" id="btn-area-draw">
+          Redact an area
+        </button>
       </div>
-      <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-btn-redact-area" id="btn-area-draw">
-        Redact an area
-      </button>
+
+      {# ── Left: document viewer ───────────────────────────────── #}
+      <div class="dcf-redact-viewer">
+        {% if pdfViewerUrl %}
+          <iframe
+            id="redact-preview-iframe"
+            src="{{ pdfViewerUrl }}"
+            title="Document preview"
+            loading="lazy"
+          ></iframe>
+        {% else %}
+          <div class="govuk-inset-text">No document URL available.</div>
+        {% endif %}
+        <div class="dcf-area-overlay" id="dcf-area-overlay" aria-hidden="true"></div>
+      </div>
+
     </div>
 
-    {# ── Left: document viewer ───────────────────────────────── #}
-    <div class="dcf-redact-viewer">
-      {% if pdfViewerUrl %}
-        <iframe
-          id="redact-preview-iframe"
-          src="{{ pdfViewerUrl }}"
-          title="Document preview"
-          loading="lazy"
-        ></iframe>
-      {% else %}
-        <div class="govuk-inset-text">No document URL available.</div>
-      {% endif %}
-      <div class="dcf-area-overlay" id="dcf-area-overlay" aria-hidden="true"></div>
-    </div>
+    <div class="dcf-redact-right-col">
 
     <div class="dcf-ai-card" id="dcf-redaction-cart">
       <div class="dcf-ai-card__header">
@@ -62,7 +68,10 @@
 
       {% if scan.findings and scan.findings.length %}
 
-        <h3 class="govuk-heading-m">Possible redactions <strong class="govuk-tag govuk-tag--purple govuk-!-margin-left-1">AI assistant</strong></h3>
+        <h3 class="govuk-heading-m govuk-!-margin-top-3">Possible redactions <strong class="govuk-tag govuk-tag--purple govuk-!-margin-left-1">AI assistant</strong></h3>
+        {{ govukInsetText({
+          html: 'Only saved redactions will be applied. AI suggestions not saved will be ignored.'
+        }) }}
         <p class="govuk-body" id="dcf-assisted-empty" hidden>No pending suggestions.</p>
         <ul class="dcf-manual-list govuk-list" id="dcf-assisted-list"></ul>
 
@@ -85,7 +94,7 @@
 
       <div id="dcf-manual-header">
         {{ govukInsetText({
-          html: 'Select text in the document to mark it for redaction, then use <strong>Save</strong> to confirm it.'
+          html: 'Select text in the document to mark it for redaction. Only saved selections will be applied — anything not saved will be ignored.'
         }) }}
       </div>
       <ul class="dcf-manual-list govuk-list" id="dcf-manual-list"></ul>
@@ -102,7 +111,7 @@
 
       <div id="dcf-area-header">
         {{ govukInsetText({
-          html: '<strong>Drag crosshair</strong> to mark an area on the document.'
+          html: '<strong>Drag crosshair</strong> to mark an area on the document, then save it. Starting a new selection will replace any unsaved area.'
         }) }}
       </div>
 
@@ -122,7 +131,9 @@
 
     </div>
 
-  </div>
+    </div>{# /dcf-redact-right-col #}
+
+  </div>{# /dcf-redact-layout #}
 
 {% endblock %}
 

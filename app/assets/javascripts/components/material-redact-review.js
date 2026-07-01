@@ -61,10 +61,9 @@
           }
         })
         spans.forEach(function (span, i) {
-          span.classList.remove('dcf-highlight--saved', 'dcf-highlight--rejected')
+          span.classList.remove('dcf-highlight--saved')
           var state = indexMap.get(i)
-          if (state === 'saved')    span.classList.add('dcf-highlight--saved')
-          if (state === 'rejected') span.classList.add('dcf-highlight--rejected')
+          if (state === 'saved') span.classList.add('dcf-highlight--saved')
         })
       })
     } catch (e) {}
@@ -118,14 +117,6 @@
         '}' +
         '.textLayer .highlight.dcf-highlight--saved.selected {' +
           'background: url("' + waveSelected + '") repeat-x left bottom / 6px 3px, rgba(0,112,60,0.35) !important;' +
-          'padding-bottom: 2px !important;' +
-        '}' +
-        '.textLayer .highlight.dcf-highlight--rejected {' +
-          'background: rgba(244,119,56,0.25) !important;' +
-          'padding-bottom: 2px !important;' +
-        '}' +
-        '.textLayer .highlight.dcf-highlight--rejected.selected {' +
-          'background: rgba(244,119,56,0.45) !important;' +
           'padding-bottom: 2px !important;' +
         '}'
       doc.head.appendChild(el)
@@ -304,7 +295,7 @@
 
   function getItemDisplayState (stateMap, itemsMap, text) {
     if (getPending(stateMap, itemsMap, text) > 0) return 'pending'
-    return getAccepted(stateMap, text) > 0 ? 'saved' : 'not-required'
+    return 'saved'
   }
 
   // ── Shared cart ───────────────────────────────────────────────────────────────
@@ -481,7 +472,7 @@
   function updateSubmitGates () {}
 
   // ── List item (text redactions) ───────────────────────────────────────────
-  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance, onAcceptAll, onIgnoreAll, onAddToCart, onUndo, source) {
+  function makeListItem (text, stateMap, itemsMap, onAcceptInstance, onIgnoreInstance, onAcceptAll, onIgnoreAll, onAddToCart, onUndo, source, onRemoveTerm) {
     var li = document.createElement('li')
     li.className = 'dcf-manual-list__item'
 
@@ -490,10 +481,8 @@
     var snippets = getContextSnippets(text)
     var shownSnippets = snippets ? (displayState === 'pending' ? snippets.slice(0, pending) : snippets) : null
 
-    var stateTag = displayState !== 'pending'
-      ? '<div class="govuk-!-margin-top-2"><strong class="govuk-tag govuk-tag--' +
-          (displayState === 'saved' ? 'green">Saved' : 'orange">Not required') +
-        '</strong></div>'
+    var stateTag = displayState === 'saved'
+      ? '<div class="govuk-!-margin-top-2"><strong class="govuk-tag govuk-tag--green">Saved</strong></div>'
       : ''
 
     var detailsBody = ''
@@ -524,7 +513,6 @@
             (displayState === 'pending'
               ? '<div class="dcf-redact-instance__actions">' +
                   '<button type="button" class="dcf-redact-instance__accept govuk-link" data-instance-index="' + i + '">Save</button>' +
-                  '<button type="button" class="dcf-redact-instance__remove govuk-link" data-instance-index="' + i + '">Ignore</button>' +
                 '</div>'
               : '') +
           '</div>'
@@ -539,7 +527,7 @@
     var singleInstanceBtns = (displayState === 'pending' && shownSnippets && shownSnippets.length === 1 && pending === 1)
       ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1">' +
           '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__accept">Save</button>' +
-          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__remove">Ignore</button>' +
+          (onRemoveTerm ? '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-remove">Remove</button>' : '') +
         '</div>'
       : ''
 
@@ -551,18 +539,16 @@
             '<strong>' + escHtml(text) + '</strong>' +
             (displayState === 'pending'
               ? ' (' + pending + ')'
-              : displayState === 'saved'
-                ? ' <strong class="govuk-tag govuk-tag--green govuk-!-margin-left-1">Saved</strong>'
-                : ' <strong class="govuk-tag govuk-tag--orange govuk-!-margin-left-1">Not required</strong>') +
+              : ' <strong class="govuk-tag govuk-tag--green govuk-!-margin-left-1">Saved</strong>') +
           '</span>' +
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
       '</details>' +
       singleInstanceBtns +
-      (pending > 1 && onAcceptAll && onIgnoreAll
+      (pending > 1 && onAcceptAll
         ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1">' +
             '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Save all</button>' +
-            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Ignore all</button>' +
+            (onRemoveTerm ? '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-remove">Remove</button>' : '') +
           '</div>'
         : (displayState !== 'pending' && sState && sState.total > 1
           ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1 dcf-dynamic-undo-all">' +
@@ -611,8 +597,7 @@
                 var newBG = document.createElement('div')
                 newBG.className = 'govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1'
                 newBG.innerHTML =
-                  '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Save all</button>' +
-                  '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-ignore-all">Ignore all</button>'
+                  '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Save all</button>'
                 dynUndoDiv.parentNode.replaceChild(newBG, dynUndoDiv)
               }
             }
@@ -668,51 +653,6 @@
           })
           classifyHighlights()
         }
-      })
-    })
-    li.querySelectorAll('.dcf-redact-instance__remove').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
-        if (getPending(stateMap, itemsMap, text) > 0) { s.rejected++; stateMap.set(text, s) }
-        var original = btn.parentNode
-        var container = original.parentNode
-        var wrapper = document.createElement('div')
-        wrapper.className = 'govuk-!-margin-top-2'
-        if (btn.parentNode.classList.contains('dcf-redact-instance__actions')) {
-          // Per-instance link: orange tag + undo inline
-          wrapper.innerHTML =
-            '<strong class="govuk-tag govuk-tag--orange">Not required</strong>' +
-            ' <button type="button" class="govuk-link dcf-undo-instance">Undo</button>'
-          container.replaceChild(wrapper, original)
-          wrapper.querySelector('.dcf-undo-instance').addEventListener('click', function () {
-            if (s.rejected > 0) { s.rejected--; stateMap.set(text, s) }
-            container.replaceChild(original, wrapper)
-            classifyHighlights()
-          })
-        } else {
-          // Main button (singleInstanceBtns): secondary undo button; add tag inside <details>
-          var addedTag = null
-          var detailsEl = li.querySelector('.govuk-details')
-          if (detailsEl) {
-            var instanceEl = detailsEl.querySelector('.dcf-redact-instance')
-            if (instanceEl) {
-              addedTag = document.createElement('div')
-              addedTag.className = 'govuk-!-margin-top-2'
-              addedTag.innerHTML = '<strong class="govuk-tag govuk-tag--orange">Not required</strong>'
-              instanceEl.appendChild(addedTag)
-            }
-          }
-          wrapper.className = 'govuk-!-margin-top-4 govuk-!-margin-bottom-1'
-          wrapper.innerHTML = '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-undo-term">Undo</button>'
-          container.replaceChild(wrapper, original)
-          wrapper.querySelector('.dcf-undo-term').addEventListener('click', function () {
-            if (s.rejected > 0) { s.rejected--; stateMap.set(text, s) }
-            if (addedTag && addedTag.parentNode) addedTag.parentNode.removeChild(addedTag)
-            container.replaceChild(original, wrapper)
-            classifyHighlights()
-          })
-        }
-        classifyHighlights()
       })
     })
     li.querySelectorAll('.dcf-redact-instance__focus').forEach(function (btn, i) {
@@ -772,8 +712,7 @@
             var actionsDiv = document.createElement('div')
             actionsDiv.className = 'dcf-redact-instance__actions'
             actionsDiv.innerHTML =
-              '<button type="button" class="dcf-redact-instance__accept govuk-link">Save</button>' +
-              '<button type="button" class="dcf-redact-instance__remove govuk-link">Ignore</button>'
+              '<button type="button" class="dcf-redact-instance__accept govuk-link">Save</button>'
 
             actionsDiv.querySelector('.dcf-redact-instance__accept').addEventListener('click', function () {
               var s3 = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
@@ -788,23 +727,6 @@
               greenTag.className = 'govuk-!-margin-top-2'
               greenTag.innerHTML = '<strong class="govuk-tag govuk-tag--green">Saved</strong>'
               instanceDiv.replaceChild(greenTag, actionsDiv)
-              classifyHighlights()
-            })
-
-            actionsDiv.querySelector('.dcf-redact-instance__remove').addEventListener('click', function () {
-              var s3 = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
-              if (getPending(stateMap, itemsMap, text) > 0) { s3.rejected++; stateMap.set(text, s3) }
-              var notReqWrapper = document.createElement('div')
-              notReqWrapper.className = 'govuk-!-margin-top-2'
-              notReqWrapper.innerHTML =
-                '<strong class="govuk-tag govuk-tag--orange">Not required</strong>' +
-                ' <button type="button" class="govuk-link dcf-undo-instance">Undo</button>'
-              instanceDiv.replaceChild(notReqWrapper, actionsDiv)
-              notReqWrapper.querySelector('.dcf-undo-instance').addEventListener('click', function () {
-                if (s3.rejected > 0) { s3.rejected--; stateMap.set(text, s3) }
-                instanceDiv.replaceChild(actionsDiv, notReqWrapper)
-                classifyHighlights()
-              })
               classifyHighlights()
             })
 
@@ -829,49 +751,19 @@
         classifyHighlights()
         return
       }
-      if (e.target.classList.contains('dcf-term-ignore-all')) {
-        var s = stateMap.get(text) || { accepted: 0, rejected: 0, total: itemsMap.get(text) || 0 }
-        var totalCount = s.total
-        var keysToDelete = []
-        cartItems.forEach(function (item, key) { if (item.text === text) keysToDelete.push(key) })
-        keysToDelete.forEach(function (k) { cartItems.delete(k) })
-        renderCart()
-        s.accepted = 0; s.rejected = totalCount; stateMap.set(text, s)
-        li.querySelectorAll('.dcf-redact-instance').forEach(function (instanceDiv) {
-          var focusBtn = instanceDiv.querySelector('.dcf-redact-instance__focus')
-          var tag = document.createElement('div')
-          tag.className = 'govuk-!-margin-top-2'
-          tag.innerHTML = '<strong class="govuk-tag govuk-tag--orange">Not required</strong>'
-          while (instanceDiv.lastChild) instanceDiv.removeChild(instanceDiv.lastChild)
-          if (focusBtn) instanceDiv.appendChild(focusBtn)
-          instanceDiv.appendChild(tag)
-        })
-        var btnGroup = e.target.parentNode
-        var btnGroupParent = btnGroup.parentNode
-        var undoIgnoreDiv = document.createElement('div')
-        undoIgnoreDiv.className = 'govuk-!-margin-top-2 govuk-!-margin-bottom-1'
-        undoIgnoreDiv.innerHTML = '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-undo-term">Undo all</button>'
-        btnGroupParent.replaceChild(undoIgnoreDiv, btnGroup)
-        undoIgnoreDiv.querySelector('.dcf-undo-term').addEventListener('click', function () {
-          var s2 = stateMap.get(text)
-          if (s2) { s2.accepted = 0; s2.rejected = 0; stateMap.set(text, s2) }
-          if (source === 'assisted') { renderAssistedList(); } else { renderManualList(); }
-          applyHighlights()
-        })
-        classifyHighlights()
-        return
-      }
     })
     var addToCartBtn = li.querySelector('.dcf-add-to-cart')
     if (addToCartBtn && onAddToCart) addToCartBtn.addEventListener('click', function () { onAddToCart() })
     var undoBtn = li.querySelector('.dcf-undo-selection')
     if (undoBtn && onUndo) undoBtn.addEventListener('click', function () { onUndo() })
+    var removeTermBtn = li.querySelector('.dcf-term-remove')
+    if (removeTermBtn && onRemoveTerm) removeTermBtn.addEventListener('click', function () { onRemoveTerm() })
 
     return li
   }
 
   // ── Bucket section (groups terms of the same type) ────────────────────────
-  function makeBucketSection (type, terms, itemsMap, stateMap, renderFn, onAddToCartForTerm, onUndoForTerm, source) {
+  function makeBucketSection (type, terms, itemsMap, stateMap, renderFn, onAddToCartForTerm, onUndoForTerm, source, onRemoveTermForTerm) {
     var section = document.createElement('section')
     section.className = 'dcf-redact-bucket'
 
@@ -916,9 +808,10 @@
           renderFn()
           classifyHighlights()
         },
-        onAddToCartForTerm ? function () { onAddToCartForTerm(text) } : null,
-        onUndoForTerm      ? function () { onUndoForTerm(text)      } : null,
-        source
+        onAddToCartForTerm      ? function () { onAddToCartForTerm(text)      } : null,
+        onUndoForTerm           ? function () { onUndoForTerm(text)           } : null,
+        source,
+        onRemoveTermForTerm     ? function () { onRemoveTermForTerm(text)     } : null
       ))
     })
     section.appendChild(ul)
@@ -1071,7 +964,14 @@
         },
         null,
         null,
-        'manual'
+        'manual',
+        function (text) {
+          manualItems.delete(text)
+          manualInstState.delete(text)
+          manualTypes.delete(text)
+          renderManualList()
+          applyHighlights()
+        }
       ))
     })
     list.querySelectorAll('details[data-term]').forEach(function (d) {
@@ -1167,17 +1067,11 @@
         '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + escHtml(item.label) + '</strong></p>' +
         '<div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">' +
           '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-area-accept">Save</button>' +
-          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-area-ignore">Ignore</button>' +
         '</div>'
       li.querySelector('.dcf-area-accept').addEventListener('click', function () {
         areaItemStates.set(item.id, 'accepted')
         cartItems.set(item.label, { count: 1, type: item.type, source: 'area', areaId: item.id })
         renderCart()
-        renderFn()
-      })
-      li.querySelector('.dcf-area-ignore').addEventListener('click', function () {
-        areaItems = areaItems.filter(function (a) { return a.id !== item.id })
-        areaItemStates.delete(item.id)
         renderFn()
       })
       ul.appendChild(li)
@@ -1298,6 +1192,8 @@
     var w = Math.abs(end.x - drawStart.x)
     var h = Math.abs(end.y - drawStart.y)
     if (w < 10 || h < 10) return  // ignore accidental tiny drags
+    // Discard any pending (unsaved) area before adding the new one
+    areaItems = areaItems.filter(function (item) { return areaItemStates.get(item.id) === 'accepted' })
     var overlayRect = areaOverlay.getBoundingClientRect()
     var scrollTop   = getPdfScrollTop()
     areaCounter++
