@@ -170,6 +170,7 @@
 
   // ── Shared helpers ────────────────────────────────────────────────────────
   var fullDocText = ''
+  var pageStartOffsets = []  // pageStartOffsets[i] = char index in fullDocText where page i+1 begins
 
   function extractFullText (pdfDocument) {
     var pages = pdfDocument.numPages
@@ -182,6 +183,10 @@
       )
     }
     Promise.all(promises).then(function (texts) {
+      var offsets = []
+      var pos = 0
+      texts.forEach(function (t) { offsets.push(pos); pos += t.length + 1 })
+      pageStartOffsets = offsets
       fullDocText = texts.join(' ')
       // Sync state totals to actual document snippet counts now that text is loaded
       syncStateTotals(assistedItems, assistedInstState)
@@ -253,10 +258,15 @@
       var end   = start + match[0].length
       var before = fullDocText.slice(Math.max(0, start - 200), start)
       var after  = fullDocText.slice(end, end + 200)
+      var page = 1
+      for (var pi = pageStartOffsets.length - 1; pi >= 0; pi--) {
+        if (start >= pageStartOffsets[pi]) { page = pi + 1; break }
+      }
       snippets.push({
         before: before.trim().split(/\s+/).filter(Boolean).slice(-5).join(' '),
         term:   match[0],
-        after:  after.trim().split(/\s+/).filter(Boolean).slice(0, 5).join(' ')
+        after:  after.trim().split(/\s+/).filter(Boolean).slice(0, 5).join(' '),
+        page:   page
       })
     }
     return snippets
@@ -345,8 +355,9 @@
     var termGroups = new Map()
     cartItems.forEach(function (item, key) {
       if (item.source === 'area') return
-      if (!termGroups.has(item.text)) termGroups.set(item.text, { keys: [], item: item })
-      termGroups.get(item.text).keys.push(key)
+      var t = item.text || key
+      if (!termGroups.has(t)) termGroups.set(t, { keys: [], item: item })
+      termGroups.get(t).keys.push(key)
     })
     termGroups.forEach(function (group, text) {
       var count = group.keys.length
@@ -495,6 +506,7 @@
       detailsBody =
         '<div class="dcf-redact-instance">' +
           '<button type="button" class="dcf-redact-instance__focus govuk-body-s">' +
+            '<span class="dcf-snippet-page">Page ' + s0.page + '</span> — ' +
             (s0.before ? escHtml(s0.before) + ' ' : '') +
             '<strong>' + escHtml(s0.term) + '</strong>' +
             (s0.after ? ' ' + escHtml(s0.after) : '') +
@@ -506,6 +518,7 @@
         var html =
           '<div class="dcf-redact-instance">' +
             '<button type="button" class="dcf-redact-instance__focus govuk-body-s">' +
+              '<span class="dcf-snippet-page">Page ' + s.page + '</span> — ' +
               (s.before ? escHtml(s.before) + ' ' : '') +
               '<strong>' + escHtml(s.term) + '</strong>' +
               (s.after ? ' ' + escHtml(s.after) : '') +
@@ -1245,7 +1258,7 @@
         var accepted  = Number((restore.acceptedCount  && restore.acceptedCount[f.value])  || 0)
         var submitted = Number((restore.instanceCount  && restore.instanceCount[f.value])  || f.instances)
         var total     = submitted + rejected
-        cartItems.set(f.value, { count: submitted, type: f.type || 'Unclassified', source: 'assisted' })
+        cartItems.set(f.value, { text: f.value, count: submitted, type: f.type || 'Unclassified', source: 'assisted' })
         assistedTypes.set(f.value, f.type || null)
         assistedInstState.set(f.value, { accepted: accepted, rejected: rejected, total: total })
       } else {
@@ -1270,7 +1283,7 @@
       var accepted  = Number((restore.acceptedCount  && restore.acceptedCount[text])  || 0)
       var submitted = Number((restore.instanceCount  && restore.instanceCount[text])  || 0)
       var total     = submitted + rejected
-      cartItems.set(text, { count: submitted, type: 'Unclassified', source: 'manual' })
+      cartItems.set(text, { text: text, count: submitted, type: 'Unclassified', source: 'manual' })
       manualInstState.set(text, { accepted: accepted, rejected: rejected, total: total })
     })
     renderCart()

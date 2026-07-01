@@ -133,6 +133,11 @@
   padding: govuk-spacing(2) 0;
 }
 
+.dcf-snippet-page {
+  @include govuk-font($size: 16, $weight: bold);
+  color: $govuk-secondary-text-colour;
+}
+
 .dcf-redact-instance__focus {
   @include govuk-font($size: 16);
   background: none;
