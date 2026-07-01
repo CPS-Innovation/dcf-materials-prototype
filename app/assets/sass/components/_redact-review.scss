@@ -12,7 +12,13 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  width: calc(100% - 420px - #{govuk-spacing(6)});
+  background: #f4f8fb;
+  border-top: 4px solid #cecece;
+  border-bottom: 4px solid #cecece;
+  padding: govuk-spacing(4);
+  grid-column: 1;
+  grid-row: 1;
+  align-self: stretch;
 
   .govuk-form-group {
     margin-bottom: 0;
@@ -20,6 +26,10 @@
 
   .govuk-radios__item {
     margin-bottom: 0;
+  }
+
+  .govuk-radios__label::before {
+    background-color: govuk-colour("white");
   }
 
 }
@@ -42,11 +52,25 @@
 .dcf-redact-layout {
   display: grid;
   grid-template-columns: 1fr 420px;
-  gap: govuk-spacing(6);
+  column-gap: govuk-spacing(6);
   align-items: start;
 }
 
+.dcf-redact-layout > .dcf-ai-card {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  margin-bottom: 0;
+}
+
+.dcf-redact-right {
+  grid-column: 2;
+  grid-row: 2;
+}
+
 .dcf-redact-viewer {
+  grid-column: 1;
+  grid-row: 2;
   position: relative;
   height: calc(100vh - 220px);
   min-height: 1500px;

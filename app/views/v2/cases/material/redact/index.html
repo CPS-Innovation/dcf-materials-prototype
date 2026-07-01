@@ -13,24 +13,24 @@
   <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %}{% if scan.findings and scan.findings.length %} {% endif %}</span>
   <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Redact document <span id="dcf-cart-count" hidden>(0)</span></h1>
 
-  <div class="dcf-redact-banner govuk-!-margin-bottom-4">
-    <div class="dcf-redact-banner__mode" role="group" aria-labelledby="redact-mode-label">
-      <span class="dcf-redact-banner__label" id="redact-mode-label">Redaction mode</span>
-      {{ govukRadios({
-        classes: "govuk-radios--inline",
-        name: "redact-mode",
-        items: [
-          { value: "manual",   text: "Manual",   checked: true },
-          { value: "assisted", html: 'Assisted <strong class="govuk-tag govuk-tag--orange dcf-redact-ai-tag">' ~ (scan.findings | length) ~ ' AI suggestion' ~ ('s' if scan.findings | length != 1 else '') ~ '</strong>' }
-        ]
-      }) }}
-    </div>
-    <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-btn-redact-area" id="btn-area-draw">
-      Redact an area
-    </button>
-  </div>
-
   <div class="dcf-redact-layout">
+
+    <div class="dcf-redact-banner">
+      <div class="dcf-redact-banner__mode" role="group" aria-labelledby="assisted-mode-label">
+        <span class="dcf-redact-banner__label" id="assisted-mode-label">Assisted mode{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--purple dcf-redact-ai-tag">{{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }}</strong>{% endif %}</span>
+        {{ govukRadios({
+          classes: "govuk-radios--inline",
+          name: "assisted-mode",
+          items: [
+            { value: "on",  text: "On" },
+            { value: "off", text: "Off", checked: true }
+          ]
+        }) }}
+      </div>
+      <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-btn-redact-area" id="btn-area-draw">
+        Redact an area
+      </button>
+    </div>
 
     {# ── Left: document viewer ───────────────────────────────── #}
     <div class="dcf-redact-viewer">
@@ -47,15 +47,15 @@
       <div class="dcf-area-overlay" id="dcf-area-overlay" aria-hidden="true"></div>
     </div>
 
-    <div>
-
-      <div class="dcf-ai-card" id="dcf-redaction-cart">
-        <div class="dcf-ai-card__header">
-          <h3 class="govuk-heading-m govuk-!-margin-bottom-0">Saved redactions</h3>
-        </div>
-        <p class="govuk-body-s govuk-!-margin-top-3 govuk-!-margin-bottom-0" id="dcf-cart-empty-msg">No redactions saved yet.</p>
-        <ul class="govuk-list govuk-!-margin-top-4" id="dcf-cart-list"></ul>
+    <div class="dcf-ai-card" id="dcf-redaction-cart">
+      <div class="dcf-ai-card__header">
+        <h3 class="govuk-heading-m govuk-!-margin-bottom-0">Saved redactions</h3>
       </div>
+      <p class="govuk-body-s govuk-!-margin-top-3 govuk-!-margin-bottom-0" id="dcf-cart-empty-msg">No redactions saved yet.</p>
+      <ul class="govuk-list govuk-!-margin-top-4" id="dcf-cart-list"></ul>
+    </div>
+
+    <div class="dcf-redact-right">
 
     {# ── Right: assisted panel ───────────────────────────────── #}
     <div class="dcf-redact-panel" id="panel-assisted">
