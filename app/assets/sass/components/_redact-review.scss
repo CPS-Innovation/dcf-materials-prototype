@@ -12,9 +12,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: #f4f8fb;
-  border-top: 4px solid #cecece;
-  border-bottom: 4px solid #cecece;
+  background: #1d70b8;
   padding: govuk-spacing(4);
   flex-shrink: 0;
 
@@ -26,8 +24,20 @@
     margin-bottom: 0;
   }
 
+  .govuk-radios__label {
+    color: govuk-colour("white");
+  }
+
+  // Ring circle: white fill + dark border so it reads as an empty circle on blue
   .govuk-radios__label::before {
     background-color: govuk-colour("white");
+    border-color: govuk-colour("black");
+  }
+
+  // Checked dot: both border and background are dark-on-white (dot is drawn via border)
+  .govuk-radios__input:checked + .govuk-radios__label::after {
+    border-color: govuk-colour("black");
+    background: govuk-colour("black");
   }
 
 }
@@ -42,7 +52,7 @@
 
 .dcf-redact-banner__label {
   @include govuk-font($size: 19, $weight: bold);
-  color: $govuk-text-colour;
+  color: govuk-colour("white");
   white-space: nowrap;
 }
 

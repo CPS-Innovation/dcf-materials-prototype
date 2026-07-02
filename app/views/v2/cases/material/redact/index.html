@@ -19,7 +19,12 @@
 
       <div class="dcf-redact-banner">
         <div class="dcf-redact-banner__mode" role="group" aria-labelledby="assisted-mode-label">
-          <span class="dcf-redact-banner__label" id="assisted-mode-label">Assisted mode{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--purple dcf-redact-ai-tag">{{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }}</strong>{% endif %}</span>
+          <span class="dcf-redact-banner__label" id="assisted-mode-label">Assisted mode
+            {% if scan.findings and scan.findings.length %} ({{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }})
+              {# <strong class="govuk-tag govuk-tag--purple dcf-redact-ai-tag">{{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }}
+              </strong> #}
+            {% endif %}
+          </span>
           {{ govukRadios({
             classes: "govuk-radios--inline",
             name: "assisted-mode",
@@ -29,7 +34,7 @@
             ]
           }) }}
         </div>
-        <button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-btn-redact-area" id="btn-area-draw">
+        <button type="button" class="govuk-button govuk-button--inverse govuk-!-margin-bottom-0 dcf-btn-redact-area" id="btn-area-draw">
           Redact an area
         </button>
       </div>
