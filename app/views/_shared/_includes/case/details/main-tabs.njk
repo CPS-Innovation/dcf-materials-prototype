@@ -4,8 +4,17 @@
 {% set overviewHtml %}
   <div class="case-layout">
 
-    {# Progress / stages #}
-    {% include "_shared/_includes/case/details/progress-panel.njk" %}
+    {# Progress timeline / stages #}
+    {# {% include "_shared/_includes/case/details/progress-panel.njk" %} #}
+
+    <p class="govuk-body govuk-!-margin-bottom-0">Case complexity: <span class="govuk-!-font-weight-bold">Basic</span></p>
+    <p class="govuk-body govuk-!-margin-bottom-0">Case status: <span class="govuk-!-font-weight-bold">Pre-charge</span></p>
+    
+
+    {{ govukWarningText({
+      text: "[Defendant_name] is a youth - Date of Birth 5 December 2010",
+      iconFallbackText: "Fallback text"
+    }) }}
 
     {# 3-column area #}
     <div class="case-grid">

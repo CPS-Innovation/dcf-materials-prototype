@@ -3,6 +3,9 @@
 // https://prototype-kit.service.gov.uk/docs/adding-css-javascript-and-images
 // 
 
+// Calendar
+@import "components/calendar.scss";
+
 @import "components/hidden.scss";
 @import "components/header.scss";
 
@@ -60,8 +63,9 @@
 @import "components/overview-areas";
 
 /* Prevent page-level x-scroll; table wrappers use overflow-x:auto for internal scroll */
+/* clip (not hidden) avoids creating a scroll container, which would break position:sticky children */
 .dcf-materials-wide .govuk-main-wrapper {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Default: pages without this class use GOV.UK default width */

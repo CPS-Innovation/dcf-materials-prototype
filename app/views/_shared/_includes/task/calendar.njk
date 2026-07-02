@@ -1,0 +1,220 @@
+{# _shared/_includes/task/calendar.njk #}
+{% set eventTypes = [
+  { key: "direction", label: "Direction Due" },
+  { key: "task",      label: "Task Due" },
+  { key: "hearing",   label: "Hearing" },
+  { key: "ctl",       label: "CTL Expiry" },
+  { key: "note",      label: "Note" }
+] %}
+
+{# ── Static calendar data — June 2026 ── #}
+
+{% set calendarMonthName = "June 2026" %}
+
+{% set calendarGrid = [
+  [
+    { date: "2026-06-01", dayNumber: 1,  isToday: false, events: [
+      { type: "task",    count: 1, label: "Task due" },
+      { type: "hearing", count: 1, label: "Hearing" }
+    ]},
+    { date: "2026-06-02", dayNumber: 2,  isToday: false, events: [
+      { type: "direction", count: 1, label: "Direction due" }
+    ]},
+    { date: "2026-06-03", dayNumber: 3,  isToday: false, events: [
+      { type: "note", count: 2, label: "Notes" },
+      { type: "ctl",  count: 1, label: "CTL expiry" }
+    ]},
+    { date: "2026-06-04", dayNumber: 4,  isToday: false, events: [
+      { type: "hearing", count: 2, label: "Hearings" }
+    ]},
+    { date: "2026-06-05", dayNumber: 5,  isToday: false, events: [
+      { type: "task",      count: 1, label: "Task due" },
+      { type: "direction", count: 1, label: "Direction due" }
+    ]}
+  ],
+  [
+    { date: "2026-06-08", dayNumber: 8,  isToday: false, events: [
+      { type: "hearing", count: 1, label: "Hearing" }
+    ]},
+    { date: "2026-06-09", dayNumber: 9,  isToday: false, events: [
+      { type: "note", count: 1, label: "Note" },
+      { type: "task", count: 1, label: "Task due" }
+    ]},
+    { date: "2026-06-10", dayNumber: 10, isToday: false, events: [] },
+    { date: "2026-06-11", dayNumber: 11, isToday: false, events: [
+      { type: "direction", count: 1, label: "Direction due" },
+      { type: "ctl",       count: 1, label: "CTL expiry" }
+    ]},
+    { date: "2026-06-12", dayNumber: 12, isToday: false, events: [
+      { type: "task",    count: 2, label: "Tasks due" },
+      { type: "hearing", count: 1, label: "Hearing" }
+    ]}
+  ],
+  [
+    { date: "2026-06-15", dayNumber: 15, isToday: false, events: [] },
+    { date: "2026-06-16", dayNumber: 16, isToday: false, events: [
+      { type: "note",      count: 1, label: "Note" },
+      { type: "direction", count: 1, label: "Direction due" }
+    ]},
+    { date: "2026-06-17", dayNumber: 17, isToday: false, events: [
+      { type: "hearing", count: 3, label: "Hearings" }
+    ]},
+    { date: "2026-06-18", dayNumber: 18, isToday: false, events: [
+      { type: "ctl", count: 2, label: "CTL expiry" }
+    ]},
+    { date: "2026-06-19", dayNumber: 19, isToday: false, events: [
+      { type: "task", count: 1, label: "Task due" }
+    ]}
+  ],
+  [
+    { date: "2026-06-22", dayNumber: 22, isToday: false, events: [
+      { type: "direction", count: 1, label: "Direction due" },
+      { type: "note",      count: 1, label: "Note" }
+    ]},
+    { date: "2026-06-23", dayNumber: 23, isToday: false, events: [
+      { type: "hearing", count: 1, label: "Hearing" }
+    ]},
+    { date: "2026-06-24", dayNumber: 24, isToday: false, events: [
+      { type: "ctl",  count: 1, label: "CTL expiry" },
+      { type: "task", count: 1, label: "Task due" }
+    ]},
+    { date: "2026-06-25", dayNumber: 25, isToday: true, events: [
+      { type: "task",      count: 2, label: "Tasks due" },
+      { type: "direction", count: 1, label: "Direction due" }
+    ]},
+    { date: "2026-06-26", dayNumber: 26, isToday: false, events: [
+      { type: "note", count: 1, label: "Note" }
+    ]}
+  ],
+  [
+    { date: "2026-06-29", dayNumber: 29, isToday: false, events: [
+      { type: "hearing", count: 1, label: "Hearing" }
+    ]},
+    { date: "2026-06-30", dayNumber: 30, isToday: false, events: [
+      { type: "task", count: 1, label: "Task due" },
+      { type: "ctl",  count: 1, label: "CTL expiry" }
+    ]},
+    { date: null },
+    { date: null },
+    { date: null }
+  ]
+] %}
+
+{% set calendarAgenda = [
+  { dayNumber: 1,  isToday: false, events: [{ type: "task", count: 1, label: "Task due" }, { type: "hearing", count: 1, label: "Hearing" }] },
+  { dayNumber: 2,  isToday: false, events: [{ type: "direction", count: 1, label: "Direction due" }] },
+  { dayNumber: 3,  isToday: false, events: [{ type: "note", count: 2, label: "Notes" }, { type: "ctl", count: 1, label: "CTL expiry" }] },
+  { dayNumber: 4,  isToday: false, events: [{ type: "hearing", count: 2, label: "Hearings" }] },
+  { dayNumber: 5,  isToday: false, events: [{ type: "task", count: 1, label: "Task due" }, { type: "direction", count: 1, label: "Direction due" }] },
+  { dayNumber: 8,  isToday: false, events: [{ type: "hearing", count: 1, label: "Hearing" }] },
+  { dayNumber: 9,  isToday: false, events: [{ type: "note", count: 1, label: "Note" }, { type: "task", count: 1, label: "Task due" }] },
+  { dayNumber: 11, isToday: false, events: [{ type: "direction", count: 1, label: "Direction due" }, { type: "ctl", count: 1, label: "CTL expiry" }] },
+  { dayNumber: 12, isToday: false, events: [{ type: "task", count: 2, label: "Tasks due" }, { type: "hearing", count: 1, label: "Hearing" }] },
+  { dayNumber: 16, isToday: false, events: [{ type: "note", count: 1, label: "Note" }, { type: "direction", count: 1, label: "Direction due" }] },
+  { dayNumber: 17, isToday: false, events: [{ type: "hearing", count: 3, label: "Hearings" }] },
+  { dayNumber: 18, isToday: false, events: [{ type: "ctl", count: 2, label: "CTL expiry" }] },
+  { dayNumber: 19, isToday: false, events: [{ type: "task", count: 1, label: "Task due" }] },
+  { dayNumber: 22, isToday: false, events: [{ type: "direction", count: 1, label: "Direction due" }, { type: "note", count: 1, label: "Note" }] },
+  { dayNumber: 23, isToday: false, events: [{ type: "hearing", count: 1, label: "Hearing" }] },
+  { dayNumber: 24, isToday: false, events: [{ type: "ctl", count: 1, label: "CTL expiry" }, { type: "task", count: 1, label: "Task due" }] },
+  { dayNumber: 25, isToday: true,  events: [{ type: "task", count: 2, label: "Tasks due" }, { type: "direction", count: 1, label: "Direction due" }] },
+  { dayNumber: 26, isToday: false, events: [{ type: "note", count: 1, label: "Note" }] },
+  { dayNumber: 29, isToday: false, events: [{ type: "hearing", count: 1, label: "Hearing" }] },
+  { dayNumber: 30, isToday: false, events: [{ type: "task", count: 1, label: "Task due" }, { type: "ctl", count: 1, label: "CTL expiry" }] }
+] %}
+
+<div class="cal-wrapper" role="region" aria-label="Case calendar" data-module="cal-calendar">
+
+  {# ── Header ── #}
+  <div class="cal-header">
+    <h2 id="cal-heading" class="cal-heading">{{ calendarMonthName }}</h2>
+    <div class="cal-controls">
+
+      <nav class="cal-nav" aria-label="Calendar navigation">
+        <a href="#" class="cal-nav-btn" aria-label="Previous month">&#8249;</a>
+        <a href="#" class="cal-nav-btn" aria-label="Next month">&#8250;</a>
+      </nav>
+
+      <div class="cal-view-switcher" role="group" aria-label="Calendar view">
+        <a href="#" class="cal-view-btn cal-view-btn--active" aria-current="true">Month</a>
+        <a href="#" class="cal-view-btn">Week</a>
+        <a href="#" class="cal-view-btn">Work week</a>
+        <a href="#" class="cal-view-btn">Day</a>
+      </div>
+
+      <a href="#" class="cal-today-btn">Today</a>
+
+    </div>
+  </div>
+
+  {# ── Legend ── #}
+  <ul class="cal-legend" aria-label="Event type legend">
+    {% for type in eventTypes %}
+    <li class="cal-legend-item">
+      <span class="cal-legend-dot cal-legend-dot--{{ type.key }}" aria-hidden="true"></span>
+      <span>{{ type.label }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  {# ── Grid (desktop) ── #}
+  <div class="cal-grid-container">
+    <table class="cal-grid" role="grid" aria-labelledby="cal-heading">
+      <thead>
+        <tr role="row">
+          <th role="columnheader" scope="col" abbr="Monday">Monday</th>
+          <th role="columnheader" scope="col" abbr="Tuesday">Tuesday</th>
+          <th role="columnheader" scope="col" abbr="Wednesday">Wednesday</th>
+          <th role="columnheader" scope="col" abbr="Thursday">Thursday</th>
+          <th role="columnheader" scope="col" abbr="Friday">Friday</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in calendarGrid %}
+        <tr role="row">
+          {% for cell in week %}
+          {% if cell.date %}
+          <td class="cal-cell{% if cell.isToday %} cal-cell--today{% endif %}"
+              role="gridcell"
+              aria-label="{{ cell.dayNumber }} {{ calendarMonthName }}{% if cell.isToday %}, today{% endif %}">
+            <span class="cal-date" aria-hidden="true">{{ cell.dayNumber }}</span>
+            {% if cell.events.length %}
+            <ul class="cal-events" aria-label="Events on {{ cell.dayNumber }} {{ calendarMonthName }}">
+              {% for ev in cell.events %}
+              <li class="cal-event cal-event--{{ ev.type }}">
+                <span class="cal-event__count" aria-hidden="true">{{ ev.count }}</span>
+                <span>{{ ev.label }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </td>
+          {% else %}
+          <td class="cal-cell cal-cell--empty" role="gridcell" aria-label="No date"></td>
+          {% endif %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── Agenda (mobile) ── #}
+  <div class="cal-agenda" aria-label="Events for {{ calendarMonthName }}">
+    {% for day in calendarAgenda %}
+    <div class="cal-agenda-day{% if day.isToday %} cal-agenda-day--today{% endif %}">
+      <div class="cal-agenda-date">
+        {{ day.dayNumber }} {{ calendarMonthName }}{% if day.isToday %} (Today){% endif %}
+      </div>
+      <ul class="cal-agenda-events">
+        {% for ev in day.events %}
+        <li class="cal-agenda-event cal-agenda-event--{{ ev.type }}">
+          <strong>{{ ev.count }}</strong> {{ ev.label }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>{# /cal-wrapper #}

@@ -9,7 +9,7 @@
 
     var link = document.createElement('a')
     link.href = '#'
-    link.className = 'govuk-link govuk-!-margin-right-3'
+    link.className = 'govuk-button govuk-button--secondary govuk-!-margin-bottom-0 govuk-!-margin-right-3'
     link.setAttribute('data-action', 'redact-document')
     link.textContent = 'Redact this document'
 

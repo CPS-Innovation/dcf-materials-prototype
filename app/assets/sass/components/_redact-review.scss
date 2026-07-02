@@ -1,10 +1,81 @@
-.dcf-btn-redact-area {}
+.dcf-btn-redact-area {
+  align-self: flex-end;
+}
+
+// ── Redaction mode banner ─────────────────────────────────────────────────────
+
+.dcf-redact-banner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #1d70b8;
+  padding: govuk-spacing(4);
+  flex-shrink: 0;
+
+  .govuk-form-group {
+    margin-bottom: 0;
+  }
+
+  .govuk-radios__item {
+    margin-bottom: 0;
+  }
+
+  .govuk-radios__label {
+    color: govuk-colour("white");
+  }
+
+  // Ring circle: white fill + dark border so it reads as an empty circle on blue
+  .govuk-radios__label::before {
+    background-color: govuk-colour("white");
+    border-color: govuk-colour("black");
+  }
+
+  // Checked dot: both border and background are dark-on-white (dot is drawn via border)
+  .govuk-radios__input:checked + .govuk-radios__label::after {
+    border-color: govuk-colour("black");
+    background: govuk-colour("black");
+  }
+
+}
+
+.dcf-redact-banner__mode {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: govuk-spacing(1);
+}
+
+
+.dcf-redact-banner__label {
+  @include govuk-font($size: 19, $weight: bold);
+  color: govuk-colour("white");
+  white-space: nowrap;
+}
+
 
 .dcf-redact-layout {
   display: grid;
   grid-template-columns: 1fr 420px;
-  gap: govuk-spacing(6);
+  column-gap: govuk-spacing(6);
   align-items: start;
+}
+
+.dcf-redact-left {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.dcf-redact-right-col {
+  grid-column: 2;
+
+  > .dcf-ai-card {
+    margin-bottom: 0;
+  }
 }
 
 .dcf-redact-viewer {
@@ -37,11 +108,21 @@
 }
 
 .dcf-manual-list__item {
-  padding: govuk-spacing(3) 0;
+  padding: govuk-spacing(4) 0;
 
   & + & {
     border-top: 1px solid $govuk-border-colour;
   }
+}
+
+// Scale all govuk-buttons and govuk-tags within redaction lists to match body-s
+.dcf-manual-list .govuk-button {
+  @include govuk-font($size: 16);
+  padding: govuk-spacing(1) govuk-spacing(2);
+}
+
+.dcf-manual-list .govuk-tag {
+  @include govuk-font($size: 16);
 }
 
 .dcf-manual-list__text {
@@ -60,6 +141,11 @@
 
 .dcf-redact-instance {
   padding: govuk-spacing(2) 0;
+}
+
+.dcf-snippet-page {
+  @include govuk-font($size: 16, $weight: bold);
+  color: $govuk-secondary-text-colour;
 }
 
 .dcf-redact-instance__focus {
@@ -174,7 +260,8 @@
 .dcf-add-to-cart,
 .dcf-cart-remove,
 .dcf-cart-reset,
-.dcf-undo-selection {
+.dcf-undo-selection,
+.dcf-undo-instance {
   @include govuk-font($size: 16);
   color: $govuk-link-colour;
   background: none;

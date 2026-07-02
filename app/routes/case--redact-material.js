@@ -295,28 +295,12 @@ module.exports = router => {
     if (scan.itemId && Array.isArray(materials.Material)) {
       const original = materials.Material.find(m => String(m.ItemId) === String(scan.itemId))
 
-      // Mark the original as redacted
+      // Mark the original as redacted in place
       materials.Material = materials.Material.map(m =>
         String(m.ItemId) === String(scan.itemId)
           ? { ...m, RedactionStatus: 'Redacted', RedactedCount: confirmed.length }
           : m
       )
-
-      // Push a "REDACTED" copy into the same folder as a prototype illusion
-      if (original) {
-        const redactedTitle = (scan.title || original.Title || 'Document') + ' - REDACTED'
-        const redactedCopy = {
-          ...original,
-          ItemId:          String(scan.itemId) + '-redacted',
-          Title:           redactedTitle,
-          RedactionStatus: 'Redacted',
-          RedactedCount:   confirmed.length,
-          isRedactedCopy:  'yes'
-        }
-        // Avoid duplicates if confirmed multiple times
-        materials.Material = materials.Material.filter(m => m.ItemId !== redactedCopy.ItemId)
-        materials.Material.push(redactedCopy)
-      }
 
       req.session.data.caseMaterials = materials
     }

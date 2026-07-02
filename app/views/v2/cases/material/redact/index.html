@@ -10,71 +10,73 @@
 
   {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
 
-  <span class="govuk-caption-m">Redact document - {% if scan.title %}{{ scan.title }}{% endif %}{% if scan.findings and scan.findings.length %} <strong class="govuk-tag govuk-tag--purple">{{ scan.findings | length }} AI suggestion{{ "s" if scan.findings | length != 1 else "" }}</strong>{% endif %}</span>
-  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Add redactions to cart <span id="dcf-cart-count" hidden>(0)</span></h1>
-
-  <div class="govuk-button-group dcf-redact-mode-btns govuk-!-margin-bottom-4">
-    <button type="button" class="govuk-button govuk-button--secondary" id="btn-assisted" data-panel="assisted">
-      Assisted redaction
-    </button>
-    <button type="button" class="govuk-button govuk-button--secondary" id="btn-manual" data-panel="manual">
-      Manual redaction
-    </button>
-    <button type="button" class="govuk-button govuk-button--secondary dcf-btn-redact-area" id="btn-area-draw">
-      Redact an area
-    </button>
-
-    {# Document actions hidden for now
-    {{ mojButtonMenu({
-      button: {
-        text: "Document actions",
-        classes: "govuk-button--secondary"
-      },
-      items: [
-        { text: "Rotate pages",                href: "#" },
-        { text: "Discard pages",               href: "#" },
-        { text: "Mark as read",                href: "#" },
-        { text: "Mark as unread",              href: "#" },
-        { text: "Rename",                      href: "#" },
-        { text: "Delete page",                 href: "#" }
-      ]
-    }) }}
-    #}
-  </div>
+  <span class="govuk-caption-m">{% if scan.title %}{{ scan.title }}{% endif %}{% if scan.findings and scan.findings.length %} {% endif %}</span>
+  <h1 class="govuk-heading-l govuk-!-margin-bottom-4">Redact document <span id="dcf-cart-count" hidden>(0)</span></h1>
 
   <div class="dcf-redact-layout">
 
-    {# ── Left: document viewer ───────────────────────────────── #}
-    <div class="dcf-redact-viewer">
-      {% if pdfViewerUrl %}
-        <iframe
-          id="redact-preview-iframe"
-          src="{{ pdfViewerUrl }}"
-          title="Document preview"
-          loading="lazy"
-        ></iframe>
-      {% else %}
-        <div class="govuk-inset-text">No document URL available.</div>
-      {% endif %}
-      <div class="dcf-area-overlay" id="dcf-area-overlay" aria-hidden="true"></div>
+    <div class="dcf-redact-left">
+
+      <div class="dcf-redact-banner">
+        <div class="dcf-redact-banner__mode" role="group" aria-labelledby="assisted-mode-label">
+          <span class="dcf-redact-banner__label" id="assisted-mode-label">Assisted mode
+            {% if scan.findings and scan.findings.length %} ({{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }})
+              {# <strong class="govuk-tag govuk-tag--purple dcf-redact-ai-tag">{{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }}
+              </strong> #}
+            {% endif %}
+          </span>
+          {{ govukRadios({
+            classes: "govuk-radios--inline",
+            name: "assisted-mode",
+            items: [
+              { value: "on",  text: "On" },
+              { value: "off", text: "Off", checked: true }
+            ]
+          }) }}
+        </div>
+        <button type="button" class="govuk-button govuk-button--inverse govuk-!-margin-bottom-0 dcf-btn-redact-area" id="btn-area-draw">
+          Redact an area
+        </button>
+      </div>
+
+      {# ── Left: document viewer ───────────────────────────────── #}
+      <div class="dcf-redact-viewer">
+        {% if pdfViewerUrl %}
+          <iframe
+            id="redact-preview-iframe"
+            src="{{ pdfViewerUrl }}"
+            title="Document preview"
+            loading="lazy"
+          ></iframe>
+        {% else %}
+          <div class="govuk-inset-text">No document URL available.</div>
+        {% endif %}
+        <div class="dcf-area-overlay" id="dcf-area-overlay" aria-hidden="true"></div>
+      </div>
+
     </div>
 
-    <div>
+    <div class="dcf-redact-right-col">
 
-      <div class="dcf-ai-card" id="dcf-redaction-cart">
-        <div class="dcf-ai-card__header">
-          <h3 class="govuk-heading-m govuk-!-margin-bottom-0">Redaction cart</h3>
-        </div>
-        <p class="govuk-body-s govuk-!-margin-top-3 govuk-!-margin-bottom-0" id="dcf-cart-empty-msg">No redactions added yet.</p>
-        <ul class="govuk-list govuk-!-margin-top-4" id="dcf-cart-list"></ul>
+    <div class="dcf-ai-card" id="dcf-redaction-cart">
+      <div class="dcf-ai-card__header">
+        <h3 class="govuk-heading-m govuk-!-margin-bottom-0">Saved redactions</h3>
       </div>
+      <p class="govuk-body-s govuk-!-margin-top-3 govuk-!-margin-bottom-0" id="dcf-cart-empty-msg">No redactions saved yet.</p>
+      <ul class="govuk-list govuk-!-margin-top-4" id="dcf-cart-list"></ul>
+    </div>
+
+    <div class="dcf-redact-right">
 
     {# ── Right: assisted panel ───────────────────────────────── #}
     <div class="dcf-redact-panel" id="panel-assisted">
 
       {% if scan.findings and scan.findings.length %}
 
-        <h3 class="govuk-heading-m">Possible redactions <strong class="govuk-tag govuk-tag--purple govuk-!-margin-left-1">AI assistant</strong></h3>
+        <h3 class="govuk-heading-m govuk-!-margin-top-3">Possible redactions <strong class="govuk-tag govuk-tag--purple govuk-!-margin-left-1">AI assistant</strong></h3>
+        {{ govukInsetText({
+          html: 'Only saved redactions will be applied. AI suggestions not saved will be ignored.'
+        }) }}
         <p class="govuk-body" id="dcf-assisted-empty" hidden>No pending suggestions.</p>
         <ul class="dcf-manual-list govuk-list" id="dcf-assisted-list"></ul>
 
@@ -97,7 +99,7 @@
 
       <div id="dcf-manual-header">
         {{ govukInsetText({
-          html: 'Select text in the document to mark it for redaction, then use <strong>Add to cart</strong> to confirm it.'
+          html: 'Select text in the document to mark it for redaction. Only saved selections will be applied — anything not saved will be ignored.'
         }) }}
       </div>
       <ul class="dcf-manual-list govuk-list" id="dcf-manual-list"></ul>
@@ -114,7 +116,7 @@
 
       <div id="dcf-area-header">
         {{ govukInsetText({
-          html: '<strong>Drag crosshair</strong> to mark an area on the document.'
+          html: '<strong>Drag crosshair</strong> to mark an area on the document, then save it. Starting a new selection will replace any unsaved area.'
         }) }}
       </div>
 
@@ -134,12 +136,14 @@
 
     </div>
 
-  </div>
+    </div>{# /dcf-redact-right-col #}
+
+  </div>{# /dcf-redact-layout #}
 
 {% endblock %}
 
 {% block pageScripts %}
-  <script>
+  <script>  
     window.__assistedFindings = {{ (scan.findings or []) | dump | safe }};
     {% if redactCheck %}
     window.__redactRestore = {{ redactCheck | dump | safe }};

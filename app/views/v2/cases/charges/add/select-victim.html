@@ -24,7 +24,7 @@
           {% set _ = victimItems.push({
             value: victim.id | string,
             text: victim.firstName + " " + victim.lastName,
-            hint: { text: "Pure victim" } if victim.isPure else undefined,
+            hint: { text: "Victim is also a witness" } if not victim.isPure else undefined,
             checked: data["victimId"] == victim.id | string
           }) %}
         {% endfor %}
@@ -48,10 +48,7 @@
           items: victimItems
         }) }}
 
-        {{ govukInsetText({
-          text: "Text to explain why Pure victims are shown here and what it means to select one. Pure victims are contacts and dont appear as witnesses."
-        }) }}
-
+   
 
         <div class="govuk-button-group govuk-!-margin-top-6">
           {{ govukButton({ text: "Continue" }) }}

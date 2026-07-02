@@ -21,7 +21,7 @@
           name: "victimIsVI",
           fieldset: {
             legend: {
-              html: '<span class="govuk-caption-m">' + captionName + '</span>Is ' + (newCharge.victimName or "the victim") + ' vulnerable, intimidated, or both?',
+              html: '<span class="govuk-caption-m">' + captionName + '</span>Select statuses for ' + (newCharge.victimName or "the victim"),
               isPageHeading: true,
               classes: "govuk-fieldset__legend--l"
             }
@@ -36,6 +36,14 @@
               value: "Intimidated",
               text: "Intimidated",
               checked: newCharge.victimIsVI and ("Intimidated" in newCharge.victimIsVI)
+            },
+            {
+              divider: "or"
+            },
+            {
+              value: "none",
+              text: "None of these",
+              behaviour: "exclusive"
             }
           ]
         }) }}
