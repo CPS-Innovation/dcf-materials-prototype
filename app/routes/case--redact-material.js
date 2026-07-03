@@ -49,13 +49,17 @@ function extractPiiFromText (text) {
   const findings = []
   let m
 
-  // First names — capitalised words appearing 2+ times
-  const counts = {}
-  const words = text.match(/\b[A-Z][a-z]{2,14}\b/g) || []
-  words.forEach(w => {
-    if (!NOT_NAMES.has(w)) counts[w] = (counts[w] || 0) + 1
-  })
-  Object.entries(counts)
+  // Full names — adjacent pairs of title-case words appearing 2+ times
+  const nameRe = /\b([A-Z][a-z]{2,14})\s+([A-Z][a-z]{2,14})\b/g
+  const pairs = {}
+  let nm
+  while ((nm = nameRe.exec(text)) !== null) {
+    if (!NOT_NAMES.has(nm[1]) && !NOT_NAMES.has(nm[2])) {
+      const full = nm[1] + ' ' + nm[2]
+      pairs[full] = (pairs[full] || 0) + 1
+    }
+  }
+  Object.entries(pairs)
     .filter(([, n]) => n >= 2)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
@@ -139,7 +143,7 @@ async function scanForPii (text) {
           'You are a legal document redaction scanner. Find all sensitive personal information in the text below.\n' +
           'Return ONLY a JSON array with no other text. Each item: { "type": string, "value": string, "instances": number }\n\n' +
           'Use exactly these type labels:\n' +
-          '- "Name": any individual\'s name — full name, first name, or surname.\n' +
+          '- "Name": any individual\'s full name (first name and surname together, e.g. "Lucy Doyle"). Never split a name into separate first-name and surname entries.\n' +
           '- "Email address": any email address\n' +
           '- "Address": street addresses, full or partial\n' +
           '- "Phone number": any telephone number\n' +

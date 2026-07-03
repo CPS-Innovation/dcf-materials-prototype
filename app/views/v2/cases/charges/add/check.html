@@ -35,19 +35,6 @@
         {% set dateDisplay = "Not recorded" %}
       {% endif %}
 
-      {# ── Resolve address display ──────────────────────────────── #}
-      {% set addr = newCharge.offenceAddress %}
-      {% if addr and (addr.line1 or addr.town) %}
-        {% set addrParts = [] %}
-        {% if addr.line1 %}{% set _ = addrParts.push(addr.line1) %}{% endif %}
-        {% if addr.line2 %}{% set _ = addrParts.push(addr.line2) %}{% endif %}
-        {% if addr.town  %}{% set _ = addrParts.push(addr.town)  %}{% endif %}
-        {% if addr.postcode %}{% set _ = addrParts.push(addr.postcode) %}{% endif %}
-        {% set addressDisplay = addrParts | join(", ") %}
-      {% else %}
-        {% set addressDisplay = "Not recorded" %}
-      {% endif %}
-
       {# ── Resolve victim display ───────────────────────────────── #}
       {% if newCharge.victimId == "none" %}
         {% set victimDisplay = "No victim associated with this charge" %}
@@ -76,11 +63,6 @@
           key:   { text: "Date" },
           value: { text: dateDisplay },
           actions: { items: [{ href: base + "/date-type?returnUrl=" + checkUrl, text: "Change", visuallyHiddenText: "offence date" }] }
-        },
-        {
-          key:   { text: "Address" },
-          value: { text: addressDisplay },
-          actions: { items: [{ href: base + "/address?returnUrl=" + checkUrl, text: "Change", visuallyHiddenText: "offence address" }] }
         },
         {
           key:   { text: "Victim" },
