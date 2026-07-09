@@ -45,6 +45,14 @@ module.exports = router => {
     req.session.data.generateCpsDocuments = req.session.data.generateCpsDocuments || {}
   }
 
+  function getDocCounts (req) {
+    const s = _.get(req, 'session.data.generateCpsDocuments', {})
+    const caseDocCount      = (s.caseDocuments || []).length
+    const defendantDocCount = Object.values(s.defendantDocumentsById || {}).reduce((sum, docs) => sum + docs.length, 0)
+    const witnessDocCount   = Object.values(s.witnessDocumentsById || {}).reduce((sum, docs) => sum + docs.length, 0)
+    return { caseDocCount, defendantDocCount, witnessDocCount }
+  }
+
   // -------------------------
   // TASK LIST
   // -------------------------
@@ -55,11 +63,7 @@ module.exports = router => {
     const _case = await fetchCase(caseId)
     if (!_case) return res.status(404).render('not-found')
 
-    const s = _.get(req, 'session.data.generateCpsDocuments', {})
-
-    const caseDocCount      = (s.caseDocuments || []).length
-    const defendantDocCount = Object.values(s.defendantDocumentsById || {}).reduce((sum, docs) => sum + docs.length, 0)
-    const witnessDocCount   = Object.values(s.witnessDocumentsById || {}).reduce((sum, docs) => sum + docs.length, 0)
+    const { caseDocCount, defendantDocCount, witnessDocCount } = getDocCounts(req)
 
     return res.render('v2/cases/material/generate-cps-documents/task-list', {
       _case,
@@ -92,7 +96,14 @@ module.exports = router => {
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
     ensureWizardState(req)
-    _.set(req, 'session.data.generateCpsDocuments.caseDocuments', asArray(req.body.selectedDocuments))
+    const selected = asArray(req.body.selectedDocuments)
+
+    if (selected.includes('none')) {
+      _.set(req, 'session.data.generateCpsDocuments.caseDocuments', [])
+      return res.redirect(`/cases/${caseId}/material/generate-cps-documents`)
+    }
+
+    _.set(req, 'session.data.generateCpsDocuments.caseDocuments', selected)
 
     const returnUrl = req.query.returnUrl
     return res.redirect(returnUrl || `/cases/${caseId}/material/generate-cps-documents/case-documents-check`)
@@ -436,6 +447,12 @@ module.exports = router => {
 
     ensureWizardState(req)
     const ids = asArray(req.body.selectedWitnessIds)
+
+    if (ids.includes('none')) {
+      _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', {})
+      return res.redirect(`/cases/${caseId}/material/generate-cps-documents`)
+    }
+
     const byWitness = {}
     ids.forEach(id => { byWitness[id] = ['witness_special_measures'] })
     _.set(req, 'session.data.generateCpsDocuments.witnessDocumentsById', byWitness)
@@ -662,7 +679,7 @@ module.exports = router => {
     })
   })
 
-  router.post('/cases/:caseId/material/generate-cps-documents/check', (req, res) => {
+  router.post('/cases/:caseId/material/generate-cps-documents/check', async (req, res) => {
     const caseId = parseInt(req.params.caseId, 10)
     if (Number.isNaN(caseId)) return res.status(400).send('Invalid case id')
 
@@ -670,6 +687,23 @@ module.exports = router => {
     const selectedCaseIds = selections.caseDocuments || []
     const defendantById   = selections.defendantDocumentsById || {}
     const witnessById     = selections.witnessDocumentsById || {}
+
+    const caseDocumentsEmpty      = selectedCaseIds.length === 0 || selectedCaseIds.includes('none')
+    const defendantDocumentsEmpty = Object.keys(defendantById).length === 0
+    const witnessDocumentsEmpty   = Object.keys(witnessById).length === 0
+
+    if (caseDocumentsEmpty && defendantDocumentsEmpty && witnessDocumentsEmpty) {
+      const _case = await fetchCase(caseId)
+      if (!_case) return res.status(404).render('not-found')
+
+      return res.render('v2/cases/material/generate-cps-documents/check', {
+        _case,
+        caseMaterialsGenerateDocuments: getGenerateDocsData(req),
+        selections,
+        showErrors: true,
+        errorList: [{ text: 'You must add case, defendant or witness documents to continue', href: '#documents-section' }]
+      })
+    }
 
     const docs = getGenerateDocsFixture()
     const now  = new Date().toISOString()
