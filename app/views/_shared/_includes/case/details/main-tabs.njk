@@ -10,17 +10,32 @@
     <p class="govuk-body govuk-!-margin-bottom-0">Case complexity: <span class="govuk-!-font-weight-bold">Basic</span></p>
     <p class="govuk-body govuk-!-margin-bottom-0">Case status: <span class="govuk-!-font-weight-bold">Pre-charge</span></p>
     
-    {# defendantsValue is set in /cases/:caseId/details #}
-    {% if _case.defendants.length > 1 %}
-      {{ govukWarningText({
-        html: defendantsValue + " are under 18 years of age, and have the legal status of youth.",
-        iconFallbackText: "Warning icon"
-      }) }}
-    {% else %}
-      {{ govukWarningText({
-        html: defendantsValue + " is under 18 years of age, and has the legal status of youth.",
-        iconFallbackText: "Warning icon"
-      }) }}
+    {% set childDefendants = [] %}
+    {% for defendant in _case.defendants %}
+      {% if defendant.dateOfBirth and (defendant.dateOfBirth | age) < 18 %}
+        {% set childDefendants = (childDefendants.push(defendant), childDefendants) %}
+      {% endif %}
+    {% endfor %}
+
+    {% if childDefendants.length > 0 %}
+      {% set childDefendantsValue %}
+        {{ childDefendants[0].firstName }} {{ childDefendants[0].lastName }}
+        {% if childDefendants.length > 1 %}
+          and {{ childDefendants.length - 1 }} more
+        {% endif %}
+      {% endset %}
+
+      {% if childDefendants.length > 1 %}
+        {{ govukWarningText({
+          html: childDefendantsValue + " are under 18 years of age, and have the legal status of children.",
+          iconFallbackText: "Warning icon"
+        }) }}
+      {% else %}
+        {{ govukWarningText({
+          html: childDefendantsValue + " is under 18 years of age, and has the legal status of a child.",
+          iconFallbackText: "Warning icon"
+        }) }}
+      {% endif %}
     {% endif %}
 
     {# 3-column area #}
