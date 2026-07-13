@@ -108,7 +108,11 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <div class="govuk-button-group govuk-!-margin-top-4">
           {{ govukButton({ text: "Commit redactions" }) }}
-          <a href="/cases/{{ _case.id }}/material/redact/review" class="govuk-link">Back to cart</a>
+          {{ govukButton({
+            text: "View saved redactions",
+            href: "/cases/" + _case.id + "/material/redact/review",
+            classes: "govuk-button--secondary"
+          }) }}
         </div>
       </form>
 
