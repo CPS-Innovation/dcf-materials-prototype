@@ -61,7 +61,7 @@
   display: grid;
   grid-template-columns: 1fr 420px;
   column-gap: govuk-spacing(6);
-  align-items: start;
+  align-items: stretch;
 }
 
 .dcf-redact-left {
@@ -75,7 +75,15 @@
 
   > .dcf-ai-card {
     margin-bottom: 0;
+    position: sticky;
+    top: 0;
+    z-index: 90;
   }
+}
+
+#dcf-cart-list {
+  max-height: 45vh;
+  overflow-y: auto;
 }
 
 .dcf-redact-viewer {
@@ -258,7 +266,6 @@
 }
 
 .dcf-add-to-cart,
-.dcf-cart-remove,
 .dcf-cart-reset,
 .dcf-undo-selection,
 .dcf-undo-instance {

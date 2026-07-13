@@ -19,8 +19,8 @@
 
       <div class="dcf-redact-banner">
         <div class="dcf-redact-banner__mode" role="group" aria-labelledby="assisted-mode-label">
-          <span class="dcf-redact-banner__label" id="assisted-mode-label">Assisted mode
-            {% if scan.findings and scan.findings.length %} ({{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }})
+          <span class="dcf-redact-banner__label" id="assisted-mode-label">Assisted redaction mode
+            {% if scan.findings and scan.findings.length %} ({{ scan.findings | length }} suggestion{{ 's' if scan.findings | length != 1 else '' }})
               {# <strong class="govuk-tag govuk-tag--purple dcf-redact-ai-tag">{{ scan.findings | length }} AI suggestion{{ 's' if scan.findings | length != 1 else '' }}
               </strong> #}
             {% endif %}

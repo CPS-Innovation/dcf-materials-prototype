@@ -365,11 +365,7 @@
       li.className = 'dcf-cart-item'
       li.setAttribute('data-term', text)
       li.innerHTML =
-        '<span class="govuk-body-s">' + escHtml(text) + (count > 1 ? ' (' + count + ')' : '') + '</span>' +
-        '<button type="button" class="dcf-cart-remove">' + (count > 1 ? 'Remove all' : 'Remove') + '</button>'
-      li.querySelector('.dcf-cart-remove').addEventListener('click', function () {
-        removeFromCart(group.keys[0])
-      })
+        '<span class="govuk-body-s">' + escHtml(text) + ' (' + count + ')</span>'
       cartList.appendChild(li)
     })
     // Area items render individually
@@ -378,11 +374,7 @@
       var li = document.createElement('li')
       li.className = 'dcf-cart-item'
       li.innerHTML =
-        '<span class="govuk-body-s">' + escHtml(key) + '</span>' +
-        '<button type="button" class="dcf-cart-remove">Remove</button>'
-      li.querySelector('.dcf-cart-remove').addEventListener('click', function () {
-        removeFromCart(key)
-      })
+        '<span class="govuk-body-s">' + escHtml(key) + '</span>'
       cartList.appendChild(li)
     })
 
@@ -393,8 +385,8 @@
       var actions = document.createElement('div')
       actions.className = 'govuk-button-group govuk-!-margin-top-6 govuk-!-margin-bottom-0 dcf-cart-actions'
       actions.innerHTML =
-        '<button type="button" class="govuk-button dcf-cart-preview">Preview redactions</button>' +
-        '<button type="button" class="govuk-link dcf-cart-reset">Clear cart</button>'
+        '<button type="button" class="govuk-button dcf-cart-preview">Preview saved redactions</button>' +
+        '<button type="button" class="govuk-link dcf-cart-reset">Remove all saved redactions</button>'
       actions.querySelector('.dcf-cart-preview').addEventListener('click', function () {
         var form = getActiveForm()
         if (form) form.requestSubmit()
@@ -418,30 +410,6 @@
     itemsMap.delete(text)
     renderCart()
     if (source === 'assisted') renderAssistedList()
-    else renderManualList()
-    applyHighlights()
-  }
-
-  function removeFromCart (key) {
-    var item = cartItems.get(key)
-    if (!item) return
-    if (item.source === 'area') {
-      cartItems.delete(key)
-      areaItemStates.set(item.areaId, 'pending')
-      renderCart()
-      renderAreaList()
-      return
-    }
-    var text = item.text
-    // Remove all cart entries for this term and reset to fully pending
-    var keysToDelete = []
-    cartItems.forEach(function (ci, ck) { if (ci.text === text) keysToDelete.push(ck) })
-    keysToDelete.forEach(function (k) { cartItems.delete(k) })
-    var stateMap = item.source === 'assisted' ? assistedInstState : manualInstState
-    var s = stateMap.get(text)
-    if (s) { s.accepted = 0; s.rejected = 0; stateMap.set(text, s) }
-    renderCart()
-    if (item.source === 'assisted') renderAssistedList()
     else renderManualList()
     applyHighlights()
   }
@@ -539,8 +507,8 @@
 
     var singleInstanceBtns = (displayState === 'pending' && shownSnippets && shownSnippets.length === 1 && pending === 1)
       ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1">' +
-          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__accept">Save</button>' +
-          (onRemoveTerm ? '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-remove">Remove</button>' : '') +
+          '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-redact-instance__accept">Save instance</button>' +
+          (onRemoveTerm ? '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-remove">Discard this redaction</button>' : '') +
         '</div>'
       : ''
 
@@ -560,8 +528,8 @@
       singleInstanceBtns +
       (pending > 1 && onAcceptAll
         ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1">' +
-            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Save all</button>' +
-            (onRemoveTerm ? '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-remove">Remove</button>' : '') +
+            '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Save all instances</button>' +
+            (onRemoveTerm ? '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-remove">Discard this redaction</button>' : '') +
           '</div>'
         : (displayState !== 'pending' && sState && sState.total > 1
           ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1 dcf-dynamic-undo-all">' +
@@ -610,7 +578,7 @@
                 var newBG = document.createElement('div')
                 newBG.className = 'govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1'
                 newBG.innerHTML =
-                  '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Save all</button>'
+                  '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Save all instances</button>'
                 dynUndoDiv.parentNode.replaceChild(newBG, dynUndoDiv)
               }
             }
