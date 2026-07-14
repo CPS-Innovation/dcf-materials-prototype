@@ -209,10 +209,17 @@
     })
   }
 
+  // Case-insensitive RegExp for `text` tolerant of whitespace-run differences between
+  // the browser's live Selection.toString() and the single-space-joined fullDocText
+  // reconstruction (extractFullText).
+  function buildTermRegex (text, flags) {
+    var escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(escaped.replace(/\s+/g, '\\s+'), flags)
+  }
+
   function countInDoc (text) {
     if (!text || !fullDocText) return 0
-    var escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return (fullDocText.match(new RegExp(escaped, 'gi')) || []).length
+    return (fullDocText.match(buildTermRegex(text, 'gi')) || []).length
   }
 
   function escHtml (str) {
@@ -250,8 +257,7 @@
   function getContextSnippets (text) {
     if (!fullDocText || !text) return null
     var snippets = []
-    var escaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    var re = new RegExp(escaped, 'gi')
+    var re = buildTermRegex(text, 'gi')
     var match
     while ((match = re.exec(fullDocText)) !== null) {
       var start = match.index
@@ -305,6 +311,9 @@
 
   function getItemDisplayState (stateMap, itemsMap, text) {
     if (getPending(stateMap, itemsMap, text) > 0) return 'pending'
+    var s = stateMap.get(text)
+    var total = s ? s.total : (itemsMap.get(text) || 0)
+    if (total <= 0) return 'unmatched'
     return 'saved'
   }
 
@@ -462,13 +471,17 @@
 
     var stateTag = displayState === 'saved'
       ? '<div class="govuk-!-margin-top-2"><strong class="govuk-tag govuk-tag--green">Saved</strong></div>'
-      : ''
+      : displayState === 'unmatched'
+        ? '<div class="govuk-!-margin-top-2"><strong class="govuk-tag">Not found in document text</strong></div>'
+        : ''
 
     var detailsBody = ''
     if (shownSnippets === null) {
       detailsBody = '<p class="govuk-body-s">Loading context…</p>'
     } else if (shownSnippets.length === 0) {
-      detailsBody = '<p class="govuk-body-s">No context available.</p>'
+      detailsBody = displayState === 'unmatched'
+        ? '<p class="govuk-body-s">This selection could not be matched in the document text, so it cannot be saved. Discard it and try selecting again.</p>'
+        : '<p class="govuk-body-s">No context available.</p>'
     } else if (shownSnippets.length === 1) {
       var s0 = shownSnippets[0]
       detailsBody =
@@ -520,7 +533,9 @@
             '<strong>' + escHtml(text) + '</strong>' +
             (displayState === 'pending'
               ? ' (' + pending + ')'
-              : ' <strong class="govuk-tag govuk-tag--green govuk-!-margin-left-1">Saved</strong>') +
+              : displayState === 'unmatched'
+                ? ' <strong class="govuk-tag govuk-!-margin-left-1">Not found</strong>'
+                : ' <strong class="govuk-tag govuk-tag--green govuk-!-margin-left-1">Saved</strong>') +
           '</span>' +
         '</summary>' +
         '<div class="govuk-details__text dcf-redact-context">' + detailsBody + '</div>' +
@@ -531,11 +546,17 @@
             '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-accept-all">Save all instances</button>' +
             (onRemoveTerm ? '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-remove">Discard this redaction</button>' : '') +
           '</div>'
-        : (displayState !== 'pending' && sState && sState.total > 1
-          ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1 dcf-dynamic-undo-all">' +
-              '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-undo-all-static">Undo all</button>' +
-            '</div>'
-          : '')) +
+        : displayState === 'unmatched'
+          ? (onRemoveTerm
+              ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1">' +
+                  '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-term-remove">Discard this redaction</button>' +
+                '</div>'
+              : '')
+          : (displayState !== 'pending' && sState && sState.total > 1
+            ? '<div class="govuk-button-group govuk-!-margin-top-4 govuk-!-margin-bottom-1 dcf-dynamic-undo-all">' +
+                '<button type="button" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0 dcf-undo-all-static">Undo all</button>' +
+              '</div>'
+            : '')) +
       (displayState === 'pending' && (onAddToCart || onUndo)
         ? '<div class="dcf-bucket-controls dcf-bucket-controls--term">' +
             (onAddToCart ? '<button type="button" class="govuk-link dcf-add-to-cart">Save</button>' : '') +
@@ -966,7 +987,7 @@
     if (!panels.manual || !panels.manual.classList.contains('dcf-redact-panel--visible')) return
     try {
       var sel  = iframe.contentWindow.getSelection()
-      var text = sel ? sel.toString().trim() : ''
+      var text = sel ? sel.toString().trim().replace(/\s+/g, ' ') : ''
       if (!text || text.length < 2) return
       if (manualItems.has(text)) return
       var count = countInDoc(text)
