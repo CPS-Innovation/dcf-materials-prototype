@@ -957,7 +957,8 @@ function buildMetaPanel (meta, bodyId) {
       { key: 'myFileUrl',                     label: 'File location (URL)', render: function (v) {
         if (!v || v === '#') return '\u2014'
         return '<a class="govuk-link" href="' + esc(v) + '" target="_blank" rel="noreferrer">' + esc(v) + '</a>'
-      }}
+      }},
+      { key: 'ReceivedDate',                  label: 'Received' }
     ])
   } else if (isUnusedOrSensitive) {
     // Unused non-sensitive / Sensitive layout
