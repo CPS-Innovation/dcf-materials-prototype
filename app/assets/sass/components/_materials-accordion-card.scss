@@ -152,14 +152,26 @@ $dcf-muted:        #505a5f;
   color: $dcf-muted;
 }
 
-/* Date left, Add a note (icon + text) right */
+/* Dates stacked above Add a note (icon + text) */
 .dcf-material-card__meta.dcf-material-card__meta--with-note {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   width: 100%;
   margin-top: 2px;     // small breathing space above the date row
+}
+
+/* Groups "Made on" + "Received" as a single stacked block */
+.dcf-material-card__dates {
+  display: flex;
+  flex-direction: column;
+  row-gap: 2px;
+  min-width: 0;
+}
+
+.dcf-material-card__date-row {
+  margin: 0;
 }
 
 /* Note link (icon + text) */

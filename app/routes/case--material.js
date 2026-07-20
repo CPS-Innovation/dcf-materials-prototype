@@ -321,6 +321,7 @@ module.exports = router => {
     const type   = mat.Type  || m.Type  || '';
     const status = mat.materialStatus || m.materialStatus || m.Status || '';
     const date   = mat.Date || m.Date || m.date || '';
+    const received = mat.ReceivedDate || m.ReceivedDate || '';
     const href   = mat.myFileUrl || m.myFileUrl || '';
     const itemId = mat.ItemId || m.ItemId || '';
 
@@ -355,6 +356,12 @@ module.exports = router => {
             <dt class="govuk-summary-list__key">Date</dt>
             <dd class="govuk-summary-list__value">${esc(date)}</dd>
           </div>
+
+          ${received ? `
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Received</dt>
+            <dd class="govuk-summary-list__value">${esc(received)}</dd>
+          </div>` : ''}
         </dl>
 
         <!-- RAW JSON (not escaped) so getMaterialJSONFromLink can parse it -->

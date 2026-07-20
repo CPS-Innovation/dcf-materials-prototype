@@ -99,6 +99,7 @@
             ItemId: m.ItemId,
             Type: m.Type,
             date: m.date,
+            ReceivedDate: m.ReceivedDate,
             Status: m.Status,
 
             Material: {
@@ -149,11 +150,25 @@
         {% endif %}
       </h3>
 
-      {% if m.date %}
-        <p class="dcf-material-card__meta dcf-material-card__meta--with-note">
-          <span class="dcf-material-card__date">
-            {% if m.materialStatus == "Generated" %}Last generated: {{ m.date | govukDateTime }}{% else %}{{ m.date | govukDate }}{% endif %}
-          </span>
+      {% if m.date or m.ReceivedDate %}
+        <div class="dcf-material-card__meta dcf-material-card__meta--with-note">
+          <div class="dcf-material-card__dates">
+            {% if m.date %}
+              <p class="dcf-material-card__date-row">
+                <span class="dcf-material-card__date">
+                  {% if m.materialStatus == "Generated" %}Last generated: {{ m.date | govukDateTime }}{% else %}Made on: {{ m.date | govukDate }}{% endif %}
+                </span>
+              </p>
+            {% endif %}
+
+            {% if m.ReceivedDate %}
+              <p class="dcf-material-card__date-row">
+                <span class="dcf-material-card__date dcf-material-card__date--received">
+                  Received: {{ m.ReceivedDate | govukDate }}
+                </span>
+              </p>
+            {% endif %}
+          </div>
 
           <a href="#" class="govuk-link dcf-note-link" data-action="open-notes">
             <span class="dcf-note-link__icon" aria-hidden="true">
@@ -167,7 +182,7 @@
             <span class="dcf-note-link__text">Add a note</span>
           </a>
 
-        </p>
+        </div>
       {% endif %}
 
     </div>
