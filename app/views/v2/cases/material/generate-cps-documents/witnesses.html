@@ -34,6 +34,12 @@
         {% endfor %}
         {% set witnessItems = (witnessItems.push({ value: w.id, text: w.name, checked: isChecked }), witnessItems) %}
       {% endfor %}
+      {% set witnessItems = (witnessItems.push({ divider: "or" }), witnessItems) %}
+      {% set witnessItems = (witnessItems.push({
+        value: "none",
+        text: "I do not want to select any witness documents",
+        behaviour: "exclusive"
+      }), witnessItems) %}
 
       <form method="post">
 

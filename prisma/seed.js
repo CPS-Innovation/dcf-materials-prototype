@@ -935,7 +935,9 @@ await seedShowcaseIndictmentCase(prisma, {
       gender: faker.helpers.arrayElement(["Male", "Female", "Unknown"]),
       religion: faker.helpers.arrayElement([...religions, null]), // Some nulls
       occupation: faker.helpers.arrayElement([...occupations, null]), // Some nulls
-      dateOfBirth: faker.date.birthdate({ min: 18, max: 75, mode: "age" }),
+      dateOfBirth: faker.datatype.boolean({ probability: 0.08 })
+        ? faker.date.birthdate({ min: 10, max: 17, mode: "age" })
+        : faker.date.birthdate({ min: 18, max: 75, mode: "age" }),
       remandStatus: faker.helpers.arrayElement(remandStatuses),
       paceTimeLimit: timeLimitType === 'PACE' ? generatePACE() : null,
       defenceLawyerId: faker.helpers.arrayElement(defenceLawyers).id,

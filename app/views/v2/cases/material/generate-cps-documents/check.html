@@ -22,6 +22,13 @@
 
       {% include "_shared/_includes/success-banner-safe.njk" %}
 
+      {% if showErrors %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: errorList
+        }) }}
+      {% endif %}
+
       <span class="govuk-caption-m">Add CPS documents - {{ _case.reference }}</span>
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
@@ -35,21 +42,26 @@
       {% set defendantById = s.defendantDocumentsById or {} %}
       {% set witnessById = s.witnessDocumentsById or {} %}
 
+      <div id="documents-section" class="govuk-form-group{{ ' govuk-form-group--error' if showErrors }}">
+
+      {% if showErrors %}
+        <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> You must add case, defendant or witness documents to continue</p>
+      {% endif %}
+
       {# -----------------------------
          CASE DOCUMENTS
          ----------------------------- #}
 
+      <h2 class="govuk-heading-m govuk-!-margin-top-6">Case documents</h2>
+
       {% if selectedCaseIds | length == 0 or "none" in selectedCaseIds %}
 
-        <h2 class="govuk-heading-m govuk-!-margin-top-6">Case documents</h2>
         <p class="govuk-body govuk-hint">No case documents selected</p>
         <div class="govuk-button-group">
           <a href="/cases/{{ _case.id }}/material/generate-cps-documents/case-documents?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Add case documents</a>
         </div>
 
       {% else %}
-
-        <h2 class="govuk-heading-m govuk-!-margin-top-6">Case documents</h2>
 
         {% set caseValueHtml %}
           <ul class="govuk-list">
@@ -93,8 +105,12 @@
 
       <h2 class="govuk-heading-m govuk-!-margin-top-6">Defendant documents</h2>
 
+      {% if not (defendantById and (defendantById | length)) %}
+        <p class="govuk-body"><span class="govuk-hint">No defendant documents selected</span></p>
+      {% endif %}
+
       <div class="govuk-button-group">
-        <a href="/cases/{{ _case.id }}/material/generate-cps-documents/defendants?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Add another defendant</a>
+        <a href="/cases/{{ _case.id }}/material/generate-cps-documents/defendants?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Add defendant</a>
       </div>
 
       {% if defendantById and (defendantById | length) %}
@@ -163,8 +179,6 @@
 
         {% endfor %}
 
-      {% else %}
-        <p class="govuk-body"><span class="govuk-hint">No defendant documents selected</span></p>
       {% endif %}
 
 
@@ -175,8 +189,12 @@
 
       <h2 class="govuk-heading-m govuk-!-margin-top-6">Witness documents</h2>
 
+      {% if not (witnessById and (witnessById | length)) %}
+        <p class="govuk-body"><span class="govuk-hint">No witness documents selected</span></p>
+      {% endif %}
+
       <div class="govuk-button-group">
-        <a href="/cases/{{ _case.id }}/material/generate-cps-documents/witnesses?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Add another witness</a>
+        <a href="/cases/{{ _case.id }}/material/generate-cps-documents/witnesses?returnUrl={{ returnUrl | urlencode }}" class="govuk-link">Add witness</a>
       </div>
 
       {% if witnessById and (witnessById | length) %}
@@ -211,8 +229,6 @@
 
         {% endfor %}
 
-      {% else %}
-        <p class="govuk-body"><span class="govuk-hint">No witness documents selected</span></p>
       {% endif %}
 
       <form method="post">
@@ -220,6 +236,8 @@
           {{ govukButton({ text: "Generate documents" }) }}
         </div>
       </form>
+
+      </div>
 
     </div>
   </div>

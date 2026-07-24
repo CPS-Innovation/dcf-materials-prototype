@@ -142,6 +142,19 @@ addFilter('formatNumber', number => {
   return Number(number).toLocaleString('en-GB')
 })
 
+addFilter('age', dateOfBirth => {
+  if (!dateOfBirth) return null
+  const dob = (dateOfBirth instanceof Date) ? dateOfBirth : new Date(dateOfBirth)
+  if (Number.isNaN(dob.getTime())) return null
+  const today = new Date()
+  let age = today.getFullYear() - dob.getFullYear()
+  const hadBirthdayThisYear =
+    (today.getMonth() > dob.getMonth()) ||
+    (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate())
+  if (!hadBirthdayThisYear) age--
+  return age
+})
+
 addFilter('daysUntil', date => {
   const now = new Date()
   now.setHours(0, 0, 0, 0)
