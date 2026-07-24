@@ -943,13 +943,13 @@ function buildMetaPanel (meta, bodyId) {
       // TODO: StatementNumber — not yet in data model
       { key: 'StatementNumber',               label: 'Statement number' },
       // TODO: StatementMadeOn — not yet in data model
-      { key: 'StatementMadeOn',               label: 'Statement made on' },
+      { key: 'StatementMadeOn',               label: 'Statement made on', render: function (v) { return esc(window.DCFDateFormat.govukDateTime(v)) } },
       // TODO: WhenRecorded — not yet in data model (PeriodFrom is closest current proxy)
-      { key: 'WhenRecorded',                  label: 'When recorded' },
+      { key: 'WhenRecorded',                  label: 'When recorded', render: function (v) { return esc(window.DCFDateFormat.govukDateTime(v)) } },
       // TODO: WhereRecorded — not yet in data model (Location is closest current proxy)
       { key: 'WhereRecorded',                 label: 'Where recorded' },
       // TODO: WhenTranscribed — not yet in data model
-      { key: 'WhenTranscribed',               label: 'When transcribed' },
+      { key: 'WhenTranscribed',               label: 'When transcribed', render: function (v) { return esc(window.DCFDateFormat.govukDateTime(v)) } },
       // TODO: PresentationOfImpactStatement — not yet in data model
       { key: 'PresentationOfImpactStatement', label: 'Presentation of impact statement' },
       // TODO: AppropriateAdult — not yet in data model
@@ -958,7 +958,7 @@ function buildMetaPanel (meta, bodyId) {
         if (!v || v === '#') return '\u2014'
         return '<a class="govuk-link" href="' + esc(v) + '" target="_blank" rel="noreferrer">' + esc(v) + '</a>'
       }},
-      { key: 'ReceivedDate',                  label: 'Received' }
+      { key: 'ReceivedDate',                  label: 'Received', render: function (v) { return esc(window.DCFDateFormat.govukDate(v)) } }
     ])
   } else if (isUnusedOrSensitive) {
     // Unused non-sensitive / Sensitive layout
@@ -967,7 +967,7 @@ function buildMetaPanel (meta, bodyId) {
       { key: 'Title',                  label: 'Title' },
       { key: 'MaterialClassification', label: 'Classification' },
       { key: 'Description',            label: 'Description' },
-      { key: 'PeriodFrom',             label: 'Period from' },
+      { key: 'PeriodFrom',             label: 'Period from', render: function (v) { return esc(window.DCFDateFormat.govukDateTime(v)) } },
       { key: 'ProducedbyWitnessId',    label: 'Produced by' }
     ])
   } else if (isExhibit) {
@@ -978,8 +978,8 @@ function buildMetaPanel (meta, bodyId) {
       { key: 'MaterialClassification', label: 'Classification' },
       { key: 'exhibitDescription',     label: 'Description' },
       { key: 'Location',               label: 'Location' },
-      { key: 'PeriodFrom',             label: 'Period from' },
-      { key: 'PeriodTo',               label: 'Period to' },
+      { key: 'PeriodFrom',             label: 'Period from', render: function (v) { return esc(window.DCFDateFormat.govukDateTime(v)) } },
+      { key: 'PeriodTo',               label: 'Period to', render: function (v) { return esc(window.DCFDateFormat.govukDateTime(v)) } },
       { key: 'ProducedbyWitnessId',    label: 'Produced by witness' },
       // TODO: RelatedPerson1 / RelatedPerson2 — not yet in data model (currently only RelatedParticipantId)
       { key: 'RelatedPerson1',         label: 'Related person 1' },
@@ -998,8 +998,8 @@ function buildMetaPanel (meta, bodyId) {
       { key: 'RelatedPerson1',         label: 'Related person' },
       { key: 'Description',            label: 'Description' },
       { key: 'Location',               label: 'Location' },
-      { key: 'PeriodFrom',             label: 'Period from' },
-      { key: 'PeriodTo',               label: 'Period to' },
+      { key: 'PeriodFrom',             label: 'Period from', render: function (v) { return esc(window.DCFDateFormat.govukDateTime(v)) } },
+      { key: 'PeriodTo',               label: 'Period to', render: function (v) { return esc(window.DCFDateFormat.govukDateTime(v)) } },
       { key: 'ProducedbyWitnessId',    label: 'Produced by' },
       { key: 'MaterialType',           label: 'Type' },
       { key: 'SentExternally',         label: 'Sent externally' },
@@ -1078,7 +1078,7 @@ function buildMetaPanel (meta, bodyId) {
         },
         { key: 'rationale',   label: 'Rationale for disclosure decision' },
         { key: 'InspectedBy', label: 'Inspected by' },
-        { key: 'inspectedOn', label: 'Inspected on' },
+        { key: 'inspectedOn', label: 'Inspected on', render: function (v) { return esc(window.DCFDateFormat.govukDate(v)) } },
         { key: 'rebuttable',  label: 'Rebuttable' },
         // TODO: Sensitivity (not sensitive / sensitive) — not yet in data model for statements/exhibits
         { key: 'sensitivity',     label: 'Sensitivity' },
@@ -1099,7 +1099,7 @@ function buildMetaPanel (meta, bodyId) {
         },
         { key: 'rationale',       label: 'Rationale for disclosure decision' },
         { key: 'InspectedBy',     label: 'Inspected by' },
-        { key: 'inspectedOn',     label: 'Inspected on' },
+        { key: 'inspectedOn',     label: 'Inspected on', render: function (v) { return esc(window.DCFDateFormat.govukDate(v)) } },
         { key: 'rebuttable',      label: 'Rebuttable' },
         { key: 'sensitivity',     label: 'Sensitivity' },
         { key: 'sensitivityRationale', label: 'Sensitivity rationale' },
