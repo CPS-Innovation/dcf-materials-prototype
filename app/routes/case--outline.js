@@ -128,13 +128,18 @@ module.exports = router => {
         ]
       })
 
+    const errorSummary = outlineEdit.tagError
+      ? [{ text: 'You must tag every detected change before continuing', href: '#outline-tag-form' }]
+      : []
+    delete outlineEdit.tagError
+
     res.render('v2/cases/outline/tag/index', {
       _case,
       paragraphs: splitIntoParagraphs(annotatedParts),
       taggedRows,
       redactionTypes,
       totalChanges: changes.length,
-      allTagged: changes.length > 0 && changes.every(change => tags[change.id])
+      errorSummary
     })
   })
 
@@ -170,7 +175,8 @@ module.exports = router => {
     const allTagged = changes.length > 0 && changes.every(change => tags[change.id])
 
     if (!allTagged) {
-      return res.redirect(`/cases/${caseId}/outline/tag`)
+      outlineEdit.tagError = true
+      return req.session.save(() => res.redirect(`/cases/${caseId}/outline/tag`))
     }
 
     outlineEdit.taggedChanges = changes.map(change => ({

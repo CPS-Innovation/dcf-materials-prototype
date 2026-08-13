@@ -5,13 +5,27 @@
 {% set secondaryNavId = 'details' %}
 {% set bodyClasses = "dcf-materials-wide" %}
 
+{% set defendantsValue %}
+  {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+  {% if _case.defendants.length > 1 %}
+    and {{_case.defendants.length - 1}} more
+  {% endif %}
+{% endset %}
+
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
 
   {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit" }) }}
 
-  <span class="govuk-caption-m">{{ _case.reference }}</span>
-  <h1 class="govuk-heading-l">Tag changes to summary of circumstances</h1>
+  {% if errorSummary.length %}
+    {{ govukErrorSummary({
+      titleText: "There is a problem",
+      errorList: errorSummary
+    }) }}
+  {% endif %}
+
+  <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+  <h1 class="govuk-heading-l">Redaction types</h1>
 
   {% if totalChanges == 0 %}
     <p class="govuk-body">No changes were detected between the original and edited text.</p>
@@ -53,17 +67,12 @@
           </p>
         {% endfor %}
 
-        {% if allTagged %}
-          <form method="post" action="/cases/{{ _case.id }}/outline/tag">
-            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-            <div class="govuk-button-group">
-              {{ govukButton({ text: "Continue" }) }}
-            </div>
-          </form>
-        {% else %}
-          {{ govukButton({ text: "Continue", disabled: true }) }}
-          <p class="govuk-body govuk-hint">Tag all {{ totalChanges }} changes before continuing.</p>
-        {% endif %}
+        <form method="post" action="/cases/{{ _case.id }}/outline/tag">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <div class="govuk-button-group">
+            {{ govukButton({ text: "Continue" }) }}
+          </div>
+        </form>
 
       </div>
 
@@ -79,14 +88,14 @@
               name: "tag",
               fieldset: {
                 legend: {
-                  text: "Category",
-                  classes: "govuk-fieldset__legend--s"
+                  text: "Redaction type",
+                  classes: "govuk-fieldset__legend--m"
                 }
               },
               items: redactionTypes
             }) }}
 
-            {{ govukButton({ text: "Tag this change", classes: "govuk-button--secondary" }) }}
+            {{ govukButton({ text: "Confirm redaction type", classes: "govuk-button--secondary" }) }}
           </form>
         </div>
       </div>
