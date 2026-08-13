@@ -5,6 +5,7 @@ const complexities = require("../app/data/complexities.js");
 const firstNames = require("../app/data/first-names.js");
 const lastNames = require("../app/data/last-names.js");
 const types = require("../app/data/types.js");
+const factualSummaryFixture = require("../app/data/factual-summary-fixture.js");
 const taskNames = require("../app/data/task-names.js");
 const documentTypes = require("../app/data/document-types.js");
 const specialisms = require("../app/data/specialisms.js");
@@ -407,7 +408,8 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
       update: {
         unitId: unit.id,
         // keep "Not started"
-        reportStatus: null
+        reportStatus: null,
+        factualSummary: factualSummaryFixture
       },
       create: {
         reference: caseReference,
@@ -416,6 +418,7 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
         unit: { connect: { id: unit.id } },
         // keep "Not started"
         reportStatus: null,
+        factualSummary: factualSummaryFixture,
 
         location: {
           create: {
@@ -1285,6 +1288,7 @@ await seedShowcaseIndictmentCase(prisma, {
         reference: generateCaseReference(),
         type: faker.helpers.arrayElement(types),
         complexity: faker.helpers.arrayElement(complexities),
+        factualSummary: factualSummaryFixture,
         unit: { connect: { id: caseUnitId } },
         defendants: { connect: assignedDefendants.map((d) => ({ id: d.id })) },
         victims: { connect: assignedVictims.map((v) => ({ id: v.id })) },

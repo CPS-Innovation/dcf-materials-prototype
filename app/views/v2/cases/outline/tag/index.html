@@ -1,0 +1,58 @@
+{# app/views/v2/cases/outline/tag/index #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ _case.reference }}</span>
+      <h1 class="govuk-heading-l">Tag changes to summary of circumstances</h1>
+
+      {% if changes.length == 0 %}
+        <p class="govuk-body">No changes were detected between the original and edited text.</p>
+
+        <form method="post" action="/cases/{{ _case.id }}/outline/tag">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <div class="govuk-button-group">
+            {{ govukButton({ text: "Continue" }) }}
+          </div>
+        </form>
+      {% else %}
+        <p class="govuk-body">
+          {{ changes.length }} change{{ "s" if changes.length != 1 else "" }} detected. Choose a category for each one before continuing.
+        </p>
+
+        <form method="post" action="/cases/{{ _case.id }}/outline/tag">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+          {% for change in changes %}
+            <div class="govuk-!-margin-bottom-6 dcf-outline-change">
+              <p class="govuk-body">
+                {% if change.removedText %}<del class="dcf-outline-change__removed">{{ change.removedText }}</del>{% endif %}
+                {% if change.addedText %}<ins class="dcf-outline-change__added">{{ change.addedText }}</ins>{% endif %}
+              </p>
+
+              {{ govukSelect({
+                name: "tag-" + change.id,
+                id: "tag-" + change.id,
+                label: { text: "Category" },
+                items: [{ value: "", text: "-- Select redaction type --", selected: true }].concat(redactionTypes)
+              }) }}
+            </div>
+          {% endfor %}
+
+          <div class="govuk-button-group">
+            {{ govukButton({ text: "Continue" }) }}
+          </div>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

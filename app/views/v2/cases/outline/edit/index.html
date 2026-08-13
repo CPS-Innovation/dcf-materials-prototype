@@ -1,0 +1,77 @@
+{# app/views/v2/cases/outline/edit/index #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set defendantsValue %}
+  {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+  {% if _case.defendants.length > 1 %}
+    and {{_case.defendants.length - 1}} more
+  {% endif %}
+{% endset %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+      <h1 class="govuk-heading-l">Change summary of circumstances on offence(s)</h1>
+  
+      {{ govukWarningText({
+        text: "Only complete this action if you urgently need to change this text yourself.",
+        iconFallbackText: "Warning"
+      }) }}
+
+      <p class="govuk-body">You can request the police to make changes by adding a 'Factual Summary Confidential Information Request' action point to your Action Plan.</p>
+
+      <form method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {{ govukTextarea({
+          name: "factualSummary",
+          id: "factual-summary",
+          rows: "20",
+          value: _case.factualSummary,
+          label: {
+            text: "Current summary of circumstances",
+            classes: "govuk-label--s govuk-!-margin-top-6",
+            isPageHeading: false
+          }
+
+        }) }}
+
+        {{ govukRadios({
+          classes: "govuk-!-margin-bottom-4",
+          name: "changedName",
+          fieldset: {
+            legend: {
+              text: "Do you want to copy the original text into the Confidential Information Other section?",
+              isPageHeading: false,
+              classes: "govuk-fieldset__legend--s"
+            }
+          },
+          items: [
+            {
+              value: "yes",
+              text: "Yes"
+            },
+            {
+              value: "no",
+              text: "No"
+            }
+          ]
+        }) }}
+              
+         <div class="govuk-button-group">
+          {{ govukButton({ text: "Save and continue" }) }}
+         </div> 
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

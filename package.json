@@ -16,6 +16,7 @@
     "@x-govuk/govuk-prototype-components": "^5.0.2",
     "bcrypt": "^6.0.0",
     "connect-flash": "^0.1.1",
+    "diff": "^9.0.0",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "govuk-frontend": "5.12.0",
