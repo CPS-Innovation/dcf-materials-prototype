@@ -10,49 +10,90 @@
 
   {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit" }) }}
 
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-      <span class="govuk-caption-m">{{ _case.reference }}</span>
-      <h1 class="govuk-heading-l">Tag changes to summary of circumstances</h1>
+  <span class="govuk-caption-m">{{ _case.reference }}</span>
+  <h1 class="govuk-heading-l">Tag changes to summary of circumstances</h1>
 
-      {% if changes.length == 0 %}
-        <p class="govuk-body">No changes were detected between the original and edited text.</p>
+  {% if totalChanges == 0 %}
+    <p class="govuk-body">No changes were detected between the original and edited text.</p>
 
-        <form method="post" action="/cases/{{ _case.id }}/outline/tag">
-          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-          <div class="govuk-button-group">
-            {{ govukButton({ text: "Continue" }) }}
-          </div>
-        </form>
-      {% else %}
+    <form method="post" action="/cases/{{ _case.id }}/outline/tag">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <div class="govuk-button-group">
+        {{ govukButton({ text: "Continue" }) }}
+      </div>
+    </form>
+  {% else %}
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+
+        {% if taggedRows.length %}
+          {{ govukTable({
+            caption: "Tagged changes",
+            captionClasses: "govuk-table__caption--m",
+            classes: "govuk-!-margin-bottom-6",
+            head: [
+              { text: "Change" },
+              { text: "Type" },
+              { text: "Category" },
+              { text: "Date" }
+            ],
+            rows: taggedRows
+          }) }}
+        {% endif %}
+
         <p class="govuk-body">
-          {{ changes.length }} change{{ "s" if changes.length != 1 else "" }} detected. Choose a category for each one before continuing.
+          Select a highlighted change below to tag it. {{ totalChanges }} change{{ "s" if totalChanges != 1 else "" }} detected.
         </p>
 
-        <form method="post" action="/cases/{{ _case.id }}/outline/tag">
-          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        {% for paragraph in paragraphs %}
+          <p class="govuk-body">
+            {% for part in paragraph %}
+              {% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--tagged' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><s>{{ part.value }}</s></button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--tagged' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><strong>{{ part.value }}</strong></button></mark>{% endif %}
+            {% endfor %}
+          </p>
+        {% endfor %}
 
-          {% for change in changes %}
-            <div class="govuk-!-margin-bottom-6 dcf-outline-change">
-              <p class="govuk-body">
-                {% if change.removedText %}<del class="dcf-outline-change__removed">{{ change.removedText }}</del>{% endif %}
-                {% if change.addedText %}<ins class="dcf-outline-change__added">{{ change.addedText }}</ins>{% endif %}
-              </p>
-
-              {{ govukSelect({
-                name: "tag-" + change.id,
-                id: "tag-" + change.id,
-                label: { text: "Category" },
-                items: [{ value: "", text: "-- Select redaction type --", selected: true }].concat(redactionTypes)
-              }) }}
+        {% if allTagged %}
+          <form method="post" action="/cases/{{ _case.id }}/outline/tag">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <div class="govuk-button-group">
+              {{ govukButton({ text: "Continue" }) }}
             </div>
-          {% endfor %}
+          </form>
+        {% else %}
+          {{ govukButton({ text: "Continue", disabled: true }) }}
+          <p class="govuk-body govuk-hint">Tag all {{ totalChanges }} changes before continuing.</p>
+        {% endif %}
 
-          <div class="govuk-button-group">
-            {{ govukButton({ text: "Continue" }) }}
-          </div>
-        </form>
-      {% endif %}
+      </div>
+
+      <div class="govuk-grid-column-one-third">
+        <div class="dcf-outline-tag-panel">
+          <form method="post" action="/cases/{{ _case.id }}/outline/tag/apply" id="outline-tag-form">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <input type="hidden" name="changeId" id="change-id-field" value="">
+
+            {{ govukRadios({
+              classes: "govuk-radios--small",
+              idPrefix: "tag",
+              name: "tag",
+              fieldset: {
+                legend: {
+                  text: "Category",
+                  classes: "govuk-fieldset__legend--s"
+                }
+              },
+              items: redactionTypes
+            }) }}
+
+            {{ govukButton({ text: "Tag this change", classes: "govuk-button--secondary" }) }}
+          </form>
+        </div>
+      </div>
     </div>
-  </div>
+  {% endif %}
+{% endblock %}
+
+{% block pageScripts %}
+  <script src="/public/javascripts/components/outline-tag.js" defer></script>
 {% endblock %}

@@ -35,14 +35,13 @@
         {{ govukTextarea({
           name: "factualSummary",
           id: "factual-summary",
-          rows: "20",
+          rows: "25",
           value: _case.factualSummary,
           label: {
             text: "Current summary of circumstances",
             classes: "govuk-label--s govuk-!-margin-top-6",
             isPageHeading: false
           }
-
         }) }}
 
         {{ govukRadios({
