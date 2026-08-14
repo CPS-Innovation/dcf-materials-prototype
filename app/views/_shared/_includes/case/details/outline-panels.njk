@@ -308,29 +308,34 @@ I also certify that all material subject to rebuttable presumption under the CPI
 
 
 
-{# ---- Side nav + panels ---- #}
-<div class="govuk-grid-row" id="case-outline-panels">
-  <div class="govuk-grid-column-one-quarter">
-    {{ mojSideNavigation({
-      label: "Case outline",
-      items: [
-        { text: "Factual summary", href: "#factual-summary", active: true, attributes: { "data-case-outline-link": "" } },
-        { text: "Confidential Information to Prosecutor", href: "#cip", attributes: { "data-case-outline-link": "" } },
-        { text: "Certifications", href: "#certifications", attributes: { "data-case-outline-link": "" } }
-      ]
-    }) }}
+{# ---- Horizontal nav + panels ---- #}
+<div id="case-outline-panels">
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds govuk-!-margin-bottom-4">
+      {{ dwpHorizontalNavigation({
+        ariaLabel: "Case outline",
+        selectedItem: "#factual-summary",
+        items: [
+          { text: "Factual summary", href: "#factual-summary" },
+          { text: "Confidential Information to Prosecutor", href: "#cip" },
+          { text: "Certifications", href: "#certifications" }
+        ]
+      }) }}
+    </div>
   </div>
 
-  <div class="govuk-grid-column-three-quarters">
-    <section id="factual-summary" class="js-case-section">
-      {{ factualSummaryHtml | safe }}
-    </section>
-    <section id="cip" class="js-case-section" hidden>
-      {{ informationToProsecutorHtml | safe }}
-    </section>
-    <section id="certifications" class="js-case-section" hidden>
-      {{ certificationsHtml | safe }}
-    </section>
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <section id="factual-summary" class="js-case-section">
+        {{ factualSummaryHtml | safe }}
+      </section>
+      <section id="cip" class="js-case-section" hidden>
+        {{ informationToProsecutorHtml | safe }}
+      </section>
+      <section id="certifications" class="js-case-section" hidden>
+        {{ certificationsHtml | safe }}
+      </section>
+    </div>
   </div>
 </div>
 

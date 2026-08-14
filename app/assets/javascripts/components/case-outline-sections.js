@@ -6,7 +6,7 @@
   }
 
   function initCaseOutline(container){
-    var links = Array.prototype.slice.call(container.querySelectorAll('.moj-side-navigation a[href^="#"]'));
+    var links = Array.prototype.slice.call(container.querySelectorAll('.dwp-horizontal-navigation a[href^="#"]'));
     var sections = Array.prototype.slice.call(container.querySelectorAll('.js-case-section'));
     if (!links.length || !sections.length) return;
 
@@ -20,11 +20,11 @@
       });
 
       links.forEach(function(link){
-        var li = link.closest('.moj-side-navigation__item');
+        var li = link.closest('.dwp-horizontal-navigation__item');
         var isActive = idFromLink(link) === targetId;
-        if (li) li.classList.toggle('moj-side-navigation__item--active', isActive);
+        if (li) li.classList.toggle('dwp-horizontal-navigation__item--selected', isActive);
         if (isActive) {
-          link.setAttribute('aria-current', 'location');
+          link.setAttribute('aria-current', 'true');
         } else {
           link.removeAttribute('aria-current');
         }
