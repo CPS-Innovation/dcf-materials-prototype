@@ -1,6 +1,8 @@
 .dcf-highlight {
   padding: 0;
   border-radius: 3px;
+  background-color: govuk-colour("yellow", $legacy: false);
+  background-color: rgba(255, 221, 0, 0.3);
 }
 
 .dcf-highlight--removed {
@@ -37,4 +39,22 @@
   top: govuk-spacing(4);
   padding: govuk-spacing(4);
   border-left: 1px solid govuk-colour("mid-grey");
+}
+
+// Undo action in the tagged-changes table: a real form (POST), styled to
+// read as a link rather than a boxed button.
+.dcf-undo-form {
+  display: inline;
+  margin: 0;
+}
+
+.dcf-link-button {
+  @include govuk-font($size: 19);
+  @include govuk-link-common;
+  @include govuk-link-style-no-visited-state;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
 }

@@ -71,6 +71,87 @@ function splitIntoParagraphs (parts) {
   return paragraphs.filter(paragraph => paragraph.length)
 }
 
+const TAG_VARIANTS = ['v2', 'v3']
+
+// Builds the tag-screen URL for a given variant, falling back to the
+// default screen if the variant isn't recognised.
+function tagPath (caseId, variant) {
+  return TAG_VARIANTS.includes(variant)
+    ? `/cases/${caseId}/outline/tag/${variant}`
+    : `/cases/${caseId}/outline/tag`
+}
+
+// Shared by the edit form's POST handlers (default + v2/v3 variants):
+// snapshots the current factual summary as "before", the submitted
+// textarea as "after", and resets any previous tagging progress.
+async function saveOutlineEdit (req, caseId) {
+  const _case = await prisma.case.findUnique({ where: { id: caseId } })
+
+  req.session.data.outlineEdit = {
+    before: _case.factualSummary || '',
+    after: req.body.factualSummary || '',
+    copyToCip: req.body.changedName || null,
+    tags: {}
+  }
+}
+
+// Builds the "Undo" cell's markup for a tagged-change table row: a small
+// POST form styled as a link, so undoing is a real state change (not a
+// bare GET link) but doesn't need any JS to work.
+function undoCellHtml (caseId, variant, changeId) {
+  return `<form method="post" action="/cases/${caseId}/outline/tag/undo" class="dcf-undo-form">
+    <input type="hidden" name="_csrf" value="">
+    <input type="hidden" name="variant" value="${variant || ''}">
+    <input type="hidden" name="changeId" value="${changeId}">
+    <button type="submit" class="dcf-link-button">Undo</button>
+  </form>`
+}
+
+// Shared by the tag screen's GET handlers (default + v2/v3 variants):
+// builds the diff/highlight/table data a tag template needs to render.
+function buildTagViewData (outlineEdit, caseId, variant) {
+  const tags = outlineEdit.tags || {}
+  const { changes, parts } = analyseEdit(outlineEdit.before, outlineEdit.after)
+
+  const annotatedParts = parts.map(part => {
+    if (part.type === 'unchanged') return part
+    const tagged = tags[part.changeId]
+    const typeEntry = tagged ? redactionTypes.find(t => t.value === tagged.tag) : null
+    return {
+      ...part,
+      tagged: !!tagged,
+      currentTag: tagged ? tagged.tag : '',
+      currentTagLabel: typeEntry ? typeEntry.text : ''
+    }
+  })
+
+  const taggedRows = changes
+    .filter(change => tags[change.id])
+    .map(change => {
+      const typeEntry = redactionTypes.find(t => t.value === tags[change.id].tag)
+      return [
+        { text: change.removedText || change.addedText },
+        { text: changeType(change) },
+        { text: typeEntry ? typeEntry.text : tags[change.id].tag },
+        { text: tags[change.id].date },
+        { html: undoCellHtml(caseId, variant, change.id) }
+      ]
+    })
+
+  const errorSummary = outlineEdit.tagError
+    ? [{ text: 'You must tag every detected change before continuing', href: '#outline-tag-form' }]
+    : []
+  delete outlineEdit.tagError
+
+  return {
+    paragraphs: splitIntoParagraphs(annotatedParts),
+    taggedRows,
+    redactionTypes,
+    totalChanges: changes.length,
+    errorSummary
+  }
+}
+
 module.exports = router => {
   router.get('/cases/:caseId/outline/edit', async (req, res) => {
     const _case = await prisma.case.findUnique({
@@ -83,19 +164,20 @@ module.exports = router => {
 
   router.post('/cases/:caseId/outline/edit', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
-
-    const _case = await prisma.case.findUnique({
-      where: { id: caseId }
-    })
-
-    req.session.data.outlineEdit = {
-      before: _case.factualSummary || '',
-      after: req.body.factualSummary || '',
-      copyToCip: req.body.changedName || null,
-      tags: {}
-    }
-
+    await saveOutlineEdit(req, caseId)
     req.session.save(() => res.redirect(`/cases/${caseId}/outline/tag`))
+  })
+
+  router.post('/cases/:caseId/outline/edit/v2', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    await saveOutlineEdit(req, caseId)
+    req.session.save(() => res.redirect(`/cases/${caseId}/outline/tag/v2`))
+  })
+
+  router.post('/cases/:caseId/outline/edit/v3', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    await saveOutlineEdit(req, caseId)
+    req.session.save(() => res.redirect(`/cases/${caseId}/outline/tag/v3`))
   })
 
   router.get('/cases/:caseId/outline/tag', async (req, res) => {
@@ -107,40 +189,34 @@ module.exports = router => {
     }
 
     const _case = await prisma.case.findUnique({ where: { id: caseId } })
-    const tags = outlineEdit.tags || {}
-    const { changes, parts } = analyseEdit(outlineEdit.before, outlineEdit.after)
 
-    const annotatedParts = parts.map(part => {
-      if (part.type === 'unchanged') return part
-      const tagged = tags[part.changeId]
-      return { ...part, tagged: !!tagged, currentTag: tagged ? tagged.tag : '' }
-    })
+    res.render('v2/cases/outline/tag/index', { _case, ...buildTagViewData(outlineEdit, caseId, null) })
+  })
 
-    const taggedRows = changes
-      .filter(change => tags[change.id])
-      .map(change => {
-        const typeEntry = redactionTypes.find(t => t.value === tags[change.id].tag)
-        return [
-          { text: change.removedText || change.addedText },
-          { text: changeType(change) },
-          { text: typeEntry ? typeEntry.text : tags[change.id].tag },
-          { text: tags[change.id].date }
-        ]
-      })
+  router.get('/cases/:caseId/outline/tag/v2', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const outlineEdit = req.session.data.outlineEdit
 
-    const errorSummary = outlineEdit.tagError
-      ? [{ text: 'You must tag every detected change before continuing', href: '#outline-tag-form' }]
-      : []
-    delete outlineEdit.tagError
+    if (!outlineEdit) {
+      return res.redirect(`/cases/${caseId}/outline/edit`)
+    }
 
-    res.render('v2/cases/outline/tag/index', {
-      _case,
-      paragraphs: splitIntoParagraphs(annotatedParts),
-      taggedRows,
-      redactionTypes,
-      totalChanges: changes.length,
-      errorSummary
-    })
+    const _case = await prisma.case.findUnique({ where: { id: caseId } })
+
+    res.render('v2/cases/outline/tag/index-v2', { _case, ...buildTagViewData(outlineEdit, caseId, 'v2') })
+  })
+
+  router.get('/cases/:caseId/outline/tag/v3', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const outlineEdit = req.session.data.outlineEdit
+
+    if (!outlineEdit) {
+      return res.redirect(`/cases/${caseId}/outline/edit`)
+    }
+
+    const _case = await prisma.case.findUnique({ where: { id: caseId } })
+
+    res.render('v2/cases/outline/tag/index-v3', { _case, ...buildTagViewData(outlineEdit, caseId, 'v3') })
   })
 
   router.post('/cases/:caseId/outline/tag/apply', (req, res) => {
@@ -159,7 +235,22 @@ module.exports = router => {
       outlineEdit.tags[changeId] = { tag, date: todayGovukDate() }
     }
 
-    req.session.save(() => res.redirect(`/cases/${caseId}/outline/tag`))
+    req.session.save(() => res.redirect(tagPath(caseId, req.body.variant)))
+  })
+
+  router.post('/cases/:caseId/outline/tag/undo', (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const outlineEdit = req.session.data.outlineEdit
+
+    if (!outlineEdit) {
+      return res.redirect(`/cases/${caseId}/outline/edit`)
+    }
+
+    if (outlineEdit.tags) {
+      delete outlineEdit.tags[req.body.changeId]
+    }
+
+    req.session.save(() => res.redirect(tagPath(caseId, req.body.variant)))
   })
 
   router.post('/cases/:caseId/outline/tag', (req, res) => {
@@ -176,7 +267,7 @@ module.exports = router => {
 
     if (!allTagged) {
       outlineEdit.tagError = true
-      return req.session.save(() => res.redirect(`/cases/${caseId}/outline/tag`))
+      return req.session.save(() => res.redirect(tagPath(caseId, req.body.variant)))
     }
 
     outlineEdit.taggedChanges = changes.map(change => ({

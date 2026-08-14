@@ -1,4 +1,4 @@
-{# app/views/v2/cases/outline/tag/index #}
+{# app/views/v2/cases/outline/tag/index-v2 #}
 
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -32,6 +32,7 @@
 
     <form method="post" action="/cases/{{ _case.id }}/outline/tag">
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <input type="hidden" name="variant" value="v2">
       <div class="govuk-button-group">
         {{ govukButton({ text: "Continue" }) }}
       </div>
@@ -39,6 +40,32 @@
   {% else %}
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-two-thirds">
+
+        {# <p class="govuk-body">
+          Select a highlighted change below to tag it. {{ totalChanges }} change{{ "s" if totalChanges != 1 else "" }} detected.
+        </p> #}
+
+        {# {{ govukInsetText({
+          text: 'Select a highlighted change below to tag it. ' ~ totalChanges ~ ' change' ~ ('s' if totalChanges != 1 else '') ~ ' detected.'
+        }) }} #}
+
+        <form method="post" action="/cases/{{ _case.id }}/outline/tag/apply" id="outline-tag-form">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="variant" value="v2">
+          <input type="hidden" name="changeId" id="change-id-field" value="">
+
+          {{ govukSelect({
+            id: "tag-select",
+            name: "tag",
+            label: {
+              text: "Redaction type",
+              classes: "govuk-label--s"
+            },
+            items: [{ value: "", text: "-- Select redaction type --" }].concat(redactionTypes)
+          }) }}
+
+          {{ govukButton({ text: "Confirm redaction type", classes: "govuk-button--secondary" }) }}
+        </form>
 
         {% if taggedRows.length %}
           {{ govukTable({
@@ -56,14 +83,6 @@
           }) }}
         {% endif %}
 
-        {# <p class="govuk-body">
-          Select a highlighted change below to tag it. {{ totalChanges }} change{{ "s" if totalChanges != 1 else "" }} detected.
-        </p> #}
-
-        {{ govukInsetText({
-          text: 'Select a highlighted change below to tag it. ' ~ totalChanges ~ ' change' ~ ('s' if totalChanges != 1 else '') ~ ' detected.'
-        }) }}
-
         {% for paragraph in paragraphs %}
           <p class="govuk-body">
             {% for part in paragraph %}
@@ -74,35 +93,12 @@
 
         <form method="post" action="/cases/{{ _case.id }}/outline/tag">
           <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="variant" value="v2">
           <div class="govuk-button-group">
             {{ govukButton({ text: "Continue" }) }}
           </div>
         </form>
 
-      </div>
-
-      <div class="govuk-grid-column-one-third">
-        <div class="dcf-outline-tag-panel">
-          <form method="post" action="/cases/{{ _case.id }}/outline/tag/apply" id="outline-tag-form">
-            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-            <input type="hidden" name="changeId" id="change-id-field" value="">
-
-            {{ govukRadios({
-              classes: "govuk-radios--small",
-              idPrefix: "tag",
-              name: "tag",
-              fieldset: {
-                legend: {
-                  text: "Redaction type",
-                  classes: "govuk-fieldset__legend--m"
-                }
-              },
-              items: redactionTypes
-            }) }}
-
-            {{ govukButton({ text: "Confirm redaction type", classes: "govuk-button--secondary" }) }}
-          </form>
-        </div>
       </div>
     </div>
   {% endif %}
