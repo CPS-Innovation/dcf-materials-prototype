@@ -1,0 +1,53 @@
+{# app/views/v2/cases/outline/tag/check #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set defendantsValue %}
+  {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+  {% if _case.defendants.length > 1 %}
+    and {{_case.defendants.length - 1}} more
+  {% endif %}
+{% endset %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/tag/v4" }) }}
+
+  <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+  <h1 class="govuk-heading-l">Check details and add to redaction log</h1>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      {% if rows.length %}
+        {{ govukTable({
+          caption: "Redactions",
+          captionClasses: "govuk-table__caption--m",
+          classes: "govuk-!-margin-bottom-6",
+          head: [
+            { text: "Change" },
+            { text: "Type" },
+            { text: "Category" },
+            { text: "Date" },
+            { text: "Action" }
+          ],
+          rows: rows
+        }) }}
+      {% else %}
+        <p class="govuk-body">No redactions to check yet.</p>
+      {% endif %}
+
+      <form method="post" action="/cases/{{ _case.id }}/outline/tag/v4/check">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="govuk-button-group">
+          {{ govukButton({ text: "Continue and add to redaction log" }) }}
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

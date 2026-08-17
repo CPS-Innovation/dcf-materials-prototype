@@ -1,4 +1,4 @@
-{# app/views/v2/cases/outline/tag/index #}
+{# app/views/v2/cases/outline/tag/index-v4 #}
 
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -32,6 +32,7 @@
 
     <form method="post" action="/cases/{{ _case.id }}/outline/tag">
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <input type="hidden" name="variant" value="v4">
       <div class="govuk-button-group">
         {{ govukButton({ text: "Continue" }) }}
       </div>
@@ -40,40 +41,17 @@
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-two-thirds">
 
-        {% if taggedRows.length %}
-          {{ govukTable({
-            caption: "Tagged changes",
-            captionClasses: "govuk-table__caption--m",
-            classes: "govuk-!-margin-bottom-6",
-            head: [
-              { text: "Change" },
-              { text: "Type" },
-              { text: "Category" },
-              { text: "Date" },
-              { text: "Action" }
-            ],
-            rows: taggedRows
-          }) }}
-        {% endif %}
-
-        {# <p class="govuk-body">
-          Select a highlighted change below to tag it. {{ totalChanges }} change{{ "s" if totalChanges != 1 else "" }} detected.
-        </p> #}
-
-        {# {{ govukInsetText({
-          text: 'Select a highlighted change below to tag it. ' ~ totalChanges ~ ' change' ~ ('s' if totalChanges != 1 else '') ~ ' detected.'
-        }) }} #}
-
         {% for paragraph in paragraphs %}
           <p class="govuk-body">
             {% for part in paragraph %}
-              {% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--tagged' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><s>{{ part.value }}</s></button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--tagged' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><strong>{{ part.value }}</strong></button></mark>{% endif %}
+              {% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><s>{{ part.value }}</s></button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><strong>{{ part.value }}</strong></button></mark>{% endif %}
             {% endfor %}
           </p>
         {% endfor %}
 
         <form method="post" action="/cases/{{ _case.id }}/outline/tag">
           <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="variant" value="v4">
           <div class="govuk-button-group">
             {{ govukButton({ text: "Continue" }) }}
           </div>
@@ -85,6 +63,7 @@
         <div class="dcf-outline-tag-panel">
           <form method="post" action="/cases/{{ _case.id }}/outline/tag/apply" id="outline-tag-form">
             <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <input type="hidden" name="variant" value="v4">
             <input type="hidden" name="changeId" id="change-id-field" value="">
 
             {{ govukRadios({
