@@ -17,13 +17,6 @@
 
   {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit" }) }}
 
-  {% if errorSummary.length %}
-    {{ govukErrorSummary({
-      titleText: "There is a problem",
-      errorList: errorSummary
-    }) }}
-  {% endif %}
-
   <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
   <h1 class="govuk-heading-l">Select and tag changes</h1>
 
@@ -40,22 +33,6 @@
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-two-thirds">
 
-        {% if taggedRows.length %}
-          {{ govukTable({
-            caption: "Tagged changes",
-            captionClasses: "govuk-table__caption--m",
-            classes: "govuk-!-margin-bottom-6",
-            head: [
-              { text: "Change" },
-              { text: "Type" },
-              { text: "Category" },
-              { text: "Date" },
-              { text: "Action" }
-            ],
-            rows: taggedRows
-          }) }}
-        {% endif %}
-
         {# <p class="govuk-body">
           Select a highlighted change below to tag it. {{ totalChanges }} change{{ "s" if totalChanges != 1 else "" }} detected.
         </p> #}
@@ -67,7 +44,7 @@
         {% for paragraph in paragraphs %}
           <p class="govuk-body">
             {% for part in paragraph %}
-              {% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--tagged' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><s>{{ part.value }}</s></button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--tagged' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><strong>{{ part.value }}</strong></button></mark>{% endif %}
+              {% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><s>{{ part.value }}</s></button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><strong>{{ part.value }}</strong></button></mark>{% endif %}
             {% endfor %}
           </p>
         {% endfor %}
@@ -97,7 +74,10 @@
                   classes: "govuk-fieldset__legend--m"
                 }
               },
-              items: redactionTypes
+              items: redactionTypes.concat([
+                { divider: "or" },
+                { value: "do-not-redact", text: "Do not redact" }
+              ])
             }) }}
 
             {{ govukButton({ text: "Confirm and tag", classes: "govuk-button--secondary" }) }}

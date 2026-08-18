@@ -15,36 +15,78 @@
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
 
-  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/tag/v4" }) }}
+  {{ govukBackLink({ text: "Back", href: backHref }) }}
 
-  <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+  <span class="govuk-caption-m">{{ _case.reference }} - Change summary of circumstances on offence(s)</span>
   <h1 class="govuk-heading-l">Check details and add to redaction log</h1>
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      {% if rows.length %}
-        {{ govukTable({
-          caption: "Redactions",
-          captionClasses: "govuk-table__caption--m",
-          classes: "govuk-!-margin-bottom-6",
-          head: [
-            { text: "Change" },
-            { text: "Type" },
-            { text: "Category" },
-            { text: "Date" },
-            { text: "Action" }
-          ],
-          rows: rows
-        }) }}
+      <h3 class="govuk-heading-m">Redactions</h3>
+
+      {% if changes.length %}
+        <dl class="govuk-summary-list dcf-check-list govuk-!-margin-bottom-0">
+          {% for change in changes %}
+            <div class="govuk-summary-list__row">
+              <dt class="govuk-summary-list__key">Text</dt>
+              <dd class="govuk-summary-list__value">{{ change.text }}</dd>
+              <dd class="govuk-summary-list__actions">
+                <form method="post" action="/cases/{{ _case.id }}/outline/tag/undo" class="dcf-undo-form">
+                  <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                  <input type="hidden" name="variant" value="{{ variant }}">
+                  <input type="hidden" name="changeId" value="{{ change.id }}">
+                  <input type="hidden" name="returnTo" value="{{ backHref }}">
+                  <button type="submit" class="dcf-link-button">Change</button>
+                </form>
+              </dd>
+            </div>
+            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions">
+              <dt class="govuk-summary-list__key">Redaction type</dt>
+              <dd class="govuk-summary-list__value">{{ change.category }}</dd>
+            </div>
+            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions">
+              <dt class="govuk-summary-list__key">Date</dt>
+              <dd class="govuk-summary-list__value">{{ change.date }}</dd>
+            </div>
+          {% endfor %}
+        </dl>
       {% else %}
         <p class="govuk-body">No redactions to check yet.</p>
       {% endif %}
 
-      <form method="post" action="/cases/{{ _case.id }}/outline/tag/v4/check">
+      <h3 class="govuk-heading-m govuk-!-margin-top-6">Mandatory fields</h3>
+
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-65",
+        rows: [
+          {
+            key:   { text: "CPS area or central casework division" },
+            value: { text: "Mersey - Cheshire" }
+          },
+          {
+            key:   { text: "CPS business unit" },
+            value: { text: "Magistrates court" }
+          },
+          {
+            key:   { text: "Investigative agency" },
+            value: { text: "South Yorkshire Police" }
+          },
+          {
+            key:   { text: "Charge status" },
+            value: { text: "Post-charge" }
+          },
+          {
+            key:   { text: "Document type" },
+            value: { text: "MG 5" }
+          }
+        ]
+      }) }}
+
+      <form method="post" action="{{ checkFormAction }}">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <div class="govuk-button-group">
-          {{ govukButton({ text: "Continue and add to redaction log" }) }}
+          {{ govukButton({ text: "Add to redaction log" }) }}
         </div>
       </form>
 

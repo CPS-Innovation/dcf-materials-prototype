@@ -15,12 +15,8 @@
   background-color: rgba(0, 112, 60, 0.15);
 }
 
-.dcf-highlight--tagged {
-  outline: 2px solid govuk-colour("blue", $legacy: false);
-}
-
-// v4: tagging a change blacks it out like a real redaction, rather than
-// just outlining it. Text stays in the DOM (still selectable/readable by
+// Tagging a change blacks it out like a real redaction, rather than just
+// outlining it. Text stays in the DOM (still selectable/readable by
 // assistive tech) but is visually hidden — this is a look-alike for the
 // prototype, not an actual security redaction.
 .dcf-highlight--redacted {
@@ -54,8 +50,8 @@
   border-left: 1px solid govuk-colour("mid-grey");
 }
 
-// Undo action in the tagged-changes table: a real form (POST), styled to
-// read as a link rather than a boxed button.
+// Undo/Change actions: a real form (POST), styled to read as a link
+// rather than a boxed button.
 .dcf-undo-form {
   display: inline;
   margin: 0;
@@ -78,4 +74,26 @@
   display: block;
   margin-top: govuk-spacing(1);
   text-align: right;
+}
+
+// Check screen (shared by all 4 variants): each change renders as three
+// summary-list rows (Text/Redaction type/Date) with no dividers between
+// them — only the Date row (every 3rd row) keeps a border, marking the
+// end of that change.
+.dcf-check-list .govuk-summary-list__row {
+  border-bottom: none;
+}
+
+.dcf-check-list .govuk-summary-list__row:nth-child(3n) {
+  border-bottom: 1px solid $govuk-border-colour;
+}
+
+// 25% tighter than GOV.UK's default summary-list line-height (1.25 mobile,
+// ~1.316 desktop), to keep these compact rows closer together.
+.dcf-check-list {
+  line-height: 0.9375;
+
+  @include govuk-media-query($from: tablet) {
+    line-height: 0.9868421053;
+  }
 }

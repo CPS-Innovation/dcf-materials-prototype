@@ -10,12 +10,6 @@ function todayGovukDate () {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`
 }
 
-function changeType (change) {
-  if (change.removedText && change.addedText) return 'Edit'
-  if (change.removedText) return 'Redaction'
-  return 'Addition'
-}
-
 // Diffs before/after and returns:
 // - changes: one entry per detected change, paired removed+added text, with an id
 // - parts: the same diff, flattened, annotated with changeId, in original reading order
@@ -72,6 +66,7 @@ function splitIntoParagraphs (parts) {
 }
 
 const TAG_VARIANTS = ['v2', 'v3', 'v4']
+const CHECK_VARIANTS = [null, 'v2', 'v3', 'v4']
 
 // Builds the tag-screen URL for a given variant, falling back to the
 // default screen if the variant isn't recognised.
@@ -79,6 +74,13 @@ function tagPath (caseId, variant) {
   return TAG_VARIANTS.includes(variant)
     ? `/cases/${caseId}/outline/tag/${variant}`
     : `/cases/${caseId}/outline/tag`
+}
+
+// Builds the check-screen URL for a given variant, mirroring tagPath.
+function checkPath (caseId, variant) {
+  return TAG_VARIANTS.includes(variant)
+    ? `/cases/${caseId}/outline/tag/${variant}/check`
+    : `/cases/${caseId}/outline/tag/check`
 }
 
 // Shared by the edit form's POST handlers (default + v2/v3 variants):
@@ -151,9 +153,9 @@ function undoCellHtml (caseId, variant, changeId, label, returnTo) {
   </form>`
 }
 
-// Shared by the tag screen's GET handlers (default + v2/v3 variants):
-// builds the diff/highlight/table data a tag template needs to render.
-function buildTagViewData (outlineEdit, caseId, variant) {
+// Shared by all 4 tag-screen GET handlers: builds the diff/highlight data
+// a tag template needs to render.
+function buildTagViewData (outlineEdit) {
   const tags = outlineEdit.tags || {}
   const { changes, parts } = analyseEdit(outlineEdit.before, outlineEdit.after)
 
@@ -169,30 +171,10 @@ function buildTagViewData (outlineEdit, caseId, variant) {
     }
   })
 
-  const taggedRows = changes
-    .filter(change => tags[change.id])
-    .map(change => {
-      const typeEntry = redactionTypes.find(t => t.value === tags[change.id].tag)
-      return [
-        { text: change.removedText || change.addedText },
-        { text: changeType(change) },
-        { text: typeEntry ? typeEntry.text : tags[change.id].tag },
-        { text: tags[change.id].date },
-        { html: undoCellHtml(caseId, variant, change.id) }
-      ]
-    })
-
-  const errorSummary = outlineEdit.tagError
-    ? [{ text: 'You must tag every detected change before continuing', href: '#outline-tag-form' }]
-    : []
-  delete outlineEdit.tagError
-
   return {
     paragraphs: splitIntoParagraphs(annotatedParts),
-    taggedRows,
     redactionTypes,
-    totalChanges: changes.length,
-    errorSummary
+    totalChanges: changes.length
   }
 }
 
@@ -276,40 +258,47 @@ function buildStandaloneChangeViewData (outlineEdit, changeId) {
   }
 }
 
-// Builds the row data for v4's check screen — the same column shape as
-// the taggedRows table used elsewhere (Change/Type/Category/Date), plus
-// a combined Change/Remove action cell. Computed live from outlineEdit.tags
-// each time (rather than a static snapshot) so Remove immediately drops
-// a row without needing to revisit the tag screen first.
-function buildCheckViewData (outlineEdit, caseId) {
+// Builds the per-change data for v4's check screen — one entry per tagged
+// change, rendered by the template as a 3-row Text/Redaction type/Date
+// summary-list block (with the "Change" action on the Text row only).
+// Left as plain data (not pre-built HTML) so the template can render the
+// user-edited text through Nunjucks' auto-escaping. Computed live from
+// outlineEdit.tags each time (rather than a static snapshot). "Change"
+// clears the tag before returning to the tag screen, so the highlight
+// shows un-redacted (context visible) and the user re-decides — either a
+// real category or "Do not redact" (which drops the change here, same as
+// the old Remove action).
+function buildCheckViewData (outlineEdit, caseId, variant) {
   const tags = outlineEdit.tags || {}
   const { changes } = analyseEdit(outlineEdit.before, outlineEdit.after)
 
-  const rows = changes
+  const taggedChanges = changes
     .filter(change => tags[change.id])
     .map(change => {
       const typeEntry = redactionTypes.find(t => t.value === tags[change.id].tag)
-      const changeLink = `<a class="govuk-link" href="/cases/${caseId}/outline/tag/v4">Change</a>`
-      const removeForm = undoCellHtml(caseId, 'v4', change.id, 'Remove', `/cases/${caseId}/outline/tag/v4/check`)
 
-      return [
-        { text: change.removedText || change.addedText },
-        { text: changeType(change) },
-        { text: typeEntry ? typeEntry.text : tags[change.id].tag },
-        { text: tags[change.id].date },
-        { html: `${changeLink} &#124; ${removeForm}` }
-      ]
+      return {
+        id: change.id,
+        text: change.removedText || change.addedText,
+        category: typeEntry ? typeEntry.text : tags[change.id].tag,
+        date: tags[change.id].date
+      }
     })
 
-  return { rows, totalChanges: rows.length }
+  return {
+    changes: taggedChanges,
+    variant,
+    backHref: tagPath(caseId, variant),
+    checkFormAction: checkPath(caseId, variant)
+  }
 }
 
 // Shared commit step: persists the edited factual summary and writes one
 // ActivityLog row per currently-tagged change. Recomputed live from
 // outlineEdit.tags rather than a pre-taken snapshot, so it stays correct
 // even if changes were removed/re-tagged after "Continue" was first
-// pressed (e.g. via v4's check screen). Used by both the existing
-// redaction-log commit and v4's check screen commit.
+// pressed (e.g. via the check screen). Used by all 4 variants' check
+// screen commits.
 async function commitOutlineEdit (outlineEdit, caseId, userId) {
   const tags = outlineEdit.tags || {}
   const removed = outlineEdit.removed || {}
@@ -393,7 +382,7 @@ module.exports = router => {
 
     const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
 
-    res.render('v2/cases/outline/tag/index', { _case, ...buildTagViewData(outlineEdit, caseId, null) })
+    res.render('v2/cases/outline/tag/index', { _case, ...buildTagViewData(outlineEdit) })
   })
 
   router.get('/cases/:caseId/outline/tag/v2', async (req, res) => {
@@ -406,7 +395,7 @@ module.exports = router => {
 
     const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
 
-    res.render('v2/cases/outline/tag/index-v2', { _case, ...buildTagViewData(outlineEdit, caseId, 'v2') })
+    res.render('v2/cases/outline/tag/index-v2', { _case, ...buildTagViewData(outlineEdit) })
   })
 
   router.get('/cases/:caseId/outline/tag/v3', async (req, res) => {
@@ -419,7 +408,7 @@ module.exports = router => {
 
     const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
 
-    res.render('v2/cases/outline/tag/index-v3', { _case, ...buildTagViewData(outlineEdit, caseId, 'v3') })
+    res.render('v2/cases/outline/tag/index-v3', { _case, ...buildTagViewData(outlineEdit) })
   })
 
   router.get('/cases/:caseId/outline/tag/v4', async (req, res) => {
@@ -432,38 +421,45 @@ module.exports = router => {
 
     const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
 
-    res.render('v2/cases/outline/tag/index-v4', { _case, ...buildTagViewData(outlineEdit, caseId, 'v4') })
+    res.render('v2/cases/outline/tag/index-v4', { _case, ...buildTagViewData(outlineEdit) })
   })
 
-  // Registered before the /v4/:changeId wildcard routes below so "check"
-  // isn't swallowed as a :changeId param.
-  router.get('/cases/:caseId/outline/tag/v4/check', async (req, res) => {
-    const caseId = parseInt(req.params.caseId)
-    const outlineEdit = req.session.data.outlineEdit
+  // Check screen: shared across all 4 variants. Registered before the
+  // /v4/:changeId wildcard route below so "check" isn't swallowed as a
+  // :changeId param.
+  CHECK_VARIANTS.forEach(variant => {
+    const pattern = variant
+      ? `/cases/:caseId/outline/tag/${variant}/check`
+      : '/cases/:caseId/outline/tag/check'
 
-    if (!outlineEdit) {
-      return res.redirect(`/cases/${caseId}/outline/edit`)
-    }
+    router.get(pattern, async (req, res) => {
+      const caseId = parseInt(req.params.caseId)
+      const outlineEdit = req.session.data.outlineEdit
 
-    const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
+      if (!outlineEdit) {
+        return res.redirect(`/cases/${caseId}/outline/edit`)
+      }
 
-    res.render('v2/cases/outline/tag/check', { _case, ...buildCheckViewData(outlineEdit, caseId) })
-  })
+      const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
 
-  router.post('/cases/:caseId/outline/tag/v4/check', async (req, res) => {
-    const caseId = parseInt(req.params.caseId)
-    const outlineEdit = req.session.data.outlineEdit
-    const userId = req.session.data.user.id
+      res.render('v2/cases/outline/tag/check', { _case, ...buildCheckViewData(outlineEdit, caseId, variant) })
+    })
 
-    if (!outlineEdit) {
-      return res.redirect(`/cases/${caseId}/outline/edit`)
-    }
+    router.post(pattern, async (req, res) => {
+      const caseId = parseInt(req.params.caseId)
+      const outlineEdit = req.session.data.outlineEdit
+      const userId = req.session.data.user.id
 
-    await commitOutlineEdit(outlineEdit, caseId, userId)
+      if (!outlineEdit) {
+        return res.redirect(`/cases/${caseId}/outline/edit`)
+      }
 
-    delete req.session.data.outlineEdit
+      await commitOutlineEdit(outlineEdit, caseId, userId)
 
-    req.session.save(() => res.redirect(`/cases/${caseId}/details#factual-summary`))
+      delete req.session.data.outlineEdit
+
+      req.session.save(() => res.redirect(`/cases/${caseId}/details#factual-summary`))
+    })
   })
 
   router.get('/cases/:caseId/outline/tag/v4/:changeId', async (req, res) => {
@@ -537,7 +533,9 @@ module.exports = router => {
     const changeId = req.body.changeId
     const tag = req.body.tag
 
-    if (changeId && tag) {
+    if (changeId && tag === 'do-not-redact') {
+      if (outlineEdit.tags) delete outlineEdit.tags[changeId]
+    } else if (changeId && tag) {
       outlineEdit.tags = outlineEdit.tags || {}
       outlineEdit.tags[changeId] = { tag, date: todayGovukDate() }
     }
@@ -569,30 +567,11 @@ module.exports = router => {
       return res.redirect(`/cases/${caseId}/outline/edit`)
     }
 
-    const tags = outlineEdit.tags || {}
-    const removed = outlineEdit.removed || {}
-    const { changes } = analyseEdit(outlineEdit.before, outlineEdit.after)
-    const activeChanges = changes.filter(change => !removed[change.id])
-    const allTagged = activeChanges.length > 0 && activeChanges.every(change => tags[change.id])
-
-    if (!allTagged) {
-      outlineEdit.tagError = true
-      return req.session.save(() => res.redirect(tagPath(caseId, req.body.variant)))
-    }
-
-    outlineEdit.taggedChanges = activeChanges.map(change => ({
-      id: change.id,
-      removedText: change.removedText,
-      addedText: change.addedText,
-      tag: tags[change.id].tag,
-      date: tags[change.id].date
-    }))
-
-    const nextPath = req.body.variant === 'v4'
-      ? `/cases/${caseId}/outline/tag/v4/check`
-      : `/cases/${caseId}/outline/redaction-log`
-
-    req.session.save(() => res.redirect(nextPath))
+    // The check screen recomputes its rows and the commit live from
+    // outlineEdit.tags each time, so changes can be left untagged/removed
+    // here without blocking progress — no "everything must be tagged"
+    // gate needed for any variant.
+    res.redirect(checkPath(caseId, req.body.variant))
   })
 
   router.get('/cases/:caseId/outline/redaction-log', async (req, res) => {

@@ -17,15 +17,8 @@
 
   {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit" }) }}
 
-  {% if errorSummary.length %}
-    {{ govukErrorSummary({
-      titleText: "There is a problem",
-      errorList: errorSummary
-    }) }}
-  {% endif %}
-
-  <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
-  <h1 class="govuk-heading-l">Select and tag changes</h1>
+  <span class="govuk-caption-m">{{ _case.reference }} - Change summary of circumstances on offence(s)</span>
+  <h1 class="govuk-heading-l">Changes to be redacted</h1>
 
   {% if totalChanges == 0 %}
     <p class="govuk-body">No changes were detected between the original and edited text.</p>
@@ -72,14 +65,17 @@
               name: "tag",
               fieldset: {
                 legend: {
-                  text: "Mark text change as ",
+                  text: "Redaction type",
                   classes: "govuk-fieldset__legend--m"
                 }
               },
-              items: redactionTypes
+              items: redactionTypes.concat([
+                { divider: "or" },
+                { value: "do-not-redact", text: "Do not redact" }
+              ])
             }) }}
 
-            {{ govukButton({ text: "Confirm and tag", classes: "govuk-button--secondary" }) }}
+            {{ govukButton({ text: "Confirm redaction type", classes: "govuk-button--secondary" }) }}
           </form>
         </div>
       </div>
