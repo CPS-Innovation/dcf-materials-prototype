@@ -1,0 +1,48 @@
+{# app/views/v2/cases/outline/redaction-log/index #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/tag" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ _case.reference }}</span>
+      <h1 class="govuk-heading-l">Review changes before committing</h1>
+
+      <p class="govuk-body">
+        {{ totalChanges }} change{{ "s" if totalChanges != 1 else "" }} tagged across {{ groupedChanges.length }} categor{{ "ies" if groupedChanges.length != 1 else "y" }}. Check this list, then commit to save the new summary of circumstances.
+      </p>
+
+      {% for group in groupedChanges %}
+        <section class="dcf-redact-bucket govuk-!-margin-bottom-6">
+          <h2 class="govuk-heading-s">
+            {{ govukTag({ text: group.label, classes: "govuk-tag--purple" }) }}
+            <span class="govuk-!-margin-left-2">{{ group.changes.length }} instance{{ "s" if group.changes.length != 1 else "" }}</span>
+          </h2>
+
+          <ul class="govuk-list">
+            {% for change in group.changes %}
+              <li class="govuk-!-margin-bottom-2">
+                {% if change.removedText %}<del class="dcf-outline-change__removed">{{ change.removedText }}</del>{% endif %}
+                {% if change.addedText %}<ins class="dcf-outline-change__added">{{ change.addedText }}</ins>{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+
+      <form method="post" action="/cases/{{ _case.id }}/outline/redaction-log">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="govuk-button-group">
+          {{ govukButton({ text: "Commit changes" }) }}
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

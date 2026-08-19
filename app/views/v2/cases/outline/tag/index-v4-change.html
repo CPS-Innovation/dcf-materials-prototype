@@ -1,0 +1,43 @@
+{# app/views/v2/cases/outline/tag/index-v4-change #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/tag/v4" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+  <h1 class="govuk-heading-l">Select and tag changes</h1>
+
+      <p class="govuk-body">
+        {% if contextBefore %}&hellip; {{ contextBefore }} {% endif %}{% if change.removedText %}<del class="dcf-outline-change__removed">{{ change.removedText }}</del> {% endif %}{% if change.addedText %}<ins class="dcf-outline-change__added">{{ change.addedText }}</ins>{% endif %}{% if contextAfter %} {{ contextAfter }} &hellip;{% endif %}
+      </p>
+
+      <form method="post" action="/cases/{{ _case.id }}/outline/tag/v4/{{ changeId }}">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        {{ govukRadios({
+          idPrefix: "tag",
+          name: "tag",
+          fieldset: {
+            legend: {
+              text: "Redaction type",
+              classes: "govuk-fieldset__legend--m"
+            }
+          },
+          items: radioItems
+        }) }}
+
+        <div class="govuk-button-group">
+          {{ govukButton({ text: "Confirm" }) }}
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

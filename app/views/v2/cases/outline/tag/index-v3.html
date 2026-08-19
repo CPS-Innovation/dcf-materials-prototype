@@ -1,0 +1,85 @@
+{# app/views/v2/cases/outline/tag/index-v3 #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set defendantsValue %}
+  {{_case.defendants[0].firstName}} {{_case.defendants[0].lastName}}
+  {% if _case.defendants.length > 1 %}
+    and {{_case.defendants.length - 1}} more
+  {% endif %}
+{% endset %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit" }) }}
+
+  <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+  <h1 class="govuk-heading-l">Select and tag changes</h1>
+
+  {% if totalChanges == 0 %}
+    <p class="govuk-body">No changes were detected between the original and edited text.</p>
+
+    <form method="post" action="/cases/{{ _case.id }}/outline/tag">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <input type="hidden" name="variant" value="v3">
+      <div class="govuk-button-group">
+        {{ govukButton({ text: "Continue" }) }}
+      </div>
+    </form>
+  {% else %}
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+
+        {# {{ govukInsetText({
+          text: 'Select a change below to expand it and choose a category. ' ~ totalChanges ~ ' change' ~ ('s' if totalChanges != 1 else '') ~ ' detected.'
+        }) }} #}
+
+        <form method="post" action="/cases/{{ _case.id }}/outline/tag/apply" id="outline-tag-form">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="variant" value="v3">
+          <input type="hidden" name="changeId" id="change-id-field" value="">
+
+          {{ xGovukAutocomplete({
+            id: "tag-select",
+            name: "tag",
+            label: {
+              text: "Search redaction types",
+              classes: "govuk-label--s govuk-visually-hidden"
+            },
+            hint: {
+              text: "Select a highlighted change below, then start typing to find its category. " ~ totalChanges ~ ' change' ~ ('s' if totalChanges != 1 else '') ~ ' detected.'
+            },
+            items: redactionTypes.concat([{ value: "do-not-redact", text: "Do not redact" }])
+          }) }}
+
+          {{ govukButton({ text: "Confirm redaction type", classes: "govuk-button--secondary" }) }}
+        </form>
+
+        {% for paragraph in paragraphs %}
+          <p class="govuk-body">
+            {% for part in paragraph %}
+              {% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" data-current-tag-label="{{ part.currentTagLabel }}"><s>{{ part.value }}</s></button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" data-current-tag-label="{{ part.currentTagLabel }}"><strong>{{ part.value }}</strong></button></mark>{% endif %}
+            {% endfor %}
+          </p>
+        {% endfor %}
+
+        <form method="post" action="/cases/{{ _case.id }}/outline/tag">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="variant" value="v3">
+          <div class="govuk-button-group">
+            {{ govukButton({ text: "Continue" }) }}
+          </div>
+        </form>
+
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block pageScripts %}
+  <script src="/public/javascripts/components/outline-tag.js" defer></script>
+{% endblock %}

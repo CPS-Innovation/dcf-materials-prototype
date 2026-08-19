@@ -125,6 +125,7 @@ model Case {
   reference         String                   @unique
   complexity        String?
   type              String?
+  factualSummary    String?
   unitId            Int
   unit              Unit                     @relation(fields: [unitId], references: [id])
   defendants        Defendant[]              @relation("CaseDefendants")
