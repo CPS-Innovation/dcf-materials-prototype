@@ -15,17 +15,22 @@
   background-color: rgba(0, 112, 60, 0.15);
 }
 
-// Tagging a change blacks it out like a real redaction, rather than just
-// outlining it. Text stays in the DOM (still selectable/readable by
-// assistive tech) but is visually hidden — this is a look-alike for the
-// prototype, not an actual security redaction.
+// Tagging a change tints it like a redaction preview, with a solid border
+// marking its extent — the text stays visible underneath (both visually and
+// in the DOM/for assistive tech), unlike a real redaction.
 .dcf-highlight--redacted {
-  background-color: govuk-colour("black");
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 3px solid govuk-colour("black");
 }
 
 .dcf-highlight--redacted .dcf-highlight__trigger {
-  color: transparent;
   text-decoration: none;
+}
+
+// Strikethrough only for redacted removed text — not added text, and not
+// removed text that hasn't been tagged yet.
+.dcf-highlight--removed.dcf-highlight--redacted .dcf-highlight__trigger {
+  text-decoration: line-through;
 }
 
 .dcf-highlight__trigger {
@@ -48,6 +53,11 @@
   top: govuk-spacing(4);
   padding: govuk-spacing(4);
   border-left: 1px solid govuk-colour("mid-grey");
+}
+
+// v2 only: not sticky, unlike v1/v4's panel.
+.dcf-outline-tag-panel--static {
+  position: static;
 }
 
 // v2 sidebar: one plain card per saved redaction — a light border round

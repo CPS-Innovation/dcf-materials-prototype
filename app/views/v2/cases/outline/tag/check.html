@@ -18,12 +18,12 @@
   {{ govukBackLink({ text: "Back", href: backHref }) }}
 
   <span class="govuk-caption-m">{{ _case.reference }} - Change summary of circumstances on offence(s)</span>
-  <h1 class="govuk-heading-l">Check details and add to redaction log</h1>
+  <h1 class="govuk-heading-l">Check changes and commit to redaction log</h1>
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <h3 class="govuk-heading-m">Redactions</h3>
+      {# <h3 class="govuk-heading-m">Redactions</h3> #}
 
       {% if changes.length %}
         <dl class="govuk-summary-list dcf-check-list govuk-!-margin-bottom-0">
@@ -86,7 +86,7 @@
       <form method="post" action="{{ checkFormAction }}">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <div class="govuk-button-group">
-          {{ govukButton({ text: "Add to redaction log" }) }}
+          {{ govukButton({ text: "Commit to redaction log" }) }}
         </div>
       </form>
 

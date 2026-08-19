@@ -17,7 +17,7 @@
 
   {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit" }) }}
 
-  <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+  <span class="govuk-caption-m">{{ _case.reference }} - Change summary of circumstances on offence(s)</span>
   <h1 class="govuk-heading-l">Select and tag changes</h1>
 
   {% if totalChanges == 0 %}
@@ -37,7 +37,7 @@
         {% for paragraph in paragraphs %}
           <p class="govuk-body">
             {% for part in paragraph %}
-              {% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.redacted }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><s>{{ part.value }}</s></button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--redacted' if part.redacted }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}"><strong>{{ part.value }}</strong></button></mark>{% endif %}
+              {% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.redacted }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" aria-label="{{ ('Change redaction: ' ~ part.value ~ ', tagged as ' ~ part.currentTagLabel) if part.tagged else ('Tag change: ' ~ part.value) }}">{{ part.value }}</button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--redacted' if part.redacted }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" aria-label="{{ ('Change redaction: ' ~ part.value ~ ', tagged as ' ~ part.currentTagLabel) if part.tagged else ('Tag change: ' ~ part.value) }}"><strong>{{ part.value }}</strong></button></mark>{% endif %}
             {% endfor %}
           </p>
         {% endfor %}
@@ -53,7 +53,7 @@
       </div>
 
       <div class="govuk-grid-column-one-third">
-        <div class="dcf-outline-tag-panel">
+        <div class="dcf-outline-tag-panel dcf-outline-tag-panel--static">
           <form method="post" action="/cases/{{ _case.id }}/outline/tag/apply" id="outline-tag-form">
             <input type="hidden" name="_csrf" value="{{ csrfToken }}">
             <input type="hidden" name="variant" value="v2">
@@ -89,7 +89,7 @@
           <div class="dcf-tag-cards">
             {% for card in taggedCards %}
               <div class="dcf-tag-card">
-                <h3 class="govuk-heading-s">Redacted - {{ card.tagLabel }}</h3>
+                <h3 class="govuk-heading-s">{{ "Redacted - " if not card.isEditReason }}{{ card.tagLabel }}</h3>
                 {% if card.isEditReason %}
                   <p class="govuk-body">Previous text: <s>{{ card.previousText }}</s></p>
                   <p class="govuk-body">Current text: <strong>{{ card.currentText }}</strong></p>
