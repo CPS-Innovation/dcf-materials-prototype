@@ -2,6 +2,15 @@ const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const { diffWords } = require('diff')
 const redactionTypes = require('../data/redaction-types.js')
+// v2-only: non-redaction reasons a change might be tagged (e.g. a typo fix
+// rather than a PII redaction). Kept separate from redactionTypes so v1/v3/v4
+// don't see them as selectable options, but folded into ALL_TAGS below so
+// anywhere that resolves a tag value to its display text (the check screen,
+// the activity log, the click-to-focus sync) still works regardless of
+// which list a given tag came from.
+const editReasonTags = require('../data/edit-reason-tags.js')
+const ALL_TAGS = redactionTypes.concat(editReasonTags)
+const EDIT_REASON_TAG_VALUES = editReasonTags.map(t => t.value)
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -162,19 +171,58 @@ function buildTagViewData (outlineEdit) {
   const annotatedParts = parts.map(part => {
     if (part.type === 'unchanged') return part
     const tagged = tags[part.changeId]
-    const typeEntry = tagged ? redactionTypes.find(t => t.value === tagged.tag) : null
+    const typeEntry = tagged ? ALL_TAGS.find(t => t.value === tagged.tag) : null
+    // Edit-reason tags (Fixed typo / Added new text) describe non-redaction
+    // edits, so the new wording isn't something to hide — only the old
+    // (removed) side blacks out; the added side stays visible as normal.
+    const isEditReason = !!tagged && EDIT_REASON_TAG_VALUES.includes(tagged.tag)
     return {
       ...part,
       tagged: !!tagged,
+      redacted: !!tagged && !(part.type === 'added' && isEditReason),
       currentTag: tagged ? tagged.tag : '',
       currentTagLabel: typeEntry ? typeEntry.text : ''
     }
   })
 
+  const paragraphs = splitIntoParagraphs(annotatedParts)
+
+  // Maps each changeId to the (1-indexed) paragraph it first appears in —
+  // used by v2's sidebar cards to disambiguate repeated words, since actual
+  // rendered line numbers aren't something the backend can compute (they
+  // depend on viewport width/font size).
+  const paragraphNumberByChangeId = {}
+  paragraphs.forEach((paragraph, index) => {
+    paragraph.forEach(part => {
+      if (part.changeId !== undefined && !(part.changeId in paragraphNumberByChangeId)) {
+        paragraphNumberByChangeId[part.changeId] = index + 1
+      }
+    })
+  })
+
+  const taggedCards = changes
+    .filter(change => tags[change.id])
+    .map(change => {
+      const tag = tags[change.id].tag
+      const typeEntry = ALL_TAGS.find(t => t.value === tag)
+
+      return {
+        id: change.id,
+        text: change.removedText || change.addedText,
+        previousText: change.removedText,
+        currentText: change.addedText,
+        isEditReason: EDIT_REASON_TAG_VALUES.includes(tag),
+        tagLabel: typeEntry ? typeEntry.text : tag,
+        paragraphNumber: paragraphNumberByChangeId[change.id]
+      }
+    })
+
   return {
-    paragraphs: splitIntoParagraphs(annotatedParts),
+    paragraphs,
     redactionTypes,
-    totalChanges: changes.length
+    editReasonTags,
+    totalChanges: changes.length,
+    taggedCards
   }
 }
 
@@ -275,7 +323,7 @@ function buildCheckViewData (outlineEdit, caseId, variant) {
   const taggedChanges = changes
     .filter(change => tags[change.id])
     .map(change => {
-      const typeEntry = redactionTypes.find(t => t.value === tags[change.id].tag)
+      const typeEntry = ALL_TAGS.find(t => t.value === tags[change.id].tag)
 
       return {
         id: change.id,
@@ -318,7 +366,7 @@ async function commitOutlineEdit (outlineEdit, caseId, userId) {
   })
 
   for (const change of taggedChanges) {
-    const typeEntry = redactionTypes.find(t => t.value === change.tag)
+    const typeEntry = ALL_TAGS.find(t => t.value === change.tag)
 
     await prisma.activityLog.create({
       data: {
@@ -586,7 +634,7 @@ module.exports = router => {
 
     const groups = {}
     outlineEdit.taggedChanges.forEach(change => {
-      const typeEntry = redactionTypes.find(t => t.value === change.tag)
+      const typeEntry = ALL_TAGS.find(t => t.value === change.tag)
       const key = typeEntry ? typeEntry.value : 'untagged'
       const label = typeEntry ? typeEntry.text : 'Untagged'
 

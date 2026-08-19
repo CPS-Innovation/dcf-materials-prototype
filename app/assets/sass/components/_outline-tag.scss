@@ -50,6 +50,26 @@
   border-left: 1px solid govuk-colour("mid-grey");
 }
 
+// v2 sidebar: one plain card per saved redaction — a light border round
+// the whole card, but no dividing lines between the rows inside it.
+.dcf-tag-cards {
+  margin-top: govuk-spacing(4);
+}
+
+.dcf-tag-card {
+  @include govuk-font($size: 19);
+  border: 1px solid $govuk-border-colour;
+  padding: govuk-spacing(3);
+}
+
+.dcf-tag-card + .dcf-tag-card {
+  margin-top: govuk-spacing(3);
+}
+
+.dcf-tag-card p {
+  margin-bottom: govuk-spacing(2);
+}
+
 // Undo/Change actions: a real form (POST), styled to read as a link
 // rather than a boxed button.
 .dcf-undo-form {
