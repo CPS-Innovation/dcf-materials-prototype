@@ -21,6 +21,13 @@
   <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
   <h1 class="govuk-heading-l">Redact summary of circumstances</h1>
 
+  <p class="govuk-body">
+    <button type="button" class="dcf-link-button" id="dcf-toggle-original-text" aria-pressed="false">
+      <span class="js-toggle-original-label-show">Hide redactions</span>
+      <span class="js-toggle-original-label-hide" hidden>Show redactions</span>
+    </button>
+  </p>
+
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-two-thirds">
 
@@ -163,6 +170,7 @@
             <button type="submit" name="scope" value="single" class="govuk-button govuk-button--secondary">Redact</button>
             <button type="submit" name="scope" value="all" class="govuk-button govuk-button--secondary">Redact all</button>
             <button type="submit" formaction="/cases/{{ _case.id }}/outline/tag/undo" formnovalidate class="govuk-button govuk-button--warning" id="redact-remove-button"{{ ' hidden' if not (modalState and modalState.changeId) }}>Remove</button>
+            <a class="govuk-link" href="{{ modalState.returnTo if modalState else '' }}" id="redact-cancel-link"{{ ' hidden' if not (modalState and modalState.changeId) }}>Cancel</a>
           </div>
         </form>
       </div>

@@ -69,12 +69,34 @@
     var occurrenceCountEl = document.getElementById('dcf-redact-occurrence-count')
     var selectedTextEl = document.getElementById('dcf-redact-selected-text')
     var removeButton = document.getElementById('redact-remove-button')
+    var cancelLink = document.getElementById('redact-cancel-link')
     var returnToField = document.getElementById('redact-return-to-field')
 
     var documentText = ''
     var documentTextEl = document.getElementById('dcf-redact-document-text')
     if (documentTextEl) {
       try { documentText = JSON.parse(documentTextEl.textContent) } catch (e) {}
+    }
+
+    // ------------------------------------------------------------------
+    // "Show original text" toggle — lets the user quickly re-read the
+    // passage with every redaction's tint/border removed, without
+    // affecting anything that's actually tagged. Button label text lives
+    // in the template (two spans, swapped via `hidden`) rather than here,
+    // so it stays editable without touching this file.
+    // ------------------------------------------------------------------
+
+    var toggleOriginalButton = document.getElementById('dcf-toggle-original-text')
+    var toggleShowLabel = toggleOriginalButton && toggleOriginalButton.querySelector('.js-toggle-original-label-show')
+    var toggleHideLabel = toggleOriginalButton && toggleOriginalButton.querySelector('.js-toggle-original-label-hide')
+
+    if (toggleOriginalButton) {
+      toggleOriginalButton.addEventListener('click', function () {
+        var showingOriginal = container.classList.toggle('dcf-show-original')
+        toggleOriginalButton.setAttribute('aria-pressed', String(showingOriginal))
+        if (toggleShowLabel) toggleShowLabel.hidden = showingOriginal
+        if (toggleHideLabel) toggleHideLabel.hidden = !showingOriginal
+      })
     }
 
     // ------------------------------------------------------------------
@@ -218,9 +240,10 @@
       if (textField) textField.value = text
 
       // A fresh selection has nothing to remove yet, and isn't part of a
-      // check.html round trip — hide Remove and drop any returnTo carried
-      // over from a previous edit-existing-redaction visit.
+      // check.html round trip — hide Remove/Cancel and drop any returnTo
+      // carried over from a previous edit-existing-redaction visit.
       if (removeButton) removeButton.hidden = true
+      if (cancelLink) cancelLink.hidden = true
       if (returnToField) returnToField.value = ''
 
       openModal(text)
@@ -259,12 +282,13 @@
         if (noteFieldEl) noteFieldEl.value = currentNote
 
         // Editing an existing redaction directly on the page (as opposed to
-        // arriving via check.html) — Remove-in-modal is only ever shown when
+        // arriving via check.html) — Remove/Cancel are only ever shown when
         // returning from check.html's "Change" link; on-page removal still
         // goes through the table's own Remove action instead. Explicitly
-        // re-hide it here in case it was left visible by a prior
+        // re-hide them here in case they were left visible by a prior
         // server-rendered check.html return that's still on screen.
         if (removeButton) removeButton.hidden = true
+        if (cancelLink) cancelLink.hidden = true
         if (returnToField) returnToField.value = ''
 
         openModal(text)
