@@ -15,32 +15,53 @@
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
 
-  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit" }) }}
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/details" }) }}
 
-  <span class="govuk-caption-m">{{ _case.reference }} - Change summary of circumstances on offence(s)</span>
-  <h1 class="govuk-heading-l">Changes to be redacted</h1>
+  {# <span class="govuk-caption-m">{{ _case.reference }} - Redact summary of circumstances on offence(s)</span> #}
+  <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
+  <h1 class="govuk-heading-l">Redact summary of circumstances</h1>
 
-  {% if totalChanges == 0 %}
-    <p class="govuk-body">No changes were detected between the original and edited text.</p>
-
-    <form method="post" action="/cases/{{ _case.id }}/outline/tag">
-      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-      <input type="hidden" name="variant" value="v4">
-      <div class="govuk-button-group">
-        {{ govukButton({ text: "Continue" }) }}
-      </div>
-    </form>
-  {% else %}
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-two-thirds">
 
-        {% for paragraph in paragraphs %}
-          <p class="govuk-body">
-            {% for part in paragraph %}
-              {% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" aria-label="{{ ('Change redaction: ' ~ part.value ~ ', tagged as ' ~ part.currentTagLabel) if part.tagged else ('Tag change: ' ~ part.value) }}">{{ part.value }}</button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" aria-label="{{ ('Change redaction: ' ~ part.value ~ ', tagged as ' ~ part.currentTagLabel) if part.tagged else ('Tag change: ' ~ part.value) }}"><strong>{{ part.value }}</strong></button></mark>{% endif %}
-            {% endfor %}
-          </p>
-        {% endfor %}
+        <div class="js-redact-paragraphs">
+          {% for paragraph in paragraphs %}
+            <p class="govuk-body js-tag-paragraph" data-paragraph-index="{{ loop.index0 }}">{% for part in paragraph %}{% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" data-note="{{ part.currentNote }}" aria-label="{{ ('Change redaction: ' ~ part.value ~ ', tagged as ' ~ part.currentTagLabel) if part.tagged else ('Tag change: ' ~ part.value) }}">{{ part.value }}</button></mark>{% endif %}{% endfor %}</p>
+          {% endfor %}
+        </div>
+
+        {% if groupedRedactions.length %}
+          <table class="govuk-table govuk-!-margin-top-6">
+            <caption class="govuk-table__caption govuk-table__caption--m">Redactions</caption>
+            <thead class="govuk-table__head">
+              <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Text</th>
+                <th scope="col" class="govuk-table__header govuk-table__header--numeric">Instances</th>
+                <th scope="col" class="govuk-table__header">Category</th>
+                <th scope="col" class="govuk-table__header">Date</th>
+                <th scope="col" class="govuk-table__header">Action</th>
+              </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+              {% for group in groupedRedactions %}
+                <tr class="govuk-table__row">
+                  <td class="govuk-table__cell">{{ group.text }}</td>
+                  <td class="govuk-table__cell govuk-table__cell--numeric">{{ group.instanceCount }}</td>
+                  <td class="govuk-table__cell">{{ group.tagLabel }}</td>
+                  <td class="govuk-table__cell">{{ group.date }}</td>
+                  <td class="govuk-table__cell">
+                    <form method="post" action="/cases/{{ _case.id }}/outline/tag/undo" class="dcf-undo-form">
+                      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                      <input type="hidden" name="variant" value="v4">
+                      <input type="hidden" name="changeId" value="{{ group.changeIds | join(',') }}">
+                      <button type="submit" class="dcf-link-button">Remove</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
 
         <form method="post" action="/cases/{{ _case.id }}/outline/tag">
           <input type="hidden" name="_csrf" value="{{ csrfToken }}">
@@ -51,38 +72,112 @@
         </form>
 
       </div>
-
-      <div class="govuk-grid-column-one-third">
-        <div class="dcf-outline-tag-panel">
-          <form method="post" action="/cases/{{ _case.id }}/outline/tag/apply" id="outline-tag-form">
-            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-            <input type="hidden" name="variant" value="v4">
-            <input type="hidden" name="changeId" id="change-id-field" value="">
-
-            {{ govukRadios({
-              classes: "govuk-radios--small",
-              idPrefix: "tag",
-              name: "tag",
-              fieldset: {
-                legend: {
-                  text: "Redaction type",
-                  classes: "govuk-fieldset__legend--m"
-                }
-              },
-              items: redactionTypes.concat([
-                { divider: "or" },
-                { value: "do-not-redact", text: "Do not redact" }
-              ])
-            }) }}
-
-            {{ govukButton({ text: "Confirm redaction type", classes: "govuk-button--secondary" }) }}
-          </form>
-        </div>
-      </div>
     </div>
-  {% endif %}
+
+  {# Redact modal — opens automatically when a drag-selection finishes, or
+     server-rendered already open (below) when either (a) reloading after a
+     failed "Other requires a note" submit, or (b) arriving via check.html's
+     "Change" link to edit an existing redaction/group. Structurally mirrors
+     notes-modal.njk's hidden/is-open, overlay+panel pattern, docked right
+     instead of left. #}
+  <div class="dcf-redact-modal{{ ' is-open' if modalState }}" id="dcf-redact-modal"{{ ' hidden' if not modalState }}>
+    <div class="dcf-redact-modal__overlay" data-action="close-redact-modal"></div>
+
+    <aside class="dcf-redact-modal__panel" role="dialog" aria-modal="true" aria-labelledby="dcf-redact-modal-title" tabindex="-1">
+      <header class="dcf-redact-modal__header">
+        <h3 class="govuk-heading-s" id="dcf-redact-modal-title">Redact text</h3>
+        <button type="button" class="dcf-redact-modal__close" data-action="close-redact-modal">
+          <span class="govuk-visually-hidden">Close</span>
+          &#10005;
+        </button>
+      </header>
+
+      <div class="dcf-redact-modal__body">
+        {% if errorSummary.length %}
+          {{ govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: errorSummary
+          }) }}
+        {% endif %}
+
+        <p class="govuk-body"><strong id="dcf-redact-occurrence-count">{{ ("Appears " ~ modalState.occurrenceCount ~ (" time" if modalState.occurrenceCount == 1 else " times")) if modalState else "" }}</strong></p>
+
+        {{ govukInsetText({
+          id: "dcf-redact-selected-text",
+          text: (modalState.text if modalState else "")
+        }) }}
+
+        <form method="post" action="/cases/{{ _case.id }}/outline/tag/v4/select" id="outline-tag-form">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="changeId" id="change-id-field" value="{{ modalState.changeId if modalState else '' }}">
+          <input type="hidden" name="start" id="selection-start-field" value="{{ modalState.start if modalState else '' }}">
+          <input type="hidden" name="end" id="selection-end-field" value="{{ modalState.end if modalState else '' }}">
+          <input type="hidden" name="paragraphIndex" id="selection-paragraph-field" value="{{ modalState.paragraphIndex if modalState else '' }}">
+          <input type="hidden" name="text" id="selection-text-field" value="{{ modalState.text if modalState else '' }}">
+          <input type="hidden" name="returnTo" id="redact-return-to-field" value="{{ modalState.returnTo if modalState else '' }}">
+          <input type="hidden" name="variant" value="v4">
+
+          {# "Other" reveals a mandatory note field — native govukRadios
+             conditional reveal, no custom JS needed (govuk-frontend's own
+             radios module already handles the show/hide). #}
+          {% set noteErrorMessage = { text: "Enter a note" } if (modalState and modalState.hasError) else null %}
+          {% set otherNoteHtml %}
+            {{ govukTextarea({
+              id: "redact-note",
+              name: "note",
+              value: (modalState.note if modalState else ''),
+              label: {
+                text: "Add a note",
+                classes: "govuk-label--s"
+              },
+              hint: {
+                text: "A note is required when Other is selected."
+              },
+              errorMessage: noteErrorMessage
+            }) }}
+          {% endset %}
+
+          {% set radioItems = [] %}
+          {% for item in redactionTypes %}
+            {% if item.value == 'other' %}
+              {% set _ = radioItems.push({ value: item.value, text: item.text, checked: (modalState and modalState.tag == item.value), conditional: { html: otherNoteHtml } }) %}
+            {% else %}
+              {% set _ = radioItems.push({ value: item.value, text: item.text, checked: (modalState and modalState.tag == item.value) }) %}
+            {% endif %}
+          {% endfor %}
+
+          {{ govukRadios({
+            classes: "govuk-radios--small",
+            idPrefix: "tag",
+            name: "tag",
+            fieldset: {
+              legend: {
+                text: "Redaction type",
+                classes: "govuk-fieldset__legend--m"
+              }
+            },
+            items: radioItems
+          }) }}
+
+          <div class="govuk-button-group">
+            <button type="submit" name="scope" value="single" class="govuk-button govuk-button--secondary">Redact</button>
+            <button type="submit" name="scope" value="all" class="govuk-button govuk-button--secondary">Redact all</button>
+            <button type="submit" formaction="/cases/{{ _case.id }}/outline/tag/undo" formnovalidate class="govuk-button govuk-button--warning" id="redact-remove-button"{{ ' hidden' if not (modalState and modalState.changeId) }}>Remove</button>
+          </div>
+        </form>
+      </div>
+    </aside>
+  </div>
+
+  {# Whole document's plain text, for client-side occurrence counting
+     (redact-select.js) — JSON-encoded so quotes/newlines in the case text
+     round-trip safely; not rendered visually. #}
+  <script type="application/json" id="dcf-redact-document-text">{{ documentText | dump | safe }}</script>
 {% endblock %}
 
 {% block pageScripts %}
-  <script src="/public/javascripts/components/outline-tag.js" defer></script>
+  {# outline-tag.js isn't loaded here — v4's own click-to-highlight and
+     modal handling in redact-select.js replaces it entirely; v1/v2/v3
+     (sidebar-based) still use outline-tag.js as before. #}
+  <script src="/public/javascripts/components/redact-select.js" defer></script>
 {% endblock %}

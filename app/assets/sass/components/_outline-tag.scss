@@ -33,6 +33,22 @@
   text-decoration: line-through;
 }
 
+// v4 only: solid black, text fully hidden — v4 is pure redaction now (no
+// editing), so there's no context worth preserving underneath. v1/v2/v3
+// keep the tinted/readable style above, since they're still edit-then-diff
+// based and that's still about seeing wording while editing it.
+// .js-redact-paragraphs only exists on v4's page, so this scopes cleanly
+// without touching the shared rules v1/v2/v3 use.
+.js-redact-paragraphs .dcf-highlight--redacted {
+  background-color: govuk-colour("black");
+  border: none;
+}
+
+.js-redact-paragraphs .dcf-highlight--redacted .dcf-highlight__trigger {
+  color: transparent;
+  text-decoration: none;
+}
+
 .dcf-highlight__trigger {
   @include govuk-font($size: 19);
   background: none;
@@ -106,24 +122,47 @@
   text-align: right;
 }
 
-// Check screen (shared by all 4 variants): each change renders as three
-// summary-list rows (Text/Redaction type/Date) with no dividers between
-// them — only the Date row (every 3rd row) keeps a border, marking the
-// end of that change.
+// Check screen (shared by all 4 variants): each change renders as four
+// summary-list rows (Text/Instances/Category/Date), or five when the
+// category is "Other" (an extra Note row), with no dividers between them —
+// only the last row of each change (marked with --end) keeps a border.
 .dcf-check-list .govuk-summary-list__row {
   border-bottom: none;
 }
 
-.dcf-check-list .govuk-summary-list__row:nth-child(3n) {
+.dcf-check-list .dcf-check-list__row--end {
   border-bottom: 1px solid $govuk-border-colour;
 }
 
-// 25% tighter than GOV.UK's default summary-list line-height (1.25 mobile,
-// ~1.316 desktop), to keep these compact rows closer together.
-.dcf-check-list {
-  line-height: 0.9375;
-
+// Row spacing is controlled directly via padding (not line-height, which
+// only tightens a line's own leading and can't be varied per edge) so the
+// gap *within* a change can be squashed independently of the gap
+// *between* changes. Every cell gets the tight padding by default...
+.dcf-check-list .govuk-summary-list__key,
+.dcf-check-list .govuk-summary-list__value,
+.dcf-check-list .govuk-summary-list__actions {
   @include govuk-media-query($from: tablet) {
-    line-height: 0.9868421053;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+}
+
+// ...except the two edges that face a *different* change: the top of the
+// first row (Text) and the bottom of the last row (Date/--end). Those keep
+// the full default govuk-summary-list padding, so that gap matches the
+// standard spacing used elsewhere on this page (e.g. "Mandatory fields").
+.dcf-check-list .dcf-check-list__row--start .govuk-summary-list__key,
+.dcf-check-list .dcf-check-list__row--start .govuk-summary-list__value,
+.dcf-check-list .dcf-check-list__row--start .govuk-summary-list__actions {
+  @include govuk-media-query($from: tablet) {
+    padding-top: govuk-spacing(2);
+  }
+}
+
+.dcf-check-list .dcf-check-list__row--end .govuk-summary-list__key,
+.dcf-check-list .dcf-check-list__row--end .govuk-summary-list__value,
+.dcf-check-list .dcf-check-list__row--end .govuk-summary-list__actions {
+  @include govuk-media-query($from: tablet) {
+    padding-bottom: govuk-spacing(2);
   }
 }
