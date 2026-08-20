@@ -1,13 +1,13 @@
 (function () {
   function ready (fn) { if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fn) } else { fn() } }
 
-  // textOffsetOfNode/closestParagraph/overlapsExistingHighlight/
-  // countOccurrences live in redact-text-offsets.js (loaded before this
-  // script), shared with redact-popover.js.
-  var textOffsetOfNode = window.DCFRedactText.textOffsetOfNode
-  var closestParagraph = window.DCFRedactText.closestParagraph
-  var overlapsExistingHighlight = window.DCFRedactText.overlapsExistingHighlight
+  // countOccurrences/clearSelectionFields/captureSelectionFromMouseup live
+  // in redact-text-offsets.js (loaded before this script), shared with
+  // redact-popover.js.
   var countOccurrences = window.DCFRedactText.countOccurrences
+  var clearSelectionFields = window.DCFRedactText.clearSelectionFields
+  var readHighlightTrigger = window.DCFRedactText.readHighlightTrigger
+  var captureSelectionFromMouseup = window.DCFRedactText.captureSelectionFromMouseup
 
   ready(function () {
     var container = document.querySelector('.js-redact-paragraphs')
@@ -82,13 +82,7 @@
     }
 
     function clearPendingSelection () {
-      if (startField) startField.value = ''
-      if (endField) endField.value = ''
-      if (paragraphField) paragraphField.value = ''
-      if (textField) textField.value = ''
-
-      var selection = window.getSelection()
-      if (selection) selection.removeAllRanges()
+      clearSelectionFields({ startField: startField, endField: endField, paragraphField: paragraphField, textField: textField })
     }
 
     function closeModal () {
@@ -156,41 +150,17 @@
     // ------------------------------------------------------------------
 
     container.addEventListener('mouseup', function () {
-      var selection = window.getSelection()
-      if (!selection || selection.isCollapsed || selection.rangeCount === 0) return
-
-      var range = selection.getRangeAt(0)
-      var text = range.toString()
-      if (!text.trim()) return
-
-      var startParagraph = closestParagraph(range.startContainer)
-      var endParagraph = closestParagraph(range.endContainer)
-
-      // Reject selections that cross a paragraph boundary.
-      if (!startParagraph || startParagraph !== endParagraph) {
-        selection.removeAllRanges()
-        return
-      }
-
-      // Reject selections that overlap an already-tagged span.
-      if (overlapsExistingHighlight(startParagraph, range)) {
-        selection.removeAllRanges()
-        return
-      }
-
-      var start = textOffsetOfNode(startParagraph, range.startContainer, range.startOffset)
-      var end = textOffsetOfNode(startParagraph, range.endContainer, range.endOffset)
-
-      if (start === -1 || end === -1 || start === end) return
+      var captured = captureSelectionFromMouseup()
+      if (!captured) return
 
       // Clear changeId — this is always a brand new selection, and a
       // stale id left over from previously editing an existing one (via
       // the click handler below) must not carry over and overwrite it.
       if (changeIdField) changeIdField.value = ''
-      if (startField) startField.value = start
-      if (endField) endField.value = end
-      if (paragraphField) paragraphField.value = startParagraph.dataset.paragraphIndex
-      if (textField) textField.value = text
+      if (startField) startField.value = captured.start
+      if (endField) endField.value = captured.end
+      if (paragraphField) paragraphField.value = captured.paragraphIndex
+      if (textField) textField.value = captured.text
 
       // A fresh selection has nothing to remove yet, and isn't part of a
       // check.html round trip — hide Remove/Cancel and drop any returnTo
@@ -199,7 +169,7 @@
       if (cancelLink) cancelLink.hidden = true
       if (returnToField) returnToField.value = ''
 
-      openModal(text)
+      openModal(captured.text)
     })
 
     // ------------------------------------------------------------------
@@ -210,20 +180,17 @@
 
     container.querySelectorAll('.dcf-highlight__trigger').forEach(function (trigger) {
       trigger.addEventListener('click', function () {
-        var changeId = trigger.dataset.changeId
-        var currentTag = trigger.dataset.currentTag || ''
-        var currentNote = trigger.dataset.note || ''
-        var text = trigger.textContent
-
-        if (changeIdField) changeIdField.value = changeId
-        if (startField) startField.value = ''
-        if (endField) endField.value = ''
-        if (paragraphField) paragraphField.value = ''
-        if (textField) textField.value = text
+        var data = readHighlightTrigger(trigger, {
+          changeIdField: changeIdField,
+          startField: startField,
+          endField: endField,
+          paragraphField: paragraphField,
+          textField: textField
+        })
 
         var radios = document.querySelectorAll('#outline-tag-form input[name="tag"]')
         radios.forEach(function (radio) {
-          radio.checked = (radio.value === currentTag)
+          radio.checked = (radio.value === data.currentTag)
           // A programmatic .checked assignment doesn't fire a native
           // change event, so govuk-frontend's own radios module won't
           // know to reveal/hide the "Other" conditional note field
@@ -232,7 +199,7 @@
         })
 
         var noteFieldEl = document.getElementById('redact-note')
-        if (noteFieldEl) noteFieldEl.value = currentNote
+        if (noteFieldEl) noteFieldEl.value = data.currentNote
 
         // Editing an existing redaction directly on the page (as opposed to
         // arriving via check.html) — Remove/Cancel are only ever shown when
@@ -244,7 +211,7 @@
         if (cancelLink) cancelLink.hidden = true
         if (returnToField) returnToField.value = ''
 
-        openModal(text)
+        openModal(data.text)
       })
     })
   })

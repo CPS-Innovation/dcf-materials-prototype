@@ -2,10 +2,10 @@
   function ready (fn) { if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fn) } else { fn() } }
 
   // Shared with redact-select.js — see redact-text-offsets.js.
-  var textOffsetOfNode = window.DCFRedactText.textOffsetOfNode
   var rangeAtOffset = window.DCFRedactText.rangeAtOffset
-  var closestParagraph = window.DCFRedactText.closestParagraph
-  var overlapsExistingHighlight = window.DCFRedactText.overlapsExistingHighlight
+  var clearSelectionFields = window.DCFRedactText.clearSelectionFields
+  var readHighlightTrigger = window.DCFRedactText.readHighlightTrigger
+  var captureSelectionFromMouseup = window.DCFRedactText.captureSelectionFromMouseup
 
   ready(function () {
     var container = document.querySelector('.js-redact-paragraphs')
@@ -106,13 +106,7 @@
     }
 
     function clearPendingSelection () {
-      if (startField) startField.value = ''
-      if (endField) endField.value = ''
-      if (paragraphField) paragraphField.value = ''
-      if (textField) textField.value = ''
-
-      var selection = window.getSelection()
-      if (selection) selection.removeAllRanges()
+      clearSelectionFields({ startField: startField, endField: endField, paragraphField: paragraphField, textField: textField })
     }
 
     function closePopover () {
@@ -295,45 +289,20 @@
 
     container.addEventListener('mouseup', function () {
       // Clear any leftover step-through highlight/state first, before the
-      // overlap check below runs — a stale temporary <mark> left in the
-      // DOM from a previous "Find matching text" session would otherwise
-      // itself count as an existing highlight and wrongly reject a new
-      // selection that happens to cross it.
+      // overlap check inside captureSelectionFromMouseup runs — a stale
+      // temporary <mark> left in the DOM from a previous "Find matching
+      // text" session would otherwise itself count as an existing
+      // highlight and wrongly reject a new selection that crosses it.
       resetMatchPanel()
 
-      var selection = window.getSelection()
-      if (!selection || selection.isCollapsed || selection.rangeCount === 0) return
-
-      var range = selection.getRangeAt(0)
-      var text = range.toString()
-      if (!text.trim()) return
-
-      var startParagraph = closestParagraph(range.startContainer)
-      var endParagraph = closestParagraph(range.endContainer)
-
-      if (!startParagraph || startParagraph !== endParagraph) {
-        selection.removeAllRanges()
-        return
-      }
-
-      if (overlapsExistingHighlight(startParagraph, range)) {
-        selection.removeAllRanges()
-        return
-      }
-
-      var start = textOffsetOfNode(startParagraph, range.startContainer, range.startOffset)
-      var end = textOffsetOfNode(startParagraph, range.endContainer, range.endOffset)
-
-      if (start === -1 || end === -1 || start === end) return
-
-      var anchorRect = range.getClientRects()
-      anchorRect = anchorRect.length ? anchorRect[anchorRect.length - 1] : range.getBoundingClientRect()
+      var captured = captureSelectionFromMouseup()
+      if (!captured) return
 
       if (changeIdField) changeIdField.value = ''
-      if (startField) startField.value = start
-      if (endField) endField.value = end
-      if (paragraphField) paragraphField.value = startParagraph.dataset.paragraphIndex
-      if (textField) textField.value = text
+      if (startField) startField.value = captured.start
+      if (endField) endField.value = captured.end
+      if (paragraphField) paragraphField.value = captured.paragraphIndex
+      if (textField) textField.value = captured.text
       if (returnToField) returnToField.value = ''
       if (tagSelect) tagSelect.value = ''
 
@@ -342,7 +311,7 @@
       // visible by a server-rendered check.html return still on screen.
       if (editActionsGroup) editActionsGroup.hidden = true
 
-      openPopoverAt(anchorRect)
+      openPopoverAt(captured.anchorRect)
     })
 
     // ------------------------------------------------------------------
@@ -356,19 +325,18 @@
 
     container.querySelectorAll('.dcf-highlight__trigger').forEach(function (trigger) {
       trigger.addEventListener('click', function () {
-        var changeId = trigger.dataset.changeId
-        var currentTag = trigger.dataset.currentTag || ''
-        var text = trigger.textContent
-
         resetMatchPanel()
 
-        if (changeIdField) changeIdField.value = changeId
-        if (startField) startField.value = ''
-        if (endField) endField.value = ''
-        if (paragraphField) paragraphField.value = ''
-        if (textField) textField.value = text
+        var data = readHighlightTrigger(trigger, {
+          changeIdField: changeIdField,
+          startField: startField,
+          endField: endField,
+          paragraphField: paragraphField,
+          textField: textField
+        })
+
         if (returnToField) returnToField.value = ''
-        if (tagSelect) tagSelect.value = currentTag
+        if (tagSelect) tagSelect.value = data.currentTag
 
         if (editActionsGroup) editActionsGroup.hidden = true
 
