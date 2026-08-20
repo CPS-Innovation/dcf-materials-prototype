@@ -1,0 +1,45 @@
+{# _shared/_includes/case/outline/redactions-table
+
+   Shared by index-v2.html (popover) and index-v4.html (side modal) — the
+   row-under-text table plus the Continue form. Expects `variant` to be set
+   by the including template ('v2' or 'v4') before this include. #}
+{% if groupedRedactions.length %}
+  <table class="govuk-table govuk-!-margin-top-6">
+    <caption class="govuk-table__caption govuk-table__caption--m">Redactions</caption>
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th scope="col" class="govuk-table__header">Text</th>
+        <th scope="col" class="govuk-table__header govuk-table__header--numeric">Instances</th>
+        <th scope="col" class="govuk-table__header">Category</th>
+        <th scope="col" class="govuk-table__header">Date</th>
+        <th scope="col" class="govuk-table__header">Action</th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      {% for group in groupedRedactions %}
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell">{{ group.text }}</td>
+          <td class="govuk-table__cell govuk-table__cell--numeric">{{ group.instanceCount }}</td>
+          <td class="govuk-table__cell">{{ group.tagLabel }}</td>
+          <td class="govuk-table__cell">{{ group.date }}</td>
+          <td class="govuk-table__cell">
+            <form method="post" action="/cases/{{ _case.id }}/outline/tag/undo" class="dcf-undo-form">
+              <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+              <input type="hidden" name="variant" value="{{ variant }}">
+              <input type="hidden" name="changeId" value="{{ group.changeIds | join(',') }}">
+              <button type="submit" class="dcf-link-button">Remove</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+<form method="post" action="/cases/{{ _case.id }}/outline/tag">
+  <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+  <input type="hidden" name="variant" value="{{ variant }}">
+  <div class="govuk-button-group">
+    {{ govukButton({ text: "Continue" }) }}
+  </div>
+</form>

@@ -16,52 +16,10 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <div class="js-redact-paragraphs">
-        {% for paragraph in paragraphs %}
-          <p class="govuk-body js-tag-paragraph" data-paragraph-index="{{ loop.index0 }}">{% for part in paragraph %}{% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" aria-label="{{ ('Change redaction: ' ~ part.value ~ ', tagged as ' ~ part.currentTagLabel) if part.tagged else ('Tag change: ' ~ part.value) }}">{{ part.value }}</button></mark>{% endif %}{% endfor %}</p>
-        {% endfor %}
-      </div>
+      {% include "_shared/_includes/case/outline/redact-paragraphs.njk" %}
 
-      {% if groupedRedactions.length %}
-        <table class="govuk-table govuk-!-margin-top-6">
-          <caption class="govuk-table__caption govuk-table__caption--m">Redactions</caption>
-          <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-              <th scope="col" class="govuk-table__header">Text</th>
-              <th scope="col" class="govuk-table__header govuk-table__header--numeric">Instances</th>
-              <th scope="col" class="govuk-table__header">Category</th>
-              <th scope="col" class="govuk-table__header">Date</th>
-              <th scope="col" class="govuk-table__header">Action</th>
-            </tr>
-          </thead>
-          <tbody class="govuk-table__body">
-            {% for group in groupedRedactions %}
-              <tr class="govuk-table__row">
-                <td class="govuk-table__cell">{{ group.text }}</td>
-                <td class="govuk-table__cell govuk-table__cell--numeric">{{ group.instanceCount }}</td>
-                <td class="govuk-table__cell">{{ group.tagLabel }}</td>
-                <td class="govuk-table__cell">{{ group.date }}</td>
-                <td class="govuk-table__cell">
-                  <form method="post" action="/cases/{{ _case.id }}/outline/tag/undo" class="dcf-undo-form">
-                    <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-                    <input type="hidden" name="variant" value="v2">
-                    <input type="hidden" name="changeId" value="{{ group.changeIds | join(',') }}">
-                    <button type="submit" class="dcf-link-button">Remove</button>
-                  </form>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% endif %}
-
-      <form method="post" action="/cases/{{ _case.id }}/outline/tag">
-        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        <input type="hidden" name="variant" value="v2">
-        <div class="govuk-button-group">
-          {{ govukButton({ text: "Continue" }) }}
-        </div>
-      </form>
+      {% set variant = 'v2' %}
+      {% include "_shared/_includes/case/outline/redactions-table.njk" %}
 
     </div>
   </div>
