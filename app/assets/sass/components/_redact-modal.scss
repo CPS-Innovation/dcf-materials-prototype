@@ -1,0 +1,87 @@
+/* ======================================================================
+   v4 redact modal — right-hand side tray, opened by finishing a drag
+   selection. Structurally mirrors _notes-modal.scss (same hidden/is-open
+   toggle, same overlay+panel shape) but docks right instead of left and
+   is sized to one-third of the viewport instead of a quarter.
+   ====================================================================== */
+
+.dcf-redact-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: none;
+
+  &.is-open {
+    display: block;
+  }
+}
+
+.dcf-redact-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.dcf-redact-modal__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  height: 100vh;
+
+  width: 100%;
+  max-width: 33.33%;
+
+  background: govuk-colour("white");
+  border-left: 1px solid govuk-colour("mid-grey");
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.dcf-redact-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: govuk-spacing(2);
+
+  padding: govuk-spacing(4) govuk-spacing(4) govuk-spacing(2) govuk-spacing(4);
+  border-bottom: 1px solid govuk-colour("mid-grey");
+
+  .govuk-heading-s {
+    margin: 0;
+  }
+}
+
+.dcf-redact-modal__close {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.dcf-redact-modal__body {
+  padding: govuk-spacing(4);
+}
+
+// govuk-frontend's .govuk-button (and, for the Cancel link, .govuk-link
+// inside .govuk-button-group) sets its own `display`, which (being an
+// author-stylesheet rule) overrides the browser's default `[hidden] {
+// display: none }` user-agent rule at equal specificity — so setting the
+// `hidden` attribute/property alone doesn't actually hide either element.
+// Force it explicitly.
+#redact-remove-button[hidden],
+#redact-cancel-link[hidden] {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .dcf-redact-modal__panel {
+    max-width: 100%;
+  }
+}

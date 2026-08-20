@@ -1,0 +1,47 @@
+{# app/views/v2/cases/outline/tag/document-type #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: returnTo }) }}
+
+  <span class="govuk-caption-m">{{ _case.reference }} - Redact summary of circumstances on offence(s)</span>
+  <h1 class="govuk-heading-l">Document type</h1>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <form method="post" action="/cases/{{ _case.id }}/outline/tag/document-type">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <input type="hidden" name="returnTo" value="{{ returnTo }}">
+
+        {% set radioItems = [] %}
+        {% for item in documentTypes %}
+          {% set _ = radioItems.push({ value: item.value, text: item.text, checked: (selectedDocumentType == item.value) }) %}
+        {% endfor %}
+
+        {{ govukRadios({
+          idPrefix: "document-type",
+          name: "documentType",
+          fieldset: {
+            legend: {
+              text: "Document type",
+              classes: "govuk-visually-hidden"
+            }
+          },
+          items: radioItems
+        }) }}
+
+        <div class="govuk-button-group">
+          {{ govukButton({ text: "Continue" }) }}
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

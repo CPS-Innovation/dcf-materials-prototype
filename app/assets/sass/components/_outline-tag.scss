@@ -15,17 +15,50 @@
   background-color: rgba(0, 112, 60, 0.15);
 }
 
-// Tagging a change blacks it out like a real redaction, rather than just
-// outlining it. Text stays in the DOM (still selectable/readable by
-// assistive tech) but is visually hidden — this is a look-alike for the
-// prototype, not an actual security redaction.
+// Tagging a change tints it like a redaction preview, with a solid border
+// marking its extent — the text stays visible underneath (both visually and
+// in the DOM/for assistive tech), unlike a real redaction.
 .dcf-highlight--redacted {
-  background-color: govuk-colour("black");
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 3px solid govuk-colour("black");
 }
 
 .dcf-highlight--redacted .dcf-highlight__trigger {
+  text-decoration: none;
+}
+
+// Strikethrough only for redacted removed text — not added text, and not
+// removed text that hasn't been tagged yet.
+.dcf-highlight--removed.dcf-highlight--redacted .dcf-highlight__trigger {
+  text-decoration: line-through;
+}
+
+// v4 only: solid black, text fully hidden — v4 is pure redaction now (no
+// editing), so there's no context worth preserving underneath. v1/v2/v3
+// keep the tinted/readable style above, since they're still edit-then-diff
+// based and that's still about seeing wording while editing it.
+// .js-redact-paragraphs only exists on v4's page, so this scopes cleanly
+// without touching the shared rules v1/v2/v3 use.
+.js-redact-paragraphs .dcf-highlight--redacted {
+  background-color: govuk-colour("black");
+  border: none;
+}
+
+.js-redact-paragraphs .dcf-highlight--redacted .dcf-highlight__trigger {
   color: transparent;
   text-decoration: none;
+}
+
+// "Show original text" toggle: temporarily reveals the plain, unmarked
+// text underneath every redaction so the user can re-read the passage as
+// originally written — no tint, no border, nothing marking what's
+// redacted, since the point is reading it as if nothing had been done.
+.js-redact-paragraphs.dcf-show-original .dcf-highlight--redacted {
+  background-color: transparent;
+}
+
+.js-redact-paragraphs.dcf-show-original .dcf-highlight--redacted .dcf-highlight__trigger {
+  color: inherit;
 }
 
 .dcf-highlight__trigger {
@@ -48,6 +81,11 @@
   top: govuk-spacing(4);
   padding: govuk-spacing(4);
   border-left: 1px solid govuk-colour("mid-grey");
+}
+
+// v2 only: not sticky, unlike v1/v4's panel.
+.dcf-outline-tag-panel--static {
+  position: static;
 }
 
 // v2 sidebar: one plain card per saved redaction — a light border round
@@ -96,24 +134,47 @@
   text-align: right;
 }
 
-// Check screen (shared by all 4 variants): each change renders as three
-// summary-list rows (Text/Redaction type/Date) with no dividers between
-// them — only the Date row (every 3rd row) keeps a border, marking the
-// end of that change.
+// Check screen (shared by all 4 variants): each change renders as four
+// summary-list rows (Text/Instances/Category/Date), or five when the
+// category is "Other" (an extra Note row), with no dividers between them —
+// only the last row of each change (marked with --end) keeps a border.
 .dcf-check-list .govuk-summary-list__row {
   border-bottom: none;
 }
 
-.dcf-check-list .govuk-summary-list__row:nth-child(3n) {
+.dcf-check-list .dcf-check-list__row--end {
   border-bottom: 1px solid $govuk-border-colour;
 }
 
-// 25% tighter than GOV.UK's default summary-list line-height (1.25 mobile,
-// ~1.316 desktop), to keep these compact rows closer together.
-.dcf-check-list {
-  line-height: 0.9375;
-
+// Row spacing is controlled directly via padding (not line-height, which
+// only tightens a line's own leading and can't be varied per edge) so the
+// gap *within* a change can be squashed independently of the gap
+// *between* changes. Every cell gets the tight padding by default...
+.dcf-check-list .govuk-summary-list__key,
+.dcf-check-list .govuk-summary-list__value,
+.dcf-check-list .govuk-summary-list__actions {
   @include govuk-media-query($from: tablet) {
-    line-height: 0.9868421053;
+    padding-top: 3px;
+    padding-bottom: 3px;
+  }
+}
+
+// ...except the two edges that face a *different* change: the top of the
+// first row (Text) and the bottom of the last row (Date/--end). Those keep
+// the full default govuk-summary-list padding, so that gap matches the
+// standard spacing used elsewhere on this page (e.g. "Mandatory fields").
+.dcf-check-list .dcf-check-list__row--start .govuk-summary-list__key,
+.dcf-check-list .dcf-check-list__row--start .govuk-summary-list__value,
+.dcf-check-list .dcf-check-list__row--start .govuk-summary-list__actions {
+  @include govuk-media-query($from: tablet) {
+    padding-top: govuk-spacing(2);
+  }
+}
+
+.dcf-check-list .dcf-check-list__row--end .govuk-summary-list__key,
+.dcf-check-list .dcf-check-list__row--end .govuk-summary-list__value,
+.dcf-check-list .dcf-check-list__row--end .govuk-summary-list__actions {
+  @include govuk-media-query($from: tablet) {
+    padding-bottom: govuk-spacing(2);
   }
 }
