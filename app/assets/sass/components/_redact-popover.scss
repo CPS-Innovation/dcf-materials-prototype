@@ -1,0 +1,125 @@
+/* ======================================================================
+   v2 redact popover — a small floating card anchored to the end of a
+   drag-selection (or an existing highlight), rather than v4's fixed
+   right-docked panel. Positioned via JS (top/left, document-relative
+   coordinates), shown/hidden the same way _redact-modal.scss's modal is:
+   an explicit `display` toggle on `.is-open`, not the native `hidden`
+   attribute/property alone — govuk-frontend's own component classes
+   (.govuk-button, .govuk-link) set their own `display`, which as an
+   author-stylesheet rule beats the browser's default `[hidden] {
+   display: none }` user-agent rule at equal specificity. That bug already
+   bit the Remove/Cancel buttons inside v4's modal; the popover itself
+   avoids it entirely by never relying on bare `[hidden]` for its own
+   show/hide, only the `.is-open` class.
+   ====================================================================== */
+
+.dcf-redact-popover {
+  position: absolute;
+  z-index: 2000;
+  display: none;
+
+  width: 380px;
+  max-width: calc(100vw - 16px);
+
+  background: govuk-colour("white");
+  border: 1px solid govuk-colour("mid-grey");
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: govuk-spacing(3);
+
+  &.is-open {
+    display: block;
+  }
+
+  // Points down at the anchored text — horizontal position is set by JS
+  // via --dcf-arrow-left to the actual centre of the selected/highlighted
+  // text, which is usually *not* the popover's own centre (the popover is
+  // clamped to stay on-screen, the text it's pointing at isn't). Falls
+  // back to 50% for the rare case this renders before JS sets it.
+  &::after {
+    content: "";
+    position: absolute;
+    left: var(--dcf-arrow-left, 50%);
+    margin-left: -9px;
+    bottom: -9px;
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 9px solid govuk-colour("white");
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: var(--dcf-arrow-left, 50%);
+    margin-left: -10px;
+    bottom: -11px;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 10px solid govuk-colour("mid-grey");
+  }
+
+  // Flipped below the anchored text (used when there isn't enough room
+  // above it, e.g. a selection near the top of the viewport) — arrow
+  // points up at the text instead.
+  &--below {
+    &::after {
+      top: -9px;
+      bottom: auto;
+      border-top: none;
+      border-bottom: 9px solid govuk-colour("white");
+    }
+
+    &::before {
+      top: -11px;
+      bottom: auto;
+      border-top: none;
+      border-bottom: 10px solid govuk-colour("mid-grey");
+    }
+  }
+}
+
+.dcf-redact-popover .govuk-select {
+  width: 100%;
+}
+
+.dcf-redact-popover .govuk-button-group {
+  margin-bottom: govuk-spacing(2);
+  flex-wrap: nowrap;
+}
+
+.dcf-redact-popover .govuk-button-group:last-child {
+  margin-bottom: 0;
+}
+
+// Same [hidden]-override problem as v4's Remove/Cancel buttons: govuk-
+// frontend's .govuk-button-group sets its own `display: flex` (an author
+// rule), which beats the browser's default `[hidden] { display: none }`
+// user-agent rule at equal specificity. #popover-edit-actions relies on
+// the bare `hidden` attribute/property, so it needs this forced.
+#popover-edit-actions[hidden] {
+  display: none;
+}
+
+// govuk-frontend's .govuk-button defaults to width:100%, which is meant
+// for a button-group spanning a full-width page column — inside this
+// much narrower popover, two full-width buttons can never fit on one
+// row and wrap instead. Size them to their own content so they sit side
+// by side, matching the mockup.
+.dcf-redact-popover .govuk-button {
+  width: auto;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+// Temporary highlight for the occurrence currently being viewed while
+// stepping through "Find matching text" matches with View previous/next —
+// deliberately distinct from the black "tagged" look and the yellow
+// .dcf-highlight default, since this is transient (never persisted) and
+// needs to stand out against ordinary body text as the user scrolls to it.
+.dcf-highlight--match {
+  background-color: rgba(255, 165, 0, 0.5);
+  outline: 2px solid govuk-colour("orange");
+}

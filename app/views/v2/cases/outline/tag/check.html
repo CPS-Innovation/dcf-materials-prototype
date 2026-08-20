@@ -32,11 +32,12 @@
               <dt class="govuk-summary-list__key">Text</dt>
               <dd class="govuk-summary-list__value">{{ change.text }}</dd>
               <dd class="govuk-summary-list__actions">
-                {% if variant == 'v4' %}
-                  {# Non-destructive: v4's redactions live in a modal the user
-                     can reopen pre-filled, so "Change" is just navigation —
-                     nothing is removed until they act inside the modal. #}
-                  <a class="govuk-link" href="/cases/{{ _case.id }}/outline/tag/v4?changeId={{ change.ids | join(',') }}&amp;returnTo={{ checkFormAction | urlencode }}">Change</a>
+                {% if variant == 'v4' or variant == 'v2' %}
+                  {# Non-destructive: v4's/v2's redactions live in a modal or
+                     popover the user can reopen pre-filled, so "Change" is
+                     just navigation — nothing is removed until they act
+                     inside it. #}
+                  <a class="govuk-link" href="/cases/{{ _case.id }}/outline/tag/{{ variant }}?changeId={{ change.ids | join(',') }}&amp;returnTo={{ checkFormAction | urlencode }}">Change</a>
                 {% else %}
                   <form method="post" action="/cases/{{ _case.id }}/outline/tag/undo" class="dcf-undo-form">
                     <input type="hidden" name="_csrf" value="{{ csrfToken }}">

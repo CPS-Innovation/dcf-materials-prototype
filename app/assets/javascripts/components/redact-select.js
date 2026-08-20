@@ -1,60 +1,13 @@
 (function () {
   function ready (fn) { if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fn) } else { fn() } }
 
-  // Walks all text nodes under `root` in document order, summing lengths,
-  // until it reaches `targetNode`, then adds `targetOffset`. Converts a
-  // Range boundary (which points at a specific text node, possibly nested
-  // inside <mark>/<button> wrappers from earlier tags) into a single
-  // character offset relative to the paragraph's flattened plain text.
-  function textOffsetOfNode (root, targetNode, targetOffset) {
-    var offset = 0
-    var found = false
-
-    function walk (node) {
-      if (found) return
-      if (node.nodeType === Node.TEXT_NODE) {
-        if (node === targetNode) {
-          offset += targetOffset
-          found = true
-          return
-        }
-        offset += node.textContent.length
-      } else {
-        for (var i = 0; i < node.childNodes.length; i++) {
-          walk(node.childNodes[i])
-          if (found) return
-        }
-      }
-    }
-
-    walk(root)
-    return found ? offset : -1
-  }
-
-  function closestParagraph (node) {
-    var el = node.nodeType === Node.TEXT_NODE ? node.parentElement : node
-    return el ? el.closest('.js-tag-paragraph') : null
-  }
-
-  function overlapsExistingHighlight (paragraph, range) {
-    var marks = paragraph.querySelectorAll('.dcf-highlight')
-    for (var i = 0; i < marks.length; i++) {
-      if (range.intersectsNode(marks[i])) return true
-    }
-    return false
-  }
-
-  // Case-sensitive, non-overlapping count of `needle` within `haystack`.
-  function countOccurrences (haystack, needle) {
-    if (!needle) return 0
-    var count = 0
-    var index = haystack.indexOf(needle)
-    while (index !== -1) {
-      count++
-      index = haystack.indexOf(needle, index + needle.length)
-    }
-    return count
-  }
+  // textOffsetOfNode/closestParagraph/overlapsExistingHighlight/
+  // countOccurrences live in redact-text-offsets.js (loaded before this
+  // script), shared with redact-popover.js.
+  var textOffsetOfNode = window.DCFRedactText.textOffsetOfNode
+  var closestParagraph = window.DCFRedactText.closestParagraph
+  var overlapsExistingHighlight = window.DCFRedactText.overlapsExistingHighlight
+  var countOccurrences = window.DCFRedactText.countOccurrences
 
   ready(function () {
     var container = document.querySelector('.js-redact-paragraphs')

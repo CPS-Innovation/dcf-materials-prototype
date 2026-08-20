@@ -631,17 +631,33 @@ module.exports = router => {
     res.render('v2/cases/outline/tag/index', { _case, ...buildTagViewData(outlineEdit) })
   })
 
+  // v2's popover redesign, like v4, skips the edit textarea entirely and
+  // lazily starts a fresh selection-mode session against the current
+  // factualSummary if one isn't already in progress. Also reads
+  // ?changeId=/&returnTo= for check.html's "Change" link, same as v4.
   router.get('/cases/:caseId/outline/tag/v2', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
-    const outlineEdit = req.session.data.outlineEdit
-
-    if (!outlineEdit) {
-      return res.redirect(`/cases/${caseId}/outline/edit`)
-    }
+    let outlineEdit = req.session.data.outlineEdit
 
     const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
 
-    res.render('v2/cases/outline/tag/index-v2', { _case, ...buildTagViewData(outlineEdit) })
+    if (!outlineEdit || outlineEdit.mode !== 'select') {
+      outlineEdit = {
+        mode: 'select',
+        before: _case.factualSummary || '',
+        after: _case.factualSummary || '',
+        selections: [],
+        tags: {}
+      }
+      req.session.data.outlineEdit = outlineEdit
+    }
+
+    const editIds = req.query.changeId
+      ? String(req.query.changeId).split(',').filter(Boolean)
+      : null
+    const editReturnTo = req.query.returnTo || ''
+
+    res.render('v2/cases/outline/tag/index-v2', { _case, ...buildTagViewData(outlineEdit, editIds, editReturnTo) })
   })
 
   router.get('/cases/:caseId/outline/tag/v3', async (req, res) => {
@@ -766,108 +782,113 @@ module.exports = router => {
     req.session.save(() => res.redirect(returnTo))
   })
 
-  // v4's drag-select tagging form always posts here — for both a brand new
-  // selection (changeId empty, start/end/paragraphIndex present) and
-  // re-tagging an already-selected span (changeId present, from clicking
-  // an existing highlight). A single <form> can only have one action, so
-  // this branches server-side rather than splitting across two routes.
-  // Registered before the /v4/:changeId wildcard route below for the same
-  // reason /v4/check is — otherwise "select" gets swallowed as a
-  // :changeId param.
-  router.post('/cases/:caseId/outline/tag/v4/select', (req, res) => {
-    const caseId = parseInt(req.params.caseId)
-    const outlineEdit = req.session.data.outlineEdit
+  // v4's and v2's drag-select tagging forms both post here — for both a
+  // brand new selection (changeId empty, start/end/paragraphIndex present)
+  // and re-tagging an already-selected span (changeId present, from
+  // clicking an existing highlight). A single <form> can only have one
+  // action, so this branches server-side rather than splitting across two
+  // routes. Registered before the /v4/:changeId wildcard route below for
+  // the same reason /v4/check is — otherwise "select" gets swallowed as a
+  // :changeId param. Same handler serves both /v2/select and /v4/select
+  // (looped, like CHECK_VARIANTS.forEach elsewhere) since the logic itself
+  // has never been v4-specific — only the redirect targets need to know
+  // which variant they're for.
+  ;['v2', 'v4'].forEach(variant => {
+    router.post(`/cases/:caseId/outline/tag/${variant}/select`, (req, res) => {
+      const caseId = parseInt(req.params.caseId)
+      const outlineEdit = req.session.data.outlineEdit
 
-    if (!outlineEdit) {
-      return res.redirect(`/cases/${caseId}/outline/edit`)
-    }
-
-    const tag = req.body.tag
-    const changeId = req.body.changeId
-    const note = (req.body.note || '').trim()
-    const scope = req.body.scope
-    const returnTo = req.body.returnTo || ''
-
-    // "Other" requires a note — enforced client-side too, but this is the
-    // real check. Nothing is created; the pending selection's data is
-    // preserved so the redirected page can reopen the modal already
-    // showing it, with the error summary/message, rather than losing it.
-    if (tag && tag === 'other' && !note) {
-      outlineEdit.noteError = {
-        changeId: changeId || '',
-        start: req.body.start || '',
-        end: req.body.end || '',
-        paragraphIndex: req.body.paragraphIndex || '',
-        text: req.body.text || '',
-        tag,
-        scope: scope || 'single',
-        returnTo
+      if (!outlineEdit) {
+        return res.redirect(`/cases/${caseId}/outline/edit`)
       }
-      return req.session.save(() => res.redirect(`/cases/${caseId}/outline/tag/v4`))
-    }
 
-    if (tag) {
-      outlineEdit.tags = outlineEdit.tags || {}
-      outlineEdit.selections = outlineEdit.selections || []
+      const tag = req.body.tag
+      const changeId = req.body.changeId
+      const note = (req.body.note || '').trim()
+      const scope = req.body.scope
+      const returnTo = req.body.returnTo || ''
 
-      const tagData = { tag, date: todayGovukDate() }
-      if (tag === 'other') tagData.note = note
+      // "Other" requires a note — enforced client-side too, but this is the
+      // real check. Nothing is created; the pending selection's data is
+      // preserved so the redirected page can reopen the modal already
+      // showing it, with the error summary/message, rather than losing it.
+      if (tag && tag === 'other' && !note) {
+        outlineEdit.noteError = {
+          changeId: changeId || '',
+          start: req.body.start || '',
+          end: req.body.end || '',
+          paragraphIndex: req.body.paragraphIndex || '',
+          text: req.body.text || '',
+          tag,
+          scope: scope || 'single',
+          returnTo
+        }
+        return req.session.save(() => res.redirect(tagPath(caseId, variant)))
+      }
 
-      if (changeId) {
-        // A single id, or a comma-separated group — re-tagging an
-        // existing "Redact all" batch's category updates all of them.
-        changeId.split(',').filter(Boolean).forEach(id => {
-          outlineEdit.tags[id] = tagData
-        })
-      } else {
-        const start = parseInt(req.body.start, 10)
-        const end = parseInt(req.body.end, 10)
-        const paragraphIndex = parseInt(req.body.paragraphIndex, 10)
-        const text = req.body.text || ''
+      if (tag) {
+        outlineEdit.tags = outlineEdit.tags || {}
+        outlineEdit.selections = outlineEdit.selections || []
 
-        if (!isNaN(start) && !isNaN(end) && !isNaN(paragraphIndex) && end > start) {
-          if (scope === 'all' && text) {
-            // Tag every occurrence of `text` across the whole document
-            // with the same category/note, skipping any that overlaps a
-            // selection that's already tagged.
-            const rawParagraphs = (outlineEdit.before || '').split('\n\n')
+        const tagData = { tag, date: todayGovukDate() }
+        if (tag === 'other') tagData.note = note
 
-            rawParagraphs.forEach((paragraphText, pIndex) => {
-              const existingInParagraph = outlineEdit.selections.filter(s => s.paragraphIndex === pIndex)
-
-              let searchFrom = 0
-              let occStart = paragraphText.indexOf(text, searchFrom)
-
-              while (occStart !== -1) {
-                const occEnd = occStart + text.length
-                const overlaps = existingInParagraph.some(s => occStart < s.end && occEnd > s.start)
-
-                if (!overlaps) {
-                  const existingIds = outlineEdit.selections.map(s => s.id)
-                  const id = existingIds.length ? Math.max(...existingIds) + 1 : 0
-                  const newSelection = { id, paragraphIndex: pIndex, start: occStart, end: occEnd }
-
-                  outlineEdit.selections.push(newSelection)
-                  existingInParagraph.push(newSelection)
-                  outlineEdit.tags[id] = tagData
-                }
-
-                searchFrom = occEnd
-                occStart = paragraphText.indexOf(text, searchFrom)
-              }
-            })
-          } else {
-            const existingIds = outlineEdit.selections.map(s => s.id)
-            const id = existingIds.length ? Math.max(...existingIds) + 1 : 0
-
-            outlineEdit.selections.push({ id, paragraphIndex, start, end })
+        if (changeId) {
+          // A single id, or a comma-separated group — re-tagging an
+          // existing "Redact all" batch's category updates all of them.
+          changeId.split(',').filter(Boolean).forEach(id => {
             outlineEdit.tags[id] = tagData
+          })
+        } else {
+          const start = parseInt(req.body.start, 10)
+          const end = parseInt(req.body.end, 10)
+          const paragraphIndex = parseInt(req.body.paragraphIndex, 10)
+          const text = req.body.text || ''
+
+          if (!isNaN(start) && !isNaN(end) && !isNaN(paragraphIndex) && end > start) {
+            if (scope === 'all' && text) {
+              // Tag every occurrence of `text` across the whole document
+              // with the same category/note, skipping any that overlaps a
+              // selection that's already tagged.
+              const rawParagraphs = (outlineEdit.before || '').split('\n\n')
+
+              rawParagraphs.forEach((paragraphText, pIndex) => {
+                const existingInParagraph = outlineEdit.selections.filter(s => s.paragraphIndex === pIndex)
+
+                let searchFrom = 0
+                let occStart = paragraphText.indexOf(text, searchFrom)
+
+                while (occStart !== -1) {
+                  const occEnd = occStart + text.length
+                  const overlaps = existingInParagraph.some(s => occStart < s.end && occEnd > s.start)
+
+                  if (!overlaps) {
+                    const existingIds = outlineEdit.selections.map(s => s.id)
+                    const id = existingIds.length ? Math.max(...existingIds) + 1 : 0
+                    const newSelection = { id, paragraphIndex: pIndex, start: occStart, end: occEnd }
+
+                    outlineEdit.selections.push(newSelection)
+                    existingInParagraph.push(newSelection)
+                    outlineEdit.tags[id] = tagData
+                  }
+
+                  searchFrom = occEnd
+                  occStart = paragraphText.indexOf(text, searchFrom)
+                }
+              })
+            } else {
+              const existingIds = outlineEdit.selections.map(s => s.id)
+              const id = existingIds.length ? Math.max(...existingIds) + 1 : 0
+
+              outlineEdit.selections.push({ id, paragraphIndex, start, end })
+              outlineEdit.tags[id] = tagData
+            }
           }
         }
       }
-    }
 
-    req.session.save(() => res.redirect(returnTo || `/cases/${caseId}/outline/tag/v4`))
+      req.session.save(() => res.redirect(returnTo || tagPath(caseId, variant)))
+    })
   })
 
   router.get('/cases/:caseId/outline/tag/v4/:changeId', async (req, res) => {
