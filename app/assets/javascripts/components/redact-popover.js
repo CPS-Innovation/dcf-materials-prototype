@@ -6,11 +6,15 @@
   var clearSelectionFields = window.DCFRedactText.clearSelectionFields
   var readHighlightTrigger = window.DCFRedactText.readHighlightTrigger
   var captureSelectionFromMouseup = window.DCFRedactText.captureSelectionFromMouseup
+  var initShowOriginalToggle = window.DCFRedactText.initShowOriginalToggle
+  var clearNoteError = window.DCFRedactText.clearNoteError
 
   ready(function () {
     var container = document.querySelector('.js-redact-paragraphs')
     var popover = document.getElementById('dcf-redact-popover')
     if (!container || !popover) return
+
+    initShowOriginalToggle(container)
 
     var changeIdField = document.getElementById('popover-change-id-field')
     var startField = document.getElementById('popover-start-field')
@@ -28,6 +32,7 @@
     var viewPreviousButton = document.getElementById('popover-view-previous')
     var viewNextButton = document.getElementById('popover-view-next')
     var redactAllButton = document.getElementById('popover-redact-all-button')
+    var noteGroup = document.getElementById('popover-note-group')
 
     // ------------------------------------------------------------------
     // Open/close/position — unlike v4's fixed right-docked modal, this
@@ -70,19 +75,35 @@
       if (arrowLeft > popoverRect.width - arrowMargin) arrowLeft = popoverRect.width - arrowMargin
       popover.style.setProperty('--dcf-arrow-left', Math.round(arrowLeft) + 'px')
 
+      // Every value up to this point is viewport-relative (matching
+      // anchorRect/popoverRect/viewportHeight, all from getBoundingClientRect
+      // or clientHeight) — window.scrollY is only added once, right at the
+      // end, to convert to the document-relative coordinates `position:
+      // absolute` needs. Mixing the two mid-calculation (as an earlier
+      // version of this did, comparing a viewport-relative `top` against
+      // `viewportHeight + window.scrollY`) silently produced wildly wrong
+      // positions on any page that wasn't scrolled to the very top.
       var top
+      var roomAbove = anchorRect.top - arrowGap
+      var roomBelow = viewportHeight - anchorRect.bottom - arrowGap
+
       popover.classList.remove('dcf-redact-popover--below')
-      if (anchorRect.top - popoverRect.height - arrowGap > 0) {
+
+      if (roomAbove >= popoverRect.height) {
         top = anchorRect.top - popoverRect.height - arrowGap
+      } else if (roomBelow >= popoverRect.height) {
+        top = anchorRect.bottom + arrowGap
+        popover.classList.add('dcf-redact-popover--below')
+      } else if (roomAbove >= roomBelow) {
+        // Doesn't fully fit either side — use whichever has more room,
+        // clamped to the viewport rather than left to overflow it.
+        top = Math.max(margin, anchorRect.top - popoverRect.height - arrowGap)
       } else {
         top = anchorRect.bottom + arrowGap
         popover.classList.add('dcf-redact-popover--below')
-      }
-
-      // Clamp vertically too, in case the anchor is off the bottom of a
-      // short viewport (rare, but avoids the popover being pushed off).
-      if (top + popoverRect.height > viewportHeight + window.scrollY - margin) {
-        top = viewportHeight + window.scrollY - margin - popoverRect.height
+        if (top + popoverRect.height > viewportHeight - margin) {
+          top = viewportHeight - margin - popoverRect.height
+        }
       }
 
       popover.style.left = Math.round(left + window.scrollX) + 'px'
@@ -140,7 +161,10 @@
 
     // ------------------------------------------------------------------
     // Select-driven button states — both initial actions start disabled
-    // until a redaction category is chosen.
+    // until a redaction category is chosen. "Other" also needs a note —
+    // a plain <select> has no built-in conditional-reveal like
+    // govukRadios does, so the note field's visibility is handled here
+    // instead of natively.
     // ------------------------------------------------------------------
 
     function updateInitialButtonStates () {
@@ -149,8 +173,23 @@
       if (findMatchingButton) findMatchingButton.disabled = !hasTag
     }
 
+    function updateNoteVisibility () {
+      if (noteGroup) noteGroup.hidden = !(tagSelect && tagSelect.value === 'other')
+    }
+
     if (tagSelect) {
-      tagSelect.addEventListener('change', updateInitialButtonStates)
+      tagSelect.addEventListener('change', function () {
+        updateInitialButtonStates()
+        updateNoteVisibility()
+        clearNoteError()
+
+        // Showing/hiding the note field changes the popover's height —
+        // without this, `top` stays wherever it was calculated for the
+        // *previous* height, so the box grows downward over the text
+        // instead of staying anchored to it (same fix as Find matching
+        // text needed for the same reason).
+        if (currentAnchorRect) positionPopoverAt(currentAnchorRect)
+      })
     }
 
     // ------------------------------------------------------------------
@@ -227,17 +266,34 @@
       var scrollTarget = paragraphEl
 
       if (range) {
-        temporaryHighlight = document.createElement('mark')
-        temporaryHighlight.className = 'dcf-highlight dcf-highlight--match'
-        try {
-          range.surroundContents(temporaryHighlight)
-          scrollTarget = temporaryHighlight
-        } catch (e) {
-          // surroundContents throws if the range's boundaries don't cleanly
-          // wrap in one element (e.g. straddling existing markup) — fall
-          // back to scrolling the paragraph into view without the visual
-          // highlight rather than breaking the step-through entirely.
-          temporaryHighlight = null
+        // This occurrence might already be a tagged redaction itself (e.g.
+        // stepping through matches of the very word the popover was
+        // opened to edit, via check.html's "Change" link) — its text is
+        // already wrapped in an existing <mark><button>. Anchor to that
+        // directly rather than wrapping a second, temporary <mark> inside
+        // it: nesting one highlight inside another is both unnecessary
+        // (it's already visually marked) and unreliable — surroundContents
+        // on a range nested inside a <button> doesn't behave consistently
+        // across cases, which was throwing the popover's position off.
+        var existingHighlightEl = range.startContainer.nodeType === Node.TEXT_NODE
+          ? range.startContainer.parentElement.closest('.dcf-highlight')
+          : null
+
+        if (existingHighlightEl) {
+          scrollTarget = existingHighlightEl
+        } else {
+          temporaryHighlight = document.createElement('mark')
+          temporaryHighlight.className = 'dcf-highlight dcf-highlight--match'
+          try {
+            range.surroundContents(temporaryHighlight)
+            scrollTarget = temporaryHighlight
+          } catch (e) {
+            // surroundContents throws if the range's boundaries don't cleanly
+            // wrap in one element (e.g. straddling existing markup) — fall
+            // back to scrolling the paragraph into view without the visual
+            // highlight rather than breaking the step-through entirely.
+            temporaryHighlight = null
+          }
         }
       }
 
@@ -338,6 +394,11 @@
         if (returnToField) returnToField.value = ''
         if (tagSelect) tagSelect.value = data.currentTag
 
+        // A programmatic .value assignment doesn't fire a native change
+        // event, so the note field's visibility needs updating explicitly
+        // here rather than relying on the change listener above.
+        updateNoteVisibility()
+
         if (editActionsGroup) editActionsGroup.hidden = true
 
         var anchorRect = trigger.getBoundingClientRect()
@@ -346,11 +407,13 @@
     })
 
     // ------------------------------------------------------------------
-    // Arriving via check.html's "Change" link: the popover is already
-    // server-rendered open (modalState set), but with no positioning —
-    // anchor it to the existing highlight it's editing, same as a live
-    // click above. Remove/Cancel's visibility is already correct from the
-    // server render (modalState.changeId truthy), nothing to do there.
+    // Server-rendered already open, with no positioning applied yet —
+    // either arriving via check.html's "Change" link (an existing tagged
+    // highlight, identified by changeId) or reopening after a failed
+    // "Other requires a note" submit on a brand new, not-yet-tagged
+    // selection (identified by start/end/paragraphIndex instead, since
+    // there's no <mark> for it to anchor to). Remove/Cancel's visibility
+    // is already correct from the server render, nothing to do there.
     // ------------------------------------------------------------------
 
     if (popover.classList.contains('is-open')) {
@@ -363,6 +426,16 @@
       if (initialTrigger) {
         currentAnchorRect = initialTrigger.getBoundingClientRect()
         positionPopoverAt(currentAnchorRect)
+      } else if (paragraphField && paragraphField.value !== '') {
+        var initialParagraphEl = container.querySelectorAll('.js-tag-paragraph')[parseInt(paragraphField.value, 10)]
+        var initialRange = initialParagraphEl
+          ? rangeAtOffset(initialParagraphEl, parseInt(startField.value, 10), parseInt(endField.value, 10))
+          : null
+
+        if (initialRange) {
+          currentAnchorRect = initialRange.getBoundingClientRect()
+          positionPopoverAt(currentAnchorRect)
+        }
       }
 
       updateInitialButtonStates()

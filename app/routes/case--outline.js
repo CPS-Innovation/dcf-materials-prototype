@@ -344,6 +344,9 @@ function buildTagViewData (outlineEdit, editIds, editReturnTo) {
   if (noteErrorFlag) {
     modalState = {
       changeId: noteErrorFlag.changeId,
+      start: noteErrorFlag.start || '',
+      end: noteErrorFlag.end || '',
+      paragraphIndex: noteErrorFlag.paragraphIndex || '',
       text: noteErrorFlag.text,
       tag: noteErrorFlag.tag,
       note: '',

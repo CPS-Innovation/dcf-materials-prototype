@@ -8,6 +8,8 @@
   var clearSelectionFields = window.DCFRedactText.clearSelectionFields
   var readHighlightTrigger = window.DCFRedactText.readHighlightTrigger
   var captureSelectionFromMouseup = window.DCFRedactText.captureSelectionFromMouseup
+  var initShowOriginalToggle = window.DCFRedactText.initShowOriginalToggle
+  var clearNoteError = window.DCFRedactText.clearNoteError
 
   ready(function () {
     var container = document.querySelector('.js-redact-paragraphs')
@@ -31,26 +33,7 @@
       try { documentText = JSON.parse(documentTextEl.textContent) } catch (e) {}
     }
 
-    // ------------------------------------------------------------------
-    // "Show original text" toggle — lets the user quickly re-read the
-    // passage with every redaction's tint/border removed, without
-    // affecting anything that's actually tagged. Button label text lives
-    // in the template (two spans, swapped via `hidden`) rather than here,
-    // so it stays editable without touching this file.
-    // ------------------------------------------------------------------
-
-    var toggleOriginalButton = document.getElementById('dcf-toggle-original-text')
-    var toggleShowLabel = toggleOriginalButton && toggleOriginalButton.querySelector('.js-toggle-original-label-show')
-    var toggleHideLabel = toggleOriginalButton && toggleOriginalButton.querySelector('.js-toggle-original-label-hide')
-
-    if (toggleOriginalButton) {
-      toggleOriginalButton.addEventListener('click', function () {
-        var showingOriginal = container.classList.toggle('dcf-show-original')
-        toggleOriginalButton.setAttribute('aria-pressed', String(showingOriginal))
-        if (toggleShowLabel) toggleShowLabel.hidden = showingOriginal
-        if (toggleHideLabel) toggleHideLabel.hidden = !showingOriginal
-      })
-    }
+    initShowOriginalToggle(container)
 
     // ------------------------------------------------------------------
     // Modal open/close — mirrors material-viewer.js's notes-modal pattern
@@ -106,40 +89,6 @@
         closeModal()
       }
     })
-
-    // ------------------------------------------------------------------
-    // A server-rendered "Other requires a note" error (govukErrorSummary +
-    // govukErrorMessage) clears itself the moment the user changes their
-    // radio choice — it was about the previous submission, not necessarily
-    // still relevant once they've started picking again.
-    // ------------------------------------------------------------------
-
-    function clearNoteError () {
-      var errorSummary = document.querySelector('.govuk-error-summary')
-      if (errorSummary) errorSummary.remove()
-
-      var noteField = document.getElementById('redact-note')
-      if (!noteField) return
-
-      var errorMessage = document.getElementById('redact-note-error')
-      if (errorMessage) errorMessage.remove()
-
-      var formGroup = noteField.closest('.govuk-form-group')
-      if (formGroup) formGroup.classList.remove('govuk-form-group--error')
-      noteField.classList.remove('govuk-textarea--error')
-
-      if (noteField.hasAttribute('aria-describedby')) {
-        var describedBy = noteField.getAttribute('aria-describedby')
-          .split(' ')
-          .filter(function (id) { return id !== 'redact-note-error' })
-          .join(' ')
-        if (describedBy) {
-          noteField.setAttribute('aria-describedby', describedBy)
-        } else {
-          noteField.removeAttribute('aria-describedby')
-        }
-      }
-    }
 
     document.addEventListener('change', function (e) {
       if (e.target && e.target.name === 'tag') clearNoteError()

@@ -114,6 +114,21 @@
   white-space: nowrap;
 }
 
+// govukErrorSummary's default padding/margin/title size are tuned for a
+// full-width page banner — inside this 380px popover they read as
+// oversized and eat into the limited space above the select/textarea.
+// Scaled down to fit the compact card while keeping the same red border
+// treatment that makes it recognisable as an error summary.
+.dcf-redact-popover .govuk-error-summary {
+  padding: govuk-spacing(2) govuk-spacing(3);
+  margin-bottom: govuk-spacing(3);
+}
+
+.dcf-redact-popover .govuk-error-summary__title {
+  @include govuk-font-size($size: 19);
+  margin-bottom: govuk-spacing(2);
+}
+
 // Temporary highlight for the occurrence currently being viewed while
 // stepping through "Find matching text" matches with View previous/next —
 // deliberately distinct from the black "tagged" look and the yellow

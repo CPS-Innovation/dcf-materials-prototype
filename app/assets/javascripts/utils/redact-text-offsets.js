@@ -48,11 +48,21 @@
       if (node.nodeType === Node.TEXT_NODE) {
         var nextOffset = offset + node.textContent.length
 
-        if (!startSet && start >= offset && start <= nextOffset) {
+        // Strict bounds, not inclusive on both ends — when `start`/`end`
+        // land exactly on a boundary between two text nodes (which always
+        // happens for an already-tagged word, since its <mark><button>
+        // contains precisely that word and nothing else), inclusive `<=`/
+        // `>=` on both sides let the *preceding* node claim the boundary
+        // first, resolving into plain paragraph text instead of the
+        // tagged span itself. Requiring `start < nextOffset` and
+        // `end > offset` makes the *following* node claim a start-boundary
+        // and the *preceding* node claim an end-boundary, which is the
+        // combination that actually lands inside the intended node.
+        if (!startSet && start >= offset && (start < nextOffset || nextOffset === offset)) {
           range.setStart(node, start - offset)
           startSet = true
         }
-        if (!endSet && end >= offset && end <= nextOffset) {
+        if (!endSet && end > offset && end <= nextOffset) {
           range.setEnd(node, end - offset)
           endSet = true
         }
@@ -108,6 +118,61 @@
 
     var selection = window.getSelection()
     if (selection) selection.removeAllRanges()
+  }
+
+  // A server-rendered "Other requires a note" error (govukErrorSummary +
+  // govukErrorMessage) clears itself the moment the user changes their
+  // category choice — it was about the previous submission, not
+  // necessarily still relevant once they've started picking again. Shared
+  // by v4's radios and v2's select, both of which render the same
+  // #redact-note/#redact-note-error ids and .govuk-error-summary markup.
+  function clearNoteError () {
+    var errorSummary = document.querySelector('.govuk-error-summary')
+    if (errorSummary) errorSummary.remove()
+
+    var noteField = document.getElementById('redact-note')
+    if (!noteField) return
+
+    var errorMessage = document.getElementById('redact-note-error')
+    if (errorMessage) errorMessage.remove()
+
+    var formGroup = noteField.closest('.govuk-form-group')
+    if (formGroup) formGroup.classList.remove('govuk-form-group--error')
+    noteField.classList.remove('govuk-textarea--error')
+
+    if (noteField.hasAttribute('aria-describedby')) {
+      var describedBy = noteField.getAttribute('aria-describedby')
+        .split(' ')
+        .filter(function (id) { return id !== 'redact-note-error' })
+        .join(' ')
+      if (describedBy) {
+        noteField.setAttribute('aria-describedby', describedBy)
+      } else {
+        noteField.removeAttribute('aria-describedby')
+      }
+    }
+  }
+
+  // "Show original text" toggle — lets the user quickly re-read the
+  // passage with every redaction's tint/border removed, without affecting
+  // anything that's actually tagged. Shared by both v4's modal page and
+  // v2's popover page, which each render the same toggle-original-text.njk
+  // markup. Button label text lives in the template (two spans, swapped
+  // via `hidden`) rather than here, so it stays editable without touching
+  // this file. No-ops if the toggle button isn't present on the page.
+  function initShowOriginalToggle (container) {
+    var toggleButton = document.getElementById('dcf-toggle-original-text')
+    if (!toggleButton) return
+
+    var showLabel = toggleButton.querySelector('.js-toggle-original-label-show')
+    var hideLabel = toggleButton.querySelector('.js-toggle-original-label-hide')
+
+    toggleButton.addEventListener('click', function () {
+      var showingOriginal = container.classList.toggle('dcf-show-original')
+      toggleButton.setAttribute('aria-pressed', String(showingOriginal))
+      if (showLabel) showLabel.hidden = showingOriginal
+      if (hideLabel) hideLabel.hidden = !showingOriginal
+    })
   }
 
   // Reads an already-tagged highlight's dataset (set by the server from
@@ -189,6 +254,8 @@
     countOccurrences: countOccurrences,
     clearSelectionFields: clearSelectionFields,
     readHighlightTrigger: readHighlightTrigger,
-    captureSelectionFromMouseup: captureSelectionFromMouseup
+    captureSelectionFromMouseup: captureSelectionFromMouseup,
+    initShowOriginalToggle: initShowOriginalToggle,
+    clearNoteError: clearNoteError
   }
 })()

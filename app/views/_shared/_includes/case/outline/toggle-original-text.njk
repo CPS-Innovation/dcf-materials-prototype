@@ -1,0 +1,16 @@
+{# _shared/_includes/case/outline/toggle-original-text
+
+   Shared by index-v2.html (popover) and index-v4.html (side modal) — a
+   quick way to re-read the passage with every redaction's tint/border
+   removed, without affecting anything that's actually tagged. Wired up by
+   the shared initShowOriginalToggle helper in redact-text-offsets.js.
+   Only rendered when there's at least one tagged redaction — with none,
+   "Hide redactions" has nothing to hide. #}
+{% if groupedRedactions.length %}
+  <p class="govuk-body">
+    <button type="button" class="dcf-link-button" id="dcf-toggle-original-text" aria-pressed="false">
+      <span class="js-toggle-original-label-show">Hide redactions</span>
+      <span class="js-toggle-original-label-hide" hidden>Show redactions</span>
+    </button>
+  </p>
+{% endif %}

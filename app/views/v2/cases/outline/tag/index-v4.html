@@ -1,4 +1,4 @@
-{# app/views/v2/cases/outline/tag/index-v4 #}
+{#  #}
 
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -21,12 +21,7 @@
   <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
   <h1 class="govuk-heading-l">Redact summary of circumstances</h1>
 
-  <p class="govuk-body">
-    <button type="button" class="dcf-link-button" id="dcf-toggle-original-text" aria-pressed="false">
-      <span class="js-toggle-original-label-show">Hide redactions</span>
-      <span class="js-toggle-original-label-hide" hidden>Show redactions</span>
-    </button>
-  </p>
+  {% include "_shared/_includes/case/outline/toggle-original-text.njk" %}
 
     <div class="govuk-grid-row">
       <div class="govuk-grid-column-two-thirds">
