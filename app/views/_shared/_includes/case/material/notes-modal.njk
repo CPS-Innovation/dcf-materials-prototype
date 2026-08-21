@@ -1,5 +1,5 @@
 {# -------------------------------------------------------------------------
-  notes-modal.njk
+  app/views/_shared/_includes/case/material/notes-modal.njk
   --------------------------------------------------------------------------
   Expected params:
     - materialId           : string (e.g. "MAT-02001")
@@ -53,13 +53,13 @@
          ------------------------------------------------------------ #}
       <section aria-labelledby="dcf-notes-add-title">
         <h3 class="govuk-heading-m" id="dcf-notes-add-title">
-          Add a note
+          Add a note to the document
         </h3>
 
-        <p class="govuk-body" id="dcf-notes-modal-description">
+        {# <p class="govuk-body" id="dcf-notes-modal-description">
           Notes will be saved against this document for all users who can
           access the case.
-        </p>
+        </p> #}
 
         <form
           method="post"
@@ -95,7 +95,7 @@
           {# -----------------------------------------------------------
              GDS Details: document tags (radios + checkboxes)
              -------------------------------------------------------- #}
-          {% set noteTagsHtml %}
+          {# {% set noteTagsHtml %}
             {{ govukRadios({
               classes: "govuk-radios--small",
               idPrefix: "evidential-status",
@@ -160,7 +160,7 @@
           {{ govukDetails({
             summaryText: "Add document tags",
             html: noteTagsHtml | safe
-          }) }}
+          }) }} #}
 
           <div class="govuk-button-group dcf-notes-modal__actions">
             {{ govukButton({
@@ -180,7 +180,9 @@
       </section>
 
       {# ---------------------------------------------------------------
-         Existing notes (simple list, no timeline)
+         Existing notes — timeline (newest first). Structure follows the
+         Home Office design system's .hods-timeline pattern (item/title/
+         date/description), adapted to this app's dcf- prefix.
          ------------------------------------------------------------ #}
       <section
         class="dcf-notes-modal__notes"
@@ -195,18 +197,17 @@
         </p>
 
         {# Container where notes will be rendered/inserted #}
-        <div class="dcf-notes-modal__notes-list" data-notes-list>
-          {# Optional: if you ever pass notes in from the server, you can render them here #}
+        <ol class="dcf-timeline" data-notes-list>
           {% if notes and notes | length %}
             {% for note in notes %}
-              <article class="dcf-note">
-                <h4 class="govuk-heading-s">{{ note.author }}</h4>
-                <p class="govuk-body">{{ note.date }}</p>
-                <p class="govuk-body">{{ note.text }}</p>
-              </article>
+              <li class="dcf-timeline__item">
+                <h4 class="dcf-timeline__title govuk-heading-s">{{ note.author }}</h4>
+                <p class="dcf-timeline__date govuk-body-s">{{ note.date }}</p>
+                <p class="dcf-timeline__description govuk-body">{{ note.text }}</p>
+              </li>
             {% endfor %}
           {% endif %}
-        </div>
+        </ol>
       </section>
 
     </div>

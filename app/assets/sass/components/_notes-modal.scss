@@ -95,10 +95,59 @@
   gap: 16px;
 }
 
-/* Timeline section – just give it a bit of separation from the form */
-.dcf-notes-modal__timeline {
-  border-top: 1px solid #b1b4b6;
-  padding-top: 16px;
+/* ======================================================================
+   Notes timeline — the list of previously-added notes, styled after the
+   DWP/Home Office design systems' timeline component: one continuous
+   vertical line running the full height of the list (the .dcf-timeline
+   border-left, not per-item), with a short horizontal tick crossing it at
+   each entry to mark where that entry starts. Items use padding (not
+   margin) for their vertical spacing so the line stays unbroken between
+   them — a margin gap would visually cut the line at every entry.
+   Scoped to the notes list only (.dcf-timeline wraps <ol data-notes-list>
+   in notes-modal.njk) — the "Add a note" form above it is a separate
+   section, never inside this list.
+   ====================================================================== */
+
+.dcf-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 4px solid govuk-colour("blue");
+}
+
+.dcf-timeline__item {
+  position: relative;
+  padding-left: govuk-spacing(3);
+  padding-bottom: govuk-spacing(4);
+}
+
+.dcf-timeline__item:last-child {
+  padding-bottom: 0;
+}
+
+/* Tick mark: straddles the container's border-left, level with the first
+   line of the entry (the author name). */
+.dcf-timeline__item::before {
+  content: "";
+  position: absolute;
+  top: 0.5em;
+  left: -4px;
+  width: 12px;
+  height: 4px;
+  background: govuk-colour("blue");
+}
+
+.dcf-timeline__title {
+  margin-bottom: govuk-spacing(1);
+}
+
+.dcf-timeline__date {
+  color: $govuk-secondary-text-colour;
+  margin-bottom: govuk-spacing(1);
+}
+
+.dcf-timeline__description {
+  margin-bottom: 0;
 }
 
 /* (Optional) Small-screen tweak: let the tray take full width if space is tight */
