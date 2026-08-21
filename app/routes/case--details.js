@@ -145,6 +145,12 @@ module.exports = router => {
     const reminderTasks = req.session.data.reminderTasks || []
     const tasks = [...reminderTasks, ...placeholderTasks]
 
+    // successBanner is already read from session, validated and cleared,
+    // and exposed as res.locals.successBanner by the global flash
+    // middleware in app/routes.js — passing it again here as an explicit
+    // local would shadow that (and by this point session.data.successBanner
+    // has already been cleared by that middleware, so it'd shadow it with
+    // undefined).
     res.render("cases/details/index", {
       _case,
       documents,

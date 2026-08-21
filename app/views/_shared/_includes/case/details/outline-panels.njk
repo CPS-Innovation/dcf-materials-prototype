@@ -3,12 +3,32 @@
 {% set factualSummaryHtml %}
 
 {% set circumstancesDisplayHtml %}
-{% for paragraph in _case.factualSummary.split('\n\n') %}
+{% if _case.factualSummaryRedacted %}
+  {{ _case.factualSummaryRedacted | safe }}
+{% else %}
+  {% for paragraph in _case.factualSummary.split('\n\n') %}
 <p class="govuk-body">{{ paragraph }}</p>
-{% endfor %}
+  {% endfor %}
+{% endif %}
 {% endset %}
 
 {{ govukSummaryList({
+  card: {
+    title: {
+      html: 'Summary of circumstances of offence(s)'
+    },
+    actions: {
+      items: [
+        { text: "Redact", href: "/cases/" + _case.id + "/outline/tag/v2", visuallyHiddenText: "summary of circumstances of offence(s)" }
+      ]
+    }
+  },
+  rows: [
+    { key: { text: "Added on 24 May 2024" }, value: { html: circumstancesDisplayHtml } }
+  ]
+}) }}
+
+{# {{ govukSummaryList({
   card: {
     title: {
       html: 'Summary of circumstances of offence(s)'
@@ -23,7 +43,7 @@
   rows: [
     { key: { text: "Added on 24 May 2024" }, value: { html: circumstancesDisplayHtml } }
   ]
-}) }}
+}) }} #}
 
 {% set arrestDetailsValueHtml %}
 <p class="govuk-body">
@@ -96,6 +116,27 @@ PS Police has also provided a statement detailing their response to the incident
 
 {% set informationToProsecutorHtml %}
 
+{# Original, unredacted wording — copied here once a redaction has been
+   committed (factualSummaryRedacted set), since the Factual summary tab
+   itself now shows the redacted version instead. #}
+{% if _case.factualSummaryRedacted %}
+  {% set originalCircumstancesHtml %}
+    {% for paragraph in _case.factualSummary.split('\n\n') %}
+<p class="govuk-body">{{ paragraph }}</p>
+    {% endfor %}
+  {% endset %}
+
+  {{ govukSummaryList({
+    card: {
+      title: {
+        html: 'Summary of circumstances of offence(s) (unredacted)'
+      }
+    },
+    rows: [
+      { key: { text: "Added on 24 May 2024" }, value: { html: originalCircumstancesHtml } }
+    ]
+  }) }}
+{% endif %}
 
 {% set enquiryValueHtml %}
 <ol class="govuk-list govuk-list--number govuk-!-margin-bottom-6">
