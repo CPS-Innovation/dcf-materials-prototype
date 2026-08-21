@@ -1,3 +1,13 @@
+// Static (non-interactive) redacted-text marker for committed redactions
+// shown on the case details page (Case.factualSummaryRedacted) — deliberately
+// separate from .dcf-highlight/.js-redact-paragraphs, which are scoped to
+// the interactive drag-select tag screen and carry <button> triggers this
+// plain stored HTML has no use for.
+.dcf-redacted-text {
+  background-color: govuk-colour("black");
+  color: transparent;
+}
+
 .dcf-highlight {
   padding: 0;
   border-radius: 3px;

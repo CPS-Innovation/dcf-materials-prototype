@@ -542,6 +542,41 @@ function buildCheckViewData (outlineEdit, caseId, variant) {
   }
 }
 
+function escapeHtml (value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// Static (non-interactive) HTML rendering of the factual summary with
+// every currently-tagged span replaced by a solid black box — computed
+// once at commit time and stored in Case.factualSummaryRedacted.
+// Deliberately not the same markup as the live tag-screen preview
+// (.dcf-highlight/.js-redact-paragraphs): those classes are scoped for
+// the interactive drag-select page and carry <button> triggers this
+// static, stored copy has no use for. Per the tech team, this redaction
+// only ever happens once per case — no need to handle re-redacting an
+// already-redacted case (that would need accumulating tags across
+// sessions, which the app doesn't currently persist).
+function buildRedactedHtml (outlineEdit) {
+  const tags = outlineEdit.tags || {}
+  const { parts } = getChangesAndParts(outlineEdit)
+  const paragraphs = splitIntoParagraphs(parts)
+
+  return paragraphs.map(paragraph => {
+    const html = paragraph.map(part => {
+      if (part.type !== 'unchanged' && tags[part.changeId]) {
+        return `<span class="dcf-redacted-text">${escapeHtml(part.value)}</span>`
+      }
+      return escapeHtml(part.value)
+    }).join('')
+    return `<p class="govuk-body">${html}</p>`
+  }).join('\n')
+}
+
 // Shared commit step: persists the edited factual summary and writes one
 // ActivityLog row per currently-tagged change. Recomputed live from
 // outlineEdit.tags rather than a pre-taken snapshot, so it stays correct
@@ -563,7 +598,10 @@ async function commitOutlineEdit (outlineEdit, caseId, userId) {
 
   await prisma.case.update({
     where: { id: caseId },
-    data: { factualSummary: outlineEdit.after }
+    data: {
+      factualSummary: outlineEdit.after,
+      factualSummaryRedacted: buildRedactedHtml(outlineEdit)
+    }
   })
 
   for (const change of taggedChanges) {
@@ -743,8 +781,41 @@ module.exports = router => {
 
       delete req.session.data.outlineEdit
 
-      req.session.save(() => res.redirect(`/cases/${caseId}/details#factual-summary`))
+      // Same req.session.data.successBanner flash convention already used
+      // throughout the app (case--disclosure.js, case--charges.js, etc.) —
+      // read once and cleared by the details page's GET handler via
+      // success-banner-safe.njk, already included on that page.
+      req.session.data.successBanner = {
+        text: 'Factual summary redacted and sent to redaction log.'
+      }
+
+      // #case-outline matches the Outline tab's id in main-tabs.njk —
+      // govuk-tabs reads location.hash on load to select the active tab.
+      req.session.save(() => res.redirect(`/cases/${caseId}/details#case-outline`))
     })
+  })
+
+  // Prototype-testing only: undoes a committed redaction so the same case
+  // can be run through the "Commit to redaction log" journey again (the real
+  // process only ever commits once per case, so this has no production
+  // equivalent — it exists purely so multiple testers can reset and repeat
+  // the journey). Linked from the footer, only shown when there's something
+  // to reset.
+  router.post('/cases/:caseId/outline/reset-redaction', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+
+    await prisma.case.update({
+      where: { id: caseId },
+      data: { factualSummaryRedacted: null }
+    })
+
+    await prisma.activityLog.deleteMany({
+      where: { caseId, model: 'Case', title: 'Factual summary edited' }
+    })
+
+    delete req.session.data.outlineEdit
+
+    req.session.save(() => res.redirect(req.body.returnTo || `/cases/${caseId}/details#case-outline`))
   })
 
   // "Document type" mandatory field: reachable via its "Change" link on the
