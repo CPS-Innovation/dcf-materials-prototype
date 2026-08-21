@@ -7,10 +7,8 @@
    Only rendered when there's at least one tagged redaction — with none,
    "Hide redactions" has nothing to hide. #}
 {% if groupedRedactions.length %}
-  <p class="govuk-body">
-    <button type="button" class="dcf-link-button" id="dcf-toggle-original-text" aria-pressed="false">
-      <span class="js-toggle-original-label-show">Hide redactions</span>
-      <span class="js-toggle-original-label-hide" hidden>Show redactions</span>
-    </button>
-  </p>
+  <button type="button" class="govuk-button govuk-button--secondary" id="dcf-toggle-original-text" aria-pressed="false">
+    <span class="js-toggle-original-label-show">Hide redactions</span>
+    <span class="js-toggle-original-label-hide" hidden>Show redactions</span>
+  </button>
 {% endif %}
