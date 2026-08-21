@@ -13,6 +13,8 @@
   <span class="govuk-caption-m">{{ _case.reference }} - Redact summary of circumstances on offence(s)</span>
   <h1 class="govuk-heading-l">Redact summary of circumstances</h1>
 
+  {% include "_shared/_includes/case/outline/toggle-original-text.njk" %}
+
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
@@ -41,6 +43,14 @@
       <input type="hidden" name="returnTo" id="popover-return-to-field" value="{{ modalState.returnTo if modalState else '' }}">
       <input type="hidden" name="variant" value="v2">
 
+      {% if errorSummary.length %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: errorSummary,
+          classes: "dcf-redact-popover__error-summary"
+        }) }}
+      {% endif %}
+
       <div class="govuk-form-group govuk-!-margin-bottom-2">
         <label class="govuk-visually-hidden" for="popover-tag-select">Redaction type</label>
         <select class="govuk-select" id="popover-tag-select" name="tag">
@@ -49,6 +59,21 @@
             <option value="{{ item.value }}"{{ ' selected' if (modalState and modalState.tag == item.value) }}>{{ item.text }}</option>
           {% endfor %}
         </select>
+      </div>
+
+      {# Only "Other" needs a note — a plain <select> has no built-in
+         conditional-reveal like govukRadios does, so this is shown/hidden
+         by redact-popover.js instead (updateNoteVisibility). #}
+      {% set noteErrorMessage = { text: "Enter a note" } if (modalState and modalState.hasError) else null %}
+      <div id="popover-note-group"{{ '' if (modalState and modalState.tag == 'other') else ' hidden' }}>
+        {{ govukTextarea({
+          id: "redact-note",
+          name: "note",
+          value: (modalState.note if modalState else ''),
+          label: { text: "Add note", classes: "govuk-label--s" },
+          errorMessage: noteErrorMessage,
+          classes: "govuk-!-margin-bottom-2"
+        }) }}
       </div>
 
       <div class="govuk-button-group" id="popover-initial-actions">
