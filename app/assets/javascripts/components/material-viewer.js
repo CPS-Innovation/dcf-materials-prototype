@@ -26,8 +26,14 @@
 
     try {
       var heading = notesModal.querySelector('#dcf-notes-modal-title')
+      // The trigger itself (e.g. a materials-list card's "Add a note"
+      // link) carries the title directly via data-title — prefer that.
+      // Falls back to the document viewer's active tab for pages where
+      // "Add a note" is opened from within the multi-tab viewer instead,
+      // which has no such trigger-level attribute of its own.
       var activeTab = viewer.querySelector('.dcf-doc-tab.is-active')
-      var tabTitle = activeTab && activeTab.getAttribute('data-title')
+      var tabTitle = (triggerEl && triggerEl.getAttribute('data-title')) ||
+        (activeTab && activeTab.getAttribute('data-title'))
       if (heading) {
         var base = 'Notes'
         heading.textContent = tabTitle ? base + ' – ' + tabTitle : base
@@ -69,19 +75,26 @@
 
         if (emptyMsg) emptyMsg.hidden = true
 
-        var noteEl = document.createElement('article')
-        noteEl.className = 'dcf-note'
+        // <ol class="dcf-timeline"> requires <li> children — matches the
+        // server-rendered dcf-timeline__item structure in notes-modal.njk
+        // exactly, so a freshly-added note looks identical to one loaded
+        // from the server.
+        var noteEl = document.createElement('li')
+        noteEl.className = 'dcf-timeline__item'
 
         var nameEl = document.createElement('h4')
-        nameEl.className = 'govuk-heading-s'
-        nameEl.textContent = '[User_name]'
+        nameEl.className = 'dcf-timeline__title govuk-heading-s'
+        nameEl.textContent = 'Saul Goodman'
 
         var dateEl = document.createElement('p')
-        dateEl.className = 'govuk-body'
-        dateEl.textContent = '[govukDateTime]'
+        dateEl.className = 'dcf-timeline__date govuk-body-s'
+        // Shared with Nunjucks pages' govukDateTime filter (app/filters.js)
+        // — same formatting rules, just the client-side copy, since this
+        // note is added without a server round trip.
+        dateEl.textContent = window.DCFDateFormat ? window.DCFDateFormat.govukDateTime(new Date()) : ''
 
         var textEl = document.createElement('p')
-        textEl.className = 'govuk-body'
+        textEl.className = 'dcf-timeline__description govuk-body'
         textEl.textContent = text
 
         noteEl.appendChild(nameEl)
