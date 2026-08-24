@@ -555,4 +555,36 @@ module.exports = router => {
   })
 
 
+  // ------------------------------------------------------------------
+  // NO VICTIM DEMO — reset (testing only)
+  // Completing the CMS-import demo journey (Save details on check.html)
+  // writes victimId/particulars to the DB for real, so without a reset the
+  // "no victim" starting state only works once. Resolved by reference/
+  // chargeCode rather than a hardcoded id so it survives reseeds.
+  router.post('/no-victim-demo/reset', async (req, res) => {
+    const demoCase = await prisma.case.findFirst({
+      where: { reference: '99AA000002/1' },
+      include: { defendants: { include: { charges: true } } }
+    })
+
+    const demoCharge = demoCase && demoCase.defendants[0] &&
+      demoCase.defendants[0].charges.find(c => c.chargeCode === 'T01')
+
+    if (demoCharge) {
+      await prisma.charge.update({
+        where: { id: demoCharge.id },
+        data: {
+          victimId: null,
+          offenceDate: new Date('2026-01-10'),
+          particulars: 'On 10 January 2026, dishonestly appropriated property belonging to another with the intention of permanently depriving them of it.'
+        }
+      })
+    }
+
+    delete req.session.data.editCharge
+
+    const returnTo = req.body.returnTo || '/tasks'
+    req.session.save(() => res.redirect(returnTo))
+  })
+
 }

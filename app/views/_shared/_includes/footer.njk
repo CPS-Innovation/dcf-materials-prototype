@@ -26,6 +26,15 @@
           Reset material notes/status (testing)
         </button>
       </li>
+      <li class="govuk-footer__inline-list-item">
+        <form method="post" action="/no-victim-demo/reset" class="dcf-undo-form">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="returnTo" value="{{ path }}">
+          <button type="submit" class="govuk-footer__link dcf-footer-reset-button">
+            Reset no victim demo (testing)
+          </button>
+        </form>
+      </li>
       {# <li class="govuk-footer__inline-list-item">
         <a class="govuk-footer__link" href="/clear-data?returnUrl={{path}}">
           Clear data
