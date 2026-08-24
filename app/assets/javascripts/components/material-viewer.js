@@ -103,6 +103,20 @@
 
         list.prepend(noteEl)
 
+        var noteCard = lastNotesTrigger && lastNotesTrigger.closest('.dcf-material-card')
+        if (noteCard) {
+          var commentDot = noteCard.querySelector('.dcf-material-card__comment')
+          if (commentDot) commentDot.classList.add('is-unread')
+
+          try {
+            var caseId = (window.caseMaterials && window.caseMaterials.caseId) || noteCard.getAttribute('data-case-id')
+            var itemId = noteCard.getAttribute('data-item-id')
+            if (caseId && itemId) {
+              localStorage.setItem('matHasNotes:' + caseId + ':' + itemId, 'true')
+            }
+          } catch (e) {}
+        }
+
         textarea.value = ''
 
         var counter = notesModal.querySelector('#dcf-note-char-count')
@@ -556,6 +570,22 @@
     }
 
     renderStatusTags(card)
+  }
+
+  function initCardNotes (card) {
+    if (!card) return
+
+    try {
+      var caseId = (window.caseMaterials && window.caseMaterials.caseId) || card.getAttribute('data-case-id')
+      var itemId = card.getAttribute('data-item-id')
+      if (!caseId || !itemId) return
+
+      var hasNotes = localStorage.getItem('matHasNotes:' + caseId + ':' + itemId) === 'true'
+      if (hasNotes) {
+        var dot = card.querySelector('.dcf-material-card__comment')
+        if (dot) dot.classList.add('is-unread')
+      }
+    } catch (e) {}
   }
 
   function markCardVisited (card) {
@@ -1732,6 +1762,7 @@ function buildMetaPanel (meta, bodyId) {
     var cards = document.querySelectorAll('.dcf-material-card')
     if (!cards.length) return
     cards.forEach(initCardStatus)
+    cards.forEach(initCardNotes)
   })()
 
   // --------------------------------------
