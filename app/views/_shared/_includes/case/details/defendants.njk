@@ -69,7 +69,7 @@
                 {% set victimCellHtml %}{{ victim.firstName }} {{ victim.lastName }}{% endset %}
                 {% set victimStatusHtml %}<strong class="govuk-tag govuk-tag--blue govuk-!-margin-top-1">{{ victimStatus }}</strong>{% endset %}
               {% else %}
-                {% set victimCellHtml %}<span class="govuk-hint">Not recorded</span>{% endset %}
+                {% set victimCellHtml %}<span class="govuk-hint">None</span>{% endset %}
                 {% set victimStatusHtml %}<span class="govuk-hint">Not recorded</span>{% endset %}
               {% endif %}
 

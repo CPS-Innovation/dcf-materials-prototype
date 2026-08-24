@@ -49,6 +49,23 @@ function annotateVictims (victims, witnesses) {
   return annotated
 }
 
+// Resolves a submitted/selected victimId to a victim + isPure flag, whether
+// it's an existing case victim or one just "imported" via the CMS Classic
+// interstitial (not yet on _case.victims — that's the point: it isn't known
+// to Manage Cases until this step confirms it).
+async function resolveSelectedVictim (victimId, _case, victims) {
+  if (!victimId || victimId === 'none') return null
+
+  const known = victims.find(v => String(v.id) === String(victimId))
+  if (known) return known
+
+  const raw = await prisma.victim.findUnique({ where: { id: parseInt(victimId, 10) } })
+  if (!raw) return null
+
+  const witnessNames = new Set((_case.witnesses || []).map(w => `${w.firstName} ${w.lastName}`))
+  return { ...raw, isPure: !witnessNames.has(`${raw.firstName} ${raw.lastName}`) }
+}
+
 module.exports = router => {
 
   // ------------------------------------------------------------------
@@ -387,7 +404,7 @@ module.exports = router => {
     // there, so skip the radio list and show a playback + confirm step
     // instead. See app/views/v2/cases/charges/edit/victim-interstitial.html.
     const importedVictim = req.query.importedVictimId
-      ? victims.find(v => String(v.id) === String(req.query.importedVictimId))
+      ? await resolveSelectedVictim(req.query.importedVictimId, _case, victims)
       : null
 
     return res.render('v2/cases/charges/edit/select-victim', {
@@ -407,12 +424,10 @@ module.exports = router => {
 
     let victimName = null
     let isPureVictim = false
-    if (victimId !== 'none') {
-      const victim = victims.find(v => String(v.id) === String(victimId))
-      if (victim) {
-        victimName = `${victim.firstName} ${victim.lastName}`
-        isPureVictim = victim.isPure
-      }
+    const victim = await resolveSelectedVictim(victimId, _case, victims)
+    if (victim) {
+      victimName = `${victim.firstName} ${victim.lastName}`
+      isPureVictim = victim.isPure
     }
 
     const updatedCharge = { ...req.session.data.editCharge, victimId, victimName }
@@ -441,7 +456,7 @@ module.exports = router => {
   // ------------------------------------------------------------------
   // VICTIM STATUS (V&I — only shown for non-pure victims)
   // GET  /cases/:caseId/charges/:chargeId/edit/victim-status
-  // POST →  check (returnUrl) | check
+  // POST →  check (returnUrl) | particulars
   router.get('/cases/:caseId/charges/:chargeId/edit/victim-status', async (req, res) => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
@@ -459,7 +474,8 @@ module.exports = router => {
       delete req.session.data.editCharge.returnUrl
       return res.redirect(returnUrl)
     }
-    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/check`)
+    // Next step in the flow — particulars' own POST honours returnUrl afterwards.
+    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/particulars`)
   })
 
 

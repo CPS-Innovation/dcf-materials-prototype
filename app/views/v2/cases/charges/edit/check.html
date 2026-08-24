@@ -46,7 +46,7 @@
       {% elif positionVictim %}
         {% set victimDisplay = positionVictim.firstName + " " + positionVictim.lastName %}
       {% else %}
-        {% set victimDisplay = "Not recorded" %}
+        {% set victimDisplay = "None" %}
       {% endif %}
 
       {# ── Resolve particulars display ──────────────────────────── #}
@@ -73,10 +73,11 @@
         actions: { items: [{ href: base + "/date-type?returnUrl=" + checkUrl, text: "Edit", visuallyHiddenText: "offence date" }] }
       }) %}
 
-      {# No victim on the charge — the real add-victim journey has to go via
-         CMS Classic, so route to the interstitial instead of select-victim. #}
+      {# No victim on the charge (explicitly "none", or genuinely never set) —
+         the real add-victim journey has to go via CMS Classic, so route to
+         the interstitial instead of select-victim. #}
       {% set victimEditHref = base + "/select-victim?returnUrl=" + checkUrl %}
-      {% if editCharge.victimId == "none" %}
+      {% if victimDisplay == "None" or victimDisplay == "Not recorded" %}
         {% set victimEditHref = base + "/victim-interstitial" %}
       {% endif %}
 

@@ -694,10 +694,9 @@ async function seedNoVictimDemoCase(prisma, opts = {}) {
       (await tx.victim.findFirst({ where: { firstName: 'Grace', lastName: 'Whitfield' } })) ||
       (await tx.victim.create({ data: { firstName: 'Grace', lastName: 'Whitfield' } }))
 
-    await tx.case.update({
-      where: { id: demoCase.id },
-      data: { victims: { connect: [{ id: sophieMarsh.id }, { id: graceWhitfield.id }] } }
-    })
+    // Deliberately NOT connected to demoCase.victims — they represent
+    // victims that exist only in CMS Classic until "imported" via the
+    // interstitial flow, so the case must show no victim until then.
 
     const existingWitness = await tx.witness.findFirst({
       where: { caseId: demoCase.id, firstName: 'Sophie', lastName: 'Marsh' }
