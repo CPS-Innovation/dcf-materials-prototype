@@ -81,27 +81,22 @@ module.exports = router => {
 
 
   // ------------------------------------------------------------------
-  // NEW FLOW ENTRY — /cases/:caseId/charges/edit/check
-  // Starting point for the new proposed charge edit flow (no chargeId in path).
-  router.get('/cases/:caseId/charges/edit/check', async (req, res) => {
+  // NEW FLOW — /cases/:caseId/charges/edit/check
+  // Shared renderer for both entry points below.
+  async function renderCheckPage (req, res) {
     const caseId = req.params.caseId
     const _case = await getCaseWithCharges(caseId)
     if (!_case) return res.status(404).render('not-found')
 
-    // Always start fresh when entering edit from the charge list (prevents stale session leaking
-    // victim/particulars from a previously abandoned edit into this new one).
-    if (req.query.chargeId) {
-      req.session.data.editCharge = { chargeId: req.query.chargeId }
-    }
-
     const editCharge = req.session.data.editCharge || {}
+    const chargeId = editCharge.chargeId || req.params.chargeId
 
-    const { charge, defendant } = editCharge.chargeId
-      ? resolveCharge(_case, editCharge.chargeId)
+    const { charge, defendant } = chargeId
+      ? resolveCharge(_case, chargeId)
       : { charge: {}, defendant: {} }
 
     const chargeIndex = defendant && defendant.charges
-      ? defendant.charges.findIndex(c => c.id === parseInt(editCharge.chargeId, 10))
+      ? defendant.charges.findIndex(c => c.id === parseInt(chargeId, 10))
       : -1
     const victims = _case.victims || []
     const positionVictim = victims.length && chargeIndex >= 0
@@ -118,6 +113,28 @@ module.exports = router => {
       base: `/cases/${caseId}/charges/${charge.id}/edit`,
       checkUrl: `/cases/${caseId}/charges/edit/check`
     })
+  }
+
+  // Fresh entry point (no chargeId in path) — e.g. linked from the tasks list.
+  // Always starts fresh, preventing stale session state leaking from a
+  // previously abandoned edit into this new one.
+  // victimId is optional — lets a link pre-set the victim display (e.g. "none")
+  // without going through the select-victim step first.
+  router.get('/cases/:caseId/charges/edit/check', async (req, res) => {
+    if (req.query.chargeId) {
+      req.session.data.editCharge = {
+        chargeId: req.query.chargeId,
+        ...(req.query.victimId && { victimId: req.query.victimId })
+      }
+    }
+    return renderCheckPage(req, res)
+  })
+
+  // Mid-flow return (chargeId already in the path) — e.g. redirected here from
+  // victim-status after selecting/confirming a victim. Session already reflects
+  // the in-progress edit, so this does NOT reset it.
+  router.get('/cases/:caseId/charges/:chargeId/edit/check', async (req, res) => {
+    return renderCheckPage(req, res)
   })
 
   router.post('/cases/:caseId/charges/edit/check', async (req, res) => {
@@ -331,6 +348,21 @@ module.exports = router => {
 
 
   // ------------------------------------------------------------------
+  // VICTIM INTERSTITIAL — no victim on the charge, so it has to be added in
+  // CMS Classic first. Triggered from check.html's Victim "Edit" link only
+  // when there's currently no victim on the charge.
+  // GET  /cases/:caseId/charges/:chargeId/edit/victim-interstitial
+  router.get('/cases/:caseId/charges/:chargeId/edit/victim-interstitial', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
+    if (!charge) return res.status(404).render('not-found')
+
+    return res.render('v2/cases/charges/edit/victim-interstitial', { _case, charge, defendant })
+  })
+
+  // ------------------------------------------------------------------
   // STEP 2b — SELECT VICTIM
   // GET  /cases/:caseId/charges/:chargeId/edit/select-victim
   // POST →  check (returnUrl) | summary
@@ -351,11 +383,19 @@ module.exports = router => {
 
     const victims = annotateVictims(_case.victims || [], _case.witnesses || [])
 
+    // Simulated "import from CMS Classic" — a single victim was just added
+    // there, so skip the radio list and show a playback + confirm step
+    // instead. See app/views/v2/cases/charges/edit/victim-interstitial.html.
+    const importedVictim = req.query.importedVictimId
+      ? victims.find(v => String(v.id) === String(req.query.importedVictimId))
+      : null
+
     return res.render('v2/cases/charges/edit/select-victim', {
       _case,
       charge,
       defendant,
-      victims
+      victims,
+      importedVictim
     })
   })
 
@@ -379,9 +419,14 @@ module.exports = router => {
     if (victimId === 'none' || isPureVictim) delete updatedCharge.victimIsVI
     req.session.data.editCharge = updatedCharge
 
-    if (victimId !== 'none' && !isPureVictim) {
-      // returnUrl stays in session — victim-status POST will honour it
-      return res.redirect(`/cases/${caseId}/charges/${chargeId}/edit/victim-status`)
+    if (victimId !== 'none') {
+      if (!isPureVictim) {
+        // returnUrl stays in session — victim-status POST will honour it
+        return res.redirect(`/cases/${caseId}/charges/${chargeId}/edit/victim-status`)
+      }
+      // Pure victim (not also a witness) — particulars is the next step;
+      // returnUrl stays in session for particulars' own POST to honour.
+      return res.redirect(`/cases/${caseId}/charges/${chargeId}/edit/particulars`)
     }
 
     const returnUrl = req.session.data.editCharge.returnUrl

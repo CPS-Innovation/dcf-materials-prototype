@@ -38,7 +38,7 @@
 
       {# ── Resolve victim display ───────────────────────────────── #}
       {% if editCharge.victimId == "none" %}
-        {% set victimDisplay = "No victim associated with this charge" %}
+        {% set victimDisplay = "None" %}
       {% elif editCharge.victimName %}
         {% set victimDisplay = editCharge.victimName %}
       {% elif charge.victim %}
@@ -73,10 +73,17 @@
         actions: { items: [{ href: base + "/date-type?returnUrl=" + checkUrl, text: "Edit", visuallyHiddenText: "offence date" }] }
       }) %}
 
+      {# No victim on the charge — the real add-victim journey has to go via
+         CMS Classic, so route to the interstitial instead of select-victim. #}
+      {% set victimEditHref = base + "/select-victim?returnUrl=" + checkUrl %}
+      {% if editCharge.victimId == "none" %}
+        {% set victimEditHref = base + "/victim-interstitial" %}
+      {% endif %}
+
       {% set _ = summaryRows.push({
         key:   { text: "Victim" },
         value: { text: victimDisplay },
-        actions: { items: [{ href: base + "/select-victim?returnUrl=" + checkUrl, text: "Edit", visuallyHiddenText: "victim" }] }
+        actions: { items: [{ href: victimEditHref, text: "Edit", visuallyHiddenText: "victim" }] }
       }) %}
 
       {% if editCharge.victimIsVI is defined %}
