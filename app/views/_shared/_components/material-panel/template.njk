@@ -61,6 +61,7 @@
   <article
     class="dcf-material-card"
     data-item-id="{{ m.ItemId }}"
+    data-case-id="{{ cm.caseId }}"
     data-material-status="{{ _status }}"
     data-is-new="{{ "true" if (_status | lower) == "new" else "false" }}"
     {% if m.date %}data-material-date="{{ m.date }}"{% endif %}

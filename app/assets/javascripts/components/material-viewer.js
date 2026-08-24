@@ -16,6 +16,82 @@
     return !!(notesModal && !notesModal.hidden)
   }
 
+  function getCaseId (el) {
+    return (window.caseMaterials && window.caseMaterials.caseId) || (el && el.getAttribute('data-case-id')) || null
+  }
+
+  function safeEscape (value) {
+    try {
+      return (window.CSS && typeof CSS.escape === 'function')
+        ? CSS.escape(value)
+        : String(value).replace(/"/g, '\\"')
+    } catch (e) {
+      return String(value).replace(/"/g, '\\"')
+    }
+  }
+
+  // Notes are stored per material so the modal always reflects the
+  // document it was opened for, not whichever document was last edited.
+  function getStoredNotes (caseId, itemId) {
+    if (!caseId || !itemId) return []
+    try {
+      var raw = localStorage.getItem('matNotes:' + caseId + ':' + itemId)
+      var parsed = raw ? JSON.parse(raw) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch (e) {
+      return []
+    }
+  }
+
+  function saveStoredNotes (caseId, itemId, notes) {
+    if (!caseId || !itemId) return
+    try {
+      localStorage.setItem('matNotes:' + caseId + ':' + itemId, JSON.stringify(notes))
+    } catch (e) {}
+  }
+
+  // <ol class="dcf-timeline"> requires <li> children — matches the
+  // server-rendered dcf-timeline__item structure in notes-modal.njk
+  // exactly, so notes look identical whether loaded from storage or
+  // just added client-side.
+  function buildNoteEl (note) {
+    var noteEl = document.createElement('li')
+    noteEl.className = 'dcf-timeline__item'
+
+    var nameEl = document.createElement('h4')
+    nameEl.className = 'dcf-timeline__title govuk-heading-s'
+    nameEl.textContent = note.author
+
+    var dateEl = document.createElement('p')
+    dateEl.className = 'dcf-timeline__date govuk-body-s'
+    dateEl.textContent = note.date
+
+    var textEl = document.createElement('p')
+    textEl.className = 'dcf-timeline__description govuk-body'
+    textEl.textContent = note.text
+
+    noteEl.appendChild(nameEl)
+    noteEl.appendChild(dateEl)
+    noteEl.appendChild(textEl)
+
+    return noteEl
+  }
+
+  function renderNotesList (caseId, itemId) {
+    var list = notesModal.querySelector('[data-notes-list]')
+    var emptyMsg = notesModal.querySelector('[data-notes-empty]')
+    if (!list) return
+
+    list.innerHTML = ''
+
+    var notes = getStoredNotes(caseId, itemId)
+    notes.forEach(function (note) {
+      list.appendChild(buildNoteEl(note))
+    })
+
+    if (emptyMsg) emptyMsg.hidden = notes.length > 0
+  }
+
   function openNotesModal (triggerEl) {
     if (!notesModal) return
 
@@ -24,20 +100,29 @@
     notesModal.hidden = false
     notesModal.classList.add('is-open')
 
+    // The trigger itself (e.g. a materials-list card's "Add a note"
+    // link) carries the material directly — prefer that. Falls back to
+    // the document viewer's active tab for pages where "Add a note" is
+    // opened from within the multi-tab viewer instead, which has no
+    // such trigger-level attribute of its own.
+    var activeTab = viewer.querySelector('.dcf-doc-tab.is-active')
+    var triggerCard = triggerEl && triggerEl.closest('.dcf-material-card')
+    var itemId = (triggerCard && triggerCard.getAttribute('data-item-id')) ||
+      (activeTab && activeTab.getAttribute('data-item-id')) || ''
+    notesModal.dataset.itemId = itemId
+
     try {
       var heading = notesModal.querySelector('#dcf-notes-modal-title')
-      // The trigger itself (e.g. a materials-list card's "Add a note"
-      // link) carries the title directly via data-title — prefer that.
-      // Falls back to the document viewer's active tab for pages where
-      // "Add a note" is opened from within the multi-tab viewer instead,
-      // which has no such trigger-level attribute of its own.
-      var activeTab = viewer.querySelector('.dcf-doc-tab.is-active')
       var tabTitle = (triggerEl && triggerEl.getAttribute('data-title')) ||
         (activeTab && activeTab.getAttribute('data-title'))
       if (heading) {
         var base = 'Notes'
         heading.textContent = tabTitle ? base + ' – ' + tabTitle : base
       }
+    } catch (e) {}
+
+    try {
+      renderNotesList(getCaseId(triggerCard), itemId)
     } catch (e) {}
 
     var textarea = notesModal.querySelector('#dcf-note-text')
@@ -69,51 +154,35 @@
         var text = (textarea.value || '').trim()
         if (!text) return
 
-        var list = notesModal.querySelector('[data-notes-list]')
-        var emptyMsg = notesModal.querySelector('[data-notes-empty]')
-        if (!list) return
+        var itemId = notesModal.dataset.itemId
+        var caseId = getCaseId(lastNotesTrigger && lastNotesTrigger.closest('.dcf-material-card'))
 
-        if (emptyMsg) emptyMsg.hidden = true
+        var note = {
+          author: 'Saul Goodman',
+          // Shared with Nunjucks pages' govukDateTime filter (app/filters.js)
+          // — same formatting rules, just the client-side copy, since this
+          // note is added without a server round trip.
+          date: window.DCFDateFormat ? window.DCFDateFormat.govukDateTime(new Date()) : '',
+          text: text
+        }
 
-        // <ol class="dcf-timeline"> requires <li> children — matches the
-        // server-rendered dcf-timeline__item structure in notes-modal.njk
-        // exactly, so a freshly-added note looks identical to one loaded
-        // from the server.
-        var noteEl = document.createElement('li')
-        noteEl.className = 'dcf-timeline__item'
+        var notes = getStoredNotes(caseId, itemId)
+        notes.unshift(note)
+        saveStoredNotes(caseId, itemId, notes)
 
-        var nameEl = document.createElement('h4')
-        nameEl.className = 'dcf-timeline__title govuk-heading-s'
-        nameEl.textContent = 'Saul Goodman'
+        renderNotesList(caseId, itemId)
 
-        var dateEl = document.createElement('p')
-        dateEl.className = 'dcf-timeline__date govuk-body-s'
-        // Shared with Nunjucks pages' govukDateTime filter (app/filters.js)
-        // — same formatting rules, just the client-side copy, since this
-        // note is added without a server round trip.
-        dateEl.textContent = window.DCFDateFormat ? window.DCFDateFormat.govukDateTime(new Date()) : ''
+        if (itemId) {
+          var itemCard = document.querySelector('.dcf-material-card[data-item-id="' + safeEscape(itemId) + '"]')
+          if (itemCard) {
+            var commentDot = itemCard.querySelector('.dcf-material-card__comment')
+            if (commentDot) commentDot.classList.add('is-unread')
+          }
+        }
 
-        var textEl = document.createElement('p')
-        textEl.className = 'dcf-timeline__description govuk-body'
-        textEl.textContent = text
-
-        noteEl.appendChild(nameEl)
-        noteEl.appendChild(dateEl)
-        noteEl.appendChild(textEl)
-
-        list.prepend(noteEl)
-
-        var noteCard = lastNotesTrigger && lastNotesTrigger.closest('.dcf-material-card')
-        if (noteCard) {
-          var commentDot = noteCard.querySelector('.dcf-material-card__comment')
-          if (commentDot) commentDot.classList.add('is-unread')
-
+        if (caseId && itemId) {
           try {
-            var caseId = (window.caseMaterials && window.caseMaterials.caseId) || noteCard.getAttribute('data-case-id')
-            var itemId = noteCard.getAttribute('data-item-id')
-            if (caseId && itemId) {
-              localStorage.setItem('matHasNotes:' + caseId + ':' + itemId, 'true')
-            }
+            localStorage.setItem('matHasNotes:' + caseId + ':' + itemId, 'true')
           } catch (e) {}
         }
 
