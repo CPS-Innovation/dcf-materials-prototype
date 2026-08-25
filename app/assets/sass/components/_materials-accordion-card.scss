@@ -65,7 +65,7 @@ $dcf-muted:        #505a5f;
   display: flex;
   flex-direction: column;
   align-items: stretch;   // children (including meta row) can stretch full width
-  row-gap: 5px;           // space between badge, title, and date/note row
+  row-gap: 2.81px;        // space between badge, title, and date/note row (was 5px, then 3.75px)
   // if you want a bit more, try 6px or 8px instead of 4px
 }
 
@@ -84,7 +84,7 @@ $dcf-muted:        #505a5f;
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
-  margin-bottom: 6px;  // was 6px, keep or bump slightly if you like
+  margin-bottom: 3.38px;  // was 6px, then 4.5px
   padding: 0;
   border-radius: 0;
   background: transparent;
@@ -132,7 +132,7 @@ $dcf-muted:        #505a5f;
 }
 
 .dcf-material-card__title {
-  margin: 0 0 6px;
+  margin: 0 0 3.38px;  // was 6px, then 4.5px
   font-size: 19px;
   font-weight: normal;
   color: $dcf-title-blue;
@@ -157,16 +157,16 @@ $dcf-muted:        #505a5f;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 6px;
+  gap: 3.38px;         // was 6px, then 4.5px
   width: 100%;
-  margin-top: 2px;     // small breathing space above the date row
+  margin-top: 1.13px;  // small breathing space above the date row (was 2px, then 1.5px)
 }
 
 /* Groups "Made on" + "Received" as a single stacked block */
 .dcf-material-card__dates {
   display: flex;
   flex-direction: column;
-  row-gap: 2px;
+  row-gap: 1.13px;  // was 2px, then 1.5px
   min-width: 0;
 }
 
@@ -230,7 +230,7 @@ $dcf-muted:        #505a5f;
 /* Badge and text spacing inside card */
 .dcf-materials-panel .dcf-material-card__badge {
   display: inline-block;
-  margin: 0 0 4px 0;
+  margin: 0 0 2.25px 0;  // was 4px, then 3px
 }
 
 

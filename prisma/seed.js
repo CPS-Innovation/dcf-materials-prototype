@@ -618,6 +618,114 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
   return result
 }
 
+// -------------------- NO VICTIM DEMO CASE --------------------
+// Small dedicated case + charge with no victim attached, so the "No victim
+// flow" shortcut on the case Tasks page always has something stable to link
+// to (see app/routes/case--tasks.js).
+async function seedNoVictimDemoCase(prisma, opts = {}) {
+  const {
+    caseReference = '99AA000002/1',
+    unitName = 'Wessex Crown Court',
+  } = opts
+
+  console.log(`🎯 Seeding NO VICTIM DEMO case: ${caseReference}`)
+
+  const result = await prisma.$transaction(async (tx) => {
+    const unit = await tx.unit.findFirst({ where: { name: unitName } })
+    if (!unit) {
+      throw new Error(`No victim demo seed failed: unit not found: "${unitName}"`)
+    }
+
+    const defendant =
+      (await tx.defendant.findFirst({
+        where: { firstName: 'Daniel', lastName: 'Ashworth' }
+      })) ||
+      (await tx.defendant.create({
+        data: {
+          firstName: 'Daniel',
+          lastName: 'Ashworth',
+          gender: 'Male',
+          religion: 'Not stated',
+          occupation: 'Unemployed',
+          remandStatus: 'UNCONDITIONAL_BAIL'
+        }
+      }))
+
+    const demoCase = await tx.case.upsert({
+      where: { reference: caseReference },
+      update: { unitId: unit.id, factualSummary: factualSummaryFixture },
+      create: {
+        reference: caseReference,
+        type: 'First hearing',
+        complexity: 'Level 1',
+        factualSummary: factualSummaryFixture,
+        unit: { connect: { id: unit.id } },
+        defendants: { connect: [{ id: defendant.id }] }
+      }
+    })
+
+    const charge =
+      (await tx.charge.findFirst({
+        where: { defendantId: defendant.id, chargeCode: 'T01' }
+      })) ||
+      (await tx.charge.create({
+        data: {
+          defendantId: defendant.id,
+          chargeCode: 'T01',
+          description: 'THEFT, contrary to section 1 of the Theft Act 1968',
+          status: 'Put',
+          offenceDate: new Date('2026-01-10'),
+          plea: 'NO_PLEA',
+          particulars: 'On 10 January 2026, dishonestly appropriated property belonging to another with the intention of permanently depriving them of it.',
+          isCount: false
+          // victimId intentionally omitted — this demo charge has no victim
+        }
+      }))
+
+    // --- Victims (fixed) — support the "import victim from CMS" demo flow.
+    // Sophie Marsh is also a witness on the case (non-pure) so the primary
+    // "Import victim" path lands on victim-status. Grace Whitfield is
+    // victim-only (pure) for the secondary demo path, landing on particulars.
+    const sophieMarsh =
+      (await tx.victim.findFirst({ where: { firstName: 'Sophie', lastName: 'Marsh' } })) ||
+      (await tx.victim.create({ data: { firstName: 'Sophie', lastName: 'Marsh' } }))
+
+    const graceWhitfield =
+      (await tx.victim.findFirst({ where: { firstName: 'Grace', lastName: 'Whitfield' } })) ||
+      (await tx.victim.create({ data: { firstName: 'Grace', lastName: 'Whitfield' } }))
+
+    // Deliberately NOT connected to demoCase.victims — they represent
+    // victims that exist only in CMS Classic until "imported" via the
+    // interstitial flow, so the case must show no victim until then.
+
+    const existingWitness = await tx.witness.findFirst({
+      where: { caseId: demoCase.id, firstName: 'Sophie', lastName: 'Marsh' }
+    })
+    if (!existingWitness) {
+      await tx.witness.create({
+        data: {
+          caseId: demoCase.id,
+          title: 'Ms',
+          firstName: 'Sophie',
+          lastName: 'Marsh',
+          dcf: true,
+          preferredLanguage: 'English',
+          isCpsContactAllowed: true,
+          isKeyWitness: true,
+          isRelevant: true,
+          wasWarned: true
+        }
+      })
+    }
+
+    return { case: demoCase, charge, sophieMarsh, graceWhitfield }
+  })
+
+  console.log(`✅ No victim demo case ready: ${result.case.reference} (case ${result.case.id}, charge ${result.charge.id}, victims ${result.sophieMarsh.id}/${result.graceWhitfield.id})`)
+
+  return result
+}
+
 
 async function main() {
   console.log("🌱 Starting seed...");
@@ -924,6 +1032,12 @@ await seedShowcaseIndictmentCase(prisma, {
   createOnlyThisCase: true
 });
 // return; // Uncomment this line to stop after creating the showcase case, if you want to "return" early in main()
+
+// -------------------- NO VICTIM DEMO CASE --------------------
+await seedNoVictimDemoCase(prisma, {
+  caseReference: '99AA000002/1',
+  unitName: 'Wessex Crown Court'
+});
 
 
   // -------------------- Defendants with Charges --------------------

@@ -49,6 +49,23 @@ function annotateVictims (victims, witnesses) {
   return annotated
 }
 
+// Resolves a submitted/selected victimId to a victim + isPure flag, whether
+// it's an existing case victim or one just "imported" via the CMS Classic
+// interstitial (not yet on _case.victims — that's the point: it isn't known
+// to Manage Cases until this step confirms it).
+async function resolveSelectedVictim (victimId, _case, victims) {
+  if (!victimId || victimId === 'none') return null
+
+  const known = victims.find(v => String(v.id) === String(victimId))
+  if (known) return known
+
+  const raw = await prisma.victim.findUnique({ where: { id: parseInt(victimId, 10) } })
+  if (!raw) return null
+
+  const witnessNames = new Set((_case.witnesses || []).map(w => `${w.firstName} ${w.lastName}`))
+  return { ...raw, isPure: !witnessNames.has(`${raw.firstName} ${raw.lastName}`) }
+}
+
 module.exports = router => {
 
   // ------------------------------------------------------------------
@@ -81,27 +98,22 @@ module.exports = router => {
 
 
   // ------------------------------------------------------------------
-  // NEW FLOW ENTRY — /cases/:caseId/charges/edit/check
-  // Starting point for the new proposed charge edit flow (no chargeId in path).
-  router.get('/cases/:caseId/charges/edit/check', async (req, res) => {
+  // NEW FLOW — /cases/:caseId/charges/edit/check
+  // Shared renderer for both entry points below.
+  async function renderCheckPage (req, res) {
     const caseId = req.params.caseId
     const _case = await getCaseWithCharges(caseId)
     if (!_case) return res.status(404).render('not-found')
 
-    // Always start fresh when entering edit from the charge list (prevents stale session leaking
-    // victim/particulars from a previously abandoned edit into this new one).
-    if (req.query.chargeId) {
-      req.session.data.editCharge = { chargeId: req.query.chargeId }
-    }
-
     const editCharge = req.session.data.editCharge || {}
+    const chargeId = editCharge.chargeId || req.params.chargeId
 
-    const { charge, defendant } = editCharge.chargeId
-      ? resolveCharge(_case, editCharge.chargeId)
+    const { charge, defendant } = chargeId
+      ? resolveCharge(_case, chargeId)
       : { charge: {}, defendant: {} }
 
     const chargeIndex = defendant && defendant.charges
-      ? defendant.charges.findIndex(c => c.id === parseInt(editCharge.chargeId, 10))
+      ? defendant.charges.findIndex(c => c.id === parseInt(chargeId, 10))
       : -1
     const victims = _case.victims || []
     const positionVictim = victims.length && chargeIndex >= 0
@@ -118,6 +130,28 @@ module.exports = router => {
       base: `/cases/${caseId}/charges/${charge.id}/edit`,
       checkUrl: `/cases/${caseId}/charges/edit/check`
     })
+  }
+
+  // Fresh entry point (no chargeId in path) — e.g. linked from the tasks list.
+  // Always starts fresh, preventing stale session state leaking from a
+  // previously abandoned edit into this new one.
+  // victimId is optional — lets a link pre-set the victim display (e.g. "none")
+  // without going through the select-victim step first.
+  router.get('/cases/:caseId/charges/edit/check', async (req, res) => {
+    if (req.query.chargeId) {
+      req.session.data.editCharge = {
+        chargeId: req.query.chargeId,
+        ...(req.query.victimId && { victimId: req.query.victimId })
+      }
+    }
+    return renderCheckPage(req, res)
+  })
+
+  // Mid-flow return (chargeId already in the path) — e.g. redirected here from
+  // victim-status after selecting/confirming a victim. Session already reflects
+  // the in-progress edit, so this does NOT reset it.
+  router.get('/cases/:caseId/charges/:chargeId/edit/check', async (req, res) => {
+    return renderCheckPage(req, res)
   })
 
   router.post('/cases/:caseId/charges/edit/check', async (req, res) => {
@@ -331,6 +365,21 @@ module.exports = router => {
 
 
   // ------------------------------------------------------------------
+  // VICTIM INTERSTITIAL — no victim on the charge, so it has to be added in
+  // CMS Classic first. Triggered from check.html's Victim "Edit" link only
+  // when there's currently no victim on the charge.
+  // GET  /cases/:caseId/charges/:chargeId/edit/victim-interstitial
+  router.get('/cases/:caseId/charges/:chargeId/edit/victim-interstitial', async (req, res) => {
+    const _case = await getCaseWithCharges(req.params.caseId)
+    if (!_case) return res.status(404).render('not-found')
+
+    const { charge, defendant } = resolveCharge(_case, req.params.chargeId)
+    if (!charge) return res.status(404).render('not-found')
+
+    return res.render('v2/cases/charges/edit/victim-interstitial', { _case, charge, defendant })
+  })
+
+  // ------------------------------------------------------------------
   // STEP 2b — SELECT VICTIM
   // GET  /cases/:caseId/charges/:chargeId/edit/select-victim
   // POST →  check (returnUrl) | summary
@@ -351,11 +400,19 @@ module.exports = router => {
 
     const victims = annotateVictims(_case.victims || [], _case.witnesses || [])
 
+    // Simulated "import from CMS Classic" — a single victim was just added
+    // there, so skip the radio list and show a playback + confirm step
+    // instead. See app/views/v2/cases/charges/edit/victim-interstitial.html.
+    const importedVictim = req.query.importedVictimId
+      ? await resolveSelectedVictim(req.query.importedVictimId, _case, victims)
+      : null
+
     return res.render('v2/cases/charges/edit/select-victim', {
       _case,
       charge,
       defendant,
-      victims
+      victims,
+      importedVictim
     })
   })
 
@@ -367,21 +424,24 @@ module.exports = router => {
 
     let victimName = null
     let isPureVictim = false
-    if (victimId !== 'none') {
-      const victim = victims.find(v => String(v.id) === String(victimId))
-      if (victim) {
-        victimName = `${victim.firstName} ${victim.lastName}`
-        isPureVictim = victim.isPure
-      }
+    const victim = await resolveSelectedVictim(victimId, _case, victims)
+    if (victim) {
+      victimName = `${victim.firstName} ${victim.lastName}`
+      isPureVictim = victim.isPure
     }
 
     const updatedCharge = { ...req.session.data.editCharge, victimId, victimName }
     if (victimId === 'none' || isPureVictim) delete updatedCharge.victimIsVI
     req.session.data.editCharge = updatedCharge
 
-    if (victimId !== 'none' && !isPureVictim) {
-      // returnUrl stays in session — victim-status POST will honour it
-      return res.redirect(`/cases/${caseId}/charges/${chargeId}/edit/victim-status`)
+    if (victimId !== 'none') {
+      if (!isPureVictim) {
+        // returnUrl stays in session — victim-status POST will honour it
+        return res.redirect(`/cases/${caseId}/charges/${chargeId}/edit/victim-status`)
+      }
+      // Pure victim (not also a witness) — particulars is the next step;
+      // returnUrl stays in session for particulars' own POST to honour.
+      return res.redirect(`/cases/${caseId}/charges/${chargeId}/edit/particulars`)
     }
 
     const returnUrl = req.session.data.editCharge.returnUrl
@@ -396,7 +456,7 @@ module.exports = router => {
   // ------------------------------------------------------------------
   // VICTIM STATUS (V&I — only shown for non-pure victims)
   // GET  /cases/:caseId/charges/:chargeId/edit/victim-status
-  // POST →  check (returnUrl) | check
+  // POST →  check (returnUrl) | particulars
   router.get('/cases/:caseId/charges/:chargeId/edit/victim-status', async (req, res) => {
     const _case = await getCaseWithCharges(req.params.caseId)
     if (!_case) return res.status(404).render('not-found')
@@ -414,7 +474,8 @@ module.exports = router => {
       delete req.session.data.editCharge.returnUrl
       return res.redirect(returnUrl)
     }
-    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/check`)
+    // Next step in the flow — particulars' own POST honours returnUrl afterwards.
+    return res.redirect(`/cases/${req.params.caseId}/charges/${req.params.chargeId}/edit/particulars`)
   })
 
 
@@ -493,5 +554,37 @@ module.exports = router => {
     return res.redirect(`/cases/${req.params.caseId}/charges/edit/check`)
   })
 
+
+  // ------------------------------------------------------------------
+  // NO VICTIM DEMO — reset (testing only)
+  // Completing the CMS-import demo journey (Save details on check.html)
+  // writes victimId/particulars to the DB for real, so without a reset the
+  // "no victim" starting state only works once. Resolved by reference/
+  // chargeCode rather than a hardcoded id so it survives reseeds.
+  router.post('/no-victim-demo/reset', async (req, res) => {
+    const demoCase = await prisma.case.findFirst({
+      where: { reference: '99AA000002/1' },
+      include: { defendants: { include: { charges: true } } }
+    })
+
+    const demoCharge = demoCase && demoCase.defendants[0] &&
+      demoCase.defendants[0].charges.find(c => c.chargeCode === 'T01')
+
+    if (demoCharge) {
+      await prisma.charge.update({
+        where: { id: demoCharge.id },
+        data: {
+          victimId: null,
+          offenceDate: new Date('2026-01-10'),
+          particulars: 'On 10 January 2026, dishonestly appropriated property belonging to another with the intention of permanently depriving them of it.'
+        }
+      })
+    }
+
+    delete req.session.data.editCharge
+
+    const returnTo = req.body.returnTo || '/tasks'
+    req.session.save(() => res.redirect(returnTo))
+  })
 
 }

@@ -15,44 +15,63 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <form method="post">
-        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      {% if importedVictim %}
+        <form method="post">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="victimId" value="{{ importedVictim.id }}">
 
-        {% set victimItems = [] %}
+          <h1 class="govuk-heading-l">
+            <span class="govuk-caption-m">{{ captionName }}</span>
+            Confirm victim
+          </h1>
 
-        {% for victim in victims %}
+          {{ govukInsetText({
+            text: importedVictim.firstName + " " + importedVictim.lastName
+          }) }}
+
+          <div class="govuk-button-group govuk-!-margin-top-6">
+            {{ govukButton({ text: "Confirm victim" }) }}
+          </div>
+        </form>
+      {% else %}
+        <form method="post">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+          {% set victimItems = [] %}
+
+          {% for victim in victims %}
+            {% set _ = victimItems.push({
+              value: victim.id | string,
+              text: victim.firstName + " " + victim.lastName,
+              hint: { text: "Victim is also a witness" } if not victim.isPure else undefined,
+              checked: data["victimId"] == victim.id | string
+            }) %}
+          {% endfor %}
+
+          {% set _ = victimItems.push({ divider: "or" }) %}
           {% set _ = victimItems.push({
-            value: victim.id | string,
-            text: victim.firstName + " " + victim.lastName,
-            hint: { text: "Victim is also a witness" } if not victim.isPure else undefined,
-            checked: data["victimId"] == victim.id | string
+            value: "none",
+            text: "No victim",
+            checked: data["victimId"] == "none"
           }) %}
-        {% endfor %}
 
-        {% set _ = victimItems.push({ divider: "or" }) %}
-        {% set _ = victimItems.push({
-          value: "none",
-          text: "No victim",
-          checked: data["victimId"] == "none"
-        }) %}
+          {{ govukRadios({
+            name: "victimId",
+            fieldset: {
+              legend: {
+                html: '<span class="govuk-caption-m">' + captionName + '</span>Select victim',
+                isPageHeading: true,
+                classes: "govuk-fieldset__legend--l"
+              }
+            },
+            items: victimItems
+          }) }}
 
-        {{ govukRadios({
-          name: "victimId",
-          fieldset: {
-            legend: {
-              html: '<span class="govuk-caption-m">' + captionName + '</span>Select victim',
-              isPageHeading: true,
-              classes: "govuk-fieldset__legend--l"
-            }
-          },
-          items: victimItems
-        }) }}
-
-        <div class="govuk-button-group govuk-!-margin-top-6">
-          {{ govukButton({ text: "Continue" }) }}
-        </div>
-
-      </form>
+          <div class="govuk-button-group govuk-!-margin-top-6">
+            {{ govukButton({ text: "Continue" }) }}
+          </div>
+        </form>
+      {% endif %}
 
     </div>
   </div>

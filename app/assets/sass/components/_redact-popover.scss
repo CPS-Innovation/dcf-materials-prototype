@@ -90,6 +90,11 @@
   flex-wrap: nowrap;
 }
 
+// "Copy text" — sits on its own line below the button group above.
+#popover-copy-text-button {
+  display: block;
+}
+
 .dcf-redact-popover .govuk-button-group:last-child {
   margin-bottom: 0;
 }

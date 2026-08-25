@@ -76,9 +76,17 @@
         }) }}
       </div>
 
-      <div class="govuk-button-group" id="popover-initial-actions">
-        <button type="submit" name="scope" value="single" class="govuk-button" id="popover-redact-button" disabled>Redact this text</button>
-        <button type="button" class="govuk-button govuk-button--secondary" id="popover-find-matching-button" disabled>Find matching text</button>
+      <div id="popover-initial-actions">
+        <div class="govuk-button-group">
+          <button type="submit" name="scope" value="single" class="govuk-button" id="popover-redact-button" disabled>Redact this text</button>
+          <button type="button" class="govuk-button govuk-button--secondary" id="popover-find-matching-button" disabled>Find matching text</button>
+        </div>
+        {# Not wired up yet — a plain copy-to-clipboard shortcut for users who
+           want the text for their own workflow rather than to redact it.
+           Unlike the buttons above, always enabled: it doesn't depend on a
+           redaction type being selected. A regular <a> for now since it's
+           inert — matches the illustrative "Go to CMS Classic" link. #}
+        <a href="#" class="govuk-body govuk-link" id="popover-copy-text-button">Copy text</a>
       </div>
 
       <div id="popover-match-panel" hidden>

@@ -121,11 +121,60 @@
       }) }}
 
     </div>
-  </div>
 
-  {# Task list beneath filters #}
-  {% if tasks.length %}
-    <div class="app-list">
+    {# ------------------------------------
+       Hard-coded "no victim flow" demo row
+       Seeded via prisma/seed.js (seedNoVictimDemoCase)
+       ------------------------------------ #}
+
+    {% set noVictimCaseId = 2 %}
+    {% set noVictimChargeId = 5 %}
+    {% set noVictimCaseReference = "99AA000002/1" %}
+    {% set noVictimDefendant = "Daniel Ashworth" %}
+
+    <div class="app-list__item">
+
+      {% set noVictimCaseRefLink %}
+        <a href="/cases/{{ noVictimCaseId }}/details#defendants"
+          class="govuk-link govuk-link--no-visited-state">
+          {{ noVictimCaseReference }}
+        </a>
+      {% endset %}
+
+      {% set noVictimStartLink %}
+        <a class="govuk-link govuk-link--no-visited-state govuk-!-margin-bottom-0"
+          href="/cases/{{ noVictimCaseId }}/charges/edit/check?chargeId={{ noVictimChargeId }}&victimId=none">
+          Start task
+        </a>
+      {% endset %}
+
+      {{ govukSummaryList({
+        classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+        rows: [
+          {
+            key: { text: "Task" },
+            value: { text: "No victim flow" },
+            actions: {
+              items: [
+                { html: noVictimStartLink }
+              ]
+            }
+          },
+          {
+            key: { text: "Case reference number" },
+            value: { html: noVictimCaseRefLink }
+          },
+          {
+            key: { text: "Defendant" },
+            value: { text: noVictimDefendant }
+          }
+        ]
+      }) }}
+
+    </div>
+
+    {# Task list beneath filters #}
+    {% if tasks.length %}
       {% for task in tasks %}
         {# Show group heading when group changes or on first task
         {% if loop.first or task.groupKey != tasks[loop.index0 - 1].groupKey %}
@@ -226,8 +275,9 @@
 
         </div>
       {% endfor %}
-    </div>
-  {% else %}
+    {% endif %}
+  </div>
+  {% if not tasks.length %}
     <p>There are no results.</p>
   {% endif %}
 {% endset -%}

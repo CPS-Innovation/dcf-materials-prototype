@@ -1,0 +1,51 @@
+{# v2/cases/:caseId/charges/:chargeId/edit/victim-interstitial #}
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% set captionName = "Edit charge details - " + charge.chargeCode + " - " + defendant.firstName + " " + defendant.lastName %}
+
+{% set base = "/cases/" + _case.id + "/charges/" + charge.id + "/edit" %}
+
+{# Seeded via prisma/seed.js (seedNoVictimDemoCase) — stable across reseeds.
+   Sophie Marsh is also a witness (non-pure), Grace Whitfield is victim-only
+   (pure), so the two links below demo both downstream branches. #}
+{% set nonPureVictimId = 204 %}
+{% set pureVictimId = 205 %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-m">{{ captionName }}</span>
+      <h1 class="govuk-heading-l">Use CMS Classic to add a victim</h1>
+
+      <p class="govuk-body">
+        Go to <a href="#" target="_blank" rel="noopener noreferrer" class="govuk-link">CMS Classic (opens in a new tab)</a> and add a victim to this charge.
+      </p>
+
+      <p class="govuk-body">
+        Once completed, return to this tab and select 'Import victim' to see the victim on the charge in Manage cases.
+      </p>
+
+      <div class="govuk-button-group">
+        {{ govukButton({
+          text: "Import victim",
+          href: base + "/select-victim?importedVictimId=" + nonPureVictimId
+        }) }}
+      </div>
+
+      <p class="govuk-body">
+        <a class="govuk-link" href="{{ base }}/select-victim?importedVictimId={{ pureVictimId }}">
+          Prototype only: preview the journey when the added victim is not also a witness
+        </a>
+      </p>
+
+    </div>
+  </div>
+{% endblock %}
