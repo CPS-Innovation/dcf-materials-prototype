@@ -76,7 +76,7 @@
         }) }}
       </div>
 
-      <div id="popover-initial-actions">
+      <div id="popover-initial-actions"{{ ' hidden' if (modalState and modalState.changeId) }}>
         <div class="govuk-button-group">
           <button type="submit" name="scope" value="single" class="govuk-button" id="popover-redact-button" disabled>Redact this text</button>
           <button type="button" class="govuk-button govuk-button--secondary" id="popover-find-matching-button" disabled>Find matching text</button>
@@ -102,6 +102,7 @@
       </div>
 
       <div class="govuk-button-group" id="popover-edit-actions"{{ ' hidden' if not (modalState and modalState.changeId) }}>
+        <button type="submit" name="scope" value="single" class="govuk-button" id="popover-continue-button" disabled>Continue</button>
         <button type="submit" formaction="/cases/{{ _case.id }}/outline/tag/undo" formnovalidate class="govuk-button govuk-button--warning" id="popover-remove-button">Remove</button>
         <a class="govuk-link" href="{{ modalState.returnTo if modalState else '' }}" id="popover-cancel-link">Cancel</a>
       </div>
