@@ -17,14 +17,25 @@
     initShowOriginalToggle(container)
 
     var changeIdField = document.getElementById('popover-change-id-field')
+    // Captured once, before any click can overwrite changeIdField's value —
+    // identifies the specific redaction (if any) this page was rendered for
+    // via check.html's "Change" link, so re-clicking THAT highlight later
+    // can restore Remove/Cancel instead of the normal "on-page click"
+    // re-tag behaviour every other highlight gets.
+    var arrivedViaChangeLinkId = changeIdField ? changeIdField.value : ''
     var startField = document.getElementById('popover-start-field')
     var endField = document.getElementById('popover-end-field')
     var paragraphField = document.getElementById('popover-paragraph-field')
     var textField = document.getElementById('popover-text-field')
     var returnToField = document.getElementById('popover-return-to-field')
+    // Captured alongside arrivedViaChangeLinkId — restored onto returnToField
+    // if that same redaction is re-clicked, so Remove still redirects back
+    // to check.html afterwards instead of losing the return path.
+    var arrivedViaChangeLinkReturnTo = returnToField ? returnToField.value : ''
     var tagSelect = document.getElementById('popover-tag-select')
     var redactButton = document.getElementById('popover-redact-button')
     var findMatchingButton = document.getElementById('popover-find-matching-button')
+    var continueButton = document.getElementById('popover-continue-button')
     var editActionsGroup = document.getElementById('popover-edit-actions')
     var initialActionsGroup = document.getElementById('popover-initial-actions')
     var matchPanel = document.getElementById('popover-match-panel')
@@ -135,11 +146,23 @@
       popover.classList.remove('is-open')
       popover.hidden = true
       clearPendingSelection()
-      resetMatchPanel()
+      // Only the match-panel DOM/state, not which action group is showing —
+      // closing shouldn't change that (e.g. a Change-link visit arrives in
+      // the Remove/Cancel state and must stay there if reopened later, not
+      // silently flip back to the initial redact/find-matching state).
+      clearMatchState()
+    }
+
+    // While Continue/Remove/Cancel are showing (a change/edit-state visit),
+    // the popover is modal: the user must pick one of those three rather
+    // than dismiss it by clicking away or pressing Escape.
+    function isLockedInEditState () {
+      return !!(editActionsGroup && !editActionsGroup.hidden)
     }
 
     document.addEventListener('click', function (e) {
       if (!isPopoverOpen()) return
+      if (isLockedInEditState()) return
 
       // The same mouseup that opens the popover is immediately followed by
       // a click event on the paragraph text — without this guard, that
@@ -156,6 +179,7 @@
 
     document.addEventListener('keydown', function (e) {
       if (!isPopoverOpen()) return
+      if (isLockedInEditState()) return
       if (e.key === 'Escape' || e.key === 'Esc') closePopover()
     })
 
@@ -173,6 +197,20 @@
       if (findMatchingButton) findMatchingButton.disabled = !hasTag
     }
 
+    // The redaction type this popover's editing session started with —
+    // Continue only becomes active once the dropdown is changed away from
+    // this, since picking the same type again isn't a change to apply.
+    // Set whenever edit mode (Remove/Cancel/Continue) is entered: on load,
+    // if the server rendered straight into it, and when re-clicking the
+    // highlight this page was opened for (see the trigger click handler).
+    var editingOriginalTag = (editActionsGroup && !editActionsGroup.hidden && tagSelect) ? tagSelect.value : ''
+
+    function updateContinueButtonState () {
+      if (!continueButton) return
+      var hasTag = !!(tagSelect && tagSelect.value)
+      continueButton.disabled = !hasTag || tagSelect.value === editingOriginalTag
+    }
+
     function updateNoteVisibility () {
       if (noteGroup) noteGroup.hidden = !(tagSelect && tagSelect.value === 'other')
     }
@@ -180,6 +218,7 @@
     if (tagSelect) {
       tagSelect.addEventListener('change', function () {
         updateInitialButtonStates()
+        updateContinueButtonState()
         updateNoteVisibility()
         clearNoteError()
 
@@ -219,11 +258,19 @@
       temporaryHighlight = null
     }
 
-    function resetMatchPanel () {
+    function clearMatchState () {
       clearTemporaryHighlight()
       matches = []
       matchIndex = -1
       if (matchPanel) matchPanel.hidden = true
+    }
+
+    // Same DOM/state cleanup as clearMatchState, plus switching back to the
+    // initial redact/find-matching actions — correct for the two callers
+    // that use this (a fresh selection, or reopening an on-page highlight),
+    // but NOT for simply closing the popover — see closePopover.
+    function resetMatchPanel () {
+      clearMatchState()
       if (initialActionsGroup) initialActionsGroup.hidden = false
     }
 
@@ -374,15 +421,17 @@
     // Clicking an already-tagged highlight reopens the popover anchored
     // to it, pre-filled with its current category — same idea as v4's
     // click-to-reopen, minus Remove/Cancel: those are only ever shown
-    // when arriving via check.html's "Change" link (below), not from an
-    // on-page click — on-page removal still goes through the table's own
-    // Remove action instead.
+    // when arriving via check.html's "Change" link, not from an on-page
+    // click — on-page removal still goes through the table's own Remove
+    // action instead. EXCEPT when the highlight clicked is the very one
+    // this page was opened for via that Change link (arrivedViaChangeLinkId)
+    // — re-clicking that one restores Remove/Cancel rather than switching
+    // to the normal on-page re-tag actions, so closing/reopening it doesn't
+    // change what the user is able to do with it.
     // ------------------------------------------------------------------
 
     container.querySelectorAll('.dcf-highlight__trigger').forEach(function (trigger) {
       trigger.addEventListener('click', function () {
-        resetMatchPanel()
-
         var data = readHighlightTrigger(trigger, {
           changeIdField: changeIdField,
           startField: startField,
@@ -391,7 +440,6 @@
           textField: textField
         })
 
-        if (returnToField) returnToField.value = ''
         if (tagSelect) tagSelect.value = data.currentTag
 
         // A programmatic .value assignment doesn't fire a native change
@@ -399,7 +447,21 @@
         // here rather than relying on the change listener above.
         updateNoteVisibility()
 
-        if (editActionsGroup) editActionsGroup.hidden = true
+        var isChangeLinkRedaction = !!arrivedViaChangeLinkId &&
+          arrivedViaChangeLinkId.split(',').indexOf(data.changeId) !== -1
+
+        if (isChangeLinkRedaction) {
+          clearMatchState()
+          if (returnToField) returnToField.value = arrivedViaChangeLinkReturnTo
+          if (initialActionsGroup) initialActionsGroup.hidden = true
+          if (editActionsGroup) editActionsGroup.hidden = false
+          editingOriginalTag = data.currentTag
+          updateContinueButtonState()
+        } else {
+          resetMatchPanel()
+          if (returnToField) returnToField.value = ''
+          if (editActionsGroup) editActionsGroup.hidden = true
+        }
 
         var anchorRect = trigger.getBoundingClientRect()
         openPopoverAt(anchorRect)
