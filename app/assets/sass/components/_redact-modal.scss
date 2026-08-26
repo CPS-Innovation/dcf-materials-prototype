@@ -69,14 +69,12 @@
   padding: govuk-spacing(4);
 }
 
-// govuk-frontend's .govuk-button (and, for the Cancel link, .govuk-link
-// inside .govuk-button-group) sets its own `display`, which (being an
-// author-stylesheet rule) overrides the browser's default `[hidden] {
-// display: none }` user-agent rule at equal specificity — so setting the
-// `hidden` attribute/property alone doesn't actually hide either element.
-// Force it explicitly.
-#redact-remove-button[hidden],
-#redact-cancel-link[hidden] {
+// govuk-frontend's .govuk-button-group sets its own `display: flex` (an
+// author-stylesheet rule), which overrides the browser's default `[hidden]
+// { display: none }` user-agent rule at equal specificity — so setting the
+// `hidden` attribute/property alone doesn't actually hide it. Force it
+// explicitly. (Same fix as v2 popover's #popover-edit-actions.)
+#redact-edit-actions[hidden] {
   display: none;
 }
 
