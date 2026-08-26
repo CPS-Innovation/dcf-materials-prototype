@@ -586,6 +586,21 @@ function buildRedactedHtml (outlineEdit) {
 // even if changes were removed/re-tagged after "Continue" was first
 // pressed (e.g. via the check screen). Used by all 4 variants' check
 // screen commits.
+// Freezes Case.factualSummaryOriginal the first time factualSummary is
+// ever about to change — via an edit-confirm or a redaction commit,
+// whichever happens first — and never again after that. Returns the
+// value to write this time (the case's *current* factualSummary, if
+// nothing has frozen it yet), or undefined if it's already frozen, so
+// callers can spread it into a Prisma update without touching the field
+// at all once it's set.
+async function captureOriginalIfUnset (caseId) {
+  const existing = await prisma.case.findUnique({
+    where: { id: caseId },
+    select: { factualSummary: true, factualSummaryOriginal: true }
+  })
+  return existing.factualSummaryOriginal ? undefined : existing.factualSummary
+}
+
 async function commitOutlineEdit (outlineEdit, caseId, userId) {
   const tags = outlineEdit.tags || {}
   const removed = outlineEdit.removed || {}
@@ -599,11 +614,14 @@ async function commitOutlineEdit (outlineEdit, caseId, userId) {
       tag: tags[change.id].tag
     }))
 
+  const originalToSet = await captureOriginalIfUnset(caseId)
+
   await prisma.case.update({
     where: { id: caseId },
     data: {
       factualSummary: outlineEdit.after,
-      factualSummaryRedacted: buildRedactedHtml(outlineEdit)
+      factualSummaryRedacted: buildRedactedHtml(outlineEdit),
+      ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet })
     }
   })
 
@@ -635,7 +653,15 @@ module.exports = router => {
       include: { defendants: true }
     })
 
-    res.render('v2/cases/outline/edit/index', { _case })
+    // If there's a pending, not-yet-confirmed edit in session (e.g. the
+    // user hit "Change" on the check screen to keep tweaking), prefill
+    // with that draft rather than reverting to the last saved wording.
+    const outlineEdit = req.session.data.outlineEdit
+    const draftText = (outlineEdit && typeof outlineEdit.after === 'string')
+      ? outlineEdit.after
+      : _case.factualSummary
+
+    res.render('v2/cases/outline/edit/index', { _case, draftText })
   })
 
   router.post('/cases/:caseId/outline/edit', async (req, res) => {
@@ -650,10 +676,64 @@ module.exports = router => {
     req.session.save(() => res.redirect(`/cases/${caseId}/outline/tag/v2`))
   })
 
+  // v3's edit-confirm flow: save the draft to session, then review it on a
+  // dedicated check ("CYA") screen before anything is persisted — edit and
+  // redact are independent flows now, so this deliberately does NOT go to
+  // /outline/tag/v3 (that's a separate, standalone entry point — see its
+  // own GET route below).
   router.post('/cases/:caseId/outline/edit/v3', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
     await saveOutlineEdit(req, caseId)
-    req.session.save(() => res.redirect(`/cases/${caseId}/outline/tag/v3`))
+    req.session.save(() => res.redirect(`/cases/${caseId}/outline/edit/v3/check`))
+  })
+
+  // Check-your-answers for the edit — the only place a wording edit
+  // actually gets persisted. Accept writes factualSummary (and freezes
+  // factualSummaryOriginal on the very first change to the case, whether
+  // via this or a redaction commit); Undo discards the draft; Change
+  // returns to the textarea with the draft preserved (see the GET
+  // /outline/edit handler above).
+  router.get('/cases/:caseId/outline/edit/v3/check', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const outlineEdit = req.session.data.outlineEdit
+
+    if (!outlineEdit) {
+      return res.redirect(`/cases/${caseId}/outline/edit`)
+    }
+
+    const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
+
+    res.render('v2/cases/outline/edit/check', { _case, ...buildTagViewData(outlineEdit) })
+  })
+
+  router.post('/cases/:caseId/outline/edit/v3/check', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const outlineEdit = req.session.data.outlineEdit
+    const action = req.body.action
+    let returnTo = `/cases/${caseId}/details#factual-summary`
+
+    if (outlineEdit && action === 'accept') {
+      const originalToSet = await captureOriginalIfUnset(caseId)
+
+      await prisma.case.update({
+        where: { id: caseId },
+        data: {
+          factualSummary: outlineEdit.after,
+          ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet })
+        }
+      })
+
+      req.session.data.successBanner = { text: 'Summary of circumstances updated' }
+      returnTo = `/cases/${caseId}/details#case-outline`
+    }
+
+    // Undo, or Accept having just persisted — either way the pending draft
+    // is done with. Change is handled by its own formaction (see the
+    // template), which redirects straight back to the textarea without
+    // reaching this branch at all, so the draft stays in session.
+    delete req.session.data.outlineEdit
+
+    req.session.save(() => res.redirect(returnTo))
   })
 
   router.post('/cases/:caseId/outline/edit/v4', async (req, res) => {
@@ -704,17 +784,30 @@ module.exports = router => {
     res.render('v2/cases/outline/tag/index-v2', { _case, ...buildTagViewData(outlineEdit, editIds, editReturnTo) })
   })
 
-  // Reads ?changeId=/&returnTo= for check.html's "Change" link, same as v2/v4
-  // — needed now that index-v3 uses the same popover markup as v2.
+  // Redact and edit are independent flows now — like v2/v4, this lazily
+  // starts a fresh selection-mode session against the current
+  // factualSummary if one isn't already in progress, rather than forcing
+  // a redirect through /outline/edit first. If a real edit-diff session
+  // IS already in progress (mode !== 'select', e.g. mid-way through the
+  // edit/check flow), it's left alone — this only replaces a genuinely
+  // missing session, never an in-progress one of either kind. Still reads
+  // ?changeId=/&returnTo= for check.html's "Change" link, same as v2/v4.
   router.get('/cases/:caseId/outline/tag/v3', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
-    const outlineEdit = req.session.data.outlineEdit
-
-    if (!outlineEdit) {
-      return res.redirect(`/cases/${caseId}/outline/edit`)
-    }
+    let outlineEdit = req.session.data.outlineEdit
 
     const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
+
+    if (!outlineEdit) {
+      outlineEdit = {
+        mode: 'select',
+        before: _case.factualSummary || '',
+        after: _case.factualSummary || '',
+        selections: [],
+        tags: {}
+      }
+      req.session.data.outlineEdit = outlineEdit
+    }
 
     const editIds = req.query.changeId
       ? String(req.query.changeId).split(',').filter(Boolean)
@@ -725,10 +818,10 @@ module.exports = router => {
   })
 
   // v4 skips the edit textarea entirely — "Redact" on the case details page
-  // links straight here. Unlike v1/v2/v3 (which need an edited "after" text
-  // from the edit page before there's anything to tag), this lazily starts
-  // a fresh selection-mode session against the current factualSummary if
-  // one isn't already in progress, rather than redirecting to /outline/edit.
+  // links straight here. Same as v2/v3: lazily starts a fresh
+  // selection-mode session against the current factualSummary if one isn't
+  // already in progress, rather than redirecting to /outline/edit. Only
+  // v1's plain /outline/tag still requires an edit session first.
   router.get('/cases/:caseId/outline/tag/v4', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
     let outlineEdit = req.session.data.outlineEdit

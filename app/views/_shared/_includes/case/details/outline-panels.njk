@@ -37,7 +37,8 @@
       items: [
         { text: "Redact (v2)", href: "/cases/" + _case.id + "/outline/tag/v2", visuallyHiddenText: "summary of circumstances of offence(s)" },
         { text: "Redact (v3)", href: "/cases/" + _case.id + "/outline/tag/v3", visuallyHiddenText: "summary of circumstances of offence(s)" },
-        { text: "Redact (v4)", href: "/cases/" + _case.id + "/outline/tag/v4", visuallyHiddenText: "summary of circumstances of offence(s)" }
+        { text: "Redact (v4)", href: "/cases/" + _case.id + "/outline/tag/v4", visuallyHiddenText: "summary of circumstances of offence(s)" },
+        { text: "Edit", href: "/cases/" + _case.id + "/outline/edit", visuallyHiddenText: "summary of circumstances of offence(s)" }
       ]
     }
   },
@@ -117,12 +118,15 @@ PS Police has also provided a statement detailing their response to the incident
 
 {% set informationToProsecutorHtml %}
 
-{# Original, unredacted wording — copied here once a redaction has been
-   committed (factualSummaryRedacted set), since the Factual summary tab
-   itself now shows the redacted version instead. #}
-{% if _case.factualSummaryRedacted %}
+{# Original, untouched wording — frozen the first time factualSummary
+   ever changed (an edit-confirm or a redaction commit, whichever
+   happened first — see captureOriginalIfUnset in case--outline.js).
+   factualSummary itself keeps evolving as the current/latest wording, so
+   this is the only place the true original survives once it's been
+   edited and/or redacted. #}
+{% if _case.factualSummaryOriginal %}
   {% set originalCircumstancesHtml %}
-    {% for paragraph in _case.factualSummary.split('\n\n') %}
+    {% for paragraph in _case.factualSummaryOriginal.split('\n\n') %}
 <p class="govuk-body">{{ paragraph }}</p>
     {% endfor %}
   {% endset %}

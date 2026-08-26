@@ -62,8 +62,17 @@
   display: none;
 }
 
-.js-redact-paragraphs.dcf-show-original .dcf-highlight--redacted .dcf-highlight__redacted-label {
-  display: none;
+// Plain read-only diff view on the edit check ("CYA") screen — no
+// highlight/tagging chrome (this isn't interactive, nothing here is
+// taggable), just enough colour to distinguish added from removed text at
+// a glance, in the same red/green convention as the tag screens'
+// .dcf-highlight--removed/--added.
+.dcf-edit-check__removed {
+  background-color: rgba(212, 53, 28, 0.15);
+}
+
+.dcf-edit-check__added {
+  background-color: rgba(0, 112, 60, 0.15);
 }
 
 .dcf-highlight__trigger {

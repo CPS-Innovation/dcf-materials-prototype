@@ -1,0 +1,42 @@
+{# app/views/v2/cases/outline/edit/check
+
+   Check-your-answers for a wording edit, before anything is persisted —
+   plain read-only diff review, deliberately no tagging/redaction chrome
+   (this reuses buildTagViewData purely for its paragraph-diffing, not for
+   anything tag-related — nothing here is taggable). Accept/Undo/Change are
+   handled by app/routes/case--outline.js's POST /outline/edit/v3/check. #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit" }) }}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <span class="govuk-caption-m">{{ _case.reference }}</span>
+      <h1 class="govuk-heading-l">Check your changes</h1>
+
+      <p class="govuk-body">Review the summary of circumstances before confirming. Additions are underlined, removals are struck through.</p>
+
+      <div class="dcf-edit-check-paragraphs">
+        {% for paragraph in paragraphs %}
+          <p class="govuk-body">{% for part in paragraph %}{% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<del class="dcf-edit-check__removed">{{ part.value }}</del>{% elif part.type == 'added' %}<ins class="dcf-edit-check__added">{{ part.value }}</ins>{% endif %}{% endfor %}</p>
+        {% endfor %}
+      </div>
+
+      <form method="post" class="govuk-!-margin-top-6">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="govuk-button-group">
+          <button type="submit" name="action" value="accept" class="govuk-button" id="edit-check-accept-button">Accept changes</button>
+          <button type="submit" name="action" value="undo" formnovalidate class="govuk-button govuk-button--warning" id="edit-check-undo-button">Undo changes</button>
+          <a class="govuk-link" href="/cases/{{ _case.id }}/outline/edit" id="edit-check-change-link">Change</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

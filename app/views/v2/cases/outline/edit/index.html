@@ -20,7 +20,7 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
-      <h1 class="govuk-heading-l">Change summary of circumstances on offence(s)</h1>
+      <h1 class="govuk-heading-l">Edit summary of circumstances on offence(s)</h1>
   
       {{ govukWarningText({
         text: "Only complete this action if you urgently need to change this text yourself.",
@@ -29,14 +29,14 @@
 
       <p class="govuk-body">You can request the police to make changes by adding a 'Factual Summary Confidential Information Request' action point to your Action Plan.</p>
 
-      <form method="post">
+      <form method="post" action="/cases/{{ _case.id }}/outline/edit/v3">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
         {{ govukTextarea({
           name: "factualSummary",
           id: "factual-summary",
           rows: "25",
-          value: _case.factualSummary,
+          value: draftText,
           label: {
             text: "Current summary of circumstances",
             classes: "govuk-label--s govuk-!-margin-top-6",
@@ -69,12 +69,17 @@
           ]
         }) }} #}
               
-         <div class="govuk-button-group">
+         {# <div class="govuk-button-group">
           {{ govukButton({ text: "Continue" }) }}
           {{ govukButton({ text: "Continue (v2)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v2" } }) }}
           {{ govukButton({ text: "Continue (v3)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v3" } }) }}
           {{ govukButton({ text: "Continue (v4)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v4" } }) }}
+         </div> #}
+
+         <div class="govuk-button-group">
+          {{ govukButton({ text: "Continue" }) }}
          </div>
+
       </form>
 
     </div>
