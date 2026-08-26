@@ -119,11 +119,43 @@
             items: radioItems
           }) }}
 
-          <div class="govuk-button-group">
-            <button type="submit" name="scope" value="single" class="govuk-button govuk-button--secondary">Redact</button>
-            <button type="submit" name="scope" value="all" class="govuk-button govuk-button--secondary">Redact all</button>
-            <button type="submit" formaction="/cases/{{ _case.id }}/outline/tag/undo" formnovalidate class="govuk-button govuk-button--warning" id="redact-remove-button"{{ ' hidden' if not (modalState and modalState.changeId) }}>Remove</button>
-            <a class="govuk-link" href="{{ modalState.returnTo if modalState else '' }}" id="redact-cancel-link"{{ ' hidden' if not (modalState and modalState.changeId) }}>Cancel</a>
+          {# "New selection" actions — hidden when arriving via check.html's
+             "Change" link, same fix as v2 popover's #popover-initial-actions. #}
+          <div id="redact-initial-actions"{{ ' hidden' if (modalState and modalState.changeId) }}>
+            <div class="govuk-button-group">
+              <button type="submit" name="scope" value="single" class="govuk-button govuk-button--secondary">Redact</button>
+              <button type="submit" name="scope" value="all" class="govuk-button govuk-button--secondary">Redact all</button>
+              <button type="button" class="govuk-button govuk-button--secondary" id="redact-find-matching-button">Find matching text</button>
+            </div>
+            {# Not wired up yet — same inert copy-to-clipboard shortcut as
+               the v2 popover. #}
+            <a href="#" class="govuk-body govuk-link" id="redact-copy-text-button">Copy text</a>
+          </div>
+
+          {# "Find matching text" step-through — same client-side match
+             engine as the v2 popover, minus its anchor-repositioning logic
+             (this dialog is fixed-docked, not floating). #}
+          <div id="redact-match-panel" hidden>
+            <p class="govuk-body">This phrase appears <strong id="redact-match-count"></strong> in the document</p>
+            <div class="govuk-button-group">
+              <button type="button" class="govuk-button govuk-button--secondary" id="redact-view-previous">View previous</button>
+              <button type="button" class="govuk-button govuk-button--secondary" id="redact-view-next">View next</button>
+            </div>
+            <div class="govuk-button-group">
+              <button type="submit" name="scope" value="single" class="govuk-button govuk-button--secondary">Redact this</button>
+              <button type="submit" name="scope" value="all" class="govuk-button govuk-button--secondary" id="redact-match-redact-all-button">Redact all</button>
+            </div>
+          </div>
+
+          {# Change-state actions — only ever shown when arriving via
+             check.html's "Change" link (or re-clicking that same highlight),
+             never from an on-page click. Continue always submits whatever's
+             currently selected, changed or not — no disabled state, per the
+             accessibility steer to avoid disabled buttons. #}
+          <div class="govuk-button-group" id="redact-edit-actions"{{ ' hidden' if not (modalState and modalState.changeId) }}>
+            <button type="submit" name="scope" value="single" class="govuk-button" id="redact-continue-button">Continue</button>
+            <button type="submit" formaction="/cases/{{ _case.id }}/outline/tag/undo" formnovalidate class="govuk-button govuk-button--warning" id="redact-remove-button">Remove</button>
+            <a class="govuk-link" href="{{ modalState.returnTo if modalState else '' }}" id="redact-cancel-link">Cancel</a>
           </div>
         </form>
       </div>

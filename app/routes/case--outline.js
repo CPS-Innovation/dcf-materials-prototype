@@ -552,8 +552,8 @@ function escapeHtml (value) {
 }
 
 // Static (non-interactive) HTML rendering of the factual summary with
-// every currently-tagged span replaced by a solid black box — computed
-// once at commit time and stored in Case.factualSummaryRedacted.
+// every currently-tagged span replaced by a "[Redacted <type>]" label —
+// computed once at commit time and stored in Case.factualSummaryRedacted.
 // Deliberately not the same markup as the live tag-screen preview
 // (.dcf-highlight/.js-redact-paragraphs): those classes are scoped for
 // the interactive drag-select page and carry <button> triggers this
@@ -568,8 +568,11 @@ function buildRedactedHtml (outlineEdit) {
 
   return paragraphs.map(paragraph => {
     const html = paragraph.map(part => {
-      if (part.type !== 'unchanged' && tags[part.changeId]) {
-        return `<span class="dcf-redacted-text">${escapeHtml(part.value)}</span>`
+      const tagged = part.type !== 'unchanged' && tags[part.changeId]
+      if (tagged) {
+        const typeEntry = ALL_TAGS.find(t => t.value === tagged.tag)
+        const label = (typeEntry ? typeEntry.text : tagged.tag).toLowerCase()
+        return `<span class="dcf-redacted-text">${escapeHtml('[Redacted ' + label + ']')}</span>`
       }
       return escapeHtml(part.value)
     }).join('')

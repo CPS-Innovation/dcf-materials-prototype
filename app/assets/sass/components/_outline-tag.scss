@@ -2,10 +2,11 @@
 // shown on the case details page (Case.factualSummaryRedacted) — deliberately
 // separate from .dcf-highlight/.js-redact-paragraphs, which are scoped to
 // the interactive drag-select tag screen and carry <button> triggers this
-// plain stored HTML has no use for.
+// plain stored HTML has no use for. The text content itself is now the
+// "[Redacted <type>]" label (see buildRedactedHtml in case--outline.js),
+// not the original — so this just needs to read clearly, not hide it.
 .dcf-redacted-text {
-  background-color: govuk-colour("black");
-  color: transparent;
+  font-weight: bold;
 }
 
 .dcf-highlight {
@@ -25,50 +26,44 @@
   background-color: rgba(0, 112, 60, 0.15);
 }
 
-// Tagging a change tints it like a redaction preview, with a solid border
-// marking its extent — the text stays visible underneath (both visually and
-// in the DOM/for assistive tech), unlike a real redaction.
-.dcf-highlight--redacted {
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 3px solid govuk-colour("black");
-}
-
+// Tagging a change now replaces its text with a "[Redacted <type>]" label
+// (see redact-paragraphs.njk's .dcf-highlight__original/__redacted-label
+// spans) — bold is the only visual cue marking it as a redaction, no
+// background/border.
 .dcf-highlight--redacted .dcf-highlight__trigger {
   text-decoration: none;
 }
 
-// Strikethrough only for redacted removed text — not added text, and not
-// removed text that hasn't been tagged yet.
-.dcf-highlight--removed.dcf-highlight--redacted .dcf-highlight__trigger {
-  text-decoration: line-through;
+// Both spans exist in the DOM at all times (the original text is still
+// needed for "Show original text" and, when shown, for assistive tech);
+// only one is ever visible.
+.dcf-highlight__redacted-label {
+  display: none;
 }
 
-// v4 only: solid black, text fully hidden — v4 is pure redaction now (no
-// editing), so there's no context worth preserving underneath. v1/v2/v3
-// keep the tinted/readable style above, since they're still edit-then-diff
-// based and that's still about seeing wording while editing it.
-// .js-redact-paragraphs only exists on v4's page, so this scopes cleanly
-// without touching the shared rules v1/v2/v3 use.
-.js-redact-paragraphs .dcf-highlight--redacted {
-  background-color: govuk-colour("black");
-  border: none;
+.dcf-highlight--redacted .dcf-highlight__original {
+  display: none;
 }
 
-.js-redact-paragraphs .dcf-highlight--redacted .dcf-highlight__trigger {
-  color: transparent;
-  text-decoration: none;
+.dcf-highlight--redacted .dcf-highlight__redacted-label {
+  display: inline;
+  font-weight: bold;
 }
 
 // "Show original text" toggle: temporarily reveals the plain, unmarked
 // text underneath every redaction so the user can re-read the passage as
-// originally written — no tint, no border, nothing marking what's
-// redacted, since the point is reading it as if nothing had been done.
-.js-redact-paragraphs.dcf-show-original .dcf-highlight--redacted {
-  background-color: transparent;
+// originally written — nothing marking what's redacted, since the point
+// is reading it as if nothing had been done.
+.js-redact-paragraphs.dcf-show-original .dcf-highlight--redacted .dcf-highlight__original {
+  display: inline;
 }
 
-.js-redact-paragraphs.dcf-show-original .dcf-highlight--redacted .dcf-highlight__trigger {
-  color: inherit;
+.js-redact-paragraphs.dcf-show-original .dcf-highlight--redacted .dcf-highlight__redacted-label {
+  display: none;
+}
+
+.js-redact-paragraphs.dcf-show-original .dcf-highlight--redacted .dcf-highlight__redacted-label {
+  display: none;
 }
 
 .dcf-highlight__trigger {
