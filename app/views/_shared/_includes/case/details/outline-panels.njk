@@ -12,7 +12,7 @@
 {% endif %}
 {% endset %}
 
-{{ govukSummaryList({
+{# {{ govukSummaryList({
   card: {
     title: {
       html: 'Summary of circumstances of offence(s)'
@@ -26,9 +26,9 @@
   rows: [
     { key: { text: "Added on 24 May 2024" }, value: { html: circumstancesDisplayHtml } }
   ]
-}) }}
+}) }} #}
 
-{# {{ govukSummaryList({
+{{ govukSummaryList({
   card: {
     title: {
       html: 'Summary of circumstances of offence(s)'
@@ -44,7 +44,7 @@
   rows: [
     { key: { text: "Added on 24 May 2024" }, value: { html: circumstancesDisplayHtml } }
   ]
-}) }} #}
+}) }}
 
 {% set arrestDetailsValueHtml %}
 <p class="govuk-body">
