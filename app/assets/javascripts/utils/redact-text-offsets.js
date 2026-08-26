@@ -246,6 +246,205 @@
     }
   }
 
+  // True if `el` is currently shown (exists and its `hidden` property isn't
+  // set) — trivial, but both callers repeat the same check for whichever
+  // action group they're currently locked into, so it's worth one name.
+  function isVisible (el) {
+    return !!(el && !el.hidden)
+  }
+
+  // Owns the "Find matching text" step-through: the matches array, the
+  // current index, the temporary <mark> highlighting whichever occurrence
+  // is on screen, and the button wiring (Find matching text/View previous/
+  // View next) — identical in redact-popover.js and redact-select.js except
+  // for one thing, which is why this takes an `onMatchShown` callback rather
+  // than being fully self-contained: the popover has to reposition itself
+  // relative to whichever match is now on screen (it floats, anchored to a
+  // selection); the v4 modal is fixed-docked and doesn't. `config` is
+  // {container, startField, endField, paragraphField, textField, matchPanel,
+  // matchCountEl, redactAllButton, initialActionsGroup, findMatchingButton,
+  // viewPreviousButton, viewNextButton, onMatchShown?}.
+  function createMatchStepper (config) {
+    var container = config.container
+    var startField = config.startField
+    var endField = config.endField
+    var paragraphField = config.paragraphField
+    var textField = config.textField
+    var matchPanel = config.matchPanel
+    var matchCountEl = config.matchCountEl
+    var redactAllButton = config.redactAllButton
+    var initialActionsGroup = config.initialActionsGroup
+    var onMatchShown = config.onMatchShown
+
+    var matches = []
+    var matchIndex = -1
+    var temporaryHighlight = null
+
+    function clearTemporaryHighlight () {
+      if (!temporaryHighlight) return
+      var parent = temporaryHighlight.parentNode
+      if (parent) {
+        while (temporaryHighlight.firstChild) {
+          parent.insertBefore(temporaryHighlight.firstChild, temporaryHighlight)
+        }
+        parent.removeChild(temporaryHighlight)
+        parent.normalize()
+      }
+      temporaryHighlight = null
+    }
+
+    function clearMatchState () {
+      clearTemporaryHighlight()
+      matches = []
+      matchIndex = -1
+      if (matchPanel) matchPanel.hidden = true
+    }
+
+    // Same DOM/state cleanup as clearMatchState, plus switching back to the
+    // initial redact/find-matching actions — correct for the two callers
+    // that use this (a fresh selection, or reopening an on-page highlight),
+    // but NOT for simply closing the popover/modal — that just needs
+    // clearMatchState, so it doesn't fight a Change-link visit's Remove/
+    // Cancel/Continue state (see closePopover/closeModal).
+    function resetMatchPanel () {
+      clearMatchState()
+      if (initialActionsGroup) initialActionsGroup.hidden = false
+    }
+
+    function findAllMatches (text) {
+      var results = []
+      var paragraphEls = container.querySelectorAll('.js-tag-paragraph')
+
+      paragraphEls.forEach(function (paragraphEl, index) {
+        var paragraphText = paragraphEl.textContent
+        var searchFrom = 0
+        var occStart = paragraphText.indexOf(text, searchFrom)
+
+        while (occStart !== -1) {
+          results.push({ paragraphIndex: index, start: occStart, end: occStart + text.length })
+          searchFrom = occStart + text.length
+          occStart = paragraphText.indexOf(text, searchFrom)
+        }
+      })
+
+      return results
+    }
+
+    // Moves the currently-viewed match's coordinates into the form's
+    // hidden fields, so "Redact this" (inside the match panel) acts on
+    // whichever occurrence is on screen, not the original drag-selection.
+    function showMatch (index) {
+      clearTemporaryHighlight()
+      if (!matches.length) return
+
+      matchIndex = ((index % matches.length) + matches.length) % matches.length
+      var match = matches[matchIndex]
+      var paragraphEl = container.querySelectorAll('.js-tag-paragraph')[match.paragraphIndex]
+      if (!paragraphEl) return
+
+      if (startField) startField.value = match.start
+      if (endField) endField.value = match.end
+      if (paragraphField) paragraphField.value = match.paragraphIndex
+
+      var range = rangeAtOffset(paragraphEl, match.start, match.end)
+      var scrollTarget = paragraphEl
+
+      if (range) {
+        // This occurrence might already be a tagged redaction itself (e.g.
+        // stepping through matches of the very word the popover/modal was
+        // opened to edit, via check.html's "Change" link) — its text is
+        // already wrapped in an existing <mark><button>. Anchor to that
+        // directly rather than wrapping a second, temporary <mark> inside
+        // it: nesting one highlight inside another is both unnecessary and
+        // unreliable — surroundContents on a range nested inside a <button>
+        // doesn't behave consistently across cases.
+        var existingHighlightEl = range.startContainer.nodeType === Node.TEXT_NODE
+          ? range.startContainer.parentElement.closest('.dcf-highlight')
+          : null
+
+        if (existingHighlightEl) {
+          scrollTarget = existingHighlightEl
+        } else {
+          temporaryHighlight = document.createElement('mark')
+          temporaryHighlight.className = 'dcf-highlight dcf-highlight--match'
+          try {
+            range.surroundContents(temporaryHighlight)
+            scrollTarget = temporaryHighlight
+          } catch (e) {
+            // surroundContents throws if the range's boundaries don't cleanly
+            // wrap in one element (e.g. straddling existing markup) — fall
+            // back to scrolling the paragraph into view without the visual
+            // highlight rather than breaking the step-through entirely.
+            temporaryHighlight = null
+          }
+        }
+      }
+
+      // Instant (not smooth) scroll, so the browser has actually finished
+      // moving the page by the time getBoundingClientRect runs in
+      // onMatchShown — with a smooth/animated scroll the rect would still
+      // reflect the pre-scroll position, throwing the popover's next
+      // placement off.
+      scrollTarget.scrollIntoView({ block: 'center' })
+
+      if (onMatchShown) onMatchShown(scrollTarget)
+    }
+
+    if (config.findMatchingButton) {
+      config.findMatchingButton.addEventListener('click', function () {
+        var text = textField ? textField.value : ''
+        if (!text) return
+
+        matches = findAllMatches(text)
+
+        if (matchCountEl) {
+          matchCountEl.textContent = matches.length + (matches.length === 1 ? ' time' : ' times')
+        }
+        if (redactAllButton) redactAllButton.textContent = 'Redact all (' + matches.length + ')'
+
+        if (initialActionsGroup) initialActionsGroup.hidden = true
+        if (matchPanel) matchPanel.hidden = false
+
+        showMatch(0)
+      })
+    }
+
+    if (config.viewPreviousButton) {
+      config.viewPreviousButton.addEventListener('click', function () { showMatch(matchIndex - 1) })
+    }
+
+    if (config.viewNextButton) {
+      config.viewNextButton.addEventListener('click', function () { showMatch(matchIndex + 1) })
+    }
+
+    return {
+      clearMatchState: clearMatchState,
+      resetMatchPanel: resetMatchPanel,
+      findAllMatches: findAllMatches,
+      showMatch: showMatch
+    }
+  }
+
+  // Identifies whether a given changeId is the specific redaction this page
+  // was rendered for via check.html's "Change" link (captured once, before
+  // any on-page click can overwrite the hidden changeId field) — both
+  // callers use this to decide whether re-clicking that highlight should
+  // restore Remove/Cancel/Continue rather than the normal on-page re-tag
+  // actions. `config` is {changeIdField, returnToField}.
+  function createChangeLinkTracker (config) {
+    var arrivedViaChangeLinkId = config.changeIdField ? config.changeIdField.value : ''
+    var arrivedViaChangeLinkReturnTo = config.returnToField ? config.returnToField.value : ''
+
+    function isChangeLinkRedaction (changeId) {
+      return !!arrivedViaChangeLinkId && arrivedViaChangeLinkId.split(',').indexOf(changeId) !== -1
+    }
+
+    return {
+      isChangeLinkRedaction: isChangeLinkRedaction,
+      returnTo: arrivedViaChangeLinkReturnTo
+    }
+  }
+
   window.DCFRedactText = {
     textOffsetOfNode: textOffsetOfNode,
     rangeAtOffset: rangeAtOffset,
@@ -256,6 +455,9 @@
     readHighlightTrigger: readHighlightTrigger,
     captureSelectionFromMouseup: captureSelectionFromMouseup,
     initShowOriginalToggle: initShowOriginalToggle,
-    clearNoteError: clearNoteError
+    clearNoteError: clearNoteError,
+    isVisible: isVisible,
+    createMatchStepper: createMatchStepper,
+    createChangeLinkTracker: createChangeLinkTracker
   }
 })()

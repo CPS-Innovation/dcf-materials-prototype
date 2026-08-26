@@ -704,6 +704,8 @@ module.exports = router => {
     res.render('v2/cases/outline/tag/index-v2', { _case, ...buildTagViewData(outlineEdit, editIds, editReturnTo) })
   })
 
+  // Reads ?changeId=/&returnTo= for check.html's "Change" link, same as v2/v4
+  // — needed now that index-v3 uses the same popover markup as v2.
   router.get('/cases/:caseId/outline/tag/v3', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
     const outlineEdit = req.session.data.outlineEdit
@@ -714,7 +716,12 @@ module.exports = router => {
 
     const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
 
-    res.render('v2/cases/outline/tag/index-v3', { _case, ...buildTagViewData(outlineEdit) })
+    const editIds = req.query.changeId
+      ? String(req.query.changeId).split(',').filter(Boolean)
+      : null
+    const editReturnTo = req.query.returnTo || ''
+
+    res.render('v2/cases/outline/tag/index-v3', { _case, ...buildTagViewData(outlineEdit, editIds, editReturnTo) })
   })
 
   // v4 skips the edit textarea entirely — "Redact" on the case details page
@@ -866,11 +873,11 @@ module.exports = router => {
   // action, so this branches server-side rather than splitting across two
   // routes. Registered before the /v4/:changeId wildcard route below for
   // the same reason /v4/check is — otherwise "select" gets swallowed as a
-  // :changeId param. Same handler serves both /v2/select and /v4/select
-  // (looped, like CHECK_VARIANTS.forEach elsewhere) since the logic itself
-  // has never been v4-specific — only the redirect targets need to know
-  // which variant they're for.
-  ;['v2', 'v4'].forEach(variant => {
+  // :changeId param. Same handler serves /v2/select, /v3/select and
+  // /v4/select (looped, like CHECK_VARIANTS.forEach elsewhere) since the
+  // logic itself has never been variant-specific — only the redirect
+  // targets need to know which variant they're for.
+  ;['v2', 'v3', 'v4'].forEach(variant => {
     router.post(`/cases/:caseId/outline/tag/${variant}/select`, (req, res) => {
       const caseId = parseInt(req.params.caseId)
       const outlineEdit = req.session.data.outlineEdit

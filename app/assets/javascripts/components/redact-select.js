@@ -2,15 +2,18 @@
   function ready (fn) { if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fn) } else { fn() } }
 
   // countOccurrences/clearSelectionFields/captureSelectionFromMouseup/
-  // rangeAtOffset live in redact-text-offsets.js (loaded before this
-  // script), shared with redact-popover.js.
+  // readHighlightTrigger/initShowOriginalToggle/clearNoteError/isVisible/
+  // createMatchStepper/createChangeLinkTracker live in redact-text-
+  // offsets.js (loaded before this script), shared with redact-popover.js.
   var countOccurrences = window.DCFRedactText.countOccurrences
-  var rangeAtOffset = window.DCFRedactText.rangeAtOffset
   var clearSelectionFields = window.DCFRedactText.clearSelectionFields
   var readHighlightTrigger = window.DCFRedactText.readHighlightTrigger
   var captureSelectionFromMouseup = window.DCFRedactText.captureSelectionFromMouseup
   var initShowOriginalToggle = window.DCFRedactText.initShowOriginalToggle
   var clearNoteError = window.DCFRedactText.clearNoteError
+  var isVisible = window.DCFRedactText.isVisible
+  var createMatchStepper = window.DCFRedactText.createMatchStepper
+  var createChangeLinkTracker = window.DCFRedactText.createChangeLinkTracker
 
   ready(function () {
     var container = document.querySelector('.js-redact-paragraphs')
@@ -18,12 +21,6 @@
     if (!container) return
 
     var changeIdField = document.getElementById('change-id-field')
-    // Captured once, before any click can overwrite changeIdField's value —
-    // identifies the specific redaction (if any) this page was rendered for
-    // via check.html's "Change" link, so re-clicking THAT highlight later
-    // can restore Remove/Cancel/Continue instead of the normal "on-page
-    // click" re-tag behaviour every other highlight gets.
-    var arrivedViaChangeLinkId = changeIdField ? changeIdField.value : ''
     var startField = document.getElementById('selection-start-field')
     var endField = document.getElementById('selection-end-field')
     var paragraphField = document.getElementById('selection-paragraph-field')
@@ -31,10 +28,6 @@
     var occurrenceCountEl = document.getElementById('dcf-redact-occurrence-count')
     var selectedTextEl = document.getElementById('dcf-redact-selected-text')
     var returnToField = document.getElementById('redact-return-to-field')
-    // Captured alongside arrivedViaChangeLinkId — restored onto returnToField
-    // if that same redaction is re-clicked, so Remove still redirects back
-    // to check.html afterwards instead of losing the return path.
-    var arrivedViaChangeLinkReturnTo = returnToField ? returnToField.value : ''
     var findMatchingButton = document.getElementById('redact-find-matching-button')
     var initialActionsGroup = document.getElementById('redact-initial-actions')
     var editActionsGroup = document.getElementById('redact-edit-actions')
@@ -43,6 +36,24 @@
     var viewPreviousButton = document.getElementById('redact-view-previous')
     var viewNextButton = document.getElementById('redact-view-next')
     var matchRedactAllButton = document.getElementById('redact-match-redact-all-button')
+
+    var changeLinkTracker = createChangeLinkTracker({ changeIdField: changeIdField, returnToField: returnToField })
+
+    var matchStepper = createMatchStepper({
+      container: container,
+      startField: startField,
+      endField: endField,
+      paragraphField: paragraphField,
+      textField: textField,
+      matchPanel: matchPanel,
+      matchCountEl: matchCountEl,
+      redactAllButton: matchRedactAllButton,
+      initialActionsGroup: initialActionsGroup,
+      findMatchingButton: findMatchingButton,
+      viewPreviousButton: viewPreviousButton,
+      viewNextButton: viewNextButton
+      // No onMatchShown — this dialog is fixed-docked, nothing to reposition.
+    })
 
     var documentText = ''
     var documentTextEl = document.getElementById('dcf-redact-document-text')
@@ -107,14 +118,14 @@
       // the Remove/Cancel/Continue state and must stay there if reopened
       // later, not silently flip back to the initial redact/find-matching
       // state).
-      clearMatchState()
+      matchStepper.clearMatchState()
     }
 
     // While Continue/Remove/Cancel are showing (a change/edit-state visit),
     // the modal is locked: the user must pick one of those three rather
     // than dismiss it via the overlay/close button or Escape.
     function isLockedInEditState () {
-      return !!(editActionsGroup && !editActionsGroup.hidden)
+      return isVisible(editActionsGroup)
     }
 
     document.addEventListener('click', function (e) {
@@ -138,143 +149,6 @@
     })
 
     // ------------------------------------------------------------------
-    // "Find matching text" step-through — same client-side match engine as
-    // the v2 popover (findAllMatches/showMatch/temporary highlight), minus
-    // its anchor-repositioning logic: this dialog is fixed-docked, not
-    // floating, so there's nothing to reposition — only the matched text
-    // itself needs scrolling into view.
-    // ------------------------------------------------------------------
-
-    var matches = []
-    var matchIndex = -1
-    var temporaryHighlight = null
-
-    function clearTemporaryHighlight () {
-      if (!temporaryHighlight) return
-      var parent = temporaryHighlight.parentNode
-      if (parent) {
-        while (temporaryHighlight.firstChild) {
-          parent.insertBefore(temporaryHighlight.firstChild, temporaryHighlight)
-        }
-        parent.removeChild(temporaryHighlight)
-        parent.normalize()
-      }
-      temporaryHighlight = null
-    }
-
-    function clearMatchState () {
-      clearTemporaryHighlight()
-      matches = []
-      matchIndex = -1
-      if (matchPanel) matchPanel.hidden = true
-    }
-
-    // Same DOM/state cleanup as clearMatchState, plus switching back to the
-    // initial redact/find-matching actions — correct for the two callers
-    // that use this (a fresh selection, or reopening an on-page highlight),
-    // but NOT for simply closing the modal — see closeModal.
-    function resetMatchPanel () {
-      clearMatchState()
-      if (initialActionsGroup) initialActionsGroup.hidden = false
-    }
-
-    function findAllMatches (text) {
-      var results = []
-      var paragraphEls = container.querySelectorAll('.js-tag-paragraph')
-
-      paragraphEls.forEach(function (paragraphEl, index) {
-        var paragraphText = paragraphEl.textContent
-        var searchFrom = 0
-        var occStart = paragraphText.indexOf(text, searchFrom)
-
-        while (occStart !== -1) {
-          results.push({ paragraphIndex: index, start: occStart, end: occStart + text.length })
-          searchFrom = occStart + text.length
-          occStart = paragraphText.indexOf(text, searchFrom)
-        }
-      })
-
-      return results
-    }
-
-    // Moves the currently-viewed match's coordinates into the form's
-    // hidden fields, so "Redact this" (inside the match panel) acts on
-    // whichever occurrence is on screen, not the original drag-selection.
-    function showMatch (index) {
-      clearTemporaryHighlight()
-      if (!matches.length) return
-
-      matchIndex = ((index % matches.length) + matches.length) % matches.length
-      var match = matches[matchIndex]
-      var paragraphEl = container.querySelectorAll('.js-tag-paragraph')[match.paragraphIndex]
-      if (!paragraphEl) return
-
-      if (startField) startField.value = match.start
-      if (endField) endField.value = match.end
-      if (paragraphField) paragraphField.value = match.paragraphIndex
-
-      var range = rangeAtOffset(paragraphEl, match.start, match.end)
-      var scrollTarget = paragraphEl
-
-      if (range) {
-        // This occurrence might already be a tagged redaction itself (e.g.
-        // stepping through matches of the very word the modal was opened
-        // to edit, via check.html's "Change" link) — its text is already
-        // wrapped in an existing <mark><button>. Anchor to that directly
-        // rather than wrapping a second, temporary <mark> inside it.
-        var existingHighlightEl = range.startContainer.nodeType === Node.TEXT_NODE
-          ? range.startContainer.parentElement.closest('.dcf-highlight')
-          : null
-
-        if (existingHighlightEl) {
-          scrollTarget = existingHighlightEl
-        } else {
-          temporaryHighlight = document.createElement('mark')
-          temporaryHighlight.className = 'dcf-highlight dcf-highlight--match'
-          try {
-            range.surroundContents(temporaryHighlight)
-            scrollTarget = temporaryHighlight
-          } catch (e) {
-            // surroundContents throws if the range's boundaries don't cleanly
-            // wrap in one element (e.g. straddling existing markup) — fall
-            // back to scrolling the paragraph into view without the visual
-            // highlight rather than breaking the step-through entirely.
-            temporaryHighlight = null
-          }
-        }
-      }
-
-      scrollTarget.scrollIntoView({ block: 'center' })
-    }
-
-    if (findMatchingButton) {
-      findMatchingButton.addEventListener('click', function () {
-        var text = textField ? textField.value : ''
-        if (!text) return
-
-        matches = findAllMatches(text)
-
-        if (matchCountEl) {
-          matchCountEl.textContent = matches.length + (matches.length === 1 ? ' time' : ' times')
-        }
-        if (matchRedactAllButton) matchRedactAllButton.textContent = 'Redact all (' + matches.length + ')'
-
-        if (initialActionsGroup) initialActionsGroup.hidden = true
-        if (matchPanel) matchPanel.hidden = false
-
-        showMatch(0)
-      })
-    }
-
-    if (viewPreviousButton) {
-      viewPreviousButton.addEventListener('click', function () { showMatch(matchIndex - 1) })
-    }
-
-    if (viewNextButton) {
-      viewNextButton.addEventListener('click', function () { showMatch(matchIndex + 1) })
-    }
-
-    // ------------------------------------------------------------------
     // Drag-selection capture
     // ------------------------------------------------------------------
 
@@ -284,7 +158,7 @@
       // temporary <mark> left in the DOM from a previous "Find matching
       // text" session would otherwise itself count as an existing
       // highlight and wrongly reject a new selection that crosses it.
-      resetMatchPanel()
+      matchStepper.resetMatchPanel()
 
       var captured = captureSelectionFromMouseup()
       if (!captured) return
@@ -316,10 +190,10 @@
     // check.html's "Change" link, not from an on-page click — on-page
     // removal still goes through the table's own Remove action instead.
     // EXCEPT when the highlight clicked is the very one this page was
-    // opened for via that Change link (arrivedViaChangeLinkId) — re-
-    // clicking that one restores Remove/Cancel/Continue rather than
-    // switching to the normal on-page re-tag actions, so closing/
-    // reopening it doesn't change what the user is able to do with it.
+    // opened for via that Change link — re-clicking that one restores
+    // Remove/Cancel/Continue rather than switching to the normal on-page
+    // re-tag actions, so closing/reopening it doesn't change what the
+    // user is able to do with it.
     // ------------------------------------------------------------------
 
     container.querySelectorAll('.dcf-highlight__trigger').forEach(function (trigger) {
@@ -337,16 +211,13 @@
         var noteFieldEl = document.getElementById('redact-note')
         if (noteFieldEl) noteFieldEl.value = data.currentNote
 
-        var isChangeLinkRedaction = !!arrivedViaChangeLinkId &&
-          arrivedViaChangeLinkId.split(',').indexOf(data.changeId) !== -1
-
-        if (isChangeLinkRedaction) {
-          clearMatchState()
-          if (returnToField) returnToField.value = arrivedViaChangeLinkReturnTo
+        if (changeLinkTracker.isChangeLinkRedaction(data.changeId)) {
+          matchStepper.clearMatchState()
+          if (returnToField) returnToField.value = changeLinkTracker.returnTo
           if (initialActionsGroup) initialActionsGroup.hidden = true
           if (editActionsGroup) editActionsGroup.hidden = false
         } else {
-          resetMatchPanel()
+          matchStepper.resetMatchPanel()
           if (returnToField) returnToField.value = ''
           if (editActionsGroup) editActionsGroup.hidden = true
         }

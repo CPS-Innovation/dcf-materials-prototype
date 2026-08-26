@@ -8,6 +8,9 @@
   var captureSelectionFromMouseup = window.DCFRedactText.captureSelectionFromMouseup
   var initShowOriginalToggle = window.DCFRedactText.initShowOriginalToggle
   var clearNoteError = window.DCFRedactText.clearNoteError
+  var isVisible = window.DCFRedactText.isVisible
+  var createMatchStepper = window.DCFRedactText.createMatchStepper
+  var createChangeLinkTracker = window.DCFRedactText.createChangeLinkTracker
 
   ready(function () {
     var container = document.querySelector('.js-redact-paragraphs')
@@ -17,21 +20,11 @@
     initShowOriginalToggle(container)
 
     var changeIdField = document.getElementById('popover-change-id-field')
-    // Captured once, before any click can overwrite changeIdField's value —
-    // identifies the specific redaction (if any) this page was rendered for
-    // via check.html's "Change" link, so re-clicking THAT highlight later
-    // can restore Remove/Cancel instead of the normal "on-page click"
-    // re-tag behaviour every other highlight gets.
-    var arrivedViaChangeLinkId = changeIdField ? changeIdField.value : ''
     var startField = document.getElementById('popover-start-field')
     var endField = document.getElementById('popover-end-field')
     var paragraphField = document.getElementById('popover-paragraph-field')
     var textField = document.getElementById('popover-text-field')
     var returnToField = document.getElementById('popover-return-to-field')
-    // Captured alongside arrivedViaChangeLinkId — restored onto returnToField
-    // if that same redaction is re-clicked, so Remove still redirects back
-    // to check.html afterwards instead of losing the return path.
-    var arrivedViaChangeLinkReturnTo = returnToField ? returnToField.value : ''
     var tagSelect = document.getElementById('popover-tag-select')
     var redactButton = document.getElementById('popover-redact-button')
     var findMatchingButton = document.getElementById('popover-find-matching-button')
@@ -44,6 +37,8 @@
     var viewNextButton = document.getElementById('popover-view-next')
     var redactAllButton = document.getElementById('popover-redact-all-button')
     var noteGroup = document.getElementById('popover-note-group')
+
+    var changeLinkTracker = createChangeLinkTracker({ changeIdField: changeIdField, returnToField: returnToField })
 
     // ------------------------------------------------------------------
     // Open/close/position — unlike v4's fixed right-docked modal, this
@@ -124,6 +119,29 @@
     var justOpened = false
     var currentAnchorRect = null
 
+    var matchStepper = createMatchStepper({
+      container: container,
+      startField: startField,
+      endField: endField,
+      paragraphField: paragraphField,
+      textField: textField,
+      matchPanel: matchPanel,
+      matchCountEl: matchCountEl,
+      redactAllButton: redactAllButton,
+      initialActionsGroup: initialActionsGroup,
+      findMatchingButton: findMatchingButton,
+      viewPreviousButton: viewPreviousButton,
+      viewNextButton: viewNextButton,
+      // Follow the popover to whichever match is now on screen — without
+      // this it stays anchored to wherever it was first opened, which
+      // stops tracking (and can end up obscuring) matches further down
+      // the document as View previous/next steps through them.
+      onMatchShown: function (scrollTarget) {
+        currentAnchorRect = scrollTarget.getBoundingClientRect()
+        positionPopoverAt(currentAnchorRect)
+      }
+    })
+
     function openPopoverAt (anchorRect) {
       currentAnchorRect = anchorRect
       popover.hidden = false
@@ -150,14 +168,14 @@
       // closing shouldn't change that (e.g. a Change-link visit arrives in
       // the Remove/Cancel state and must stay there if reopened later, not
       // silently flip back to the initial redact/find-matching state).
-      clearMatchState()
+      matchStepper.clearMatchState()
     }
 
     // While Continue/Remove/Cancel are showing (a change/edit-state visit),
     // the popover is modal: the user must pick one of those three rather
     // than dismiss it by clicking away or pressing Escape.
     function isLockedInEditState () {
-      return !!(editActionsGroup && !editActionsGroup.hidden)
+      return isVisible(editActionsGroup)
     }
 
     document.addEventListener('click', function (e) {
@@ -203,7 +221,7 @@
     // Set whenever edit mode (Remove/Cancel/Continue) is entered: on load,
     // if the server rendered straight into it, and when re-clicking the
     // highlight this page was opened for (see the trigger click handler).
-    var editingOriginalTag = (editActionsGroup && !editActionsGroup.hidden && tagSelect) ? tagSelect.value : ''
+    var editingOriginalTag = (isVisible(editActionsGroup) && tagSelect) ? tagSelect.value : ''
 
     function updateContinueButtonState () {
       if (!continueButton) return
@@ -232,160 +250,6 @@
     }
 
     // ------------------------------------------------------------------
-    // "Find matching text" step-through — finds every occurrence of the
-    // selected text across the whole document (client-side, mirroring the
-    // server's own paragraph-by-paragraph search in the "Redact all" bulk
-    // loop), then lets the user step through them with View previous/next
-    // before deciding. The final tagging is authoritative server-side —
-    // this is purely for the step-through display; the server's own
-    // "Redact all" already skips anything that overlaps an existing tag.
-    // ------------------------------------------------------------------
-
-    var matches = []
-    var matchIndex = -1
-    var temporaryHighlight = null
-
-    function clearTemporaryHighlight () {
-      if (!temporaryHighlight) return
-      var parent = temporaryHighlight.parentNode
-      if (parent) {
-        while (temporaryHighlight.firstChild) {
-          parent.insertBefore(temporaryHighlight.firstChild, temporaryHighlight)
-        }
-        parent.removeChild(temporaryHighlight)
-        parent.normalize()
-      }
-      temporaryHighlight = null
-    }
-
-    function clearMatchState () {
-      clearTemporaryHighlight()
-      matches = []
-      matchIndex = -1
-      if (matchPanel) matchPanel.hidden = true
-    }
-
-    // Same DOM/state cleanup as clearMatchState, plus switching back to the
-    // initial redact/find-matching actions — correct for the two callers
-    // that use this (a fresh selection, or reopening an on-page highlight),
-    // but NOT for simply closing the popover — see closePopover.
-    function resetMatchPanel () {
-      clearMatchState()
-      if (initialActionsGroup) initialActionsGroup.hidden = false
-    }
-
-    function findAllMatches (text) {
-      var results = []
-      var paragraphEls = container.querySelectorAll('.js-tag-paragraph')
-
-      paragraphEls.forEach(function (paragraphEl, index) {
-        var paragraphText = paragraphEl.textContent
-        var searchFrom = 0
-        var occStart = paragraphText.indexOf(text, searchFrom)
-
-        while (occStart !== -1) {
-          results.push({ paragraphIndex: index, start: occStart, end: occStart + text.length })
-          searchFrom = occStart + text.length
-          occStart = paragraphText.indexOf(text, searchFrom)
-        }
-      })
-
-      return results
-    }
-
-    // Moves the currently-viewed match's coordinates into the form's
-    // hidden fields, so "Redact this" (inside the match panel) acts on
-    // whichever occurrence is on screen, not the original drag-selection.
-    function showMatch (index) {
-      clearTemporaryHighlight()
-      if (!matches.length) return
-
-      matchIndex = ((index % matches.length) + matches.length) % matches.length
-      var match = matches[matchIndex]
-      var paragraphEl = container.querySelectorAll('.js-tag-paragraph')[match.paragraphIndex]
-      if (!paragraphEl) return
-
-      if (startField) startField.value = match.start
-      if (endField) endField.value = match.end
-      if (paragraphField) paragraphField.value = match.paragraphIndex
-
-      var range = rangeAtOffset(paragraphEl, match.start, match.end)
-      var scrollTarget = paragraphEl
-
-      if (range) {
-        // This occurrence might already be a tagged redaction itself (e.g.
-        // stepping through matches of the very word the popover was
-        // opened to edit, via check.html's "Change" link) — its text is
-        // already wrapped in an existing <mark><button>. Anchor to that
-        // directly rather than wrapping a second, temporary <mark> inside
-        // it: nesting one highlight inside another is both unnecessary
-        // (it's already visually marked) and unreliable — surroundContents
-        // on a range nested inside a <button> doesn't behave consistently
-        // across cases, which was throwing the popover's position off.
-        var existingHighlightEl = range.startContainer.nodeType === Node.TEXT_NODE
-          ? range.startContainer.parentElement.closest('.dcf-highlight')
-          : null
-
-        if (existingHighlightEl) {
-          scrollTarget = existingHighlightEl
-        } else {
-          temporaryHighlight = document.createElement('mark')
-          temporaryHighlight.className = 'dcf-highlight dcf-highlight--match'
-          try {
-            range.surroundContents(temporaryHighlight)
-            scrollTarget = temporaryHighlight
-          } catch (e) {
-            // surroundContents throws if the range's boundaries don't cleanly
-            // wrap in one element (e.g. straddling existing markup) — fall
-            // back to scrolling the paragraph into view without the visual
-            // highlight rather than breaking the step-through entirely.
-            temporaryHighlight = null
-          }
-        }
-      }
-
-      // Instant (not smooth) scroll, so the browser has actually finished
-      // moving the page by the time getBoundingClientRect runs below —
-      // with a smooth/animated scroll the rect would still reflect the
-      // pre-scroll position, throwing the popover's next placement off.
-      scrollTarget.scrollIntoView({ block: 'center' })
-
-      // Follow the popover to whichever match is now on screen — without
-      // this it stays anchored to wherever it was first opened, which
-      // stops tracking (and can end up obscuring) matches further down
-      // the document as View previous/next steps through them.
-      currentAnchorRect = scrollTarget.getBoundingClientRect()
-      positionPopoverAt(currentAnchorRect)
-    }
-
-    if (findMatchingButton) {
-      findMatchingButton.addEventListener('click', function () {
-        var text = textField ? textField.value : ''
-        if (!text) return
-
-        matches = findAllMatches(text)
-
-        if (matchCountEl) {
-          matchCountEl.textContent = matches.length + (matches.length === 1 ? ' time' : ' times')
-        }
-        if (redactAllButton) redactAllButton.textContent = 'Redact all (' + matches.length + ')'
-
-        if (initialActionsGroup) initialActionsGroup.hidden = true
-        if (matchPanel) matchPanel.hidden = false
-
-        showMatch(0)
-      })
-    }
-
-    if (viewPreviousButton) {
-      viewPreviousButton.addEventListener('click', function () { showMatch(matchIndex - 1) })
-    }
-
-    if (viewNextButton) {
-      viewNextButton.addEventListener('click', function () { showMatch(matchIndex + 1) })
-    }
-
-    // ------------------------------------------------------------------
     // Drag-selection capture — same paragraph-boundary/overlap rules as
     // v4's redact-select.js, using the shared offset helpers.
     // ------------------------------------------------------------------
@@ -396,7 +260,7 @@
       // temporary <mark> left in the DOM from a previous "Find matching
       // text" session would otherwise itself count as an existing
       // highlight and wrongly reject a new selection that crosses it.
-      resetMatchPanel()
+      matchStepper.resetMatchPanel()
 
       var captured = captureSelectionFromMouseup()
       if (!captured) return
@@ -424,10 +288,10 @@
     // when arriving via check.html's "Change" link, not from an on-page
     // click — on-page removal still goes through the table's own Remove
     // action instead. EXCEPT when the highlight clicked is the very one
-    // this page was opened for via that Change link (arrivedViaChangeLinkId)
-    // — re-clicking that one restores Remove/Cancel rather than switching
-    // to the normal on-page re-tag actions, so closing/reopening it doesn't
-    // change what the user is able to do with it.
+    // this page was opened for via that Change link — re-clicking that
+    // one restores Remove/Cancel rather than switching to the normal
+    // on-page re-tag actions, so closing/reopening it doesn't change
+    // what the user is able to do with it.
     // ------------------------------------------------------------------
 
     container.querySelectorAll('.dcf-highlight__trigger').forEach(function (trigger) {
@@ -447,18 +311,15 @@
         // here rather than relying on the change listener above.
         updateNoteVisibility()
 
-        var isChangeLinkRedaction = !!arrivedViaChangeLinkId &&
-          arrivedViaChangeLinkId.split(',').indexOf(data.changeId) !== -1
-
-        if (isChangeLinkRedaction) {
-          clearMatchState()
-          if (returnToField) returnToField.value = arrivedViaChangeLinkReturnTo
+        if (changeLinkTracker.isChangeLinkRedaction(data.changeId)) {
+          matchStepper.clearMatchState()
+          if (returnToField) returnToField.value = changeLinkTracker.returnTo
           if (initialActionsGroup) initialActionsGroup.hidden = true
           if (editActionsGroup) editActionsGroup.hidden = false
           editingOriginalTag = data.currentTag
           updateContinueButtonState()
         } else {
-          resetMatchPanel()
+          matchStepper.resetMatchPanel()
           if (returnToField) returnToField.value = ''
           if (editActionsGroup) editActionsGroup.hidden = true
         }
