@@ -177,7 +177,7 @@ async function saveOutlineEdit (req, caseId) {
   const _case = await prisma.case.findUnique({ where: { id: caseId } })
 
   req.session.data.outlineEdit = {
-    before: _case.factualSummary || '',
+    before: resolveEditBaselineText(req, _case),
     after: req.body.factualSummary || '',
     copyToCip: req.body.changedName || null,
     tags: {},
@@ -641,33 +641,51 @@ function escapeHtml (value) {
     .replace(/'/g, '&#39;')
 }
 
-// Static (non-interactive) HTML rendering of the factual summary with
-// every currently-tagged span replaced by a "[Redacted <type>]" label —
-// computed once at commit time and stored in Case.factualSummaryRedacted.
-// Deliberately not the same markup as the live tag-screen preview
-// (.dcf-highlight/.js-redact-paragraphs): those classes are scoped for
-// the interactive drag-select page and carry <button> triggers this
-// static, stored copy has no use for. Per the tech team, this redaction
-// only ever happens once per case — no need to handle re-redacting an
-// already-redacted case (that would need accumulating tags across
-// sessions, which the app doesn't currently persist).
-function buildRedactedHtml (outlineEdit) {
+// Plain-text rendering of the factual summary with every currently-tagged
+// span replaced by a "[Redacted <type>]" label — baked directly into
+// Case.factualSummary at commit time (both for a fresh redaction commit
+// and for prefilling the edit textarea against an in-progress, uncommitted
+// one), so factualSummary is always "the latest version" regardless of
+// how many times it's been redacted and/or edited, in either order. The
+// details page derives its styled (bold label / italic edit) rendering
+// straight from factualSummary + factualSummaryOriginal at display time
+// (see the redactionEditDisplay filter) rather than from a separately
+// stored HTML snapshot — nothing here needs to stay in sync with that.
+function buildRedactedPlainText (outlineEdit) {
   const tags = outlineEdit.tags || {}
   const { parts } = getChangesAndParts(outlineEdit)
   const paragraphs = splitIntoParagraphs(parts)
 
   return paragraphs.map(paragraph => {
-    const html = paragraph.map(part => {
+    return paragraph.map(part => {
       const tagged = part.type !== 'unchanged' && tags[part.changeId]
       if (tagged) {
         const typeEntry = ALL_TAGS.find(t => t.value === tagged.tag)
         const label = (typeEntry ? typeEntry.text : tagged.tag).toLowerCase()
-        return `<span class="dcf-redacted-text">${escapeHtml('[Redacted ' + label + ']')}</span>`
+        return '[Redacted ' + label + ']'
       }
-      return escapeHtml(part.value)
+      return part.value
     }).join('')
-    return `<p class="govuk-body">${html}</p>`
-  }).join('\n')
+  }).join('\n\n')
+}
+
+// Resolves the text a fresh edit-diff session should treat as its
+// baseline — the same state used to prefill the edit textarea (an
+// in-progress, uncommitted redaction's current tags, else the plain saved
+// wording, which — now that a redaction commit bakes its labels directly
+// into factualSummary — already reflects any previously committed
+// redaction too) — rather than always the true unredacted original. Used
+// both for that prefill and, in saveOutlineEdit, as the diff's "before";
+// keeping the two in sync is what stops a redaction (baked into the
+// textarea as literal "[Redacted <type>]" text) from itself being picked
+// up as an edit change on the check screen, since it then reads
+// identically on both sides of the diff.
+function resolveEditBaselineText (req, _case) {
+  const outlineEdit = req.session.data.outlineEdit
+  if (outlineEdit && outlineEdit.mode === 'select' && Object.keys(outlineEdit.tags || {}).length) {
+    return buildRedactedPlainText(outlineEdit)
+  }
+  return _case.factualSummary || ''
 }
 
 // Shared commit step: persists the edited factual summary and writes one
@@ -709,8 +727,14 @@ async function commitOutlineEdit (outlineEdit, caseId, userId) {
   await prisma.case.update({
     where: { id: caseId },
     data: {
-      factualSummary: outlineEdit.after,
-      factualSummaryRedacted: buildRedactedHtml(outlineEdit),
+      // Bakes any tagged spans' "[Redacted <type>]" labels directly into
+      // factualSummary (not just a separate HTML snapshot) — same
+      // plain-text form the edit textarea already prefills with, via
+      // resolveEditBaselineText — so factualSummary is unconditionally
+      // "the latest version" including this redaction, no matter what
+      // happens to it afterward.
+      factualSummary: buildRedactedPlainText(outlineEdit),
+      factualSummaryRedactedAt: new Date(),
       ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet })
     }
   })
@@ -743,13 +767,19 @@ module.exports = router => {
       include: { defendants: true }
     })
 
-    // If there's a pending, not-yet-confirmed edit in session (e.g. the
-    // user hit "Change" on the check screen to keep tweaking), prefill
-    // with that draft rather than reverting to the last saved wording.
+    // Prefill with whichever redacted/edited state is most current, so
+    // switching from Redact to Edit never drops back to the untouched
+    // original. A pending, not-yet-confirmed edit draft (e.g. the user hit
+    // "Change" on the check screen) takes priority, since it's mid-flow;
+    // otherwise resolveEditBaselineText covers an in-progress (not yet
+    // committed) redaction's current tags, a previously committed
+    // redaction, or plain saved wording — the same baseline saveOutlineEdit
+    // diffs against, so what's shown here always matches what "before"
+    // means once the form is submitted.
     const outlineEdit = req.session.data.outlineEdit
-    const draftText = (outlineEdit && typeof outlineEdit.after === 'string')
+    const draftText = (outlineEdit && outlineEdit.mode !== 'select' && typeof outlineEdit.after === 'string')
       ? outlineEdit.after
-      : _case.factualSummary
+      : resolveEditBaselineText(req, _case)
 
     // ?focus= arrives from the check screen's per-row "Change" — the exact
     // text just reinstated at that spot, so the textarea can select/scroll
@@ -834,6 +864,7 @@ module.exports = router => {
         where: { id: caseId },
         data: {
           factualSummary: outlineEdit.after,
+          factualSummaryEditedAt: new Date(),
           ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet })
         }
       })
@@ -900,10 +931,12 @@ module.exports = router => {
   // Redact and edit are independent flows now — like v2/v4, this lazily
   // starts a fresh selection-mode session against the current
   // factualSummary if one isn't already in progress, rather than forcing
-  // a redirect through /outline/edit first. If a real edit-diff session
-  // IS already in progress (mode !== 'select', e.g. mid-way through the
-  // edit/check flow), it's left alone — this only replaces a genuinely
-  // missing session, never an in-progress one of either kind. Still reads
+  // a redirect through /outline/edit first. Also resets when a leftover
+  // edit-diff session (mode !== 'select') is sitting in the session from
+  // an edit that was started but never confirmed — nothing in the app
+  // links here expecting that diff-mode markup, so leaving it in place
+  // just leaks stray added/removed spans into what should be a plain
+  // selection view, corrupting the drag-select offset math. Still reads
   // ?changeId=/&returnTo= for check.html's "Change" link, same as v2/v4.
   router.get('/cases/:caseId/outline/tag/v3', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
@@ -911,7 +944,7 @@ module.exports = router => {
 
     const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
 
-    if (!outlineEdit) {
+    if (!outlineEdit || outlineEdit.mode !== 'select') {
       outlineEdit = {
         mode: 'select',
         before: _case.factualSummary || '',
@@ -1034,7 +1067,9 @@ module.exports = router => {
       data: {
         ...(existing.factualSummaryOriginal && { factualSummary: existing.factualSummaryOriginal }),
         factualSummaryOriginal: null,
-        factualSummaryRedacted: null
+        factualSummaryRedacted: null,
+        factualSummaryEditedAt: null,
+        factualSummaryRedactedAt: null
       }
     })
 

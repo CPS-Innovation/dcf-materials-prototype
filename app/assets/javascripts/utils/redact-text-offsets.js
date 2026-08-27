@@ -3,11 +3,23 @@
 // both redact-select.js (v4's side-modal flow) and redact-popover.js (v2's
 // popover flow) so the offset math only lives in one place.
 (function () {
-  // Walks all text nodes under `root` in document order, summing lengths,
-  // until it reaches `targetNode`, then adds `targetOffset`. Converts a
-  // Range boundary (which points at a specific text node, possibly nested
-  // inside <mark>/<button> wrappers from earlier tags) into a single
-  // character offset relative to the paragraph's flattened plain text.
+  // A tagged redaction renders both its original text and its
+  // "[Redacted <type>]" label as sibling spans at all times — only one
+  // ever visible, toggled via CSS (dcf-highlight--redacted / the "Show
+  // original text" state) — so the DOM always has more text nodes than
+  // the user can actually see and select. Walks below must skip whichever
+  // one is currently display:none, or their offsets drift out of step
+  // with the server's plain-text model by the hidden span's length.
+  function isElementHidden (el) {
+    return window.getComputedStyle(el).display === 'none'
+  }
+
+  // Walks all *visible* text nodes under `root` in document order, summing
+  // lengths, until it reaches `targetNode`, then adds `targetOffset`.
+  // Converts a Range boundary (which points at a specific text node,
+  // possibly nested inside <mark>/<button> wrappers from earlier tags)
+  // into a single character offset relative to the paragraph's flattened
+  // plain text.
   function textOffsetOfNode (root, targetNode, targetOffset) {
     var offset = 0
     var found = false
@@ -22,6 +34,7 @@
         }
         offset += node.textContent.length
       } else {
+        if (node.nodeType === Node.ELEMENT_NODE && isElementHidden(node)) return
         for (var i = 0; i < node.childNodes.length; i++) {
           walk(node.childNodes[i])
           if (found) return
@@ -69,6 +82,7 @@
 
         offset = nextOffset
       } else {
+        if (node.nodeType === Node.ELEMENT_NODE && isElementHidden(node)) return
         for (var i = 0; i < node.childNodes.length; i++) {
           walk(node.childNodes[i])
           if (endSet) return

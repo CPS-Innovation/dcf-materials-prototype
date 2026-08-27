@@ -1,12 +1,25 @@
-// Static (non-interactive) redacted-text marker for committed redactions
-// shown on the case details page (Case.factualSummaryRedacted) — deliberately
-// separate from .dcf-highlight/.js-redact-paragraphs, which are scoped to
-// the interactive drag-select tag screen and carry <button> triggers this
-// plain stored HTML has no use for. The text content itself is now the
-// "[Redacted <type>]" label (see buildRedactedHtml in case--outline.js),
+// Static (non-interactive) redacted-text/edited-text markers for the case
+// details page's "Summary of circumstances" card — deliberately separate
+// from .dcf-highlight/.js-redact-paragraphs, which are scoped to the
+// interactive drag-select tag screen and carry <button> triggers this
+// plain rendered HTML has no use for. Both computed fresh at display time
+// by the redactionEditDisplay filter (app/filters.js), not stored markup.
+// The redacted text content itself is now the "[Redacted <type>]" label,
 // not the original — so this just needs to read clearly, not hide it.
 .dcf-redacted-text {
   font-weight: bold;
+}
+
+// Wording added by an edit — distinct from a redaction (bold) so a reader
+// can tell at a glance which parts of the summary were removed/replaced
+// versus genuinely rewritten. Same green tint as .dcf-highlight--added
+// below, for the same "this was added" meaning on the interactive tag
+// screens — kept in sync manually since this rule is scoped to plain
+// rendered HTML with no <mark> wrapper to share a class with.
+.dcf-edited-text {
+  font-style: italic;
+  background-color: govuk-colour("green", $legacy: false);
+  background-color: rgba(0, 112, 60, 0.15);
 }
 
 .dcf-highlight {

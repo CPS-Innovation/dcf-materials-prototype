@@ -2,14 +2,12 @@
 
 {% set factualSummaryHtml %}
 
+{# Always derived fresh from factualSummary + factualSummaryOriginal (see
+   the redactionEditDisplay filter) rather than a stored HTML snapshot, so
+   it can never go stale regardless of how many times the case has been
+   redacted and/or edited, in either order. #}
 {% set circumstancesDisplayHtml %}
-{% if _case.factualSummaryRedacted %}
-  {{ _case.factualSummaryRedacted | safe }}
-{% else %}
-  {% for paragraph in _case.factualSummary.split('\n\n') %}
-<p class="govuk-body">{{ paragraph }}</p>
-  {% endfor %}
-{% endif %}
+{{ _case.factualSummary | redactionEditDisplay(_case.factualSummaryOriginal) | safe }}
 {% endset %}
 
 {# {{ govukSummaryList({
@@ -49,6 +47,21 @@
 
 
 {# V3 EDIT AND REDACT FROM SUMMARY CARD LINKS #}
+{% set editedLabel = "Edited on " + (_case.factualSummaryEditedAt | govukDate) if _case.factualSummaryEditedAt else "" %}
+{% set redactedLabel = "Redacted on " + (_case.factualSummaryRedactedAt | govukDate) if _case.factualSummaryRedactedAt else "" %}
+
+{% if editedLabel and redactedLabel %}
+  {# Whichever happened first reads first, with the later action appended
+     after it — so the key always tells the story in chronological order. #}
+  {% set summaryDateKey = editedLabel + " - " + redactedLabel if _case.factualSummaryEditedAt < _case.factualSummaryRedactedAt else redactedLabel + " - " + editedLabel %}
+{% elif editedLabel %}
+  {% set summaryDateKey = editedLabel %}
+{% elif redactedLabel %}
+  {% set summaryDateKey = redactedLabel %}
+{% else %}
+  {% set summaryDateKey = "Added on 24 May 2024" %}
+{% endif %}
+
 {{ govukSummaryList({
   card: {
     title: {
@@ -62,7 +75,7 @@
     }
   },
   rows: [
-    { key: { text: "Added on 24 May 2024" }, value: { html: circumstancesDisplayHtml } }
+    { key: { text: summaryDateKey }, value: { html: circumstancesDisplayHtml } }
   ]
 }) }}
 
