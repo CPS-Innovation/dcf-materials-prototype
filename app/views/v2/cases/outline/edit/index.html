@@ -15,7 +15,11 @@
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
 
-  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+  {# Arriving via a check-screen "Change" mutates session state (the
+     targeted change is reverted) before this page even renders, so
+     history.back() risks the browser serving a stale cached check page
+     that doesn't reflect that revert — send Back to a fresh fetch instead. #}
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit/v3/check" if focusText else "javascript:history.back()" }) }}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
@@ -82,6 +86,16 @@
 
       </form>
 
+      {% if focusText %}
+        {# Read client-side by outline-edit.js to select/scroll to the
+           text a per-row "Change" on the check screen just reinstated. #}
+        <script type="application/json" id="dcf-edit-focus-text">{{ focusText | dump | safe }}</script>
+      {% endif %}
+
     </div>
   </div>
+{% endblock %}
+
+{% block pageScripts %}
+  <script src="/public/javascripts/components/outline-edit.js" defer></script>
 {% endblock %}

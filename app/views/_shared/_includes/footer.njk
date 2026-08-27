@@ -40,16 +40,17 @@
           Clear data
         </a>
       </li> #}
-      {% if _case and _case.factualSummaryRedacted %}
+      {% if _case %}
         <li class="govuk-footer__inline-list-item">
-          <form method="post" action="/cases/{{ _case.id }}/outline/reset-redaction" class="dcf-undo-form">
+          <form method="post" action="/cases/{{ _case.id }}/outline/reset-redact-and-edit" class="dcf-undo-form">
             <input type="hidden" name="_csrf" value="{{ csrfToken }}">
             {# URL hashes never reach the server, so path alone can't carry
                back to the Outline tab — set it explicitly since that's
-               where the redacted content this button undoes actually is. #}
+               where the redacted/edited content this button undoes
+               actually is. #}
             <input type="hidden" name="returnTo" value="{{ path }}#case-outline">
             <button type="submit" class="govuk-footer__link dcf-footer-reset-button">
-              Reset redaction (testing)
+              Reset Redact and Edit (testing)
             </button>
           </form>
         </li>

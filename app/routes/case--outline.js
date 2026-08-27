@@ -197,7 +197,7 @@ function contextWords (text, n, fromEnd) {
 // Finds the nearest unchanged text immediately before/after a change's
 // parts, trimmed to a few words either side (used by v4's summary list
 // and standalone tag page, which don't show the full running paragraph).
-function buildChangeContext (parts, changeId) {
+function buildChangeContext (parts, changeId, wordCount = 6) {
   const changeIndexes = parts.reduce((acc, part, i) => {
     if (part.changeId === changeId) acc.push(i)
     return acc
@@ -219,9 +219,99 @@ function buildChangeContext (parts, changeId) {
   }
 
   return {
-    before: beforePart ? contextWords(beforePart.value, 6, true) : '',
-    after: afterPart ? contextWords(afterPart.value, 6, false) : ''
+    before: beforePart ? contextWords(beforePart.value, wordCount, true) : '',
+    after: afterPart ? contextWords(afterPart.value, wordCount, false) : ''
   }
+}
+
+// Wraps `changedText` in the same .dcf-highlight--removed/--added tint
+// used on the tag screens' inline highlights, with the surrounding context
+// words either side left plain — reusing that existing visual language so
+// "what changed" is scannable at a glance in the summary table too.
+// Escapes everything by hand since this builds real HTML server-side
+// (rendered with `| safe` in the template) rather than relying on
+// Nunjucks' auto-escaping — factualSummary is user-editable free text.
+function highlightSnippet (contextBefore, changedText, contextAfter, highlightClass) {
+  const segments = []
+  if (contextBefore) segments.push(escapeHtml(contextBefore))
+  segments.push('<mark class="dcf-highlight ' + highlightClass + '">' + escapeHtml(changedText) + '</mark>')
+  if (contextAfter) segments.push(escapeHtml(contextAfter))
+  return segments.join(' ')
+}
+
+// Builds one row-group per change for the edit check ("CYA") screen's
+// summary table, in document order. The key label itself now names the
+// edit (Added/Deleted/Original/Replacement text), so there's no separate
+// Edit type row. primaryText is always present — the removed text for a
+// Deleted or Replaced change, the added text for a pure Added change — with
+// buildChangeContext's surrounding words either side so it reads in
+// context. replacementText only exists for Replaced (the added text half
+// of the swap); Added/Deleted are single-row since there's only one side
+// to show. Paragraph number reuses the same paragraphNumberByChangeId
+// approach as buildTagViewData's sidebar cards — true rendered line
+// numbers aren't computable server-side (they depend on viewport
+// width/font size), so paragraph number is the nearest reliable
+// "where is this" a request can answer.
+function buildEditCheckRows (outlineEdit) {
+  const { changes, parts } = getChangesAndParts(outlineEdit)
+  const paragraphs = splitIntoParagraphs(parts)
+
+  const paragraphNumberByChangeId = {}
+  paragraphs.forEach((paragraph, index) => {
+    paragraph.forEach(part => {
+      if (part.changeId !== undefined && !(part.changeId in paragraphNumberByChangeId)) {
+        paragraphNumberByChangeId[part.changeId] = index + 1
+      }
+    })
+  })
+
+  return changes.map(change => {
+    const context = buildChangeContext(parts, change.id, 5)
+    const isReplace = Boolean(change.removedText) && Boolean(change.addedText)
+
+    const type = isReplace
+      ? 'Replaced'
+      : change.removedText
+        ? 'Deleted'
+        : 'Added'
+
+    const primaryText = change.removedText
+      ? highlightSnippet(context.before, change.removedText, context.after, 'dcf-highlight--removed')
+      : highlightSnippet(context.before, change.addedText, context.after, 'dcf-highlight--added')
+
+    const replacementText = isReplace
+      ? highlightSnippet(context.before, change.addedText, context.after, 'dcf-highlight--added')
+      : ''
+
+    return {
+      changeId: change.id,
+      type: type,
+      primaryText: primaryText,
+      replacementText: replacementText,
+      // Raw (no context words, no highlight markup) — used to build the
+      // "Change" link's focus target once this change is reverted, since
+      // reverting restores exactly this plain text at that spot.
+      removedText: change.removedText,
+      paragraphNumber: paragraphNumberByChangeId[change.id] || null
+    }
+  })
+}
+
+// Reconstructs outlineEdit.after with one specific change reverted back to
+// its original (before) text, leaving every other change untouched — used
+// by the edit check screen's per-row "Change" action, which reinstates
+// that one change's original wording (rather than un-writing the user's
+// previous edit for them) so they can re-edit it fresh.
+function revertChange (outlineEdit, changeId) {
+  const { parts } = getChangesAndParts(outlineEdit)
+  return parts
+    .filter(part => {
+      if (part.type === 'unchanged') return true
+      if (String(part.changeId) === String(changeId)) return part.type === 'removed'
+      return part.type !== 'removed'
+    })
+    .map(part => part.value)
+    .join('')
 }
 
 // Builds the "Undo" cell's markup for a tagged-change table row: a small
@@ -661,7 +751,12 @@ module.exports = router => {
       ? outlineEdit.after
       : _case.factualSummary
 
-    res.render('v2/cases/outline/edit/index', { _case, draftText })
+    // ?focus= arrives from the check screen's per-row "Change" — the exact
+    // text just reinstated at that spot, so the textarea can select/scroll
+    // to it client-side rather than landing the user in a wall of text.
+    const focusText = req.query.focus || ''
+
+    res.render('v2/cases/outline/edit/index', { _case, draftText, focusText })
   })
 
   router.post('/cases/:caseId/outline/edit', async (req, res) => {
@@ -703,13 +798,33 @@ module.exports = router => {
 
     const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
 
-    res.render('v2/cases/outline/edit/check', { _case, ...buildTagViewData(outlineEdit) })
+    res.render('v2/cases/outline/edit/check', { _case, editRows: buildEditCheckRows(outlineEdit) })
   })
 
   router.post('/cases/:caseId/outline/edit/v3/check', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
     const outlineEdit = req.session.data.outlineEdit
     const action = req.body.action
+
+    // Per-row "Change" — reinstates just this one change's original text
+    // (leaving every other change untouched) and sends the user back to
+    // the textarea to re-edit it fresh, rather than deleting the session
+    // and starting over. Returns early: unlike accept/undo below, this
+    // keeps the draft in session and never reaches the case details page.
+    if (outlineEdit && action === 'change' && req.body.changeId) {
+      const changeId = req.body.changeId
+      const { changes } = getChangesAndParts(outlineEdit)
+      const change = changes.find(c => String(c.id) === String(changeId))
+
+      outlineEdit.after = revertChange(outlineEdit, changeId)
+      req.session.data.outlineEdit = outlineEdit
+
+      const focusText = change ? change.removedText : ''
+      const query = focusText ? `?focus=${encodeURIComponent(focusText)}` : ''
+
+      return req.session.save(() => res.redirect(`/cases/${caseId}/outline/edit${query}`))
+    }
+
     let returnTo = `/cases/${caseId}/details#factual-summary`
 
     if (outlineEdit && action === 'accept') {
@@ -728,9 +843,7 @@ module.exports = router => {
     }
 
     // Undo, or Accept having just persisted — either way the pending draft
-    // is done with. Change is handled by its own formaction (see the
-    // template), which redirects straight back to the textarea without
-    // reaching this branch at all, so the draft stays in session.
+    // is done with.
     delete req.session.data.outlineEdit
 
     req.session.save(() => res.redirect(returnTo))
@@ -898,18 +1011,31 @@ module.exports = router => {
     })
   })
 
-  // Prototype-testing only: undoes a committed redaction so the same case
-  // can be run through the "Commit to redaction log" journey again (the real
-  // process only ever commits once per case, so this has no production
-  // equivalent — it exists purely so multiple testers can reset and repeat
-  // the journey). Linked from the footer, only shown when there's something
-  // to reset.
-  router.post('/cases/:caseId/outline/reset-redaction', async (req, res) => {
+  // Prototype-testing only: undoes both a committed redaction and an
+  // edit-confirm in one go, so the same case can be run through either (or
+  // both) journeys again — neither has a production equivalent, since the
+  // real process only ever does each once per case; this exists purely so
+  // testers can reset and repeat freely, jumping between the two flows
+  // without needing to know which one they last left the case in. Restores
+  // factualSummary from the frozen factualSummaryOriginal (if set) and
+  // clears it, clears factualSummaryRedacted, and deletes the "Factual
+  // summary edited" activity log entries a redaction commit writes. Linked
+  // from the footer, shown whenever a case is in view.
+  router.post('/cases/:caseId/outline/reset-redact-and-edit', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
+
+    const existing = await prisma.case.findUnique({
+      where: { id: caseId },
+      select: { factualSummaryOriginal: true }
+    })
 
     await prisma.case.update({
       where: { id: caseId },
-      data: { factualSummaryRedacted: null }
+      data: {
+        ...(existing.factualSummaryOriginal && { factualSummary: existing.factualSummaryOriginal }),
+        factualSummaryOriginal: null,
+        factualSummaryRedacted: null
+      }
     })
 
     await prisma.activityLog.deleteMany({
