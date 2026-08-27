@@ -15,12 +15,16 @@
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
 
-  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+  {# Arriving via a check-screen "Change" mutates session state (the
+     targeted change is reverted) before this page even renders, so
+     history.back() risks the browser serving a stale cached check page
+     that doesn't reflect that revert — send Back to a fresh fetch instead. #}
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/outline/edit/v3/check" if focusText else "javascript:history.back()" }) }}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
-      <h1 class="govuk-heading-l">Change summary of circumstances on offence(s)</h1>
+      <h1 class="govuk-heading-l">Edit summary of circumstances on offence(s)</h1>
   
       {{ govukWarningText({
         text: "Only complete this action if you urgently need to change this text yourself.",
@@ -29,14 +33,14 @@
 
       <p class="govuk-body">You can request the police to make changes by adding a 'Factual Summary Confidential Information Request' action point to your Action Plan.</p>
 
-      <form method="post">
+      <form method="post" action="/cases/{{ _case.id }}/outline/edit/v3">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
         {{ govukTextarea({
           name: "factualSummary",
           id: "factual-summary",
           rows: "25",
-          value: _case.factualSummary,
+          value: draftText,
           label: {
             text: "Current summary of circumstances",
             classes: "govuk-label--s govuk-!-margin-top-6",
@@ -69,14 +73,29 @@
           ]
         }) }} #}
               
-         <div class="govuk-button-group">
+         {# <div class="govuk-button-group">
           {{ govukButton({ text: "Continue" }) }}
           {{ govukButton({ text: "Continue (v2)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v2" } }) }}
           {{ govukButton({ text: "Continue (v3)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v3" } }) }}
           {{ govukButton({ text: "Continue (v4)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v4" } }) }}
+         </div> #}
+
+         <div class="govuk-button-group">
+          {{ govukButton({ text: "Continue" }) }}
          </div>
+
       </form>
+
+      {% if focusText %}
+        {# Read client-side by outline-edit.js to select/scroll to the
+           text a per-row "Change" on the check screen just reinstated. #}
+        <script type="application/json" id="dcf-edit-focus-text">{{ focusText | dump | safe }}</script>
+      {% endif %}
 
     </div>
   </div>
+{% endblock %}
+
+{% block pageScripts %}
+  <script src="/public/javascripts/components/outline-edit.js" defer></script>
 {% endblock %}

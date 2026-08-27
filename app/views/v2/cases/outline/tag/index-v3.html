@@ -21,10 +21,17 @@
   <span class="govuk-caption-m">{{ _case.reference }} - Redact summary of circumstances on offence(s)</span>
   <h1 class="govuk-heading-l">Redact summary of circumstances</h1>
 
+
+
+
   {% include "_shared/_includes/case/outline/toggle-original-text.njk" %}
 
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
+
+      {{ govukInsetText({
+        text: "You can request the police to make changes by adding a 'Factual Summary Confidential Information Request' action point to your Action Plan."
+      }) }}
 
       {% include "_shared/_includes/case/outline/redact-paragraphs.njk" %}
 
@@ -108,6 +115,8 @@
           <button type="submit" name="scope" value="all" class="govuk-button" id="popover-redact-all-button">Redact all</button>
         </div>
       </div>
+
+      
 
       <div class="govuk-button-group" id="popover-edit-actions"{{ ' hidden' if not (modalState and modalState.changeId) }}>
         <button type="submit" name="scope" value="single" class="govuk-button" id="popover-continue-button" disabled>Continue</button>

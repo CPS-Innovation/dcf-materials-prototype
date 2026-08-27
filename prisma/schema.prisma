@@ -127,6 +127,19 @@ model Case {
   type              String?
   factualSummary    String?
   factualSummaryRedacted String?
+  // Frozen the first time factualSummary is ever changed by an edit-confirm
+  // or a redaction commit (whichever happens first) — never overwritten
+  // again after that. "Confidential information to prosecutor" reads this
+  // as the untouched source of truth; factualSummary keeps evolving as the
+  // current/latest wording. Null until the first such change happens.
+  factualSummaryOriginal String?
+  // Stamped each time the edit or redaction journey is committed — read by
+  // the "Summary of circumstances" card's key row to show "Edited on"/
+  // "Redacted on"/both, in place of the static demo "Added on" date. Both
+  // null until the corresponding journey first commits; cleared alongside
+  // factualSummaryOriginal by the footer's testing reset.
+  factualSummaryEditedAt DateTime?
+  factualSummaryRedactedAt DateTime?
   unitId            Int
   unit              Unit                     @relation(fields: [unitId], references: [id])
   defendants        Defendant[]              @relation("CaseDefendants")

@@ -5,6 +5,51 @@
 
 const govukPrototypeKit = require('govuk-prototype-kit')
 const addFilter = govukPrototypeKit.views.addFilter
+const { diffWords } = require('diff')
+
+function escapeHtml (value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// Renders a case's factual summary the way it should currently read —
+// tagged redactions bold, edited-in wording italic — computed fresh from
+// just two always-current fields (factualSummary, factualSummaryOriginal)
+// rather than a separately stored HTML snapshot, so there's nothing that
+// can go stale when a redaction and an edit happen in either order. Diffs
+// the pristine original against the current text: anything "removed"
+// (deleted, or replaced by a redaction label) is omitted, since it's not
+// part of the current version; anything "added" is a redaction label
+// (self-describing — matches "[Redacted <type>]" — bolded) or otherwise a
+// genuine edit (italicised).
+addFilter('redactionEditDisplay', (current, original) => {
+  if (!current) return ''
+
+  var bodyHtml
+  if (!original) {
+    bodyHtml = escapeHtml(current)
+  } else {
+    bodyHtml = diffWords(original, current)
+      .filter(function (part) { return !part.removed })
+      .map(function (part) {
+        var escaped = escapeHtml(part.value)
+        if (!part.added) return escaped
+        return /\[Redacted [^\]]+\]/.test(part.value)
+          ? '<span class="dcf-redacted-text">' + escaped + '</span>'
+          : '<em class="dcf-edited-text">' + escaped + '</em>'
+      })
+      .join('')
+  }
+
+  return bodyHtml
+    .split('\n\n')
+    .map(function (paragraph) { return '<p class="govuk-body">' + paragraph + '</p>' })
+    .join('\n')
+})
 
 // Add your filters here
 addFilter('priorityTagClass', status => {

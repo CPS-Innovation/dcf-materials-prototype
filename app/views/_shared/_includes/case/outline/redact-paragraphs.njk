@@ -1,13 +1,16 @@
 {# _shared/_includes/case/outline/redact-paragraphs
 
-   Shared by index-v2.html (popover) and index-v4.html (side modal) — both
-   render the same select-mode paragraphs/highlights, just with different
-   controls opening on drag/click. Rendered as one dense line per paragraph
-   (no whitespace between parts) so client-side text-offset math lines up
-   exactly with the server-computed offsets — see redact-select.js/
-   redact-popover.js's shared textOffsetOfNode helper. #}
+   Shared by index-v2.html (popover), index-v3.html (popover, reached via
+   the real edit-then-diff flow at /outline/edit) and index-v4.html (side
+   modal). Handles both select-mode ('unchanged'/'removed' only) and real
+   diff-mode ('unchanged'/'removed'/'added') paragraphs — 'added' parts
+   only ever appear for v3, via genuinely edited/inserted text; v2/v4 never
+   produce them since they're select-mode only. Rendered as one dense line
+   per paragraph (no whitespace between parts) so client-side text-offset
+   math lines up exactly with the server-computed offsets — see
+   redact-select.js/redact-popover.js's shared textOffsetOfNode helper. #}
 <div class="js-redact-paragraphs">
   {% for paragraph in paragraphs %}
-    <p class="govuk-body js-tag-paragraph" data-paragraph-index="{{ loop.index0 }}">{% for part in paragraph %}{% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" data-note="{{ part.currentNote }}" aria-label="{{ ('Change redaction, tagged as ' ~ part.currentTagLabel) if part.tagged else ('Tag change: ' ~ part.value) }}">{% if part.tagged %}<span class="dcf-highlight__original">{{ part.value }}</span><span class="dcf-highlight__redacted-label">[Redacted {{ part.currentTagLabel | lower }}]</span>{% else %}{{ part.value }}{% endif %}</button></mark>{% endif %}{% endfor %}</p>
+    <p class="govuk-body js-tag-paragraph" data-paragraph-index="{{ loop.index0 }}">{% for part in paragraph %}{% if part.type == 'unchanged' %}{{ part.value }}{% elif part.type == 'removed' %}<mark class="dcf-highlight dcf-highlight--removed{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" data-note="{{ part.currentNote }}" aria-label="{{ ('Change redaction, tagged as ' ~ part.currentTagLabel) if part.tagged else ('Tag change: ' ~ part.value) }}">{% if part.tagged %}<span class="dcf-highlight__original">{{ part.value }}</span><span class="dcf-highlight__redacted-label">[Redacted {{ part.currentTagLabel | lower }}]</span>{% else %}{{ part.value }}{% endif %}</button></mark>{% elif part.type == 'added' %}<mark class="dcf-highlight dcf-highlight--added{{ ' dcf-highlight--redacted' if part.tagged }}"><button type="button" class="dcf-highlight__trigger" data-change-id="{{ part.changeId }}" data-current-tag="{{ part.currentTag }}" data-note="{{ part.currentNote }}" aria-label="{{ ('Change redaction, tagged as ' ~ part.currentTagLabel) if part.tagged else ('Tag change: ' ~ part.value) }}">{% if part.tagged %}<span class="dcf-highlight__original"><strong>{{ part.value }}</strong></span><span class="dcf-highlight__redacted-label">[Redacted {{ part.currentTagLabel | lower }}]</span>{% else %}<strong>{{ part.value }}</strong>{% endif %}</button></mark>{% endif %}{% endfor %}</p>
   {% endfor %}
 </div>
