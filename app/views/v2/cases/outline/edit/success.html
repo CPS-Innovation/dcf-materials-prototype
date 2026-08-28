@@ -1,0 +1,33 @@
+{# app/views/v2/cases/outline/edit/success
+
+   Terminus of the v5 "Edit and send to police" flow (POST
+   /outline/edit/v5) — the edit has already been committed to
+   factualSummary by this point, same as v3's "Confirm edits" would, just
+   without a review step first. This page is purely the confirmation
+   message; no back link, since there's nothing to go back to. #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {{ govukPanel({
+        titleText: "Summary of circumstances updated",
+        text: _case.reference
+      }) }}
+
+      <p class="govuk-body">This change has been saved to the case immediately, so it's usable straight away.</p>
+
+      <p class="govuk-body">It has also been sent to the police for verification. Once verified, the police will load their confirmed version back into the system.</p>
+
+      {{ govukButton({
+        text: "Back to case outline",
+        href: "/cases/" + _case.id + "/details#case-outline"
+      }) }}
+    </div>
+  </div>
+{% endblock %}

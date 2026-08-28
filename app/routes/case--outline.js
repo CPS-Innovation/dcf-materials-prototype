@@ -275,12 +275,21 @@ function buildEditCheckRows (outlineEdit) {
         ? 'Deleted'
         : 'Added'
 
+    // Both halves of a Replace share the same class — they're one change,
+    // not a delete-then-add, so the CYA screen ties them together with one
+    // colour rather than splitting them into Deleted's/Added's.
+    const highlightClass = isReplace
+      ? 'dcf-highlight--edit-replaced'
+      : change.removedText
+        ? 'dcf-highlight--edit-deleted'
+        : 'dcf-highlight--edit-added'
+
     const primaryText = change.removedText
-      ? highlightSnippet(context.before, change.removedText, context.after, 'dcf-highlight--removed')
-      : highlightSnippet(context.before, change.addedText, context.after, 'dcf-highlight--added')
+      ? highlightSnippet(context.before, change.removedText, context.after, highlightClass)
+      : highlightSnippet(context.before, change.addedText, context.after, highlightClass)
 
     const replacementText = isReplace
-      ? highlightSnippet(context.before, change.addedText, context.after, 'dcf-highlight--added')
+      ? highlightSnippet(context.before, change.addedText, context.after, highlightClass)
       : ''
 
     return {
@@ -786,7 +795,13 @@ module.exports = router => {
     // to it client-side rather than landing the user in a wall of text.
     const focusText = req.query.focus || ''
 
-    res.render('v2/cases/outline/edit/index', { _case, draftText, focusText })
+    // ?variant=v5 arrives from the summary card's "Edit and send to
+    // police" link — same textarea, but its form posts to /outline/edit/v5
+    // (commits immediately, no check/CYA step) rather than /outline/edit/v3
+    // (review-then-confirm). Defaults to v3, the normal flow.
+    const variant = req.query.variant === 'v5' ? 'v5' : 'v3'
+
+    res.render('v2/cases/outline/edit/index', { _case, draftText, focusText, variant })
   })
 
   router.post('/cases/:caseId/outline/edit', async (req, res) => {
@@ -878,6 +893,42 @@ module.exports = router => {
     delete req.session.data.outlineEdit
 
     req.session.save(() => res.redirect(returnTo))
+  })
+
+  // v5's edit flow: same textarea as v3 (see the GET /outline/edit
+  // handler's variant switch), but an "emergency" fast-track — skips the
+  // check/CYA step entirely and commits straight away, for when there's
+  // no time to wait on the normal police-verification turnaround. Same
+  // commit semantics as v3's "Confirm edits" (freezes
+  // factualSummaryOriginal on the very first change, stamps
+  // factualSummaryEditedAt) — just with no session/diff step first, since
+  // there's nothing to review. Redirects to a standalone confirmation page
+  // rather than back to the case, since that page's "sent to police"
+  // messaging is this flow's actual terminus.
+  router.post('/cases/:caseId/outline/edit/v5', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const originalToSet = await captureOriginalIfUnset(caseId)
+
+    await prisma.case.update({
+      where: { id: caseId },
+      data: {
+        factualSummary: req.body.factualSummary || '',
+        factualSummaryEditedAt: new Date(),
+        ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet })
+      }
+    })
+
+    delete req.session.data.outlineEdit
+
+    req.session.save(() => res.redirect(`/cases/${caseId}/outline/edit/success`))
+  })
+
+  router.get('/cases/:caseId/outline/edit/success', async (req, res) => {
+    const _case = await prisma.case.findUnique({
+      where: { id: parseInt(req.params.caseId) },
+      include: { defendants: true }
+    })
+    res.render('v2/cases/outline/edit/success', { _case })
   })
 
   router.post('/cases/:caseId/outline/edit/v4', async (req, res) => {

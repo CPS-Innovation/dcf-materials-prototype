@@ -26,16 +26,16 @@
       <h1 class="govuk-heading-l">Use CMS Classic to add a victim</h1>
 
       <p class="govuk-body">
-        Go to <a href="#" target="_blank" rel="noopener noreferrer" class="govuk-link">CMS Classic (opens in a new tab)</a> and add a victim to this charge.
+        <a href="#" target="_blank" rel="noopener noreferrer" class="govuk-link">Go to CMS Classic</a> (opens in a new tab) and add a victim to this charge.
       </p>
 
       <p class="govuk-body">
-        Once completed, return to this tab and select 'Import victim' to see the victim on the charge in Manage cases.
+        Once completed, return to this tab and select 'Save and continue' to see the victim on the charge in Manage cases.
       </p>
 
       <div class="govuk-button-group">
         {{ govukButton({
-          text: "Import victim",
+          text: "Save and continue",
           href: base + "/select-victim?importedVictimId=" + nonPureVictimId
         }) }}
       </div>

@@ -1,25 +1,13 @@
-// Static (non-interactive) redacted-text/edited-text markers for the case
-// details page's "Summary of circumstances" card — deliberately separate
-// from .dcf-highlight/.js-redact-paragraphs, which are scoped to the
+// Static (non-interactive) redacted-text marker for the case details
+// page's "Summary of circumstances" card — deliberately separate from
+// .dcf-highlight/.js-redact-paragraphs, which are scoped to the
 // interactive drag-select tag screen and carry <button> triggers this
-// plain rendered HTML has no use for. Both computed fresh at display time
-// by the redactionEditDisplay filter (app/filters.js), not stored markup.
+// plain rendered HTML has no use for. Computed fresh at display time by
+// the redactionEditDisplay filter (app/filters.js), not stored markup.
 // The redacted text content itself is now the "[Redacted <type>]" label,
 // not the original — so this just needs to read clearly, not hide it.
 .dcf-redacted-text {
   font-weight: bold;
-}
-
-// Wording added by an edit — distinct from a redaction (bold) so a reader
-// can tell at a glance which parts of the summary were removed/replaced
-// versus genuinely rewritten. Same green tint as .dcf-highlight--added
-// below, for the same "this was added" meaning on the interactive tag
-// screens — kept in sync manually since this rule is scoped to plain
-// rendered HTML with no <mark> wrapper to share a class with.
-.dcf-edited-text {
-  font-style: italic;
-  background-color: govuk-colour("green", $legacy: false);
-  background-color: rgba(0, 112, 60, 0.15);
 }
 
 .dcf-highlight {
@@ -37,6 +25,62 @@
 .dcf-highlight--added {
   background-color: govuk-colour("green", $legacy: false);
   background-color: rgba(0, 112, 60, 0.15);
+}
+
+// Edit-type styling for the edit CYA check screen (app/routes/case--
+// outline.js's highlightSnippet) and the details page's "Summary of
+// circumstances" card (the redactionEditDisplay filter) — deliberately
+// separate from .dcf-highlight--removed/--added above, which stay scoped
+// to the interactive tag screens' live word-diff preview, so changing
+// these can't have any knock-on effect there. Each type pairs a distinct
+// colour with a distinct font-weight/style combination (not colour alone),
+// so the three stay distinguishable even without relying on colour
+// perception. Deleted only ever appears on the check screen — by
+// definition there's nothing to show on the details page for text that's
+// no longer part of the current wording.
+.dcf-highlight--edit-replaced {
+  font-style: italic;
+  background-color: govuk-colour("blue", $legacy: false);
+  background-color: rgba(29, 112, 184, 0.15);
+}
+
+// Border on top of colour/weight/italic — Added is the only one of the
+// three that's ever adjacent to Replaced's blue in running text (a
+// wording swap immediately followed by newly-inserted wording reads as
+// two highlighted spans back to back), so it gets the extra distinction.
+.dcf-highlight--edit-added {
+  font-weight: bold;
+  font-style: italic;
+  border: 1px solid govuk-colour("black", $legacy: false);
+  background-color: govuk-colour("green", $legacy: false);
+  background-color: rgba(0, 112, 60, 0.15);
+}
+
+// Applied to an <s> on the factual summary (paired with a visually-hidden
+// "Removed: " cue — Scenario 3 from
+// https://www.webaxe.org/strikethrough-html-accessibility/, the only
+// approach the article found every screen reader announced correctly),
+// and to a <mark> on the CYA check screen's "Deleted text" row, where the
+// row's own key already says what it is. No bold — colour + strikethrough
+// alone distinguish it from Added/Replaced, which are both italic.
+.dcf-highlight--edit-deleted {
+  text-decoration: line-through;
+  background-color: govuk-colour("red", $legacy: false);
+  background-color: rgba(212, 53, 28, 0.15);
+}
+
+// Key explaining the above (outline-panels.njk) — a plain wrapping row of
+// examples, each styled with the real classes rather than a separate
+// swatch, shown as the "Key" summary-list row of the factual summary card
+// whenever there's redacted/edited content to interpret. No margin below:
+// govuk-summary-list__row already handles spacing between rows.
+.dcf-highlight-key__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: govuk-spacing(1) govuk-spacing(6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 // Tagging a change now replaces its text with a "[Redacted <type>]" label
