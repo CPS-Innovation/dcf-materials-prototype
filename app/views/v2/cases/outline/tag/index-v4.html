@@ -15,7 +15,7 @@
 {% block content %}
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
 
-  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/details" }) }}
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/details#case-outline" }) }}
 
   {# <span class="govuk-caption-m">{{ _case.reference }} - Redact summary of circumstances on offence(s)</span> #}
   <span class="govuk-caption-m">{{ _case.reference }} - {{ defendantsValue }}</span>
