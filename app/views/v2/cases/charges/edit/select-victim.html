@@ -29,8 +29,12 @@
             text: importedVictim.firstName + " " + importedVictim.lastName
           }) }}
 
+          <p class="govuk-body">
+            You have imported this victim from CMS Classic.
+          </p>
+
           <div class="govuk-button-group govuk-!-margin-top-6">
-            {{ govukButton({ text: "Confirm victim" }) }}
+            {{ govukButton({ text: "Continue" }) }}
           </div>
         </form>
       {% else %}
