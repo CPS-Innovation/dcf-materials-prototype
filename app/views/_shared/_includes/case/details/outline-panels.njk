@@ -36,7 +36,8 @@
         { text: "Redact (v2)", href: "/cases/" + _case.id + "/outline/tag/v2", visuallyHiddenText: "summary of circumstances of offence(s)" },
         { text: "Redact", href: "/cases/" + _case.id + "/outline/tag/v3", visuallyHiddenText: "summary of circumstances of offence(s)" },
         { text: "Redact (v4)", href: "/cases/" + _case.id + "/outline/tag/v4", visuallyHiddenText: "summary of circumstances of offence(s)" },
-        { text: "Edit", href: "/cases/" + _case.id + "/outline/edit", visuallyHiddenText: "summary of circumstances of offence(s)" }
+        { text: "Edit", href: "/cases/" + _case.id + "/outline/edit", visuallyHiddenText: "summary of circumstances of offence(s)" },
+        { text: "Edit (v5, no CYA)", href: "/cases/" + _case.id + "/outline/edit?variant=v5", visuallyHiddenText: "summary of circumstances of offence(s)" }
       ]
     }
   },
@@ -45,6 +46,28 @@
   ]
 }) }} #}
 
+
+{# Explains the styling used below (and on the edit CYA check screen,
+   which shares the same classes) — only relevant once there's actually a
+   redaction/edit to interpret, so gated the same way the "(unredacted)"
+   original-text card is, and folded into the summary list below as its
+   own first row rather than sitting above the card, where it read like a
+   stray piece of navigation. Each item is styled with the real classes
+   rather than a separate swatch, so it can't drift out of sync with the
+   content it's explaining. #}
+{% set highlightKeyHtml %}
+<ul class="govuk-list dcf-highlight-key__list">
+  <li><span class="dcf-redacted-text">[redaction]</span></li>
+  <li><mark class="dcf-highlight dcf-highlight--edit-added">text added</mark></li>
+  <li><mark class="dcf-highlight dcf-highlight--edit-replaced">text replaced</mark></li>
+  <li>
+    <span class="govuk-visually-hidden">Removed: </span>
+    <s class="dcf-highlight dcf-highlight--edit-deleted">text deleted</s>
+  </li>
+</ul>
+{% endset %}
+
+{% set keyRow = [{ key: { text: "Key" }, value: { html: highlightKeyHtml } }] if _case.factualSummaryOriginal else [] %}
 
 {# V3 EDIT AND REDACT FROM SUMMARY CARD LINKS #}
 {% set editedLabel = "Edited on " + (_case.factualSummaryEditedAt | govukDate) if _case.factualSummaryEditedAt else "" %}
@@ -62,6 +85,9 @@
   {% set summaryDateKey = "Added on 24 May 2024" %}
 {% endif %}
 
+{# The "Edit and send to police" action links to the same edit textarea as
+   "Edit" above, but skips the check/CYA step and commits immediately on
+   submit — see POST /outline/edit/v5. #}
 {{ govukSummaryList({
   card: {
     title: {
@@ -70,13 +96,14 @@
     actions: {
       items: [
         { text: "Redact", href: "/cases/" + _case.id + "/outline/tag/v3", visuallyHiddenText: "summary of circumstances of offence(s)" },
-        { text: "Edit", href: "/cases/" + _case.id + "/outline/edit", visuallyHiddenText: "summary of circumstances of offence(s)" }
+        { text: "Edit", href: "/cases/" + _case.id + "/outline/edit", visuallyHiddenText: "summary of circumstances of offence(s)" },
+        { text: "Edit NO CYA", href: "/cases/" + _case.id + "/outline/edit?variant=v5", visuallyHiddenText: "summary of circumstances of offence(s), emergency edit" }
       ]
     }
   },
-  rows: [
+  rows: keyRow.concat([
     { key: { text: summaryDateKey }, value: { html: circumstancesDisplayHtml } }
-  ]
+  ])
 }) }}
 
 

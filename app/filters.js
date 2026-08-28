@@ -17,15 +17,32 @@ function escapeHtml (value) {
 }
 
 // Renders a case's factual summary the way it should currently read —
-// tagged redactions bold, edited-in wording italic — computed fresh from
-// just two always-current fields (factualSummary, factualSummaryOriginal)
-// rather than a separately stored HTML snapshot, so there's nothing that
-// can go stale when a redaction and an edit happen in either order. Diffs
-// the pristine original against the current text: anything "removed"
-// (deleted, or replaced by a redaction label) is omitted, since it's not
-// part of the current version; anything "added" is a redaction label
-// (self-describing — matches "[Redacted <type>]" — bolded) or otherwise a
-// genuine edit (italicised).
+// tagged redactions bold and bracketed, edited-in wording styled by edit
+// type (colour + italic; deleted text also struck through, no bold) —
+// computed fresh from just two always-current fields (factualSummary,
+// factualSummaryOriginal) rather than a separately stored HTML snapshot,
+// so there's nothing that can go stale when a redaction and an edit
+// happen in either order. Diffs the pristine original against the current
+// text:
+// - any "removed" text that was directly replaced by something else
+//   (new wording, or a redaction's "[Redacted <type>]" label) is never
+//   shown — only the new text is, so a redaction's original stays hidden
+//   and a wording swap doesn't clutter the summary with its old half.
+// - a "removed" chunk with nothing replacing it — a genuine deletion — IS
+//   shown, struck through via <s> with a visually-hidden "Removed: " cue
+//   ahead of it — Scenario 3 from
+//   https://www.webaxe.org/strikethrough-html-accessibility/, the only one
+//   of the article's four tested approaches every screen reader passed
+//   (plain <s>/<del> alone, or <s> with a CSS ::before/::after label, were
+//   each inconsistent or confusing on at least one).
+// - "added" text is a redaction label (self-describing — matches
+//   "[Redacted <type>]" — bolded), otherwise Replaced (added text that
+//   directly followed a removed chunk — i.e. a swap, not a fresh
+//   insertion) or Added.
+// Replaced/Added/Deleted use the same CSS classes as the edit CYA check
+// screen's highlightSnippet, and the same classes the "Key" row on the
+// factual summary card demonstrates (see outline-panels.njk), so all
+// three stay visually consistent and self-explanatory.
 addFilter('redactionEditDisplay', (current, original) => {
   if (!current) return ''
 
@@ -33,16 +50,39 @@ addFilter('redactionEditDisplay', (current, original) => {
   if (!original) {
     bodyHtml = escapeHtml(current)
   } else {
-    bodyHtml = diffWords(original, current)
-      .filter(function (part) { return !part.removed })
-      .map(function (part) {
-        var escaped = escapeHtml(part.value)
-        if (!part.added) return escaped
-        return /\[Redacted [^\]]+\]/.test(part.value)
-          ? '<span class="dcf-redacted-text">' + escaped + '</span>'
-          : '<em class="dcf-edited-text">' + escaped + '</em>'
-      })
-      .join('')
+    var diffed = diffWords(original, current)
+    var segments = []
+
+    diffed.forEach(function (part, index) {
+      var escaped = escapeHtml(part.value)
+
+      if (part.removed) {
+        var next = diffed[index + 1]
+        if (next && next.added) return // only the new text shows for a swap/redaction
+
+        segments.push(
+          '<span class="govuk-visually-hidden">Removed: </span>' +
+          '<s class="dcf-highlight dcf-highlight--edit-deleted">' + escaped + '</s>'
+        )
+        return
+      }
+
+      if (!part.added) {
+        segments.push(escaped)
+        return
+      }
+
+      if (/\[Redacted [^\]]+\]/.test(part.value)) {
+        segments.push('<span class="dcf-redacted-text">' + escaped + '</span>')
+        return
+      }
+
+      var isReplaced = index > 0 && diffed[index - 1].removed
+      var highlightClass = isReplaced ? 'dcf-highlight--edit-replaced' : 'dcf-highlight--edit-added'
+      segments.push('<mark class="dcf-highlight ' + highlightClass + '">' + escaped + '</mark>')
+    })
+
+    bodyHtml = segments.join('')
   }
 
   return bodyHtml
