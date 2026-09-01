@@ -718,6 +718,21 @@ async function captureOriginalIfUnset (caseId) {
   return existing.factualSummaryOriginal ? undefined : existing.factualSummary
 }
 
+// Same "frozen on first change" idea as captureOriginalIfUnset, but for
+// factualSummaryResetSnapshot — captured independently, on every commit
+// path including v6 (which deliberately skips captureOriginalIfUnset so
+// the details page shows no diff-highlighting/Key for it). Never read
+// anywhere except the footer's testing reset, so it can't affect what's
+// displayed; it only guarantees reset always has something to restore
+// factualSummary from, regardless of which flow(s) touched the case.
+async function captureResetSnapshotIfUnset (caseId) {
+  const existing = await prisma.case.findUnique({
+    where: { id: caseId },
+    select: { factualSummary: true, factualSummaryResetSnapshot: true }
+  })
+  return existing.factualSummaryResetSnapshot ? undefined : existing.factualSummary
+}
+
 async function commitOutlineEdit (outlineEdit, caseId, userId) {
   const tags = outlineEdit.tags || {}
   const removed = outlineEdit.removed || {}
@@ -732,6 +747,7 @@ async function commitOutlineEdit (outlineEdit, caseId, userId) {
     }))
 
   const originalToSet = await captureOriginalIfUnset(caseId)
+  const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId)
 
   await prisma.case.update({
     where: { id: caseId },
@@ -744,7 +760,8 @@ async function commitOutlineEdit (outlineEdit, caseId, userId) {
       // happens to it afterward.
       factualSummary: buildRedactedPlainText(outlineEdit),
       factualSummaryRedactedAt: new Date(),
-      ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet })
+      ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet }),
+      ...(resetSnapshotToSet !== undefined && { factualSummaryResetSnapshot: resetSnapshotToSet })
     }
   })
 
@@ -795,11 +812,15 @@ module.exports = router => {
     // to it client-side rather than landing the user in a wall of text.
     const focusText = req.query.focus || ''
 
-    // ?variant=v5 arrives from the summary card's "Edit and send to
-    // police" link — same textarea, but its form posts to /outline/edit/v5
-    // (commits immediately, no check/CYA step) rather than /outline/edit/v3
-    // (review-then-confirm). Defaults to v3, the normal flow.
-    const variant = req.query.variant === 'v5' ? 'v5' : 'v3'
+    // ?variant=v6 arrives from the summary card's live "Edit" link — same
+    // textarea, but its form posts to /outline/edit/v6 (commits
+    // immediately, no check/CYA step, and never freezes
+    // factualSummaryOriginal — see that route) rather than /outline/edit/v3
+    // (review-then-confirm). v5 is the same no-CYA idea but does freeze the
+    // baseline, driving the details page's diff-highlight/Key rendering;
+    // it's no longer linked from the summary card but its route is kept.
+    // Defaults to v3, the normal flow.
+    const variant = req.query.variant === 'v6' ? 'v6' : (req.query.variant === 'v5' ? 'v5' : 'v3')
 
     res.render('v2/cases/outline/edit/index', { _case, draftText, focusText, variant })
   })
@@ -874,13 +895,15 @@ module.exports = router => {
 
     if (outlineEdit && action === 'accept') {
       const originalToSet = await captureOriginalIfUnset(caseId)
+      const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId)
 
       await prisma.case.update({
         where: { id: caseId },
         data: {
           factualSummary: outlineEdit.after,
           factualSummaryEditedAt: new Date(),
-          ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet })
+          ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet }),
+          ...(resetSnapshotToSet !== undefined && { factualSummaryResetSnapshot: resetSnapshotToSet })
         }
       })
 
@@ -910,13 +933,48 @@ module.exports = router => {
   router.post('/cases/:caseId/outline/edit/v5', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
     const originalToSet = await captureOriginalIfUnset(caseId)
+    const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId)
 
     await prisma.case.update({
       where: { id: caseId },
       data: {
         factualSummary: req.body.factualSummary || '',
         factualSummaryEditedAt: new Date(),
-        ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet })
+        ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet }),
+        ...(resetSnapshotToSet !== undefined && { factualSummaryResetSnapshot: resetSnapshotToSet })
+      }
+    })
+
+    delete req.session.data.outlineEdit
+
+    req.session.data.successBanner = { text: 'Edits to summary of circumstances on offence(s) saved' }
+
+    req.session.save(() => res.redirect(`/cases/${caseId}/details#case-outline`))
+  })
+
+  // v6's edit flow: the MVP no-CYA edit — same fast-track idea as v5, but
+  // deliberately does NOT call captureOriginalIfUnset, so it never freezes
+  // factualSummaryOriginal. The details page's diff-highlight styling
+  // (the redactionEditDisplay filter) is driven entirely by whether
+  // factualSummaryOriginal is set — not by which route made the change —
+  // so an edit made purely via v6 renders as plain text with no
+  // added/replaced/deleted highlighting. (If the case was already redacted
+  // via the unchanged v3 Redact flow, that earlier action will already
+  // have frozen the baseline, so highlighting would still appear — just
+  // not because of this edit.) It does still call
+  // captureResetSnapshotIfUnset, so the footer's testing reset has
+  // something to restore factualSummary from even though this flow skips
+  // the "real" baseline freeze.
+  router.post('/cases/:caseId/outline/edit/v6', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId)
+
+    await prisma.case.update({
+      where: { id: caseId },
+      data: {
+        factualSummary: req.body.factualSummary || '',
+        factualSummaryEditedAt: new Date(),
+        ...(resetSnapshotToSet !== undefined && { factualSummaryResetSnapshot: resetSnapshotToSet })
       }
     })
 
@@ -1105,23 +1163,30 @@ module.exports = router => {
   // real process only ever does each once per case; this exists purely so
   // testers can reset and repeat freely, jumping between the two flows
   // without needing to know which one they last left the case in. Restores
-  // factualSummary from the frozen factualSummaryOriginal (if set) and
-  // clears it, clears factualSummaryRedacted, and deletes the "Factual
-  // summary edited" activity log entries a redaction commit writes. Linked
-  // from the footer, shown whenever a case is in view.
+  // factualSummary from factualSummaryResetSnapshot — frozen on every
+  // commit path including v6, so reset always has something to restore
+  // from even when factualSummaryOriginal was deliberately left unset
+  // (falls back to factualSummaryOriginal for cases edited before
+  // factualSummaryResetSnapshot existed). Clears both, clears
+  // factualSummaryRedacted, and deletes the "Factual summary edited"
+  // activity log entries a redaction commit writes. Linked from the
+  // footer, shown whenever a case is in view.
   router.post('/cases/:caseId/outline/reset-redact-and-edit', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
 
     const existing = await prisma.case.findUnique({
       where: { id: caseId },
-      select: { factualSummaryOriginal: true }
+      select: { factualSummaryOriginal: true, factualSummaryResetSnapshot: true }
     })
+
+    const restoreTo = existing.factualSummaryResetSnapshot || existing.factualSummaryOriginal
 
     await prisma.case.update({
       where: { id: caseId },
       data: {
-        ...(existing.factualSummaryOriginal && { factualSummary: existing.factualSummaryOriginal }),
+        ...(restoreTo && { factualSummary: restoreTo }),
         factualSummaryOriginal: null,
+        factualSummaryResetSnapshot: null,
         factualSummaryRedacted: null,
         factualSummaryEditedAt: null,
         factualSummaryRedactedAt: null
