@@ -902,9 +902,11 @@ module.exports = router => {
   // commit semantics as v3's "Confirm edits" (freezes
   // factualSummaryOriginal on the very first change, stamps
   // factualSummaryEditedAt) — just with no session/diff step first, since
-  // there's nothing to review. Redirects to a standalone confirmation page
-  // rather than back to the case, since that page's "sent to police"
-  // messaging is this flow's actual terminus.
+  // there's nothing to review. Redirects straight back to the case with a
+  // success banner (same flash convention as v3's check-commit and the
+  // redaction commit) rather than through the standalone confirmation page —
+  // that page (edit/success.html, still reachable at GET
+  // /outline/edit/success) is out of this flow for now.
   router.post('/cases/:caseId/outline/edit/v5', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
     const originalToSet = await captureOriginalIfUnset(caseId)
@@ -920,7 +922,9 @@ module.exports = router => {
 
     delete req.session.data.outlineEdit
 
-    req.session.save(() => res.redirect(`/cases/${caseId}/outline/edit/success`))
+    req.session.data.successBanner = { text: 'Edits to summary of circumstances on offence(s) saved' }
+
+    req.session.save(() => res.redirect(`/cases/${caseId}/details#case-outline`))
   })
 
   router.get('/cases/:caseId/outline/edit/success', async (req, res) => {
