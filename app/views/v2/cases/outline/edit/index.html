@@ -33,9 +33,9 @@
 
       <p class="govuk-body">You can request the police to make changes by adding a 'Factual Summary Confidential Information Request' action point to your Action Plan.</p>
 
-      {% if variant == 'v5' %}
+      {# {% if variant == 'v5' %}
         <p class="govuk-body">This change will be sent to the police for verification and will be saved to the case immediately, without a review step.</p>
-      {% endif %}
+      {% endif %} #}
 
       <form method="post" action="/cases/{{ _case.id }}/outline/edit/{{ variant }}">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
@@ -52,37 +52,6 @@
           }
         }) }}
 
-
-        {# COMMENT RADIOS OUT AS WE CAN AUTOMATE THIS PART #}
-        
-        {# {{ govukRadios({
-          classes: "govuk-!-margin-bottom-4",
-          name: "changedName",
-          fieldset: {
-            legend: {
-              text: "Do you want to copy the original text into the Confidential Information Other section?",
-              isPageHeading: false,
-              classes: "govuk-fieldset__legend--s"
-            }
-          },
-          items: [
-            {
-              value: "yes",
-              text: "Yes"
-            },
-            {
-              value: "no",
-              text: "No"
-            }
-          ]
-        }) }} #}
-              
-         {# <div class="govuk-button-group">
-          {{ govukButton({ text: "Continue" }) }}
-          {{ govukButton({ text: "Continue (v2)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v2" } }) }}
-          {{ govukButton({ text: "Continue (v3)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v3" } }) }}
-          {{ govukButton({ text: "Continue (v4)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v4" } }) }}
-         </div> #}
 
          <div class="govuk-button-group">
           {{ govukButton({ text: "Continue" }) }}

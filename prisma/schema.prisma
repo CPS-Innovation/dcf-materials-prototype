@@ -133,6 +133,15 @@ model Case {
   // as the untouched source of truth; factualSummary keeps evolving as the
   // current/latest wording. Null until the first such change happens.
   factualSummaryOriginal String?
+  // Same "frozen on first change, never overwritten again" idea as
+  // factualSummaryOriginal, captured independently on every edit/redact
+  // commit path (including the v6 no-CYA edit, which deliberately leaves
+  // factualSummaryOriginal untouched so the details page shows no
+  // diff-highlighting/Key for it). Never read anywhere except the footer's
+  // testing reset, so it can't affect what's displayed — purely so that
+  // reset always has something to restore factualSummary from, regardless
+  // of which flow(s) touched the case.
+  factualSummaryResetSnapshot String?
   // Stamped each time the edit or redaction journey is committed — read by
   // the "Summary of circumstances" card's key row to show "Edited on"/
   // "Redacted on"/both, in place of the static demo "Added on" date. Both

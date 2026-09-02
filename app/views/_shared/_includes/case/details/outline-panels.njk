@@ -2,12 +2,15 @@
 
 {% set factualSummaryHtml %}
 
-{# Always derived fresh from factualSummary + factualSummaryOriginal (see
-   the redactionEditDisplay filter) rather than a stored HTML snapshot, so
-   it can never go stale regardless of how many times the case has been
-   redacted and/or edited, in either order. #}
+{# Always derived fresh from factualSummary (see the redactionEditDisplay
+   filter) rather than a stored HTML snapshot, so it can never go stale
+   regardless of how many times the case has been redacted and/or edited,
+   in either order. Only bolds "[Redacted <type>]" labels — edits have no
+   visual tracking for now (MVP), so factualSummaryOriginal isn't needed
+   here; compare against it directly via the "Confidential Information to
+   Prosecutor" tab instead. #}
 {% set circumstancesDisplayHtml %}
-{{ _case.factualSummary | redactionEditDisplay(_case.factualSummaryOriginal) | safe }}
+{{ _case.factualSummary | redactionEditDisplay | safe }}
 {% endset %}
 
 
@@ -37,28 +40,6 @@
 }) }} #}
 
 
-{# Explains the styling used below (and on the edit CYA check screen,
-   which shares the same classes) — only relevant once there's actually a
-   redaction/edit to interpret, so gated the same way the "(unredacted)"
-   original-text card is, and folded into the summary list below as its
-   own first row rather than sitting above the card, where it read like a
-   stray piece of navigation. Each item is styled with the real classes
-   rather than a separate swatch, so it can't drift out of sync with the
-   content it's explaining. #}
-{% set highlightKeyHtml %}
-<ul class="govuk-list dcf-highlight-key__list">
-  <li><span class="dcf-redacted-text">[redaction]</span></li>
-  <li><mark class="dcf-highlight dcf-highlight--edit-added">text added</mark></li>
-  <li><mark class="dcf-highlight dcf-highlight--edit-replaced">text replaced</mark></li>
-  <li>
-    <span class="govuk-visually-hidden">Removed: </span>
-    <s class="dcf-highlight dcf-highlight--edit-deleted">text deleted</s>
-  </li>
-</ul>
-{% endset %}
-
-{% set keyRow = [{ key: { text: "Key" }, value: { html: highlightKeyHtml } }] if _case.factualSummaryOriginal else [] %}
-
 {# V3 EDIT AND REDACT FROM SUMMARY CARD LINKS #}
 {% set editedLabel = "Edited on " + (_case.factualSummaryEditedAt | govukDate) if _case.factualSummaryEditedAt else "" %}
 {% set redactedLabel = "Redacted on " + (_case.factualSummaryRedactedAt | govukDate) if _case.factualSummaryRedactedAt else "" %}
@@ -72,12 +53,14 @@
 {% elif redactedLabel %}
   {% set summaryDateKey = redactedLabel %}
 {% else %}
-  {% set summaryDateKey = "Added on 24 May 2024" %}
+  {% set summaryDateKey = "Added on 24 May 2026" %}
 {% endif %}
 
-{# The "Edit and send to police" action links to the same edit textarea as
-   "Edit" above, but skips the check/CYA step and commits immediately on
-   submit — see POST /outline/edit/v5. #}
+{# "Edit" links to the same edit textarea, skipping the check/CYA step and
+   committing immediately on submit — see POST /outline/edit/v6. Unlike the
+   earlier v5 no-CYA route (still in the codebase, just unlinked here), v6
+   never freezes factualSummaryOriginal, so an edit made through it doesn't
+   trigger the Key/highlight rendering below. #}
 {{ govukSummaryList({
   card: {
     title: {
@@ -87,13 +70,13 @@
       items: [
         { text: "Redact", href: "/cases/" + _case.id + "/outline/tag/v3", visuallyHiddenText: "summary of circumstances of offence(s)" },
 
-        { text: "Edit", href: "/cases/" + _case.id + "/outline/edit?variant=v5", visuallyHiddenText: "summary of circumstances of offence(s)" }
+        { text: "Edit", href: "/cases/" + _case.id + "/outline/edit?variant=v6", visuallyHiddenText: "summary of circumstances of offence(s)" }
       ]
     }
   },
-  rows: keyRow.concat([
+  rows: [
     { key: { text: summaryDateKey }, value: { html: circumstancesDisplayHtml } }
-  ])
+  ]
 }) }}
 
 

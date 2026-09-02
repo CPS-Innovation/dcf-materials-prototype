@@ -6,12 +6,50 @@
   // A tagged redaction renders both its original text and its
   // "[Redacted <type>]" label as sibling spans at all times — only one
   // ever visible, toggled via CSS (dcf-highlight--redacted / the "Show
-  // original text" state) — so the DOM always has more text nodes than
-  // the user can actually see and select. Walks below must skip whichever
-  // one is currently display:none, or their offsets drift out of step
-  // with the server's plain-text model by the hidden span's length.
+  // original text" state).
   function isElementHidden (el) {
     return window.getComputedStyle(el).display === 'none'
+  }
+
+  // The server always computes/interprets offsets against the untouched
+  // original wording (outlineEdit.before), never against whatever the
+  // "Show original text" toggle currently displays. So the walks below
+  // must always count .dcf-highlight__original's text (the real word,
+  // same length the server sees at that position) and always skip
+  // .dcf-highlight__redacted-label's text (its "[Redacted <type>]" label,
+  // which is almost never the same length) — regardless of which one is
+  // actually visible right now. Getting this wrong is exactly what causes
+  // a fresh drag-selection to land a few characters away from where the
+  // user actually selected, whenever there's an earlier tagged redaction
+  // in the same paragraph. Anything else hidden for an unrelated reason
+  // still falls back to the generic isElementHidden skip.
+  function shouldSkipInOffsetWalk (el) {
+    if (el.classList && el.classList.contains('dcf-highlight__redacted-label')) return true
+    if (el.classList && el.classList.contains('dcf-highlight__original')) return false
+    return isElementHidden(el)
+  }
+
+  // Builds the same plain-text model textOffsetOfNode/rangeAtOffset walk
+  // against, for a whole paragraph at once — used by "Find matching text"
+  // so its search offsets land in the same model a fresh drag-selection's
+  // do. paragraphEl.textContent would include both the original word AND
+  // its "[Redacted <type>]" label for any tagged redaction (textContent
+  // ignores CSS display entirely), corrupting every match position in a
+  // paragraph that contains one.
+  function paragraphOffsetText (root) {
+    var parts = []
+
+    function walk (node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        parts.push(node.textContent)
+      } else {
+        if (node.nodeType === Node.ELEMENT_NODE && shouldSkipInOffsetWalk(node)) return
+        for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i])
+      }
+    }
+
+    walk(root)
+    return parts.join('')
   }
 
   // Walks all *visible* text nodes under `root` in document order, summing
@@ -34,7 +72,7 @@
         }
         offset += node.textContent.length
       } else {
-        if (node.nodeType === Node.ELEMENT_NODE && isElementHidden(node)) return
+        if (node.nodeType === Node.ELEMENT_NODE && shouldSkipInOffsetWalk(node)) return
         for (var i = 0; i < node.childNodes.length; i++) {
           walk(node.childNodes[i])
           if (found) return
@@ -82,7 +120,7 @@
 
         offset = nextOffset
       } else {
-        if (node.nodeType === Node.ELEMENT_NODE && isElementHidden(node)) return
+        if (node.nodeType === Node.ELEMENT_NODE && shouldSkipInOffsetWalk(node)) return
         for (var i = 0; i < node.childNodes.length; i++) {
           walk(node.childNodes[i])
           if (endSet) return
@@ -330,7 +368,7 @@
       var paragraphEls = container.querySelectorAll('.js-tag-paragraph')
 
       paragraphEls.forEach(function (paragraphEl, index) {
-        var paragraphText = paragraphEl.textContent
+        var paragraphText = paragraphOffsetText(paragraphEl)
         var searchFrom = 0
         var occStart = paragraphText.indexOf(text, searchFrom)
 
