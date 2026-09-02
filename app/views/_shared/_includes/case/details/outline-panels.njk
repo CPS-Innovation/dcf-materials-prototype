@@ -2,12 +2,15 @@
 
 {% set factualSummaryHtml %}
 
-{# Always derived fresh from factualSummary + factualSummaryOriginal (see
-   the redactionEditDisplay filter) rather than a stored HTML snapshot, so
-   it can never go stale regardless of how many times the case has been
-   redacted and/or edited, in either order. #}
+{# Always derived fresh from factualSummary (see the redactionEditDisplay
+   filter) rather than a stored HTML snapshot, so it can never go stale
+   regardless of how many times the case has been redacted and/or edited,
+   in either order. Only bolds "[Redacted <type>]" labels — edits have no
+   visual tracking for now (MVP), so factualSummaryOriginal isn't needed
+   here; compare against it directly via the "Confidential Information to
+   Prosecutor" tab instead. #}
 {% set circumstancesDisplayHtml %}
-{{ _case.factualSummary | redactionEditDisplay(_case.factualSummaryOriginal) | safe }}
+{{ _case.factualSummary | redactionEditDisplay | safe }}
 {% endset %}
 
 
@@ -50,7 +53,7 @@
 {% elif redactedLabel %}
   {% set summaryDateKey = redactedLabel %}
 {% else %}
-  {% set summaryDateKey = "Added on 24 May 2024" %}
+  {% set summaryDateKey = "Added on 24 May 2026" %}
 {% endif %}
 
 {# "Edit" links to the same edit textarea, skipping the check/CYA step and

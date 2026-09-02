@@ -53,37 +53,6 @@
         }) }}
 
 
-        {# COMMENT RADIOS OUT AS WE CAN AUTOMATE THIS PART #}
-        
-        {# {{ govukRadios({
-          classes: "govuk-!-margin-bottom-4",
-          name: "changedName",
-          fieldset: {
-            legend: {
-              text: "Do you want to copy the original text into the Confidential Information Other section?",
-              isPageHeading: false,
-              classes: "govuk-fieldset__legend--s"
-            }
-          },
-          items: [
-            {
-              value: "yes",
-              text: "Yes"
-            },
-            {
-              value: "no",
-              text: "No"
-            }
-          ]
-        }) }} #}
-              
-         {# <div class="govuk-button-group">
-          {{ govukButton({ text: "Continue" }) }}
-          {{ govukButton({ text: "Continue (v2)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v2" } }) }}
-          {{ govukButton({ text: "Continue (v3)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v3" } }) }}
-          {{ govukButton({ text: "Continue (v4)", classes: "govuk-button--secondary", attributes: { formaction: "/cases/" + _case.id + "/outline/edit/v4" } }) }}
-         </div> #}
-
          <div class="govuk-button-group">
           {{ govukButton({ text: "Continue" }) }}
          </div>
