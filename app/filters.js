@@ -5,6 +5,7 @@
 
 const govukPrototypeKit = require('govuk-prototype-kit')
 const addFilter = govukPrototypeKit.views.addFilter
+const { diffWords } = require('diff')
 
 function escapeHtml (value) {
   return String(value)
@@ -15,25 +16,96 @@ function escapeHtml (value) {
     .replace(/'/g, '&#39;')
 }
 
-// Renders a case's factual summary the way it should currently read —
-// tagged redactions bold and bracketed. Redaction labels ("[Redacted
-// <type>]") are baked directly into factualSummary as literal text at
-// commit time (see buildRedactedPlainText in case--outline.js), so they
-// can be found and bolded by scanning the current text alone — no
-// comparison against factualSummaryOriginal needed.
-// MVP note: edit-type highlighting (added/replaced/deleted marks/
-// strikethrough, reconstructed by diffing against factualSummaryOriginal)
-// used to render here too, but edits have no visual tracking for now —
-// that's an enhancement, not MVP. Anyone wanting to see what an edit
-// changed compares against the untouched original on the "Confidential
-// Information to Prosecutor" tab instead.
-addFilter('redactionEditDisplay', current => {
+// A short run of pure punctuation/whitespace — a comma, a stray quote
+// mark — that diffWords can mistake for a coincidental match in the
+// middle of a genuinely redacted/edited span (see
+// isAbsorbedByEarlierRedaction below for why that matters).
+const GLUE_PATTERN = /^[\s.,:;'"‘’“”-]{1,5}$/
+
+// diffWords tokenises word-by-word, so one real redaction/edit (removed
+// text swapped for something else) can get fragmented into multiple diff
+// hunks whenever a short run of punctuation right next to it also happens
+// to occur near the replacement text — diffWords treats that as a
+// coincidental match rather than part of the redacted span, and splits
+// the change either side of it (confirmed against a real committed
+// factualSummary/factualSummaryOriginal pair — see git history for the
+// worked example). This asks: is `diffed[index]` a removed chunk sitting
+// directly after such a glue gap that itself directly follows an added
+// chunk? If so, it's the redaction's stranded second half, and the render
+// loop below should suppress it exactly like a directly-paired
+// removed/added swap — the glue itself keeps rendering normally in
+// between (merging its text into the removed chunk instead, an earlier
+// version of this fix, silently dropped visible punctuation from output).
+function isAbsorbedByEarlierRedaction (diffed, index) {
+  var prev = diffed[index - 1]
+  var prevPrev = diffed[index - 2]
+
+  return !!(
+    prev && !prev.removed && !prev.added && GLUE_PATTERN.test(prev.value) &&
+    prevPrev && prevPrev.added
+  )
+}
+
+function boldRedactionLabels (text) {
+  return escapeHtml(text).replace(/\[Redacted [^\]]+\]/g, function (match) {
+    return '<span class="dcf-redacted-text">' + match + '</span>'
+  })
+}
+
+// Renders a case's factual summary the way it should currently read.
+// Redaction labels ("[Redacted <type>]") are baked directly into
+// factualSummary as literal text at commit time (see
+// buildRedactedPlainText in case--outline.js), so they're always found and
+// bolded regardless of whether `original` is passed.
+// `original` (factualSummaryOriginal) is optional and, by default, not
+// passed by outline-panels.njk — edit-type highlighting (added/replaced/
+// deleted marks, reconstructed by diffing against it) is an enhancement,
+// not MVP, so it's off unless the caller explicitly opts in (currently:
+// the summary card's ?showAllVariants=1 exploratory view, to demonstrate
+// what the v5 "freezes baseline" edit variant is for). Without it, this
+// only bolds redaction labels over the plain current text.
+addFilter('redactionEditDisplay', (current, original) => {
   if (!current) return ''
 
-  var bodyHtml = escapeHtml(current)
-    .replace(/\[Redacted [^\]]+\]/g, function (match) {
-      return '<span class="dcf-redacted-text">' + match + '</span>'
+  var bodyHtml
+  if (!original) {
+    bodyHtml = boldRedactionLabels(current)
+  } else {
+    var diffed = diffWords(original, current)
+    var segments = []
+
+    diffed.forEach(function (part, index) {
+      var escaped = escapeHtml(part.value)
+
+      if (part.removed) {
+        var next = diffed[index + 1]
+        if (next && next.added) return // only the new text shows for a swap/redaction
+        if (isAbsorbedByEarlierRedaction(diffed, index)) return // stranded second half of the same swap/redaction, split off by a coincidental glue match — see above
+
+        segments.push(
+          '<span class="govuk-visually-hidden">Removed: </span>' +
+          '<s class="dcf-highlight dcf-highlight--edit-deleted">' + escaped + '</s>'
+        )
+        return
+      }
+
+      if (!part.added) {
+        segments.push(escaped)
+        return
+      }
+
+      if (/\[Redacted [^\]]+\]/.test(part.value)) {
+        segments.push('<span class="dcf-redacted-text">' + escaped + '</span>')
+        return
+      }
+
+      var isReplaced = index > 0 && diffed[index - 1].removed
+      var highlightClass = isReplaced ? 'dcf-highlight--edit-replaced' : 'dcf-highlight--edit-added'
+      segments.push('<mark class="dcf-highlight ' + highlightClass + '">' + escaped + '</mark>')
     })
+
+    bodyHtml = segments.join('')
+  }
 
   return bodyHtml
     .split('\n\n')

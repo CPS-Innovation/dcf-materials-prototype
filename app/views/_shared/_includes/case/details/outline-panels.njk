@@ -5,12 +5,14 @@
 {# Always derived fresh from factualSummary (see the redactionEditDisplay
    filter) rather than a stored HTML snapshot, so it can never go stale
    regardless of how many times the case has been redacted and/or edited,
-   in either order. Only bolds "[Redacted <type>]" labels — edits have no
-   visual tracking for now (MVP), so factualSummaryOriginal isn't needed
-   here; compare against it directly via the "Confidential Information to
-   Prosecutor" tab instead. #}
+   in either order. Only bolds "[Redacted <type>]" labels by default — edit
+   highlighting is an enhancement, not MVP, so factualSummaryOriginal is
+   only passed through (switching it on) in the ?showAllVariants=1
+   exploratory view alongside the extra redact/edit variant links below;
+   otherwise compare against it directly via the "Confidential Information
+   to Prosecutor" tab instead. #}
 {% set circumstancesDisplayHtml %}
-{{ _case.factualSummary | redactionEditDisplay | safe }}
+{{ _case.factualSummary | redactionEditDisplay(_case.factualSummaryOriginal if query.showAllVariants else '') | safe }}
 {% endset %}
 
 
@@ -61,17 +63,32 @@
    earlier v5 no-CYA route (still in the codebase, just unlinked here), v6
    never freezes factualSummaryOriginal, so an edit made through it doesn't
    trigger the Key/highlight rendering below. #}
+{% set summaryCardActionItems = [
+  { text: "Redact", href: "/cases/" + _case.id + "/outline/tag/v3", visuallyHiddenText: "summary of circumstances of offence(s)" },
+  { text: "Edit", href: "/cases/" + _case.id + "/outline/edit?variant=v6", visuallyHiddenText: "summary of circumstances of offence(s)" }
+] %}
+
+{# ?showAllVariants=1 exposes the exploratory redact/edit variants (v2/v4
+   redact, v3/v5 edit) as extra action links on this card — testing-only,
+   same idea as the footer's reset links, so they're reachable without
+   permanently commenting them in and out of this template. Linked from
+   /prototype-menu. #}
+{% if query.showAllVariants %}
+  {% set summaryCardActionItems = summaryCardActionItems.concat([
+    { text: "Redact (v2, popover)", href: "/cases/" + _case.id + "/outline/tag/v2", visuallyHiddenText: "summary of circumstances of offence(s)" },
+    { text: "Redact (v4, side modal)", href: "/cases/" + _case.id + "/outline/tag/v4", visuallyHiddenText: "summary of circumstances of offence(s)" },
+    { text: "Edit (v3, edit-then-CYA)", href: "/cases/" + _case.id + "/outline/edit", visuallyHiddenText: "summary of circumstances of offence(s)" },
+    { text: "Edit (v5, no CYA, freezes baseline)", href: "/cases/" + _case.id + "/outline/edit?variant=v5", visuallyHiddenText: "summary of circumstances of offence(s)" }
+  ]) %}
+{% endif %}
+
 {{ govukSummaryList({
   card: {
     title: {
       html: 'Summary of circumstances of offence(s)'
     },
     actions: {
-      items: [
-        { text: "Redact", href: "/cases/" + _case.id + "/outline/tag/v3", visuallyHiddenText: "summary of circumstances of offence(s)" },
-
-        { text: "Edit", href: "/cases/" + _case.id + "/outline/edit?variant=v6", visuallyHiddenText: "summary of circumstances of offence(s)" }
-      ]
+      items: summaryCardActionItems
     }
   },
   rows: [

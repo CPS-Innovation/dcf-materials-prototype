@@ -202,6 +202,7 @@ require('./routes/v2')(router)
 
 require('./routes/static')(router)
 require('./routes/account')(router)
+require('./routes/prototype-menu')(router)
 
 /**
  * From here down requires sign-in
