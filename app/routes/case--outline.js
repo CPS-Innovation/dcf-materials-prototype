@@ -908,7 +908,13 @@ module.exports = router => {
       })
 
       req.session.data.successBanner = { text: 'Summary of circumstances updated' }
-      returnTo = `/cases/${caseId}/details#case-outline`
+      // v3's edit-then-CYA is the "edit highlighting + a review step" demo
+      // variant, alongside v5's "edit highlighting, no review step" — both
+      // freeze factualSummaryOriginal above, so both need ?showAllVariants=1
+      // on return for the details page to actually show that highlighting
+      // (see outline-panels.njk/redactionEditDisplay). v6 (MVP) has neither
+      // the highlighting nor this flag.
+      returnTo = `/cases/${caseId}/details?showAllVariants=1#case-outline`
     }
 
     // Undo, or Accept having just persisted — either way the pending draft
@@ -949,7 +955,11 @@ module.exports = router => {
 
     req.session.data.successBanner = { text: 'Edits to summary of circumstances on offence(s) saved' }
 
-    req.session.save(() => res.redirect(`/cases/${caseId}/details#case-outline`))
+    // v5 freezes factualSummaryOriginal above, so ?showAllVariants=1 is
+    // needed on return for the details page to actually show the edit
+    // highlighting that freeze enables (see outline-panels.njk/
+    // redactionEditDisplay) — same as v3's edit-then-CYA accept.
+    req.session.save(() => res.redirect(`/cases/${caseId}/details?showAllVariants=1#case-outline`))
   })
 
   // v6's edit flow: the MVP no-CYA edit — same fast-track idea as v5, but
