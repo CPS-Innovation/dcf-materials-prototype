@@ -27,6 +27,10 @@
       {% elif successBanner.text is defined and successBanner.text %}
         <p class="govuk-notification-banner__heading">{{ successBanner.text }}</p>
       {% endif %}
+
+      {% if successBanner.body is defined and successBanner.body %}
+        <p class="govuk-body">{{ successBanner.body }}</p>
+      {% endif %}
     </div>
   </div>
 {% endif %}

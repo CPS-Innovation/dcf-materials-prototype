@@ -1570,9 +1570,13 @@ main.case-files {
      
      .govuk-notification-banner__content {
           background-color: #f3f9f1;
-          
+
           .govuk-notification-banner__heading {
-               color: #00703c;
+               // !important: govuk-frontend's own notification-banner
+               // component styles set this to the standard text colour
+               // (#0b0c0c) at the same selector specificity, so a plain
+               // override here is a coin-flip depending on import order.
+               color: #00703c !important;
           }
      }
 }

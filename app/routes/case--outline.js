@@ -907,7 +907,10 @@ module.exports = router => {
         }
       })
 
-      req.session.data.successBanner = { text: 'Summary of circumstances updated' }
+      req.session.data.successBanner = {
+        text: 'Summary of circumstances of offence(s) edited.',
+        body: 'Any changes made have been sent to the police.'
+      }
       // v3's edit-then-CYA is the "edit highlighting + a review step" demo
       // variant, alongside v5's "edit highlighting, no review step" — both
       // freeze factualSummaryOriginal above, so both need ?showAllVariants=1
@@ -953,7 +956,10 @@ module.exports = router => {
 
     delete req.session.data.outlineEdit
 
-    req.session.data.successBanner = { text: 'Edits to summary of circumstances on offence(s) saved' }
+    req.session.data.successBanner = {
+      text: 'Summary of circumstances of offence(s) edited.',
+      body: 'Any changes made have been sent to the police.'
+    }
 
     // v5 freezes factualSummaryOriginal above, so ?showAllVariants=1 is
     // needed on return for the details page to actually show the edit
@@ -990,7 +996,10 @@ module.exports = router => {
 
     delete req.session.data.outlineEdit
 
-    req.session.data.successBanner = { text: 'Edits to summary of circumstances on offence(s) saved' }
+    req.session.data.successBanner = {
+      text: 'Summary of circumstances of offence(s) edited.',
+      body: 'Any changes made have been sent to the police.'
+    }
 
     req.session.save(() => res.redirect(`/cases/${caseId}/details#case-outline`))
   })
@@ -1158,7 +1167,8 @@ module.exports = router => {
       // read once and cleared by the details page's GET handler via
       // success-banner-safe.njk, already included on that page.
       req.session.data.successBanner = {
-        text: 'Factual summary redacted and sent to redaction log.'
+        text: 'Summary of circumstances of offence(s) redacted and redaction log saved.',
+        body: 'Any changes made have been sent to the police.'
       }
 
       // #case-outline matches the Outline tab's id in main-tabs.njk —
