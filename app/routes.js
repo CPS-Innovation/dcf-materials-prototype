@@ -48,6 +48,13 @@ router.use((req, res, next) => {
         ? banner.text.trim()
         : null
 
+      // Optional plain second line under the bold heading — e.g. "Any
+      // changes made have been sent to the police." — rendered by
+      // success-banner-safe.njk as a normal govuk-body paragraph.
+      const body = (typeof banner.body === 'string' && banner.body.trim())
+        ? banner.body.trim()
+        : null
+
       const chargeId = banner.chargeId || null
 
       // Only expose a valid banner object to templates
@@ -55,6 +62,7 @@ router.use((req, res, next) => {
         ? {
             ...(titleText ? { titleText } : {}),
             ...(text ? { text } : {}),
+            ...(body ? { body } : {}),
             ...(chargeId ? { chargeId, chargeCode: banner.chargeCode, defendantName: banner.defendantName } : {})
           }
         : null
