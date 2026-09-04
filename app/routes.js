@@ -103,6 +103,23 @@ router.use((req, res, next) => {
 router.use((req, res, next) => {
   const originalRender = res.render.bind(res)
 
+  function sendOrError (err, html) {
+    if (err) {
+      // Log everything safely without triggering undefined.toString()
+      console.error('========== RENDER ERROR ==========')
+      console.error('Name:', err && err.name)
+      console.error('Message:', err && err.message)
+      console.error('Stack:', err && err.stack)
+      console.error('Raw error object:', err)
+      console.error('==================================')
+
+      return res
+        .status(500)
+        .send((err && err.message) ? err.message : 'Template render error (see server logs)')
+    }
+    return res.send(html)
+  }
+
   res.render = (view, locals = {}, cb) => {
     // ✅ Don't version these global templates
     if (view === 'index') {
@@ -118,28 +135,28 @@ router.use((req, res, next) => {
     }
 
     const versionedView = `${req.version}/${view}`
+    // Most views only ever exist under one of v1/ or v2/, not both — the
+    // "fall back to the bare name" below almost never has anywhere to
+    // land, since unversioned view files barely exist in this app. So
+    // before giving up, try the *other* version's folder first: this is
+    // what lets req.version default to (or be forced to) 'v2' safely
+    // everywhere, even for the handful of pages that were only ever built
+    // for v1 (e.g. cases/material/show) — they just keep rendering their
+    // v1 copy instead of 500ing.
+    const otherVersion = req.version === 'v2' ? 'v1' : 'v2'
+    const otherVersionedView = `${otherVersion}/${view}`
 
     return originalRender(versionedView, locals, (err, html) => {
-      // If versioned template missing, fall back to original
       if (err && /template not found/i.test(err.message)) {
-        return originalRender(view, locals, cb)
+        return originalRender(otherVersionedView, locals, (err2, html2) => {
+          if (err2 && /template not found/i.test(err2.message)) {
+            return originalRender(view, locals, cb)
+          }
+          return sendOrError(err2, html2)
+        })
       }
 
-      // Normal render behaviour
-      if (err) {
-        // Log everything safely without triggering undefined.toString()
-        console.error('========== RENDER ERROR ==========')
-        console.error('Name:', err && err.name)
-        console.error('Message:', err && err.message)
-        console.error('Stack:', err && err.stack)
-        console.error('Raw error object:', err)
-        console.error('==================================')
-
-        return res
-          .status(500)
-          .send((err && err.message) ? err.message : 'Template render error (see server logs)')
-      }
-      return res.send(html)
+      return sendOrError(err, html)
     })
   }
 
