@@ -55,6 +55,17 @@
           </form>
         </li>
       {% endif %}
+      {% if _case and (_case.id == 2001 or _case.id == 2002) %}
+        <li class="govuk-footer__inline-list-item">
+          <form method="post" action="/cases/{{ _case.id }}/pcd-appeal/reset" class="dcf-undo-form">
+            <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+            <input type="hidden" name="returnTo" value="{{ path }}#overview">
+            <button type="submit" class="govuk-footer__link dcf-footer-reset-button">
+              Reset PCD appeal decision (testing)
+            </button>
+          </form>
+        </li>
+      {% endif %}
       <li class="govuk-footer__inline-list-item">
         <a class="govuk-footer__link" href="/accessibility">
           Accessibility

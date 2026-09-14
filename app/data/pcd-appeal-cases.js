@@ -64,16 +64,6 @@ module.exports = {
       evidenceRefs: ['MG7 - Forensic report', 'Scene photographs'],
       receivedDateDisplay: '9 Sept 2026, 1:40pm'
     },
-    dcpDecision: {
-      chargeOutcomes: [
-        { code: 'B11', outcome: 'Uphold — charge not authorised' },
-        { code: 'C03', outcome: 'Uphold — charge not authorised' }
-      ],
-      testApplied: 'Bail Act 1976 — "no real prospect of a custodial sentence"',
-      reasoning: 'Forensic evidence referenced in the appeal does not meet the Threshold Test for either charge — the fingerprint match alone does not establish presence at the time of the offence. On the bail point, the suspect does not present a risk that conditions cannot manage; there is a real prospect a court would not impose an immediate custodial sentence, so the Bail Act exception does not apply. Bail granted with conditions in place of remand.',
-      bailConditions: ['Non-contact with witnesses', 'Reside at a fixed address', 'Report to a police station twice weekly', 'Exclusion zone around the complainant\'s address'],
-      decidedBy: 'DCP — Sarah Whitlock',
-      decidedDateDisplay: '11 Sept 2026, 10:05am'
-    }
+    dcpDecision: null
   }
 }

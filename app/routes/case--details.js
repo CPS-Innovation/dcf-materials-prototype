@@ -313,14 +313,70 @@ module.exports = router => {
     res.redirect(`/cases/${req.params.caseId}/details`)
   })
 
+  const testLabels = {
+    'full-code': 'Full Code Test',
+    'threshold': 'Threshold Test'
+  }
+  const outcomeLabels = {
+    uphold: 'Reject — charge not authorised',
+    overturn: 'Accept — charge authorised'
+  }
+
   // PCD appeal DCP decision — standalone page (Start task lands here,
   // matching how every other task type in this app opens its own page
-  // rather than an inline form). No check-your-answers step for now.
+  // rather than an inline form). Draft answers live in session (same
+  // pattern as case--charges-discontinue.js) so the check-your-answers
+  // page below can read them back and Change links can round-trip here.
   router.get('/cases/:caseId/pcd-appeal/decision', (req, res) => {
     const caseId = parseInt(req.params.caseId)
     const pcdAppeal = pcdAppealCases[caseId]
     if (!pcdAppeal) return res.redirect(`/cases/${caseId}/details`)
-    res.render('cases/pcd-appeal/decision', { pcdAppeal })
+
+    if (req.query.returnUrl) {
+      req.session.data.pcdAppealDecisionDraft = {
+        ...req.session.data.pcdAppealDecisionDraft,
+        returnUrl: req.query.returnUrl
+      }
+    }
+
+    res.render('cases/pcd-appeal/decision', {
+      pcdAppeal,
+      draft: req.session.data.pcdAppealDecisionDraft || {}
+    })
+  })
+
+  router.post('/cases/:caseId/pcd-appeal/decision', (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const returnUrl = req.session.data.pcdAppealDecisionDraft?.returnUrl || null
+
+    req.session.data.pcdAppealDecisionDraft = {
+      ...req.body,
+      returnUrl: null
+    }
+
+    res.redirect(returnUrl || `/cases/${caseId}/pcd-appeal/decision/check`)
+  })
+
+  // ── check ─────────────────────────────────────────────────────────
+
+  router.get('/cases/:caseId/pcd-appeal/decision/check', (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const pcdAppeal = pcdAppealCases[caseId]
+    const draft = req.session.data.pcdAppealDecisionDraft
+    if (!pcdAppeal || !draft) return res.redirect(`/cases/${caseId}/pcd-appeal/decision`)
+
+    const appealedCharges = pcdAppeal.originalDecision.charges.filter(charge => charge.appealed)
+
+    const chargeDecisionsSummary = appealedCharges
+      .map(charge => `${charge.code}: ${outcomeLabels[draft['decision-' + charge.code]] || 'Not answered'}`)
+      .join('<br>')
+
+    res.render('cases/pcd-appeal/check', {
+      pcdAppeal,
+      chargeDecisionsSummary,
+      testAppliedSummary: testLabels[draft['decision-test-applied']] || draft['decision-test-applied'],
+      reasoningSummary: draft['decision-reasoning']
+    })
   })
 
   // PCD appeal DCP decision — mutates the in-memory mock record (see
@@ -329,19 +385,12 @@ module.exports = router => {
   // process-memory only and resets on server restart — but it lets the
   // whole journey be demoed end to end on one case, not just shown
   // structurally via two permanently-different mock cases.
-  router.post('/cases/:caseId/pcd-appeal/decision', (req, res) => {
+  router.post('/cases/:caseId/pcd-appeal/decision/check', (req, res) => {
     const caseId = parseInt(req.params.caseId)
     const pcdAppeal = pcdAppealCases[caseId]
+    const draft = req.session.data.pcdAppealDecisionDraft
 
-    if (pcdAppeal) {
-      const testLabels = {
-        'full-code': 'Full Code Test',
-        'threshold': 'Threshold Test'
-      }
-      const outcomeLabels = {
-        uphold: 'Reject — charge not authorised',
-        overturn: 'Accept — charge authorised'
-      }
+    if (pcdAppeal && draft) {
       const currentUser = req.session.data.user
       const decidedBy = currentUser ? `DCP — ${currentUser.firstName} ${currentUser.lastName}` : 'DCP'
 
@@ -350,14 +399,16 @@ module.exports = router => {
           .filter(charge => charge.appealed)
           .map(charge => ({
             code: charge.code,
-            outcome: outcomeLabels[req.body['decision-' + charge.code]] || 'Not recorded'
+            outcome: outcomeLabels[draft['decision-' + charge.code]] || 'Not recorded'
           })),
-        testApplied: testLabels[req.body['decision-test-applied']] || req.body['decision-test-applied'],
-        reasoning: req.body['decision-reasoning'],
+        testApplied: testLabels[draft['decision-test-applied']] || draft['decision-test-applied'],
+        reasoning: draft['decision-reasoning'],
         decidedBy,
         decidedDateDisplay: new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
       }
     }
+
+    delete req.session.data.pcdAppealDecisionDraft
 
     _.set(req, 'session.data.successBanner', {
       titleText: 'Decision recorded',
@@ -365,6 +416,17 @@ module.exports = router => {
       body: 'A formal MG3A-equivalent document and notification back to police still need to be sent outside this prototype.'
     })
     res.redirect(`/cases/${caseId}/details#overview`)
+  })
+
+  // Reset the PCD appeal demo back to its pending state (footer testing
+  // link) — undoes the in-memory mutation from the decision check route
+  // above, same idea as "Reset Redact and Edit" further down this file.
+  router.post('/cases/:caseId/pcd-appeal/reset', (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const pcdAppeal = pcdAppealCases[caseId]
+    if (pcdAppeal) pcdAppeal.dcpDecision = null
+    delete req.session.data.pcdAppealDecisionDraft
+    res.redirect(req.body.returnTo || `/cases/${caseId}/details#overview`)
   })
 
 }

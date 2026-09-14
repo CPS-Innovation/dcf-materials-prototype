@@ -3,7 +3,9 @@
    Standalone DCP decision page — Start task on the PCD appeal panel lands
    here, matching how every other task type in this app opens its own page
    rather than an inline form (see _shared/_includes/case/details/pcd-appeal.njk).
-   No check-your-answers step for now.
+   Submits to a check-your-answers page (cases/pcd-appeal/check.html) before
+   committing — draft answers live in session (see case--details.js), same
+   pattern as case--charges-discontinue.js.
 
    Scope note: PCD = Pre-Charging Decision appeal only (DG6 paras 4.31–4.34).
    Post-charge disputes (e.g. bail/remand after charge) are a separate DG6
@@ -104,6 +106,7 @@
             {{ govukRadios({
               idPrefix: "decision-" + charge.code,
               name: "decision-" + charge.code,
+              value: draft["decision-" + charge.code],
               fieldset: {
                 legend: { text: charge.code + " — " + charge.description, classes: "govuk-fieldset__legend--s" }
               },
@@ -119,6 +122,7 @@
           id: "decision-test-applied",
           name: "decision-test-applied",
           label: { text: "Test applied" },
+          value: draft["decision-test-applied"],
           items: [
             { value: "", text: "Select a test" },
             { value: "full-code", text: "Full Code Test" },
@@ -130,10 +134,11 @@
           id: "decision-reasoning",
           name: "decision-reasoning",
           label: { text: "Reasoning" },
-          hint: { text: "Reference the test applied above." }
+          hint: { text: "Reference the test applied above." },
+          value: draft["decision-reasoning"]
         }) }}
 
-        {{ govukButton({ text: "Submit decision" }) }}
+        {{ govukButton({ text: "Continue" }) }}
 
       </form>
 
