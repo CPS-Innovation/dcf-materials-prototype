@@ -7,7 +7,7 @@ module.exports = {
   2001: {
     caseId: 2001,
     urn: '59R859619/3',
-    taskType: 'Priority PCD Appeal (Red)',
+    taskType: 'PCD Appeal (Red)',
     suspects: ['Norman Danvers'],
     custodyStatus: 'In police custody',
     paceClock: {
@@ -38,7 +38,7 @@ module.exports = {
   2002: {
     caseId: 2002,
     urn: '63W314794/6',
-    taskType: 'Review PCD Appeal (Green)',
+    taskType: 'PCD Appeal (Green)',
     suspects: ['Peter Murdock'],
     custodyStatus: 'Remanded in custody',
     paceClock: null,

@@ -26,7 +26,7 @@
   <div class="govuk-summary-card__title-wrapper">
     <h2 class="govuk-summary-card__title">
       PCD appeal
-      {% if pcdAppeal.taskType == 'Priority PCD Appeal (Red)' %}
+      {% if pcdAppeal.taskType == 'PCD Appeal (Red)' %}
         {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
       {% else %}
         {{ govukTag({ text: "Review", classes: "govuk-tag--green" }) }}

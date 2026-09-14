@@ -1,0 +1,139 @@
+{# _shared/_includes/task/priority-charging-table.njk
+
+   Priority charging tab content — Red PCD appeals only (Green stays in
+   the main Task list, see task-list-table.njk). Structurally different
+   table, not a themed variant: no Time limit/Type/Hearing/Due date —
+   instead SLA ends / PACE clock ends / Countdown, which don't exist on
+   the Task list's data model. No icons anywhere in this table (Urgent
+   uses the same govukTag treatment as the Task list; Notes is a plain
+   integer; Saved is plain text) — deliberately kept consistent with the
+   Task list's existing text-only conventions rather than the icon-heavy
+   look in the reference screenshot.
+
+   Data is static for now (app/data/priority-charging-task-list.json,
+   passed in as priorityChargingTasks by app/routes/tasks.js).
+#}
+
+{% if priorityChargingTasks.length %}
+  <div class="app-task-list__table-wrapper">
+    <table class="govuk-table app-task-list__table" data-module="moj-multi-select moj-sortable-table" data-moj-multi-select-id-prefix="priority-charging-">
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th class="govuk-table__header" id="priority-charging-select-all" scope="col"></th>
+          <th class="govuk-table__header" scope="col">Locked</th>
+          <th class="govuk-table__header" scope="col">Urgent</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">URN</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Defendants</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Task</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">SLA ends</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">PACE clock ends</th>
+          <th class="govuk-table__header" scope="col" aria-sort="ascending">Countdown</th>
+          <th class="govuk-table__header" scope="col">Owner</th>
+          <th class="govuk-table__header" scope="col">Notes</th>
+          <th class="govuk-table__header" scope="col">Saved</th>
+          <th class="govuk-table__header" scope="col">Details</th>
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body">
+        {% for task in priorityChargingTasks %}
+          <tr class="govuk-table__row">
+            <td class="govuk-table__cell">
+              <div class="govuk-checkboxes govuk-checkboxes--small">
+                <div class="govuk-checkboxes__item">
+                  <input class="govuk-checkboxes__input" id="priority-task-select-{{ task.id }}" name="priority-task-select-{{ task.id }}" type="checkbox" value="{{ task.id }}">
+                  <label class="govuk-label govuk-checkboxes__label" for="priority-task-select-{{ task.id }}">
+                    <span class="govuk-visually-hidden">Select task {{ task.task }} for {{ task.urn }}</span>
+                  </label>
+                </div>
+              </div>
+            </td>
+            {# Locked column left blank for now, matching the Task list #}
+            <td class="govuk-table__cell"></td>
+            <td class="govuk-table__cell">
+              {% if task.urgent %}
+                {{ govukTag({ text: "Urgent", classes: "govuk-tag--red" }) }}
+              {% elif task.previouslyUrgent %}
+                {{ govukTag({ text: "Was urgent", classes: "govuk-tag--grey" }) }}
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.urn }}">
+              <a class="govuk-link govuk-link--no-visited-state" href="#">{{ task.urn }}</a>
+            </td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.defendants[0] }}">
+              {{ task.defendants[0] }}
+              {% if task.defendants.length > 1 %}
+                <a class="app-task-list__defendants-more" href="#">+{{ task.defendants.length - 1 }} more</a>
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.task }}">{{ task.task }}</td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.slaEndsSort }}">
+              {{ govukTag({ text: task.slaEndsDisplay, classes: "govuk-tag--light-blue" }) }}
+            </td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.paceClockEndsSort }}">
+              {% if task.paceClockEndsDisplay %}
+                {{ task.paceClockEndsDisplay }}
+              {% else %}
+                <a class="govuk-link govuk-link--no-visited-state" href="#">Add PACE clock</a>
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.countdownStatus }}">
+              {{ govukTag({ text: task.countdownStatus, classes: "govuk-tag--red" }) }}
+            </td>
+            <td class="govuk-table__cell">{{ task.owner }}</td>
+            <td class="govuk-table__cell">{{ task.notesCount }}</td>
+            <td class="govuk-table__cell">{{ "Unsave" if task.saved else "Save" }}</td>
+            <td class="govuk-table__cell">
+              <button type="button" class="app-task-list__more-toggle js-task-more-toggle" aria-expanded="false" aria-controls="priority-task-detail-{{ task.id }}">
+                <span class="js-task-more-toggle-label">Show</span>
+              </button>
+            </td>
+          </tr>
+          <tr class="govuk-table__row app-task-list__detail-row" id="priority-task-detail-{{ task.id }}" hidden>
+            <td class="govuk-table__cell app-task-list__detail" colspan="13">
+              <div class="app-task-list__detail-actions">
+                <a class="govuk-link govuk-link--no-visited-state" href="#">Open in CMS</a>
+                <div class="app-task-list__detail-actions-group">
+                  <a class="govuk-button govuk-button--secondary" href="#" role="button">Reassign task</a>
+                  {% if task.caseId %}
+                    <a class="govuk-button" href="/cases/{{ task.caseId }}/pcd-appeal/decision" role="button">Start task</a>
+                  {% else %}
+                    <button type="button" class="govuk-button">Start task</button>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="govuk-grid-row">
+                <div class="govuk-grid-column-one-half app-task-list__detail-col--left">
+                  {{ govukSummaryList({
+                    classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+                    rows: [
+                      { key: { text: "Prosecutor" }, value: { text: task.detail.prosecutor } },
+                      { key: { text: "Paralegal officer" }, value: { text: task.detail.paralegalOfficer } },
+                      { key: { text: "Officer in charge" }, value: { text: task.detail.officerInCharge } },
+                      { key: { text: "Counsel" }, value: { text: task.detail.counsel } }
+                    ]
+                  }) }}
+                  <a class="govuk-link govuk-link--no-visited-state app-task-list__detail-link" href="#">Allocation and all contacts</a>
+                </div>
+
+                <div class="govuk-grid-column-one-half">
+                  {{ govukSummaryList({
+                    classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+                    rows: [
+                      { key: { text: "Defendants" }, value: { text: task.detail.defendantsLinkText } },
+                      { key: { text: "Total charges" }, value: { text: task.detail.totalChargesText } },
+                      { key: { text: "Monitoring codes" }, value: { text: task.detail.monitoringCodes | join(', ') if task.detail.monitoringCodes.length else '-' } }
+                    ]
+                  }) }}
+                  <a class="govuk-link govuk-link--no-visited-state app-task-list__detail-link" href="#">Charge or count summary ({{ task.detail.chargeSummaryCount }})</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p>There are no results.</p>
+{% endif %}

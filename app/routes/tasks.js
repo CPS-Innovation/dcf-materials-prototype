@@ -6,6 +6,7 @@ const { groupTasks } = require('../helpers/taskGrouping')
 const { addTimeLimitDates } = require('../helpers/timeLimit')
 const taskNames = require('../data/task-names')
 const pcdTasks = require('../data/pcd-task-list.json')
+const priorityChargingTasks = require('../data/priority-charging-task-list.json')
 
 function resetFilters(req) {
   _.set(req, 'session.data.taskListFilters.owner', null)
@@ -564,6 +565,7 @@ module.exports = router => {
       pagination,
       totalTasks,
       pcdTasks,
+      priorityChargingTasks,
       pcdSeverityCounts,
       ownerItems,
       selectedOwnerFilters,
