@@ -3,15 +3,18 @@
    Standalone DCP decision page — Start task on the PCD appeal panel lands
    here, matching how every other task type in this app opens its own page
    rather than an inline form (see _shared/_includes/case/details/pcd-appeal.njk).
-   Submits to a check-your-answers page (cases/pcd-appeal/check.html) before
-   committing — draft answers live in session (see case--details.js), same
-   pattern as case--charges-discontinue.js.
 
-   Scope note: PCD = Pre-Charging Decision appeal only (DG6 paras 4.31–4.34).
-   Post-charge disputes (e.g. bail/remand after charge) are a separate DG6
-   process (paras 10.12–10.13) and are out of scope for this form — see
-   rationale notes for why bail content has been removed rather than kept
-   as an optional section.
+   The DCP decision form (uphold/overturn per charge, test applied,
+   reasoning) has been removed — the action here is now "Review case",
+   posting through to the Reviews tab (cases/reviews/index.html via
+   case--reviews.js) where the real decision-recording work will live
+   once that's fleshed out.
+
+   NOTE: this leaves cases/pcd-appeal/check.html and the
+   GET/POST /cases/:caseId/pcd-appeal/decision(/check) routes in
+   case--details.js orphaned — nothing links to them any more now the
+   form that fed them is gone. Left in place rather than deleted since
+   it wasn't asked for; flag if you want them removed.
 #}
 
 {% extends "_shared/layouts/main.html" %}
@@ -89,57 +92,12 @@
             value: { text: (pcdAppeal.appeal.oic.name + " (" + pcdAppeal.appeal.oic.rank + ", " + pcdAppeal.appeal.oic.number + ")") if pcdAppeal.appeal.oic else "Same as appealing officer" }
           },
           { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } },
-          { key: { text: "Grounds for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } },
-          { key: { text: "Evidence referenced" }, value: { html: pcdAppeal.appeal.evidenceRefs | join('<br>') } }
+          { key: { text: "Grounds for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
         ]
       }) }}
 
-      {# ---------------------------------------------------------------
-         Appeal decision
-         --------------------------------------------------------------- #}
-      <h2 class="govuk-heading-m">Appeal decision</h2>
-
-      <form method="post" action="/cases/{{ pcdAppeal.caseId }}/pcd-appeal/decision">
-
-        {% for charge in pcdAppeal.originalDecision.charges %}
-          {% if charge.appealed %}
-            {{ govukRadios({
-              idPrefix: "decision-" + charge.code,
-              name: "decision-" + charge.code,
-              value: draft["decision-" + charge.code],
-              fieldset: {
-                legend: { text: charge.code + " — " + charge.description, classes: "govuk-fieldset__legend--s" }
-              },
-              items: [
-                { value: "uphold", text: "Reject" },
-                { value: "overturn", text: "Accept" }
-              ]
-            }) }}
-          {% endif %}
-        {% endfor %}
-
-        {{ govukSelect({
-          id: "decision-test-applied",
-          name: "decision-test-applied",
-          label: { text: "Test applied" },
-          value: draft["decision-test-applied"],
-          items: [
-            { value: "", text: "Select a test" },
-            { value: "full-code", text: "Full Code Test" },
-            { value: "threshold", text: "Threshold Test" }
-          ]
-        }) }}
-
-        {{ govukTextarea({
-          id: "decision-reasoning",
-          name: "decision-reasoning",
-          label: { text: "Reasoning" },
-          hint: { text: "Reference the test applied above." },
-          value: draft["decision-reasoning"]
-        }) }}
-
-        {{ govukButton({ text: "Continue" }) }}
-
+      <form method="post" action="/cases/{{ pcdAppeal.caseId }}/reviews">
+        {{ govukButton({ text: "Review case" }) }}
       </form>
 
     </div>

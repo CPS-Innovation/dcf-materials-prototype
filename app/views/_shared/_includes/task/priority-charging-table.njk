@@ -14,6 +14,64 @@
    passed in as priorityChargingTasks by app/routes/tasks.js).
 #}
 
+{# Filters row — subset of the Task list's filters, single row. IDs are
+   prefixed "priority-" since both tables render into the DOM at once
+   (govukTabs renders every panel upfront), so the Task list's own
+   filter-urn-or-defendant etc. IDs are already taken on the page. #}
+<div class="govuk-grid-row govuk-!-margin-bottom-4 app-task-filters">
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "priority-filter-urn-or-defendant",
+      name: "priority-filter-urn-or-defendant",
+      label: { text: "URN or defendant surname" },
+      items: [
+        { value: "", text: "All", selected: true },
+        { value: "urn-1", text: "Example URN 1" },
+        { value: "urn-2", text: "Example URN 2" }
+      ]
+    }) }}
+  </div>
+
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "priority-filter-area",
+      name: "priority-filter-area",
+      label: { text: "Area" },
+      items: [
+        { value: "", text: "All areas", selected: true },
+        { value: "area-a", text: "Area A" },
+        { value: "area-b", text: "Area B" }
+      ]
+    }) }}
+  </div>
+
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "priority-filter-unit",
+      name: "priority-filter-unit",
+      label: { text: "Unit" },
+      items: [
+        { value: "", text: "All units", selected: true },
+        { value: "unit-1", text: "Unit 1" },
+        { value: "unit-2", text: "Unit 2" }
+      ]
+    }) }}
+  </div>
+
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "priority-filter-owner",
+      name: "priority-filter-owner",
+      label: { text: "Owner" },
+      items: [
+        { value: "", text: "All owners", selected: true },
+        { value: "me", text: "Me" },
+        { value: "my-team", text: "My team" }
+      ]
+    }) }}
+  </div>
+</div>
+
 {% if priorityChargingTasks.length %}
   <div class="app-task-list__table-wrapper">
     <table class="govuk-table app-task-list__table" data-module="moj-multi-select moj-sortable-table" data-moj-multi-select-id-prefix="priority-charging-">
