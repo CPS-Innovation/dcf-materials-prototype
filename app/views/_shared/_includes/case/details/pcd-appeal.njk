@@ -6,20 +6,18 @@
    app/data/pcd-appeal-cases.js (no Prisma model for appeal content yet).
    Only rendered when pcdAppeal is set (case--details.js).
 
-   Default state (no decision yet) shows only the appeal details — that's
-   the fact this card exists to surface ("police have challenged this"),
-   not a replay of a decision the CPS side already knows it made. The
-   original charging decision only becomes relevant again once there's a
-   record to read back, so it appears — for the first time on this card —
-   once a decision is recorded, ahead of Appeal and Decision, in
-   chronological order. Start task is not on this card: the police appeal
-   is what generates the task in the main task list, so that's where the
-   journey starts.
+   Kept deliberately concise — Appealing officer + Date/time received only,
+   in both states. "Previous charging details" no longer lives on this
+   card at all: it's shown on cases/pcd-appeal/decision.html, and
+   permanently in the History tab (history-panel.njk) so it can be seen
+   before a PCD review task is even started. Start task is not on this
+   card either: the police appeal is what generates the task in the main
+   task list, so that's where the journey starts.
 
    Once a decision is submitted (POST /cases/:caseId/pcd-appeal/decision
    mutates the in-memory mock record), this same card grows in place to
-   show the full record — one card throughout, not a second one appended
-   alongside it.
+   add the Decision section — one card throughout, not a second one
+   appended alongside it.
 #}
 
 <div class="govuk-summary-card app-pcd-appeal">
@@ -38,29 +36,12 @@
 
     {% if pcdAppeal.dcpDecision %}
 
-      <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Previous charging details</h3>
-      {{ govukSummaryList({
-        classes: "govuk-summary-list--no-border app-summary-list--compact",
-        rows: [
-          { key: { text: "Reviewing prosecutor" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
-          { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
-          { key: { text: "Date/time" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay } },
-          { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } }
-        ]
-      }) }}
-
       <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Appeal</h3>
       {{ govukSummaryList({
         classes: "govuk-summary-list--no-border app-summary-list--compact",
         rows: [
           { key: { text: "Appealing officer" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
-          {
-            key: { text: "Officer in charge" },
-            value: { text: (pcdAppeal.appeal.oic.name + " (" + pcdAppeal.appeal.oic.rank + ", " + pcdAppeal.appeal.oic.number + ")") if pcdAppeal.appeal.oic else "Same as appealing officer" }
-          },
-          { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } },
-          { key: { text: "Grounds for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } },
-          { key: { text: "Evidence referenced" }, value: { html: pcdAppeal.appeal.evidenceRefs | join('<br>') } }
+          { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } }
         ]
       }) }}
 
@@ -90,13 +71,7 @@
         classes: "govuk-summary-list--no-border app-summary-list--compact",
         rows: [
           { key: { text: "Appealing officer" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
-          {
-            key: { text: "Officer in charge" },
-            value: { text: (pcdAppeal.appeal.oic.name + " (" + pcdAppeal.appeal.oic.rank + ", " + pcdAppeal.appeal.oic.number + ")") if pcdAppeal.appeal.oic else "Same as appealing officer" }
-          },
-          { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } },
-          { key: { text: "Grounds for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } },
-          { key: { text: "Evidence referenced" }, value: { html: pcdAppeal.appeal.evidenceRefs | join('<br>') } }
+          { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } }
         ]
       }) }}
 
