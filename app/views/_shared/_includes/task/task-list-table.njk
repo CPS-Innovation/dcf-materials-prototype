@@ -150,6 +150,22 @@
   </li>
 </ul>
 
+<div class="govuk-button-group">
+  {{ govukButton({
+    text: "Search"
+  }) }}
+
+  {{ govukButton({
+    text: "Save filter",
+    classes: "govuk-button--secondary"
+  }) }}
+
+   {{ govukButton({
+    text: "Reset",
+    classes: "govuk-button--secondary"
+  }) }}
+</div>
+
 {# ---------------------------------------------------------------------
    Quick-filter tabs (severity buckets) + result count
    --------------------------------------------------------------------- #}

@@ -12,3 +12,13 @@
     }
   }
 }
+
+// PCD appeal decision page heading — app/views/v2/cases/pcd-appeal/decision.html
+.app-pcd-appeal-decision__heading {
+  .govuk-tag {
+    vertical-align: middle;
+    margin-left: govuk-spacing(2);
+    position: relative;
+    top: -3px;
+  }
+}

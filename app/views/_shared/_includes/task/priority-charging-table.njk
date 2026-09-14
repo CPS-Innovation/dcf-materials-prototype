@@ -72,6 +72,49 @@
   </div>
 </div>
 
+{# ---------------------------------------------------------------------
+   Selected filters ("filter sets") — visual only for now
+   --------------------------------------------------------------------- #}
+<ul class="app-task-list__chips">
+  <li class="app-task-list__chip">
+    All (Units)
+    <a class="app-task-list__chip-remove" href="#" aria-label="Remove filter: All (Units)">&times;</a>
+  </li>
+  <li class="app-task-list__chip">
+    {{ pcdTasks[0].owner }}
+    <a class="app-task-list__chip-remove" href="#" aria-label="Remove filter: {{ pcdTasks[0].owner }}">&times;</a>
+  </li>
+</ul>
+
+<div class="govuk-button-group">
+  {{ govukButton({
+    text: "Search"
+  }) }}
+
+  {{ govukButton({
+    text: "Save filter",
+    classes: "govuk-button--secondary"
+  }) }}
+
+   {{ govukButton({
+    text: "Reset",
+    classes: "govuk-button--secondary"
+  }) }}
+</div>
+
+{# ---------------------------------------------------------------------
+   Quick-filter tabs (severity buckets) + result count
+   --------------------------------------------------------------------- #}
+{% set severityBuckets = ["Due Soon", "Due", "Overdue", "Escalated"] %}
+<div class="app-task-list__quick-filters">
+  <div class="app-task-list__counters">
+    {% for bucket in severityBuckets %}
+      <p class="app-task-list__counter">{{ bucket }} ({{ pcdSeverityCounts[bucket] | default(0) }})</p>
+    {% endfor %}
+  </div>
+  <p class="app-task-list__showing">Showing ({{ pcdTasks.length }}) of ({{ pcdTasks.length }}) tasks</p>
+</div>
+
 {% if priorityChargingTasks.length %}
   <div class="app-task-list__table-wrapper">
     <table class="govuk-table app-task-list__table" data-module="moj-multi-select moj-sortable-table" data-moj-multi-select-id-prefix="priority-charging-">

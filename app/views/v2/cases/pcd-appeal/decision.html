@@ -35,11 +35,26 @@
     <div class="govuk-grid-column-two-thirds">
 
       <span class="govuk-caption-l">{{ pageName }}</span>
-      <h1 class="govuk-heading-l">{{ pcdAppeal.urn }} - {{ pcdAppeal.suspects | join(', ') }}</h1>
+      <h1 class="govuk-heading-l app-pcd-appeal-decision__heading">
+        {{ pcdAppeal.urn }} - {{ pcdAppeal.suspects | join(', ') }}
+        {% if pcdAppeal.taskType == 'PCD Appeal (Red)' %}
+          {{ govukTag({ text: "Urgent", classes: "govuk-tag--red" }) }}
+        {% endif %}
+      </h1>
 
-      <p class="govuk-body">
-        <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ pcdAppeal.caseId }}/details">Case overview</a>
-      </p>
+      <form method="post" action="/cases/{{ pcdAppeal.caseId }}/reviews">
+        
+        {{ govukButton({ text: "Review case" }) }}
+
+        <p class="govuk-body">
+          <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ pcdAppeal.caseId }}/details">Case overview</a>
+        </p>
+
+
+      </form>
+
+      
+     
 
       {# ---------------------------------------------------------------
          Urgency — PACE clock / statutory time limit. Shown up top because
@@ -95,10 +110,6 @@
           { key: { text: "Grounds for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
         ]
       }) }}
-
-      <form method="post" action="/cases/{{ pcdAppeal.caseId }}/reviews">
-        {{ govukButton({ text: "Review case" }) }}
-      </form>
 
     </div>
   </div>
