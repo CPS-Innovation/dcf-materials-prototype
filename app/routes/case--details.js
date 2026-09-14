@@ -323,17 +323,48 @@ module.exports = router => {
     res.render('cases/pcd-appeal/decision', { pcdAppeal })
   })
 
-  // PCD appeal DCP decision — static mock content for now (see
-  // app/data/pcd-appeal-cases.js), so this doesn't persist the decision,
-  // it just confirms the action was taken. The "already decided" state is
-  // demonstrated structurally by case 2002's pre-filled mock data instead.
+  // PCD appeal DCP decision — mutates the in-memory mock record (see
+  // app/data/pcd-appeal-cases.js) so the summary card on the case overview
+  // actually grows in place after submit. Not real persistence — it's
+  // process-memory only and resets on server restart — but it lets the
+  // whole journey be demoed end to end on one case, not just shown
+  // structurally via two permanently-different mock cases.
   router.post('/cases/:caseId/pcd-appeal/decision', (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const pcdAppeal = pcdAppealCases[caseId]
+
+    if (pcdAppeal) {
+      const testLabels = {
+        'full-code': 'Full Code Test',
+        'threshold': 'Threshold Test'
+      }
+      const outcomeLabels = {
+        uphold: 'Reject — charge not authorised',
+        overturn: 'Accept — charge authorised'
+      }
+      const currentUser = req.session.data.user
+      const decidedBy = currentUser ? `DCP — ${currentUser.firstName} ${currentUser.lastName}` : 'DCP'
+
+      pcdAppeal.dcpDecision = {
+        chargeOutcomes: pcdAppeal.originalDecision.charges
+          .filter(charge => charge.appealed)
+          .map(charge => ({
+            code: charge.code,
+            outcome: outcomeLabels[req.body['decision-' + charge.code]] || 'Not recorded'
+          })),
+        testApplied: testLabels[req.body['decision-test-applied']] || req.body['decision-test-applied'],
+        reasoning: req.body['decision-reasoning'],
+        decidedBy,
+        decidedDateDisplay: new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+      }
+    }
+
     _.set(req, 'session.data.successBanner', {
       titleText: 'Decision recorded',
       text: 'The PCD appeal decision has been recorded.',
       body: 'A formal MG3A-equivalent document and notification back to police still need to be sent outside this prototype.'
     })
-    res.redirect(`/cases/${req.params.caseId}/details#overview`)
+    res.redirect(`/cases/${caseId}/details#overview`)
   })
 
 }

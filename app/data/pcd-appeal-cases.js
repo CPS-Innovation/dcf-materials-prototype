@@ -6,7 +6,7 @@
 module.exports = {
   2001: {
     caseId: 2001,
-    urn: '03/JR/48812/26',
+    urn: '59R859619/3',
     taskType: 'Priority PCD Appeal (Red)',
     suspects: ['Norman Danvers'],
     custodyStatus: 'In police custody',
@@ -37,7 +37,7 @@ module.exports = {
   },
   2002: {
     caseId: 2002,
-    urn: '01/VK/11699/26',
+    urn: '63W314794/6',
     taskType: 'Review PCD Appeal (Green)',
     suspects: ['Peter Murdock'],
     custodyStatus: 'Remanded in custody',
