@@ -327,7 +327,7 @@ module.exports = router => {
   // rather than an inline form). Draft answers live in session (same
   // pattern as case--charges-discontinue.js) so the check-your-answers
   // page below can read them back and Change links can round-trip here.
-  router.get('/cases/:caseId/pcd-appeal/decision', (req, res) => {
+  router.get('/cases/:caseId/pcd-appeal/decision', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
     const pcdAppeal = pcdAppealCases[caseId]
     if (!pcdAppeal) return res.redirect(`/cases/${caseId}/details`)
@@ -339,8 +339,16 @@ module.exports = router => {
       }
     }
 
+    // The task backing this appeal — see prisma/seed-pcd-appeal-tasks.js —
+    // matched by name since the mock pcdAppeal content has no taskId of
+    // its own yet.
+    const task = await prisma.task.findFirst({
+      where: { caseId, name: pcdAppeal.taskType }
+    })
+
     res.render('cases/pcd-appeal/decision', {
       pcdAppeal,
+      taskId: task ? task.id : null,
       draft: req.session.data.pcdAppealDecisionDraft || {}
     })
   })

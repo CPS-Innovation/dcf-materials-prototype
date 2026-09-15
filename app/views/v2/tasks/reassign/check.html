@@ -33,7 +33,7 @@
             value: { text: (draft.selectedPerson.name + " (" + draft.selectedPerson.role + ")") if draft.selectedPerson else draft.selectedTeam.name + " (" + draft.selectedTeam.unitName + ")" },
             actions: {
               items: [{
-                href: "/tasks/" + taskId + "/reassign",
+                href: "/tasks/" + taskId + "/reassign/" + ("individual" if draft.selectedPerson else "team"),
                 text: "Change",
                 visuallyHiddenText: "who this task is reassigned to"
               }]

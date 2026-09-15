@@ -1,0 +1,188 @@
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'reviews' %}
+{% set pageName = 'Reviews' %}
+
+{% block beforeContent %}
+ 
+{% endblock beforeContent %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
+    <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      {% set taskNameDisplay %}
+        {% if task.name.length > 100 %}
+          {{ task.name | truncate(100) }}
+        {% else %}
+          {{ task.name }}
+        {% endif %}
+      {% endset %}
+
+      <h1 class="govuk-heading-l">
+        {{ pageName | trim }}
+        {# {{govukTag({ text: task.severity, classes: (task.severity | severityTagClass) })}} #}
+      </h1>
+
+      <div class="govuk-button-group">
+        {# <a href="/cases/{{_case.id}}/tasks/{{task.id}}/complete" class="govuk-button">Start task</a> #}
+        <a href="#" class="govuk-button">Start task</a>
+      </div>
+
+      {% set defendantsValue %}
+        {{task.case.defendants[0].firstName}} {{task.case.defendants[0].lastName}}
+        {% if task.case.defendants.length > 1 %}
+          and {{task.case.defendants.length - 1}} more
+        {% endif %}
+      {% endset %}
+
+      {% set ownerValue %}
+        {% if task.assignedToUser %}
+          {{task.assignedToUser.firstName}} {{task.assignedToUser.lastName}}
+        {% elif task.assignedToTeam %}
+          {{task.assignedToTeam.name}} ({{task.assignedToTeam.unit.name}})
+        {% endif %}
+      {% endset %}
+
+      {% set dueDateValue %}
+        {{ task.dueDate | isoDateString | govukDateTime }}
+        {% if task.severity == 'Overdue' or task.severity == 'Critically overdue' %}
+          ({{ task.severity | lower }})
+        {% else %}
+          ({{ task.dueDate | daysUntil }})
+        {% endif %}
+      {% endset %}
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: {
+              text: 'Description'
+            },
+            value: {
+              text: task.name
+            },
+            actions: {
+              items: [
+                {
+                  href: "#",
+                  text: "Change",
+                  visuallyHiddenText: "Description"
+                }
+              ]
+            }
+          } if task.reminderType != null,
+          {
+            key: {
+              text: 'Severity'
+            },
+            value: {
+              html: govukTag({ text: task.severity, classes: (task.severity | severityTagClass) })
+            }
+          } if 1==2,
+          {
+            key: {
+              text: 'Defendant'
+            },
+            value: {
+              html: defendantsValue
+            }
+          },
+          {
+            key: {
+              text: 'Reminder date'
+            },
+            value: {
+              html: (task.reminderDate | isoDateString | govukDateTime)
+            }
+          } if 1==2,
+          {
+            key: {
+              text: 'Due date'
+            },
+            value: {
+              html: dueDateValue
+            },
+            actions: {
+              items: [
+                {
+                  href: "#",
+                  text: "Change",
+                  visuallyHiddenText: "Due date"
+                }
+              ]
+            } if task.reminderType != null
+          },
+          {
+            key: {
+              text: 'Escalation date'
+            },
+            value: {
+              html: (task.escalationDate | isoDateString | govukDateTime)
+            }
+          } if 1==2,
+          {
+            key: {
+              text: 'Custody time limit'
+            },
+            value: {
+              html: (_case.custodyTimeLimit | isoDateString | govukDateTime) + ' (' + (_case.custodyTimeLimit | daysUntil) + ')'
+            }
+          } if _case.custodyTimeLimit,
+          {
+            key: {
+              text: 'Statutory time limit'
+            },
+            value: {
+              html: (_case.statutoryTimeLimit | isoDateString | govukDateTime) + ' (' + (_case.statutoryTimeLimit | daysUntil) + ')'
+            }
+          } if _case.statutoryTimeLimit,
+          {
+            key: {
+              text: 'PACE time limit'
+            },
+            value: {
+              html: (_case.paceTimeLimit | isoDateString | govukDateTime) + ' (' + (_case.paceTimeLimit | daysUntil) + ')'
+            }
+          } if _case.paceTimeLimit,
+          {
+            key: {
+              text: 'Urgent reason'
+            },
+            value: {
+              text: task.urgentNote
+            }
+          } if task.isUrgent,
+          {
+            key: {
+              html: 'Owner'
+            },
+            value: {
+              html: ownerValue
+            }
+          },
+          {
+            key: {
+              html: 'Unit'
+            },
+            value: {
+              html: task.case.unit.name
+            }
+          },
+          {
+            key: {
+              html: 'Reminder type'
+            },
+            value: {
+              html: 'Reminder' if task.reminderType == 'Standard' else 'Reminder (asset recovery)'
+            }
+          } if task.reminderType
+        ]
+      })}}
+
+
+    </div>
+  </div>
+{% endblock %}
