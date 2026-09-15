@@ -1,0 +1,123 @@
+{# tasks/reassign/individual.html — Step 2a: search for a person
+   Role/Unit are real Prisma data (User.role, Unit); Area has no real
+   equivalent in the schema so it's a decorative field for now, same as
+   several other non-functional filters already in the task list tables. #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'tasks' %}
+{% set pageName = "Reassign task to an individual" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({ text: "Back", href: "/tasks/" + taskId + "/reassign" }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      {% if error %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: [{ text: error, href: "#surname" }]
+        }) }}
+      {% endif %}
+
+      <span class="govuk-caption-l">{{ task.task }} - {{ task.urn }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+    </div>
+  </div>
+
+  <form method="post" action="/tasks/{{ taskId }}/reassign/individual">
+
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-one-quarter">
+        {{ govukSelect({
+          id: "area",
+          name: "area",
+          label: { text: "Area" },
+          value: search.area,
+          classes: "govuk-!-width-full",
+          items: [
+            { value: "", text: "All areas" },
+            { value: "area-a", text: "Area A" },
+            { value: "area-b", text: "Area B" }
+          ]
+        }) }}
+      </div>
+      <div class="govuk-grid-column-one-quarter">
+        {{ govukSelect({
+          id: "unit",
+          name: "unit",
+          label: { text: "Unit" },
+          value: search.unit or defaultUnitId,
+          classes: "govuk-!-width-full",
+          items: [{ value: "", text: "All units" }].concat(unitItems)
+        }) }}
+      </div>
+      <div class="govuk-grid-column-one-quarter">
+        {{ govukSelect({
+          id: "role",
+          name: "role",
+          label: { text: "Role" },
+          value: search.role,
+          classes: "govuk-!-width-full",
+          items: [{ value: "", text: "Any role" }].concat(roleItems)
+        }) }}
+      </div>
+      <div class="govuk-grid-column-one-quarter">
+        {{ govukInput({
+          id: "surname",
+          name: "surname",
+          value: search.surname,
+          label: { text: "Name" },
+          classes: "govuk-!-width-full",
+          errorMessage: { text: error } if error
+        }) }}
+      </div>
+    </div>
+
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        <div class="govuk-button-group govuk-!-margin-top-2">
+          {{ govukButton({ text: "Search" }) }}
+        </div>
+      </div>
+    </div>
+
+  </form>
+
+  {% if results %}
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+
+        {% if results.length %}
+          <p class="govuk-body">{{ results.length }} person{{ "s" if results.length != 1 else "" }} found</p>
+
+          {% set resultRows = [] %}
+          {% for person in results %}
+            {% set resultRows = (resultRows.push({
+              key: { text: person.name },
+              value: { text: person.role },
+              actions: {
+                items: [{
+                  href: "/tasks/" + taskId + "/reassign/individual/select/" + person.id,
+                  html: "Select<span class=\"govuk-visually-hidden\"> " + person.name + "</span>"
+                }]
+              }
+            }), resultRows) %}
+          {% endfor %}
+
+          {{ govukSummaryList({
+            attributes: { style: "border-top: 1px solid #b1b4b6" },
+            rows: resultRows
+          }) }}
+        {% else %}
+          <p class="govuk-body">No one matched your search.</p>
+        {% endif %}
+
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

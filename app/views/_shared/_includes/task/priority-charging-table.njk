@@ -128,7 +128,7 @@
           <th class="govuk-table__header" scope="col" aria-sort="none">Task</th>
           <th class="govuk-table__header" scope="col" aria-sort="none">SLA ends</th>
           <th class="govuk-table__header" scope="col" aria-sort="none">PACE clock ends</th>
-          <th class="govuk-table__header" scope="col" aria-sort="ascending">Countdown</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Countdown</th>
           <th class="govuk-table__header" scope="col">Owner</th>
           <th class="govuk-table__header" scope="col">Notes</th>
           <th class="govuk-table__header" scope="col">Saved</th>
@@ -158,7 +158,7 @@
               {% endif %}
             </td>
             <td class="govuk-table__cell" data-sort-value="{{ task.urn }}">
-              <a class="govuk-link govuk-link--no-visited-state" href="#">{{ task.urn }}</a>
+              <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ task.caseId }}/details#overview">{{ task.urn }}</a>
             </td>
             <td class="govuk-table__cell" data-sort-value="{{ task.defendants[0] }}">
               {{ task.defendants[0] }}
@@ -194,7 +194,7 @@
               <div class="app-task-list__detail-actions">
                 <a class="govuk-link govuk-link--no-visited-state" href="#">Open in CMS</a>
                 <div class="app-task-list__detail-actions-group">
-                  <a class="govuk-button govuk-button--secondary" href="#" role="button">Reassign task</a>
+                  <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
                   {% if task.caseId %}
                     <a class="govuk-button" href="/cases/{{ task.caseId }}/pcd-appeal/decision" role="button">Start task</a>
                   {% else %}

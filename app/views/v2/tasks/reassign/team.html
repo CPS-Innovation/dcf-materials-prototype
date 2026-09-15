@@ -1,0 +1,95 @@
+{# tasks/reassign/team.html — Step 2b: search for a team
+   Unit is real Prisma data (Team.unit); Area has no real equivalent in
+   the schema so it's a decorative field for now, same as individual.html. #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'tasks' %}
+{% set pageName = "Reassign task to a team" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({ text: "Back", href: "/tasks/" + taskId + "/reassign" }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-l">{{ task.task }} - {{ task.urn }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+    </div>
+  </div>
+
+  <form method="post" action="/tasks/{{ taskId }}/reassign/team">
+
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-one-quarter">
+        {{ govukSelect({
+          id: "area",
+          name: "area",
+          label: { text: "Area" },
+          value: search.area,
+          classes: "govuk-!-width-full",
+          items: [
+            { value: "", text: "All areas" },
+            { value: "area-a", text: "Area A" },
+            { value: "area-b", text: "Area B" }
+          ]
+        }) }}
+      </div>
+      <div class="govuk-grid-column-one-quarter">
+        {{ govukSelect({
+          id: "unit",
+          name: "unit",
+          label: { text: "Unit" },
+          value: search.unit or defaultUnitId,
+          classes: "govuk-!-width-full",
+          items: [{ value: "", text: "All units" }].concat(unitItems)
+        }) }}
+      </div>
+    </div>
+
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        <div class="govuk-button-group govuk-!-margin-top-2">
+          {{ govukButton({ text: "Search" }) }}
+        </div>
+      </div>
+    </div>
+
+  </form>
+
+  {% if results %}
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+
+        {% if results.length %}
+          <p class="govuk-body">{{ results.length }} team{{ "s" if results.length != 1 else "" }} found</p>
+
+          {% set teamRows = [] %}
+          {% for team in results %}
+            {% set teamRows = (teamRows.push({
+              key: { text: team.name },
+              value: { text: team.unitName + " · " + team.queueSize + " open task" + ("s" if team.queueSize != 1 else "") },
+              actions: {
+                items: [{
+                  href: "/tasks/" + taskId + "/reassign/team/select/" + team.id,
+                  html: "Select<span class=\"govuk-visually-hidden\"> " + team.name + "</span>"
+                }]
+              }
+            }), teamRows) %}
+          {% endfor %}
+
+          {{ govukSummaryList({
+            attributes: { style: "border-top: 1px solid #b1b4b6" },
+            rows: teamRows
+          }) }}
+        {% else %}
+          <p class="govuk-body">No teams matched your search.</p>
+        {% endif %}
+
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

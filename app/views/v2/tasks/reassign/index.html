@@ -1,0 +1,51 @@
+{# tasks/reassign/index.html — Step 1: choose recipient type
+   See reassign-task-redesign-brief.md #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'tasks' %}
+{% set pageName = "Reassign task" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({ text: "Back", href: "/tasks?v=v2" }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      {% if error %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: [{ text: error, href: "#recipientType" }]
+        }) }}
+      {% endif %}
+
+      <span class="govuk-caption-l">{{ task.task }} - {{ task.urn }}</span>
+
+      <form method="post" action="/tasks/{{ taskId }}/reassign">
+        {{ govukRadios({
+          idPrefix: "recipientType",
+          name: "recipientType",
+          fieldset: {
+            legend: { text: pageName, isPageHeading: true, classes: "govuk-fieldset__legend--l" }
+          },
+          errorMessage: { text: error } if error,
+          items: [
+            { value: "individual", text: "To an individual" },
+            { value: "team", text: "To a team" }
+          ]
+        }) }}
+        
+        
+        <div class="govuk-button-group govuk-!-margin-top-6">
+          {{ govukButton({
+            text: "Continue"
+          }) }}
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}
