@@ -5,8 +5,8 @@
    rather than an inline form (see _shared/_includes/case/details/pcd-appeal.njk).
 
    The DCP decision form (uphold/overturn per charge, test applied,
-   reasoning) has been removed — the action here is now "Review case",
-   linking straight to the task's detail page under the Reviews tab
+   reasoning) has been removed — the action here is now "Go to Case
+   review", linking straight to the task's detail page under the Reviews tab
    (cases/reviews/show.html via case--reviews.js — a copy of
    cases/tasks/show.html sharing its query logic through
    helpers/taskDetail.js). taskId comes from
@@ -46,12 +46,12 @@
         {% endif %}
       </h1>
 
-      <div class="govuk-button-group">
-        {{ govukButton({ text: "Review case", href: "/cases/" + pcdAppeal.caseId + "/reviews/" + taskId }) }}
-      </div>
+      <p class="govuk-body">
+        <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ pcdAppeal.caseId }}/reviews/{{ taskId }}">Go to Case review</a>
+      </p>
 
       <p class="govuk-body">
-        <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ pcdAppeal.caseId }}/details">Case overview</a>
+        <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ pcdAppeal.caseId }}/details">Case overview (not part of live design)</a>
       </p>
 
       
@@ -81,22 +81,9 @@
       {% endif %}
 
       {# ---------------------------------------------------------------
-         Previous charging details
-         --------------------------------------------------------------- #}
-      <h2 class="govuk-heading-m">Previous charging details</h2>
-      {{ govukSummaryList({
-        classes: "govuk-!-margin-bottom-6",
-        rows: [
-          { key: { text: "Reviewing prosecutor" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
-          { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
-          { key: { text: "Date/time" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay } },
-          { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } },
-          { key: { text: "Reasoning" }, value: { text: pcdAppeal.originalDecision.reasoning } }
-        ]
-      }) }}
-
-      {# ---------------------------------------------------------------
-         Appeal details
+         Appeal details — shown first: this is the newest information
+         (the police appeal is what generated this task), ahead of the
+         original charging decision it's appealing against.
          --------------------------------------------------------------- #}
       <h2 class="govuk-heading-m">Appeal details</h2>
       {{ govukSummaryList({
@@ -109,6 +96,27 @@
           },
           { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } },
           { key: { text: "Grounds for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
+        ]
+      }) }}
+
+      {# ---------------------------------------------------------------
+         Previous charging details — same rows as the History tab's
+         "Previous charging decision" card (history-panel.njk).
+         --------------------------------------------------------------- #}
+      <h2 class="govuk-heading-m">Previous charging details</h2>
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-6",
+        rows: [
+          { key: { text: "Date decision requested" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay.split(',')[0] } },
+          { key: { text: "Decision made by" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
+          { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
+          { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay } },
+          { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } },
+          { key: { text: "Investigation stage" }, value: { text: "Post interview" } },
+          { key: { text: "Action plan" }, value: { text: "No" } },
+          { key: { text: "Suspect name" }, value: { text: "Reason for decision" } },
+          { key: { text: "Specified charges" }, value: { text: "Charge" } },
+          { key: { text: "PCD principal offence category" }, value: { text: "Offence" } }
         ]
       }) }}
 

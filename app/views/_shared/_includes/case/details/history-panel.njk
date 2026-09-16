@@ -24,17 +24,30 @@
 {% if pcdAppeal %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      {{ govukSummaryList({
-        card: {
-          title: { html: "Previous charging decision" }
-        },
-        rows: [
-          { key: { text: "Reviewing prosecutor" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
-          { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
-          { key: { text: "Date/time" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay } },
-          { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } }
-        ]
-      }) }}
+      <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+          <h2 class="govuk-summary-card__title">Previous charging decision</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+
+          {{ govukSummaryList({
+            attributes: { style: "border-bottom: 1px solid #b1b4b6" },
+            rows: [
+              { key: { text: "Date decision requested" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay.split(',')[0] } },
+              { key: { text: "Decision made by" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
+              { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
+              { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay } },
+              { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } },
+              { key: { text: "Investigation stage" }, value: { text: "Post interview" } },
+              { key: { text: "Action plan" }, value: { text: "No" } },
+              { key: { text: "Suspect name" }, value: { text: "Reason for decision" } },
+              { key: { text: "Specified charges" }, value: { text: "Charge" } },
+              { key: { text: "PCD principal offence category" }, value: { text: "Offence" } }
+            ]
+          }) }}
+
+        </div>
+      </div>
     </div>
   </div>
 {% endif %}

@@ -6,8 +6,9 @@
    app/data/pcd-appeal-cases.js (no Prisma model for appeal content yet).
    Only rendered when pcdAppeal is set (case--details.js).
 
-   Kept deliberately concise — Appealing officer + Date/time received only,
-   in both states. "Previous charging details" no longer lives on this
+   Kept deliberately concise — Authorised by, Date and time received,
+   Appealed suspect and Reason for appeal only, in both states.
+   "Previous charging details" no longer lives on this
    card at all: it's shown on cases/pcd-appeal/decision.html, and
    permanently in the History tab (history-panel.njk) so it can be seen
    before a PCD review task is even started. Start task is not on this
@@ -23,7 +24,7 @@
 <div class="govuk-summary-card app-pcd-appeal">
   <div class="govuk-summary-card__title-wrapper">
     <h2 class="govuk-summary-card__title">
-      PCD appeal
+      PCD police appeal
       {% if pcdAppeal.taskType == 'PCD Appeal (Red)' %}
         {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
       {% else %}
@@ -40,8 +41,10 @@
       {{ govukSummaryList({
         classes: "govuk-summary-list--no-border app-summary-list--compact",
         rows: [
-          { key: { text: "Appealing officer" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
-          { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } }
+          { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
+          { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } },
+          { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
+          { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
         ]
       }) }}
 
@@ -70,8 +73,10 @@
       {{ govukSummaryList({
         classes: "govuk-summary-list--no-border app-summary-list--compact",
         rows: [
-          { key: { text: "Appealing officer" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
-          { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } }
+          { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
+          { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } },
+          { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
+          { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
         ]
       }) }}
 
