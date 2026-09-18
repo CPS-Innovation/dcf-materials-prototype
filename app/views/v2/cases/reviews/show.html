@@ -1,4 +1,4 @@
-{# cases/reviews/show-v2.html — same page chrome as show.html (nav,
+{# cases/reviews/show.html — same page chrome as show.html (nav,
    secondary nav, h1, caption), new main content matching
    ~/Desktop/landing-incomplete-review.jpg: a case-owner/charges panel
    alongside current-tasks and review-history panels. #}
@@ -16,6 +16,7 @@
   {% include "_shared/_includes/case/dcf-navigation.njk" %}
   {% include "_shared/_includes/success-banner-safe.njk" %}
 
+  <span class="govuk-caption-l">{{ _case.reference }} - {{ task.case.defendants[0].firstName }} {{ task.case.defendants[0].lastName }}</span>
   <h1 class="govuk-heading-l">{{ pageName | trim }}</h1>
 
   {% set ownerValue %}
