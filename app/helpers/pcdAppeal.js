@@ -66,7 +66,7 @@ function formatOwnerInitials(task) {
   if (task.assignedToTeam) {
     return task.assignedToTeam.name.slice(0, 2).toUpperCase()
   }
-  return '-'
+  return 'Unassigned' // matches the real CMS's literal ownerInitials value for an unassigned task
 }
 
 function getMonitoringCodes(task) {

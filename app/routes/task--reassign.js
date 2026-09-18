@@ -233,11 +233,14 @@ module.exports = router => {
 
     const draft = req.session.data.reassign || {}
     let newOwnerDisplayName = null
+    let successBannerText = null
 
     if (draft.selectedPerson) {
       newOwnerDisplayName = draft.selectedPerson.name
+      successBannerText = `${task.task} assigned to DCP ${draft.selectedPerson.name}.`
     } else if (draft.selectedTeam) {
       newOwnerDisplayName = draft.selectedTeam.name
+      successBannerText = `${task.task} assigned to ${draft.selectedTeam.name}.`
     }
 
     if (/^\d+$/.test(taskId)) {
@@ -257,7 +260,7 @@ module.exports = router => {
 
     _.set(req, 'session.data.successBanner', {
       titleText: 'Task reassigned',
-      text: `Task reassigned to ${newOwnerDisplayName}.`
+      text: successBannerText
     })
 
     res.redirect('/tasks?v=v2')
