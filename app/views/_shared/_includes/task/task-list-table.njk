@@ -6,10 +6,11 @@
    matches the convention used everywhere else in this app (contacts-
    panel.njk, tasks-panel.njk, history-panel.njk, etc.).
 
-   Data is static for now (app/data/pcd-task-list.json, passed in as
-   pcdTasks/pcdSeverityCounts by app/routes/tasks.js) so the layout and
-   look can be signed off before this is reconnected to Prisma and the
-   real filtering already built further down this file's history.
+   pcdTasks (task rows) are real Prisma data for the PCD appeal rows, see
+   app/helpers/pcdAppeal.js; t1-t6 are still static (app/data/pcd-task-list.json).
+   The filter selects below are decorative — not wired to real filtering —
+   but their option lists (pcdFilterOptions) are real values from a CMS
+   filter-data export, not placeholder text.
 #}
 
 {# Filters row under the tabs #}
@@ -36,11 +37,7 @@
       label: {
         text: "Unit group"
       },
-      items: [
-        { value: "", text: "All unit groups", selected: true },
-        { value: "group-a", text: "Group A" },
-        { value: "group-b", text: "Group B" }
-      ]
+      items: [{ value: "", text: "All unit groups", selected: true }].concat(pcdFilterOptions.unitGroups)
     }) }}
   </div>
 
@@ -51,11 +48,7 @@
       label: {
         text: "Unit"
       },
-      items: [
-        { value: "", text: "All units", selected: true },
-        { value: "unit-1", text: "Unit 1" },
-        { value: "unit-2", text: "Unit 2" }
-      ]
+      items: [{ value: "", text: "All units", selected: true }].concat(pcdFilterOptions.units)
     }) }}
   </div>
 
@@ -64,11 +57,7 @@
       id: "filter-court",
       name: "filter-court",
       label: { text: "Court" },
-      items: [
-        { value: "", text: "All courts", selected: true },
-        { value: "court-1", text: "Example court 1" },
-        { value: "court-2", text: "Example court 2" }
-      ]
+      items: [{ value: "", text: "All courts", selected: true }].concat(pcdFilterOptions.courts)
     }) }}
   </div>
 </div>
@@ -94,11 +83,7 @@
       id: "filter-task-type",
       name: "filter-task-type",
       label: { text: "Task type" },
-      items: [
-        { value: "", text: "All task types", selected: true },
-        { value: "pcd-appeal", text: "PCD Appeal" },
-        { value: "trial", text: "Trial" }
-      ]
+      items: [{ value: "", text: "All task types", selected: true }].concat(pcdFilterOptions.taskTypes)
     }) }}
   </div>
 
@@ -125,12 +110,7 @@
       label: {
         text: "Severity"
       },
-      items: [
-        { value: "", text: "All severities", selected: true },
-        { value: "low", text: "Low" },
-        { value: "medium", text: "Medium" },
-        { value: "high", text: "High" }
-      ]
+      items: [{ value: "", text: "All severities", selected: true }].concat(pcdFilterOptions.severities)
     }) }}
   </div>
 

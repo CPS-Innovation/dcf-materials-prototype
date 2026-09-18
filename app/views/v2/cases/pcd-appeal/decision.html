@@ -9,16 +9,17 @@
    review", linking straight to the task's detail page under the Reviews tab
    (cases/reviews/show.html via case--reviews.js — a copy of
    cases/tasks/show.html sharing its query logic through
-   helpers/taskDetail.js). taskId comes from
-   prisma/seed-pcd-appeal-tasks.js — see the note in case--details.js's
-   GET handler.
+   helpers/taskDetail.js). pcdAppeal/taskId come from getPcdAppealForCase
+   (app/helpers/pcdAppeal.js), real Prisma data.
 
-   NOTE: this leaves cases/reviews/index.html's POST route,
-   cases/pcd-appeal/check.html and the GET/POST
-   /cases/:caseId/pcd-appeal/decision(/check) routes in case--details.js
-   orphaned — nothing links to them any more now the form that fed them
-   is gone. Left in place rather than deleted since it wasn't asked for;
-   flag if you want them removed.
+   NOTE: this leaves cases/reviews/index.html's POST route and
+   cases/pcd-appeal/check.html unreached by any current UI link — nothing
+   links to them any more now the form that fed them is gone. The
+   GET/POST /cases/:caseId/pcd-appeal/decision(/check) routes in
+   case--details.js are no longer just harmlessly orphaned, though: they
+   now write real PcdAppeal/PcdAppealCharge rows if ever reached. Left in
+   place rather than deleted since it wasn't asked for; flag if you want
+   them removed.
 #}
 
 {% extends "_shared/layouts/main.html" %}
@@ -41,9 +42,6 @@
       <span class="govuk-caption-l">{{ pageName }}</span>
       <h1 class="govuk-heading-l app-pcd-appeal-decision__heading">
         {{ pcdAppeal.urn }} - {{ pcdAppeal.suspects | join(', ') }}
-        {% if pcdAppeal.taskType == 'PCD Appeal (Red)' %}
-          {{ govukTag({ text: "Urgent", classes: "govuk-tag--red" }) }}
-        {% endif %}
       </h1>
 
       <p class="govuk-body">
@@ -58,44 +56,43 @@
      
 
       {# ---------------------------------------------------------------
-         Urgency — PACE clock / statutory time limit. Shown up top because
-         these drive how quickly this decision needs to be made; they're
-         not case history, so they don't belong inside the sections below.
+         Urgency — statutory time limit. Shown up top because it drives
+         how quickly this decision needs to be made; it's not case
+         history, so it doesn't belong inside the sections below. PACE
+         clock expiry was removed from here — the appeal type tag on the
+         summary list below (Priority/Review) already signals urgency.
          --------------------------------------------------------------- #}
-      {% if pcdAppeal.paceClock or pcdAppeal.stl %}
-        {% set urgencyRows = [] %}
-        {% if pcdAppeal.paceClock %}
-          {% set paceValue %}
-            {{ pcdAppeal.paceClock.expiryDisplay }}
-            {{ govukTag({ text: "Overdue" if pcdAppeal.paceClock.status == 'overdue' else "Due", classes: "govuk-tag--red" if pcdAppeal.paceClock.status == 'overdue' else "govuk-tag--orange" }) }}
-          {% endset %}
-          {% set urgencyRows = (urgencyRows.push({ key: { text: "PACE clock expiry" }, value: { html: paceValue } }), urgencyRows) %}
-        {% endif %}
-        {% if pcdAppeal.stl %}
-          {% set urgencyRows = (urgencyRows.push({ key: { text: "Statutory time limit" }, value: { text: pcdAppeal.stl.expiryDisplay } }), urgencyRows) %}
-        {% endif %}
+      {% if pcdAppeal.stl %}
         {{ govukSummaryList({
           classes: "govuk-summary-list--no-border app-summary-list--compact govuk-!-margin-bottom-6",
-          rows: urgencyRows
+          rows: [
+            { key: { text: "Statutory time limit" }, value: { text: pcdAppeal.stl.expiryDisplay | isoDateString | govukDateTime } }
+          ]
         }) }}
       {% endif %}
 
       {# ---------------------------------------------------------------
          Appeal details — shown first: this is the newest information
          (the police appeal is what generated this task), ahead of the
-         original charging decision it's appealing against.
+         original charging decision it's appealing against. Heading and
+         rows mirror the case overview's summary card
+         (_shared/_includes/case/details/pcd-appeal.njk).
          --------------------------------------------------------------- #}
-      <h2 class="govuk-heading-m">Appeal details</h2>
+      <h2 class="govuk-heading-m">
+        PCD police appeal
+        {% if pcdAppeal.taskType == 'Priority PCD Review' %}
+          {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
+        {% else %}
+          {{ govukTag({ text: "Review", classes: "govuk-tag--green" }) }}
+        {% endif %}
+      </h2>
       {{ govukSummaryList({
         classes: "govuk-!-margin-bottom-6",
         rows: [
-          { key: { text: "Appealing officer" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
-          {
-            key: { text: "Officer in charge" },
-            value: { text: (pcdAppeal.appeal.oic.name + " (" + pcdAppeal.appeal.oic.rank + ", " + pcdAppeal.appeal.oic.number + ")") if pcdAppeal.appeal.oic else "Same as appealing officer" }
-          },
-          { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } },
-          { key: { text: "Grounds for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
+          { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
+          { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
+          { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
+          { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
         ]
       }) }}
 
@@ -107,16 +104,17 @@
       {{ govukSummaryList({
         classes: "govuk-!-margin-bottom-6",
         rows: [
-          { key: { text: "Date decision requested" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay.split(',')[0] } },
+          { key: { text: "Date decision requested" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDate } },
           { key: { text: "Decision made by" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
           { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
-          { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay } },
+          { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
           { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } },
-          { key: { text: "Investigation stage" }, value: { text: "Post interview" } },
-          { key: { text: "Action plan" }, value: { text: "No" } },
-          { key: { text: "Suspect name" }, value: { text: "Reason for decision" } },
-          { key: { text: "Specified charges" }, value: { text: "Charge" } },
-          { key: { text: "PCD principal offence category" }, value: { text: "Offence" } }
+          { key: { text: "Investigation stage" }, value: { text: pcdAppeal.investigationStage } },
+          { key: { text: "Action plan" }, value: { text: pcdAppeal.actionPlan } },
+          { key: { text: "Suspect name" }, value: { text: pcdAppeal.suspects | join(', ') } },
+          { key: { text: "Reason for decision" }, value: { text: pcdAppeal.originalDecision.reasoning } },
+          { key: { text: "Specified charges" }, value: { text: pcdAppeal.specifiedCharges } },
+          { key: { text: "PCD principal offence category" }, value: { text: pcdAppeal.pcdPrincipalOffenceCategory } }
         ]
       }) }}
 

@@ -2,22 +2,27 @@ const _ = require('lodash')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const pcdTasks = require('../data/pcd-task-list.json')
-const priorityChargingTasks = require('../data/priority-charging-task-list.json')
+const { getTaskForReassign } = require('../helpers/pcdAppeal')
 
-// Reassign task — see reassign-task-redesign-brief.md. Tasks here are the
-// static PCD demo rows (pcd-task-list.json / priority-charging-task-list.json),
-// not real Prisma Task rows, so the commit step mutates the in-memory mock
-// record (same pattern as pcdAppealCases) rather than doing a real
-// task.update() — see the note in the POST /confirm handler.
+// Reassign task — see reassign-task-redesign-brief.md. pcdTasks (t1-t6) are
+// still static PCD demo rows with no real Task/Case behind them at all, so
+// the commit step mutates the in-memory mock record for those. Every
+// PCD-appeal row (Task list's t7/t8, all of Priority charging) is now a
+// real Prisma Task (see app/helpers/pcdAppeal.js) — findTaskById tells the
+// two kinds of id apart by whether it parses as a number, and the commit
+// step below does a real task.update() for real ids.
 //
 // Search (People/Teams) IS real Prisma data — User.role, Team + Team.unit,
 // and open-task counts via the real Task model's assignedToUserId/
 // assignedToTeamId relations all exist for real, so that part of the
-// journey isn't mocked.
+// journey isn't mocked either way.
 
-function findTaskById(taskId) {
-  const task = pcdTasks.find(t => t.id === taskId) || priorityChargingTasks.find(t => t.id === taskId)
-  return task || null
+async function findTaskById(taskId) {
+  if (/^\d+$/.test(taskId)) {
+    const task = await getTaskForReassign(parseInt(taskId))
+    if (task) return task
+  }
+  return pcdTasks.find(t => t.id === taskId) || null
 }
 
 async function getTaskUnitId(task) {
@@ -31,8 +36,8 @@ module.exports = router => {
 
   // ── Step 1: choose recipient type ──────────────────────────────────
 
-  router.get('/tasks/:taskId/reassign', (req, res) => {
-    const task = findTaskById(req.params.taskId)
+  router.get('/tasks/:taskId/reassign', async (req, res) => {
+    const task = await findTaskById(req.params.taskId)
     if (!task) return res.status(404).render('not-found')
 
     const error = req.session.data.reassignError
@@ -41,9 +46,9 @@ module.exports = router => {
     res.render('tasks/reassign/index', { task, taskId: req.params.taskId, error })
   })
 
-  router.post('/tasks/:taskId/reassign', (req, res) => {
+  router.post('/tasks/:taskId/reassign', async (req, res) => {
     const taskId = req.params.taskId
-    const task = findTaskById(taskId)
+    const task = await findTaskById(taskId)
     if (!task) return res.status(404).render('not-found')
 
     const recipientType = req.body.recipientType
@@ -62,7 +67,7 @@ module.exports = router => {
 
   async function renderIndividualSearch(req, res, { search, error } = {}) {
     const taskId = req.params.taskId
-    const task = findTaskById(taskId)
+    const task = await findTaskById(taskId)
     if (!task) return res.status(404).render('not-found')
 
     const allUsers = await prisma.user.findMany({ select: { role: true } })
@@ -144,7 +149,7 @@ module.exports = router => {
 
   async function renderTeamSearch(req, res, search) {
     const taskId = req.params.taskId
-    const task = findTaskById(taskId)
+    const task = await findTaskById(taskId)
     if (!task) return res.status(404).render('not-found')
 
     const units = await prisma.unit.findMany({ orderBy: { name: 'asc' } })
@@ -205,9 +210,9 @@ module.exports = router => {
 
   // ── Step 4: check answers and commit ────────────────────────────────
 
-  router.get('/tasks/:taskId/reassign/check', (req, res) => {
+  router.get('/tasks/:taskId/reassign/check', async (req, res) => {
     const taskId = req.params.taskId
-    const task = findTaskById(taskId)
+    const task = await findTaskById(taskId)
     if (!task) return res.status(404).render('not-found')
 
     const draft = req.session.data.reassign || {}
@@ -218,28 +223,35 @@ module.exports = router => {
     res.render('tasks/reassign/check', { task, taskId, draft })
   })
 
-  // Commits by mutating the mock task record's owner field in place —
-  // these are static JSON rows, not real Task rows, so there's no real
-  // task.update() to run here (see file header note).
-  router.post('/tasks/:taskId/reassign/check', (req, res) => {
+  // Real PCD-appeal Task rows (numeric id) get a real task.update(); the
+  // remaining static JSON rows (t1-t6, numeric-less ids) still mutate the
+  // in-memory mock record — there's no real Task behind those at all.
+  router.post('/tasks/:taskId/reassign/check', async (req, res) => {
     const taskId = req.params.taskId
-    const task = findTaskById(taskId)
+    const task = await findTaskById(taskId)
     if (!task) return res.status(404).render('not-found')
 
     const draft = req.session.data.reassign || {}
-    let newOwnerInitials = null
     let newOwnerDisplayName = null
 
     if (draft.selectedPerson) {
-      const parts = draft.selectedPerson.name.split(' ')
-      newOwnerInitials = ((parts[0][0] || '') + (parts[parts.length - 1][0] || '')).toUpperCase()
       newOwnerDisplayName = draft.selectedPerson.name
     } else if (draft.selectedTeam) {
-      newOwnerInitials = draft.selectedTeam.name
       newOwnerDisplayName = draft.selectedTeam.name
     }
 
-    if (newOwnerInitials) task.owner = newOwnerInitials
+    if (/^\d+$/.test(taskId)) {
+      await prisma.task.update({
+        where: { id: parseInt(taskId) },
+        data: {
+          assignedToUserId: draft.selectedPerson ? draft.selectedPerson.id : null,
+          assignedToTeamId: draft.selectedTeam ? draft.selectedTeam.id : null
+        }
+      })
+    } else if (newOwnerDisplayName) {
+      const parts = newOwnerDisplayName.split(' ')
+      task.owner = ((parts[0][0] || '') + (parts[parts.length - 1][0] || '')).toUpperCase()
+    }
 
     delete req.session.data.reassign
 

@@ -2,7 +2,7 @@ const _ = require('lodash')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const documentTypes = require('../data/document-types')
-const pcdAppealCases = require('../data/pcd-appeal-cases')
+const { getPcdAppealForCase, getRawTaskWithAppealForCase } = require('../helpers/pcdAppeal')
 
 function resetFilters(req) {
   _.set(req, 'session.data.documentListFilters.documentTypes', null)
@@ -155,13 +155,15 @@ module.exports = router => {
     // local would shadow that (and by this point session.data.successBanner
     // has already been cleared by that middleware, so it'd shadow it with
     // undefined).
+    const { pcdAppeal } = await getPcdAppealForCase(caseId)
+
     res.render("cases/details/index", {
       _case,
       documents,
       documentTypeItems,
       selectedFilters,
       tasks,
-      pcdAppeal: pcdAppealCases[caseId] || null
+      pcdAppeal
     })
   })
 
@@ -289,12 +291,14 @@ module.exports = router => {
       value: docType
     }))
 
+    const { pcdAppeal } = await getPcdAppealForCase(caseId)
+
     res.render("cases/details/show", {
       _case,
       documents,
       documentTypeItems,
       selectedFilters,
-      pcdAppeal: pcdAppealCases[caseId] || null
+      pcdAppeal
     })
   })
 
@@ -329,7 +333,7 @@ module.exports = router => {
   // page below can read them back and Change links can round-trip here.
   router.get('/cases/:caseId/pcd-appeal/decision', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
-    const pcdAppeal = pcdAppealCases[caseId]
+    const { pcdAppeal, taskId } = await getPcdAppealForCase(caseId)
     if (!pcdAppeal) return res.redirect(`/cases/${caseId}/details`)
 
     if (req.query.returnUrl) {
@@ -339,16 +343,9 @@ module.exports = router => {
       }
     }
 
-    // The task backing this appeal — see prisma/seed-pcd-appeal-tasks.js —
-    // matched by name since the mock pcdAppeal content has no taskId of
-    // its own yet.
-    const task = await prisma.task.findFirst({
-      where: { caseId, name: pcdAppeal.taskType }
-    })
-
     res.render('cases/pcd-appeal/decision', {
       pcdAppeal,
-      taskId: task ? task.id : null,
+      taskId,
       draft: req.session.data.pcdAppealDecisionDraft || {}
     })
   })
@@ -367,9 +364,9 @@ module.exports = router => {
 
   // ── check ─────────────────────────────────────────────────────────
 
-  router.get('/cases/:caseId/pcd-appeal/decision/check', (req, res) => {
+  router.get('/cases/:caseId/pcd-appeal/decision/check', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
-    const pcdAppeal = pcdAppealCases[caseId]
+    const { pcdAppeal } = await getPcdAppealForCase(caseId)
     const draft = req.session.data.pcdAppealDecisionDraft
     if (!pcdAppeal || !draft) return res.redirect(`/cases/${caseId}/pcd-appeal/decision`)
 
@@ -387,33 +384,34 @@ module.exports = router => {
     })
   })
 
-  // PCD appeal DCP decision — mutates the in-memory mock record (see
-  // app/data/pcd-appeal-cases.js) so the summary card on the case overview
-  // actually grows in place after submit. Not real persistence — it's
-  // process-memory only and resets on server restart — but it lets the
-  // whole journey be demoed end to end on one case, not just shown
-  // structurally via two permanently-different mock cases.
-  router.post('/cases/:caseId/pcd-appeal/decision/check', (req, res) => {
+  // PCD appeal DCP decision — writes the real PcdAppeal/PcdAppealCharge rows
+  // (see prisma/schema.prisma) so the summary card on the case overview
+  // actually grows in place after submit, persisted for real this time.
+  router.post('/cases/:caseId/pcd-appeal/decision/check', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
-    const pcdAppeal = pcdAppealCases[caseId]
+    const task = await getRawTaskWithAppealForCase(caseId)
     const draft = req.session.data.pcdAppealDecisionDraft
 
-    if (pcdAppeal && draft) {
+    if (task && task.pcdAppeal && draft) {
       const currentUser = req.session.data.user
-      const decidedBy = currentUser ? `DCP — ${currentUser.firstName} ${currentUser.lastName}` : 'DCP'
 
-      pcdAppeal.dcpDecision = {
-        chargeOutcomes: pcdAppeal.originalDecision.charges
-          .filter(charge => charge.appealed)
-          .map(charge => ({
-            code: charge.code,
-            outcome: outcomeLabels[draft['decision-' + charge.code]] || 'Not recorded'
-          })),
-        testApplied: testLabels[draft['decision-test-applied']] || draft['decision-test-applied'],
-        reasoning: draft['decision-reasoning'],
-        decidedBy,
-        decidedDateDisplay: new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+      for (const pac of task.pcdAppeal.charges.filter(c => c.appealed)) {
+        const code = pac.charge ? pac.charge.chargeCode : pac.chargeCode
+        await prisma.pcdAppealCharge.update({
+          where: { id: pac.id },
+          data: { decisionOutcome: outcomeLabels[draft['decision-' + code]] || 'Not recorded' }
+        })
       }
+
+      await prisma.pcdAppeal.update({
+        where: { id: task.pcdAppeal.id },
+        data: {
+          dcpDecisionTestApplied: testLabels[draft['decision-test-applied']] || draft['decision-test-applied'],
+          dcpDecisionReasoning: draft['decision-reasoning'],
+          dcpDecisionByUserId: currentUser ? currentUser.id : null,
+          dcpDecisionAt: new Date()
+        }
+      })
     }
 
     delete req.session.data.pcdAppealDecisionDraft
@@ -427,12 +425,28 @@ module.exports = router => {
   })
 
   // Reset the PCD appeal demo back to its pending state (footer testing
-  // link) — undoes the in-memory mutation from the decision check route
-  // above, same idea as "Reset Redact and Edit" further down this file.
-  router.post('/cases/:caseId/pcd-appeal/reset', (req, res) => {
+  // link) — undoes the write from the decision check route above, same
+  // idea as "Reset Redact and Edit" further down this file.
+  router.post('/cases/:caseId/pcd-appeal/reset', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
-    const pcdAppeal = pcdAppealCases[caseId]
-    if (pcdAppeal) pcdAppeal.dcpDecision = null
+    const task = await getRawTaskWithAppealForCase(caseId)
+
+    if (task && task.pcdAppeal) {
+      await prisma.pcdAppealCharge.updateMany({
+        where: { pcdAppealId: task.pcdAppeal.id },
+        data: { decisionOutcome: null }
+      })
+      await prisma.pcdAppeal.update({
+        where: { id: task.pcdAppeal.id },
+        data: {
+          dcpDecisionTestApplied: null,
+          dcpDecisionReasoning: null,
+          dcpDecisionByUserId: null,
+          dcpDecisionAt: null
+        }
+      })
+    }
+
     delete req.session.data.pcdAppealDecisionDraft
     res.redirect(req.body.returnTo || `/cases/${caseId}/details#overview`)
   })

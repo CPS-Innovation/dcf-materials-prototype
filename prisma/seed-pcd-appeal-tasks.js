@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 async function main() {
   const tasks = [
     {
-      name: "PCD Appeal (Red)",
+      name: "Priority PCD Review",
       caseId: 2001,
       reminderDate: new Date("2026-09-09T22:00:00.000Z"),
       dueDate: new Date("2026-09-10T22:00:00.000Z"), // PACE clock expiry — pcd-appeal-cases.js caseId 2001
@@ -22,7 +22,7 @@ async function main() {
       assignedToUserId: 559 // David Okoye — seeded DCP user (seed-dcp-users.js)
     },
     {
-      name: "PCD Appeal (Green)",
+      name: "Review PCD Appeal",
       caseId: 2002,
       reminderDate: new Date("2026-11-15T23:59:59.999Z"),
       dueDate: new Date("2026-11-20T23:59:59.999Z"), // Statutory time limit — pcd-appeal-cases.js caseId 2002

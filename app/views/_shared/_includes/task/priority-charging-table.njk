@@ -10,8 +10,13 @@
    Task list's existing text-only conventions rather than the icon-heavy
    look in the reference screenshot.
 
-   Data is static for now (app/data/priority-charging-task-list.json,
-   passed in as priorityChargingTasks by app/routes/tasks.js).
+   Real Prisma Task data (every row is a "Priority PCD Review" Task,
+   the real task type name for a red/urgent PCD appeal) — see
+   app/helpers/pcdAppeal.js's getPriorityChargingRows, passed in as
+   priorityChargingTasks by app/routes/tasks.js. The filter selects below
+   are decorative — not wired to real filtering — but their option lists
+   (pcdFilterOptions) are real values from a CMS filter-data export, not
+   placeholder text.
 #}
 
 {# Filters row — subset of the Task list's filters, single row. IDs are
@@ -37,11 +42,7 @@
       id: "priority-filter-area",
       name: "priority-filter-area",
       label: { text: "Area" },
-      items: [
-        { value: "", text: "All areas", selected: true },
-        { value: "area-a", text: "Area A" },
-        { value: "area-b", text: "Area B" }
-      ]
+      items: [{ value: "", text: "All areas", selected: true }].concat(pcdFilterOptions.areas)
     }) }}
   </div>
 
@@ -50,11 +51,7 @@
       id: "priority-filter-unit",
       name: "priority-filter-unit",
       label: { text: "Unit" },
-      items: [
-        { value: "", text: "All units", selected: true },
-        { value: "unit-1", text: "Unit 1" },
-        { value: "unit-2", text: "Unit 2" }
-      ]
+      items: [{ value: "", text: "All units", selected: true }].concat(pcdFilterOptions.units)
     }) }}
   </div>
 
