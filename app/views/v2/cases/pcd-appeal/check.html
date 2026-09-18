@@ -1,0 +1,61 @@
+{# cases/pcd-appeal/check.html
+
+   Check-your-answers step for the PCD appeal DCP decision — see
+   cases/pcd-appeal/decision.html and case--details.js. Three Change links,
+   one per input on the decision page (charge decision(s), test applied,
+   reasoning), each round-tripping back here via returnUrl.
+#}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'cases' %}
+{% set pageName = "Check your answers" %}
+
+{% set returnUrl = "/cases/" + pcdAppeal.caseId + "/pcd-appeal/decision/check" %}
+{% set changeUrl = "/cases/" + pcdAppeal.caseId + "/pcd-appeal/decision?returnUrl=" + returnUrl %}
+
+{% block beforeContent %}
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <span class="govuk-caption-l">{{ pcdAppeal.urn }} - {{ pcdAppeal.suspects | join(', ') }}</span>
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: { text: "Charge decision(s)" },
+            value: { html: chargeDecisionsSummary },
+            actions: {
+              items: [{ href: changeUrl, text: "Change", visuallyHiddenText: "charge decision(s)" }]
+            }
+          },
+          {
+            key: { text: "Test applied" },
+            value: { text: testAppliedSummary },
+            actions: {
+              items: [{ href: changeUrl, text: "Change", visuallyHiddenText: "test applied" }]
+            }
+          },
+          {
+            key: { text: "Reasoning" },
+            value: { text: reasoningSummary },
+            actions: {
+              items: [{ href: changeUrl, text: "Change", visuallyHiddenText: "reasoning" }]
+            }
+          }
+        ]
+      }) }}
+
+      <form method="post">
+        {{ govukButton({ text: "Submit decision" }) }}
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

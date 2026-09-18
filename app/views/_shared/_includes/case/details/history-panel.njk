@@ -13,6 +13,49 @@
    happens, same as before. Wrapped in its own two-thirds column here
    (unlike outline-panels.njk's cards, which wrap themselves) since this
    partial owns its whole tab panel. #}
+{# ---------------------------------------------------------------------
+   Previous charging decision (PCD appeal) — permanent part of the audit
+   trail, not tied to whether a decision has been made yet, so it can be
+   seen from History before a PCD review task is even started. Real
+   Prisma data (PcdAppeal model), fetched by getPcdAppealForCase
+   (app/helpers/pcdAppeal.js). "Investigation stage"/"Action plan"/
+   "Specified charges"/"PCD principal offence category" are still
+   placeholder text pending real fields from the database team; "Suspect
+   name"/"Reason for decision" are real (case defendant / original
+   decision reasoning).
+   --------------------------------------------------------------------- #}
+{% if pcdAppeal %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <div class="govuk-summary-card">
+        <div class="govuk-summary-card__title-wrapper">
+          <h2 class="govuk-summary-card__title">Previous charging decision</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+
+          {{ govukSummaryList({
+            attributes: { style: "border-bottom: 1px solid #b1b4b6" },
+            rows: [
+              { key: { text: "Date decision requested" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDate } },
+              { key: { text: "Decision made by" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
+              { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
+              { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
+              { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } },
+              { key: { text: "Investigation stage" }, value: { text: pcdAppeal.investigationStage } },
+              { key: { text: "Action plan" }, value: { text: pcdAppeal.actionPlan } },
+              { key: { text: "Suspect name" }, value: { text: pcdAppeal.suspects | join(', ') } },
+              { key: { text: "Reason for decision" }, value: { text: pcdAppeal.originalDecision.reasoning } },
+              { key: { text: "Specified charges" }, value: { text: pcdAppeal.specifiedCharges } },
+              { key: { text: "PCD principal offence category" }, value: { text: pcdAppeal.pcdPrincipalOffenceCategory } }
+            ]
+          }) }}
+
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
 {% if _case.factualSummaryVersions and _case.factualSummaryVersions.length %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">

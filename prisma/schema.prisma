@@ -8,21 +8,23 @@ datasource db {
 }
 
 model User {
-  id                    Int                      @id @default(autoincrement())
-  email                 String                   @unique
-  password              String
-  firstName             String
-  lastName              String
-  role                  String
-  notes                 Note[]
-  activityLogs          ActivityLog[]
-  tasks                 Task[]
-  units                 UserUnit[]
-  caseProsecutors       CaseProsecutor[]
-  caseParalegalOfficers CaseParalegalOfficer[]
-  specialistAreas       Specialism[]             @relation("UserSpecialistAreas")
-  preferredAreas        Specialism[]             @relation("UserPreferredAreas")
-  restrictedAreas       Specialism[]             @relation("UserRestrictedAreas")
+  id                         Int                    @id @default(autoincrement())
+  email                      String                 @unique
+  password                   String
+  firstName                  String
+  lastName                   String
+  role                       String
+  notes                      Note[]
+  activityLogs               ActivityLog[]
+  tasks                      Task[]
+  units                      UserUnit[]
+  caseProsecutors            CaseProsecutor[]
+  caseParalegalOfficers      CaseParalegalOfficer[]
+  specialistAreas            Specialism[]           @relation("UserSpecialistAreas")
+  preferredAreas             Specialism[]           @relation("UserPreferredAreas")
+  restrictedAreas            Specialism[]           @relation("UserRestrictedAreas")
+  pcdAppealOriginalDecisions PcdAppeal[]            @relation("PcdAppealOriginalDecisionBy")
+  pcdAppealDcpDecisions      PcdAppeal[]            @relation("PcdAppealDcpDecisionBy")
 }
 
 model ActivityLog {
@@ -48,91 +50,92 @@ model Victim {
 }
 
 model Witness {
-  id                          Int                @id @default(autoincrement())
-  title                       String?
-  firstName                   String
-  lastName                    String
-  dateOfBirth                 DateTime?
-  gender                      Gender?
-  ethnicity                   Ethnicity?
-  preferredLanguage           PreferredLanguage  @default(English)
-  isCpsContactAllowed         Boolean            @default(true)
-  addressLine1                String?
-  addressLine2                String?
-  addressTown                 String?
-  addressPostcode             String?
-  mobileNumber                String?
-  emailAddress                String?
-  preferredContactMethod      String?
-  faxNumber                   String?
-  homeNumber                  String?
-  workNumber                  String?
-  otherNumber                 String?
-  isVictim                    Boolean            @default(false)
-  isKeyWitness                Boolean            @default(false)
-  isChild                     Boolean            @default(false)
-  isExpert                    Boolean            @default(false)
-  isInterpreter               Boolean            @default(false)
-  isPolice                    Boolean            @default(false)
-  isProfessional              Boolean            @default(false)
-  isPrisoner                  Boolean            @default(false)
-  isVulnerable                Boolean            @default(false)
-  isIntimidated               Boolean            @default(false)
-  isAppearingInCourt          Boolean?
+  id                           Int                @id @default(autoincrement())
+  title                        String?
+  firstName                    String
+  lastName                     String
+  dateOfBirth                  DateTime?
+  gender                       Gender?
+  ethnicity                    Ethnicity?
+  preferredLanguage            PreferredLanguage  @default(English)
+  isCpsContactAllowed          Boolean            @default(true)
+  addressLine1                 String?
+  addressLine2                 String?
+  addressTown                  String?
+  addressPostcode              String?
+  mobileNumber                 String?
+  emailAddress                 String?
+  preferredContactMethod       String?
+  faxNumber                    String?
+  homeNumber                   String?
+  workNumber                   String?
+  otherNumber                  String?
+  isVictim                     Boolean            @default(false)
+  isKeyWitness                 Boolean            @default(false)
+  isChild                      Boolean            @default(false)
+  isExpert                     Boolean            @default(false)
+  isInterpreter                Boolean            @default(false)
+  isPolice                     Boolean            @default(false)
+  isProfessional               Boolean            @default(false)
+  isPrisoner                   Boolean            @default(false)
+  isVulnerable                 Boolean            @default(false)
+  isIntimidated                Boolean            @default(false)
+  isAppearingInCourt           Boolean?
   reasonForNotAppearingInCourt String?
-  isRelevant                  Boolean?
-  attendanceIssues            String?
-  previousTransgressions      String?
-  acroConvictions             Boolean            @default(true)
-  wasWarned                   Boolean?
-  dcf                         Boolean
-  courtAvailabilityStartDate  DateTime?
-  courtAvailabilityEndDate    DateTime?
-  victimCode                  String?
-  victimExplained             Boolean?
-  victimOfferResponse         String?
-  caseId                      Int
-  case                        Case               @relation(fields: [caseId], references: [id])
-  statements                  WitnessStatement[]
-  specialMeasures             SpecialMeasure[]
+  isRelevant                   Boolean?
+  attendanceIssues             String?
+  previousTransgressions       String?
+  acroConvictions              Boolean            @default(true)
+  wasWarned                    Boolean?
+  dcf                          Boolean
+  courtAvailabilityStartDate   DateTime?
+  courtAvailabilityEndDate     DateTime?
+  victimCode                   String?
+  victimExplained              Boolean?
+  victimOfferResponse          String?
+  caseId                       Int
+  case                         Case               @relation(fields: [caseId], references: [id])
+  statements                   WitnessStatement[]
+  specialMeasures              SpecialMeasure[]
 }
 
 model WitnessStatement {
-  id                    Int      @id @default(autoincrement())
-  witnessId             Int
-  witness               Witness  @relation(fields: [witnessId], references: [id])
-  number                Int
-  isMarkedAsSection9    Boolean?
-  isUsedAsEvidence      Boolean?
-  receivedDate          DateTime
+  id                 Int      @id @default(autoincrement())
+  witnessId          Int
+  witness            Witness  @relation(fields: [witnessId], references: [id])
+  number             Int
+  isMarkedAsSection9 Boolean?
+  isUsedAsEvidence   Boolean?
+  receivedDate       DateTime
+
   @@unique([witnessId, number]) // enforce uniqueness per witness
 }
 
 model SpecialMeasure {
-  id                                Int      @id @default(autoincrement())
-  type                              String
-  details                           String?
-  needs                             String?
-  requiresMeeting                   Boolean  @default(false)
-  meetingUrl                        String?
-  hasAppliedForReportingRestrictions Boolean  @default(false)
-  witnessId                         Int
-  witness                           Witness  @relation(fields: [witnessId], references: [id])
+  id                                 Int     @id @default(autoincrement())
+  type                               String
+  details                            String?
+  needs                              String?
+  requiresMeeting                    Boolean @default(false)
+  meetingUrl                         String?
+  hasAppliedForReportingRestrictions Boolean @default(false)
+  witnessId                          Int
+  witness                            Witness @relation(fields: [witnessId], references: [id])
 }
 
 model Case {
-  id                Int                      @id @default(autoincrement())
-  reference         String                   @unique
-  complexity        String?
-  type              String?
-  factualSummary    String?
-  factualSummaryRedacted String?
+  id                          Int                     @id @default(autoincrement())
+  reference                   String                  @unique
+  complexity                  String?
+  type                        String?
+  factualSummary              String?
+  factualSummaryRedacted      String?
   // Frozen the first time factualSummary is ever changed by an edit-confirm
   // or a redaction commit (whichever happens first) — never overwritten
   // again after that. "Confidential information to prosecutor" reads this
   // as the untouched source of truth; factualSummary keeps evolving as the
   // current/latest wording. Null until the first such change happens.
-  factualSummaryOriginal String?
+  factualSummaryOriginal      String?
   // Same "frozen on first change, never overwritten again" idea as
   // factualSummaryOriginal, captured independently on every edit/redact
   // commit path (including the v6 no-CYA edit, which deliberately leaves
@@ -147,31 +150,31 @@ model Case {
   // "Redacted on"/both, in place of the static demo "Added on" date. Both
   // null until the corresponding journey first commits; cleared alongside
   // factualSummaryOriginal by the footer's testing reset.
-  factualSummaryEditedAt DateTime?
-  factualSummaryRedactedAt DateTime?
-  unitId            Int
-  unit              Unit                     @relation(fields: [unitId], references: [id])
-  defendants        Defendant[]              @relation("CaseDefendants")
-  victims           Victim[]                 @relation("CaseVictims")
-  witnesses         Witness[]
-  hearings          Hearing[]
-  location          Location?
-  tasks             Task[]
-  directions        Direction[]
-  documents         Document[]
-  dga               DGA?
-  notes             Note[]
-  activityLogs      ActivityLog[]
-  reportStatus      String?                  // Can be: "In progress" or "Completed", null means "Not started"
-  prosecutors       CaseProsecutor[]
-  paralegalOfficers CaseParalegalOfficer[]
+  factualSummaryEditedAt      DateTime?
+  factualSummaryRedactedAt    DateTime?
+  unitId                      Int
+  unit                        Unit                    @relation(fields: [unitId], references: [id])
+  defendants                  Defendant[]             @relation("CaseDefendants")
+  victims                     Victim[]                @relation("CaseVictims")
+  witnesses                   Witness[]
+  hearings                    Hearing[]
+  location                    Location?
+  tasks                       Task[]
+  directions                  Direction[]
+  documents                   Document[]
+  dga                         DGA?
+  notes                       Note[]
+  activityLogs                ActivityLog[]
+  reportStatus                String? // Can be: "In progress" or "Completed", null means "Not started"
+  prosecutors                 CaseProsecutor[]
+  paralegalOfficers           CaseParalegalOfficer[]
   // Audit trail for the History tab — unlike factualSummaryOriginal (a
   // single frozen snapshot of the very first version, never updated
   // again), one row is appended here on *every* redact/edit commit,
   // capturing whatever factualSummary was immediately before that commit
   // overwrote it. Together they build the full version-by-version timeline
   // shown on History, not just "the original".
-  factualSummaryVersions FactualSummaryVersion[]
+  factualSummaryVersions      FactualSummaryVersion[]
 }
 
 model FactualSummaryVersion {
@@ -179,7 +182,7 @@ model FactualSummaryVersion {
   caseId    Int
   case      Case     @relation(fields: [caseId], references: [id])
   text      String
-  action    String   // 'redacted' | 'edited'
+  action    String // 'redacted' | 'edited'
   createdAt DateTime @default(now())
 }
 
@@ -190,30 +193,29 @@ enum ReportStatus {
 }
 
 model DGA {
-  id             Int                 @id @default(autoincrement())
-  caseId         Int                 @unique
-  case           Case                @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  id             Int                @id @default(autoincrement())
+  caseId         Int                @unique
+  case           Case               @relation(fields: [caseId], references: [id], onDelete: Cascade)
   reason         String?
   outcome        String?
-  failureReasons DGAFailureReason[]  
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  failureReasons DGAFailureReason[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 }
 
 model DGAFailureReason {
   id        Int      @id @default(autoincrement())
   reason    String
   outcome   String?
-  details   String?   // Add this field
-  methods   String?   // Add this field
+  details   String? // Add this field
+  methods   String? // Add this field
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   dga       DGA      @relation(fields: [dgaId], references: [id])
   dgaId     Int
-  
+
   @@map("dga_failure_reasons")
 }
-
 
 enum DGAOutcome {
   NOT_DISPUTED
@@ -258,12 +260,12 @@ model Unit {
 }
 
 model Team {
-  id          Int          @id @default(autoincrement())
-  name        String
-  unitId      Int
-  unit        Unit         @relation(fields: [unitId], references: [id])
-  isStandard  Boolean      @default(true)
-  tasks       Task[]
+  id         Int     @id @default(autoincrement())
+  name       String
+  unitId     Int
+  unit       Unit    @relation(fields: [unitId], references: [id])
+  isStandard Boolean @default(true)
+  tasks      Task[]
 }
 
 model UserUnit {
@@ -272,24 +274,25 @@ model UserUnit {
   user   User @relation(fields: [userId], references: [id])
   unitId Int
   unit   Unit @relation(fields: [unitId], references: [id])
+
   @@unique([userId, unitId])
 }
 
 model Defendant {
-  id               Int            @id @default(autoincrement())
-  firstName        String
-  lastName         String
-  gender           Gender?
-  religion         String?
-  occupation       String?
-  dateOfBirth      DateTime?
-  remandStatus     RemandStatus?
-  paceTimeLimit    DateTime?
-  defenceLawyerId  Int?
-  defenceLawyer    DefenceLawyer? @relation(fields: [defenceLawyerId], references: [id])
-  cases            Case[]         @relation("CaseDefendants")
-  charges          Charge[]
-  directions       Direction[]
+  id              Int            @id @default(autoincrement())
+  firstName       String
+  lastName        String
+  gender          Gender?
+  religion        String?
+  occupation      String?
+  dateOfBirth     DateTime?
+  remandStatus    RemandStatus?
+  paceTimeLimit   DateTime?
+  defenceLawyerId Int?
+  defenceLawyer   DefenceLawyer? @relation(fields: [defenceLawyerId], references: [id])
+  cases           Case[]         @relation("CaseDefendants")
+  charges         Charge[]
+  directions      Direction[]
 }
 
 model DefenceLawyer {
@@ -301,20 +304,21 @@ model DefenceLawyer {
 }
 
 model Charge {
-  id                  Int       @id @default(autoincrement())
-  chargeCode          String
-  description         String
-  status              String
-  offenceDate         DateTime
-  plea                Plea?
-  particulars         String
-  custodyTimeLimit    DateTime?
-  statutoryTimeLimit  DateTime?
-  isCount             Boolean   @default(false)
-  victimId            Int?
-  victim              Victim?   @relation(fields: [victimId], references: [id])
-  defendantId         Int
-  defendant           Defendant @relation(fields: [defendantId], references: [id])
+  id                 Int               @id @default(autoincrement())
+  chargeCode         String
+  description        String
+  status             String
+  offenceDate        DateTime
+  plea               Plea?
+  particulars        String
+  custodyTimeLimit   DateTime?
+  statutoryTimeLimit DateTime?
+  isCount            Boolean           @default(false)
+  victimId           Int?
+  victim             Victim?           @relation(fields: [victimId], references: [id])
+  defendantId        Int
+  defendant          Defendant         @relation(fields: [defendantId], references: [id])
+  pcdAppealCharges   PcdAppealCharge[]
 }
 
 enum RemandStatus {
@@ -343,14 +347,14 @@ model Hearing {
 }
 
 model Location {
-  id       Int     @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   name     String
   line1    String
   line2    String
   town     String
   postcode String
-  case     Case?   @relation(fields: [caseId], references: [id])
-  caseId   Int?    @unique
+  case     Case?  @relation(fields: [caseId], references: [id])
+  caseId   Int?   @unique
 }
 
 model Task {
@@ -370,6 +374,7 @@ model Task {
   assignedToTeam   Team?      @relation(fields: [assignedToTeamId], references: [id])
   assignedToTeamId Int?
   notes            TaskNote[]
+  pcdAppeal        PcdAppeal?
 }
 
 model TaskNote {
@@ -381,29 +386,93 @@ model TaskNote {
   updatedAt   DateTime @updatedAt
 }
 
+// PCD (Post-Charge Decision) appeal — one per PCD-appeal Task. Replaces the
+// static app/data/pcd-appeal-cases.js mock. URN, suspect name, and PACE/STL
+// dates are deliberately NOT stored here — they're derived at render time
+// from the real Task's Case/Defendant/Charge data (see app/helpers/pcdAppeal.js),
+// which is what fixes the mock's drift from the real case it claimed to describe.
+model PcdAppeal {
+  id     Int  @id @default(autoincrement())
+  taskId Int  @unique
+  task   Task @relation(fields: [taskId], references: [id])
+
+  // Original charging decision being appealed — no existing model covers this
+  originalDecisionByUserId  Int?
+  originalDecisionByUser    User?    @relation("PcdAppealOriginalDecisionBy", fields: [originalDecisionByUserId], references: [id])
+  originalDecisionOutcome   String
+  originalDecisionAt        DateTime
+  originalDecisionTest      String
+  originalDecisionReasoning String
+
+  // Police appeal — police-side data, not a CPS User
+  appealingOfficerName   String
+  appealingOfficerRank   String
+  appealingOfficerNumber String
+  groundsNarrative       String
+  receivedAt             DateTime
+
+  // DCP decision — null until recorded (was previously mutated in-memory only)
+  dcpDecisionTestApplied String?
+  dcpDecisionReasoning   String?
+  dcpDecisionByUserId    Int?
+  dcpDecisionByUser      User?     @relation("PcdAppealDcpDecisionBy", fields: [dcpDecisionByUserId], references: [id])
+  dcpDecisionAt          DateTime?
+
+  // Priority charging table's "SLA ends" column — no other real concept covers it
+  slaEndsAt DateTime?
+
+  // "Was urgent" tag on both tables — confirmed real (PreviouslyUrgentFlag
+  // in a real CMS task export) but not something this app can compute (no
+  // urgency-history tracking), so it's a manually-set flag, not derived.
+  previouslyUrgent Boolean @default(false)
+
+  // Placeholder rows (literal display text, deliberately not derived from data)
+  investigationStage          String @default("Post interview")
+  actionPlan                  String @default("No")
+  specifiedCharges            String @default("Charge")
+  pcdPrincipalOffenceCategory String @default("Offence")
+
+  charges PcdAppealCharge[]
+}
+
+// Charges being appealed. chargeId links to a real Charge when one exists on
+// the case; chargeCode/chargeDescription are a free-text fallback for the one
+// case (2002) whose mock charges don't match any real charge on that case.
+model PcdAppealCharge {
+  id                Int       @id @default(autoincrement())
+  pcdAppealId       Int
+  pcdAppeal         PcdAppeal @relation(fields: [pcdAppealId], references: [id])
+  chargeId          Int?
+  charge            Charge?   @relation(fields: [chargeId], references: [id])
+  chargeCode        String?
+  chargeDescription String?
+  appealed          Boolean   @default(true)
+  decisionOutcome   String?
+}
+
 model Direction {
-  id               Int        @id @default(autoincrement())
-  title            String
-  description      String
-  dueDate          DateTime
-  completedDate    DateTime?
-  assignee         String     // 'Prosecution' or 'Defence'
-  case             Case       @relation(fields: [caseId], references: [id])
-  caseId           Int
-  defendant        Defendant? @relation(fields: [defendantId], references: [id])
-  defendantId      Int?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  id            Int        @id @default(autoincrement())
+  title         String
+  description   String
+  dueDate       DateTime
+  completedDate DateTime?
+  assignee      String // 'Prosecution' or 'Defence'
+  case          Case       @relation(fields: [caseId], references: [id])
+  caseId        Int
+  defendant     Defendant? @relation(fields: [defendantId], references: [id])
+  defendantId   Int?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model Document {
-  id           Int      @id @default(autoincrement())
-  name         String
-  description  String?
-  type         String
-  size         Int
-  case         Case     @relation(fields: [caseId], references: [id])
-  caseId       Int
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  type        String
+  size        Int
+  case        Case    @relation(fields: [caseId], references: [id])
+  caseId      Int
 }
 
 model Note {

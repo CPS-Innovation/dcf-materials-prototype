@@ -1,0 +1,283 @@
+{# _shared/_includes/task/task-list-table.njk
+
+   Task list tab content — Green PCD appeals only (Red goes to Priority
+   charging, see priority-charging-table.njk). Extracted out of
+   main-tabs.njk so each tab's table is independently maintainable —
+   matches the convention used everywhere else in this app (contacts-
+   panel.njk, tasks-panel.njk, history-panel.njk, etc.).
+
+   pcdTasks (task rows) are real Prisma data for the PCD appeal rows, see
+   app/helpers/pcdAppeal.js; t1-t6 are still static (app/data/pcd-task-list.json).
+   The filter selects below are decorative — not wired to real filtering —
+   but their option lists (pcdFilterOptions) are real values from a CMS
+   filter-data export, not placeholder text.
+#}
+
+{# Filters row under the tabs #}
+<div class="govuk-grid-row govuk-!-margin-bottom-4 app-task-filters">
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "filter-urn-or-defendant",
+      name: "filter-urn-or-defendant",
+      label: {
+        text: "URN or defendant surname"
+      },
+      items: [
+        { value: "", text: "All", selected: true },
+        { value: "urn-1", text: "Example URN 1" },
+        { value: "urn-2", text: "Example URN 2" }
+      ]
+    }) }}
+  </div>
+
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "filter-unit-group",
+      name: "filter-unit-group",
+      label: {
+        text: "Unit group"
+      },
+      items: [{ value: "", text: "All unit groups", selected: true }].concat(pcdFilterOptions.unitGroups)
+    }) }}
+  </div>
+
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "filter-unit",
+      name: "filter-unit",
+      label: {
+        text: "Unit"
+      },
+      items: [{ value: "", text: "All units", selected: true }].concat(pcdFilterOptions.units)
+    }) }}
+  </div>
+
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "filter-court",
+      name: "filter-court",
+      label: { text: "Court" },
+      items: [{ value: "", text: "All courts", selected: true }].concat(pcdFilterOptions.courts)
+    }) }}
+  </div>
+</div>
+
+<div class="govuk-grid-row govuk-!-margin-bottom-4 app-task-filters">
+
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "filter-hearing-dates",
+      name: "filter-hearing-dates",
+      label: { text: "Hearing dates" },
+      items: [
+        { value: "", text: "Any date", selected: true },
+        { value: "next-7-days", text: "Next 7 days" },
+        { value: "next-30-days", text: "Next 30 days" }
+      ]
+    }) }}
+  </div>
+
+
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "filter-task-type",
+      name: "filter-task-type",
+      label: { text: "Task type" },
+      items: [{ value: "", text: "All task types", selected: true }].concat(pcdFilterOptions.taskTypes)
+    }) }}
+  </div>
+
+  <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "filter-owner",
+      name: "filter-owner",
+      label: {
+        text: "Owner"
+      },
+      items: [
+        { value: "", text: "All owners", selected: true },
+        { value: "me", text: "Me" },
+        { value: "my-team", text: "My team" }
+      ]
+    }) }}
+  </div>
+
+
+   <div class="govuk-grid-column-one-quarter">
+    {{ govukSelect({
+      id: "filter-severity",
+      name: "filter-severity",
+      label: {
+        text: "Severity"
+      },
+      items: [{ value: "", text: "All severities", selected: true }].concat(pcdFilterOptions.severities)
+    }) }}
+  </div>
+
+</div>
+
+{# ---------------------------------------------------------------------
+   Selected filters ("filter sets") — visual only for now
+   --------------------------------------------------------------------- #}
+<ul class="app-task-list__chips">
+  <li class="app-task-list__chip">
+    All (Units)
+    <a class="app-task-list__chip-remove" href="#" aria-label="Remove filter: All (Units)">&times;</a>
+  </li>
+  <li class="app-task-list__chip">
+    {{ pcdTasks[0].owner }}
+    <a class="app-task-list__chip-remove" href="#" aria-label="Remove filter: {{ pcdTasks[0].owner }}">&times;</a>
+  </li>
+</ul>
+
+<div class="govuk-button-group">
+  {{ govukButton({
+    text: "Search"
+  }) }}
+
+  {{ govukButton({
+    text: "Save filter",
+    classes: "govuk-button--secondary"
+  }) }}
+
+   {{ govukButton({
+    text: "Reset",
+    classes: "govuk-button--secondary"
+  }) }}
+</div>
+
+{# ---------------------------------------------------------------------
+   Quick-filter tabs (severity buckets) + result count
+   --------------------------------------------------------------------- #}
+{% set severityBuckets = ["Due Soon", "Due", "Overdue", "Escalated"] %}
+<div class="app-task-list__quick-filters">
+  <div class="app-task-list__counters">
+    {% for bucket in severityBuckets %}
+      <p class="app-task-list__counter">{{ bucket }} ({{ pcdSeverityCounts[bucket] | default(0) }})</p>
+    {% endfor %}
+  </div>
+  <p class="app-task-list__showing">Showing ({{ pcdTasks.length }}) of ({{ pcdTasks.length }}) tasks</p>
+</div>
+
+{# ---------------------------------------------------------------------
+   Task table
+   --------------------------------------------------------------------- #}
+{% if pcdTasks.length %}
+  <div class="app-task-list__table-wrapper">
+    <table class="govuk-table app-task-list__table" data-module="moj-multi-select moj-sortable-table" data-moj-multi-select-id-prefix="tasks-">
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th class="govuk-table__header" id="tasks-select-all" scope="col"></th>
+          <th class="govuk-table__header" scope="col">Locked</th>
+          <th class="govuk-table__header" scope="col">Urgent</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">URN</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Defendants</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Time limit</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Task</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Type</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Hearing</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Owner</th>
+          <th class="govuk-table__header" scope="col" aria-sort="none">Due date</th>
+          <th class="govuk-table__header" scope="col">Notes</th>
+          <th class="govuk-table__header" scope="col">Saved</th>
+          <th class="govuk-table__header" scope="col">Details</th>
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body">
+        {% for task in pcdTasks %}
+          <tr class="govuk-table__row">
+            <td class="govuk-table__cell">
+              <div class="govuk-checkboxes govuk-checkboxes--small">
+                <div class="govuk-checkboxes__item">
+                  <input class="govuk-checkboxes__input" id="task-select-{{ task.id }}" name="task-select-{{ task.id }}" type="checkbox" value="{{ task.id }}">
+                  <label class="govuk-label govuk-checkboxes__label" for="task-select-{{ task.id }}">
+                    <span class="govuk-visually-hidden">Select task {{ task.task }} for {{ task.urn }}</span>
+                  </label>
+                </div>
+              </div>
+            </td>
+            {# Locked column left blank for now #}
+            <td class="govuk-table__cell"></td>
+            <td class="govuk-table__cell">
+              {% if task.urgent %}
+                {{ govukTag({ text: "Urgent", classes: "govuk-tag--red" }) }}
+              {% elif task.previouslyUrgent %}
+                {{ govukTag({ text: "Was urgent", classes: "govuk-tag--grey" }) }}
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.urn }}">
+              <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ task.overviewCaseId }}/details#overview">{{ task.urn }}</a>
+            </td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.defendants[0] }}">
+              {{ task.defendants[0] }}
+              {% if task.defendants.length > 1 %}
+                <a class="app-task-list__defendants-more" href="#">+{{ task.defendants.length - 1 }} more</a>
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.timeLimit or '' }}">
+              {% if task.timeLimit %}
+                {{ govukTag({ text: task.timeLimit, classes: "govuk-tag--orange" }) }}
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.task }}">{{ task.task }}</td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.type }}">{{ task.type }}</td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.hearingSort }}">{{ task.hearingDisplay or '-' }}</td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.owner }}">{{ task.owner }}</td>
+            <td class="govuk-table__cell" data-sort-value="{{ task.dueDateSort }}">{{ task.dueDateDisplay }}</td>
+            <td class="govuk-table__cell">Notes</td>
+            <td class="govuk-table__cell">{{ "Unsave" if task.saved else "Save" }}</td>
+            <td class="govuk-table__cell">
+              <button type="button" class="app-task-list__more-toggle js-task-more-toggle" aria-expanded="false" aria-controls="task-detail-{{ task.id }}">
+                <span class="js-task-more-toggle-label">Show</span>
+              </button>
+            </td>
+          </tr>
+          <tr class="govuk-table__row app-task-list__detail-row" id="task-detail-{{ task.id }}" hidden>
+            <td class="govuk-table__cell app-task-list__detail" colspan="14">
+              <div class="app-task-list__detail-actions">
+                <a class="govuk-link govuk-link--no-visited-state" href="#">Open in CMS</a>
+                <div class="app-task-list__detail-actions-group">
+                  <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
+                  {% if task.caseId %}
+                    <a class="govuk-button" href="/cases/{{ task.caseId }}/pcd-appeal/decision" role="button">Start task</a>
+                  {% else %}
+                    <button type="button" class="govuk-button">Start task</button>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="govuk-grid-row">
+                <div class="govuk-grid-column-one-half app-task-list__detail-col--left">
+                  {{ govukSummaryList({
+                    classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+                    rows: [
+                      { key: { text: "Prosecutor" }, value: { text: task.detail.prosecutor } },
+                      { key: { text: "Paralegal officer" }, value: { text: task.detail.paralegalOfficer } },
+                      { key: { text: "Officer in charge" }, value: { text: task.detail.officerInCharge } },
+                      { key: { text: "Counsel" }, value: { text: task.detail.counsel } }
+                    ]
+                  }) }}
+                  <a class="govuk-link govuk-link--no-visited-state app-task-list__detail-link" href="#">Allocation and all contacts</a>
+                </div>
+
+                <div class="govuk-grid-column-one-half">
+                  {{ govukSummaryList({
+                    classes: "govuk-summary-list--no-border app-summary-list--compact app-summary-list--small-text",
+                    rows: [
+                      { key: { text: "Defendants" }, value: { text: task.detail.defendantsLinkText } },
+                      { key: { text: "Total charges" }, value: { text: task.detail.totalChargesText } },
+                      { key: { text: "Monitoring codes" }, value: { text: task.detail.monitoringCodes | join(', ') if task.detail.monitoringCodes.length else '-' } }
+                    ]
+                  }) }}
+                  <a class="govuk-link govuk-link--no-visited-state app-task-list__detail-link" href="#">Charge or count summary ({{ task.detail.chargeSummaryCount }})</a>
+                </div>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p>There are no results.</p>
+{% endif %}

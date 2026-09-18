@@ -3,7 +3,10 @@
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'tasks' %}
-{% set pageName = "Tasks (:total)" | replace(':total', totalTasks | formatNumber) %}
+{# Was the real Prisma totalTasks (filtered by session filters), which had
+   drifted meaningless once the Task list/Priority charging tabs became
+   static PCD demo data — now reflects the two static datasets instead. #}
+{% set pageName = "Tasks (:total)" | replace(':total', (pcdTasks.length + priorityChargingTasks.length) | formatNumber) %}
 
 
 {% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
@@ -21,6 +24,8 @@
 {% endblock %}
 
 {% block content %}
+  {% include "_shared/_includes/success-banner-safe.njk" %}
+
   <h1 class="govuk-heading-l">
     {{ pageName }}
   </h1>

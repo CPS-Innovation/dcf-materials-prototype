@@ -1,0 +1,970 @@
+{
+  "areas": [
+    {
+      "value": "1027",
+      "text": "Cleveland"
+    },
+    {
+      "value": "1040",
+      "text": "Humberside"
+    },
+    {
+      "value": "1028",
+      "text": "Northumbria"
+    },
+    {
+      "value": "1002",
+      "text": "Stafford"
+    },
+    {
+      "value": "1013",
+      "text": "Warwickshire"
+    },
+    {
+      "value": "1038",
+      "text": "West Mercia"
+    }
+  ],
+  "units": [
+    {
+      "value": "2161",
+      "text": "Cleveland Unit"
+    },
+    {
+      "value": "2225",
+      "text": "Droitwich CJU"
+    },
+    {
+      "value": "2234",
+      "text": "Hull TU"
+    },
+    {
+      "value": "2167",
+      "text": "Northumbria TU"
+    },
+    {
+      "value": "2005",
+      "text": "Stafford CJU"
+    },
+    {
+      "value": "2066",
+      "text": "Warwickshire Crown Court Unit"
+    }
+  ],
+  "courts": [
+    {
+      "value": "3608",
+      "text": "Aldersgate House CC NC"
+    },
+    {
+      "value": "3603",
+      "text": "Ashton Hall CC NC"
+    },
+    {
+      "value": "3602",
+      "text": "Ashton Hall MC NC"
+    },
+    {
+      "value": "3422",
+      "text": "Bedlington MC"
+    },
+    {
+      "value": "3416",
+      "text": "Berwick MC"
+    },
+    {
+      "value": "3601",
+      "text": "Birmingham CC NC"
+    },
+    {
+      "value": "3087",
+      "text": "Birmingham Crown Court"
+    },
+    {
+      "value": "3613",
+      "text": "Bolton Stadium CC NC"
+    },
+    {
+      "value": "3009",
+      "text": "Cannock MC"
+    },
+    {
+      "value": "3596",
+      "text": "Chester CC NC"
+    },
+    {
+      "value": "3615",
+      "text": "Chesterfield CC NC"
+    },
+    {
+      "value": "3607",
+      "text": "Chichester CC NC"
+    },
+    {
+      "value": "3599",
+      "text": "Cirencester CC NC"
+    },
+    {
+      "value": "3598",
+      "text": "Cirencester MC NC"
+    },
+    {
+      "value": "3007",
+      "text": "Court of Appeal"
+    },
+    {
+      "value": "3610",
+      "text": "Croydon CC NC"
+    },
+    {
+      "value": "3055",
+      "text": "Durham CC"
+    },
+    {
+      "value": "3430",
+      "text": "Gateshead MC"
+    },
+    {
+      "value": "3609",
+      "text": "Hendon CC NC"
+    },
+    {
+      "value": "3542",
+      "text": "Hereford CC"
+    },
+    {
+      "value": "3538",
+      "text": "Hereford MC"
+    },
+    {
+      "value": "3268",
+      "text": "Hull CC"
+    },
+    {
+      "value": "3540",
+      "text": "Kidderminster MC"
+    },
+    {
+      "value": "3269",
+      "text": "Leeds CC"
+    },
+    {
+      "value": "3616",
+      "text": "Leeds Cloth Hall CC NC"
+    },
+    {
+      "value": "3611",
+      "text": "Liverpool CC NC"
+    },
+    {
+      "value": "3600",
+      "text": "Liverpool NC"
+    },
+    {
+      "value": "3595",
+      "text": "Lowry Salford NC"
+    },
+    {
+      "value": "3605",
+      "text": "Manchester Hilton CC NC"
+    },
+    {
+      "value": "3604",
+      "text": "Mansfield CC NC"
+    },
+    {
+      "value": "3056",
+      "text": "Newcastle CC"
+    },
+    {
+      "value": "3436",
+      "text": "Newcastle MC"
+    },
+    {
+      "value": "3420",
+      "text": "North Tyneside MC"
+    },
+    {
+      "value": "3612",
+      "text": "Nottingham CC NC"
+    },
+    {
+      "value": "3597",
+      "text": "Peterborough NC"
+    },
+    {
+      "value": "3614",
+      "text": "Preston North End CC NC"
+    },
+    {
+      "value": "3593",
+      "text": "Prospero NC"
+    },
+    {
+      "value": "3539",
+      "text": "Redditch MC"
+    },
+    {
+      "value": "3424",
+      "text": "South Tyneside MC"
+    },
+    {
+      "value": "3014",
+      "text": "Stafford CC"
+    },
+    {
+      "value": "3606",
+      "text": "Stockport CC NC"
+    },
+    {
+      "value": "3426",
+      "text": "Sunderland MC"
+    },
+    {
+      "value": "3594",
+      "text": "Swansea NC"
+    },
+    {
+      "value": "3057",
+      "text": "Teesside CC"
+    },
+    {
+      "value": "3411",
+      "text": "Teesside MC"
+    },
+    {
+      "value": "3095",
+      "text": "Warwick Crown Court"
+    },
+    {
+      "value": "3091",
+      "text": "Wolverhampton Crown Court"
+    },
+    {
+      "value": "3541",
+      "text": "Worcester CC"
+    },
+    {
+      "value": "3537",
+      "text": "Worcester MC"
+    }
+  ],
+  "unitGroups": [
+    {
+      "value": "98",
+      "text": "Crown Court Unit Group"
+    },
+    {
+      "value": "76",
+      "text": "Durham Tees MC"
+    },
+    {
+      "value": "101",
+      "text": "Yorkshire and Humberside Crown Court"
+    }
+  ],
+  "taskTypes": [
+    {
+      "value": "137",
+      "text": "28 day PCD Review"
+    },
+    {
+      "value": "136",
+      "text": "5 day PCD Review"
+    },
+    {
+      "value": "34",
+      "text": "Adverse Outcome Report"
+    },
+    {
+      "value": "6",
+      "text": "Allocate Case"
+    },
+    {
+      "value": "50",
+      "text": "Arrange Witness Meeting"
+    },
+    {
+      "value": "101",
+      "text": "Bundle File Error"
+    },
+    {
+      "value": "606",
+      "text": "Bundle Service Error"
+    },
+    {
+      "value": "1020",
+      "text": "Case Allocated"
+    },
+    {
+      "value": "144",
+      "text": "Case Center Dispatch Error"
+    },
+    {
+      "value": "605",
+      "text": "Case Management Service Error"
+    },
+    {
+      "value": "1013",
+      "text": "Case Merged"
+    },
+    {
+      "value": "1008",
+      "text": "Case Reactivated"
+    },
+    {
+      "value": "1012",
+      "text": "Case Split"
+    },
+    {
+      "value": "92",
+      "text": "Certify Trial Readiness"
+    },
+    {
+      "value": "-2",
+      "text": "Charging Tasks"
+    },
+    {
+      "value": "129",
+      "text": "Chase Outstanding PCD Case - 1 mth"
+    },
+    {
+      "value": "130",
+      "text": "Chase Outstanding PCD Case - 2 mths"
+    },
+    {
+      "value": "90",
+      "text": "Chase Outstanding Pre-charge case"
+    },
+    {
+      "value": "22",
+      "text": "Chase Upgrade File"
+    },
+    {
+      "value": "9",
+      "text": "Chase/Send LTI File"
+    },
+    {
+      "value": "88",
+      "text": "Check 3rd Party Comm"
+    },
+    {
+      "value": "36",
+      "text": "Check ASD Charges"
+    },
+    {
+      "value": "109",
+      "text": "Check Bundle Structure"
+    },
+    {
+      "value": "131",
+      "text": "Check Case Awaiting Charge - 1 mth"
+    },
+    {
+      "value": "132",
+      "text": "Check Case Awaiting Charge - 2 mths"
+    },
+    {
+      "value": "107",
+      "text": "Check Case Ownership"
+    },
+    {
+      "value": "1018",
+      "text": "Check CPS Comm"
+    },
+    {
+      "value": "114",
+      "text": "Check CTL Case"
+    },
+    {
+      "value": "603",
+      "text": "Check Directions"
+    },
+    {
+      "value": "115",
+      "text": "Check Electronic Upgrade File"
+    },
+    {
+      "value": "42",
+      "text": "Check Merged Case"
+    },
+    {
+      "value": "113",
+      "text": "Check New Case"
+    },
+    {
+      "value": "104",
+      "text": "Check New Communication"
+    },
+    {
+      "value": "105",
+      "text": "Check New Correspondence"
+    },
+    {
+      "value": "601",
+      "text": "Check New CP Document"
+    },
+    {
+      "value": "123",
+      "text": "Check New Crown Court Case"
+    },
+    {
+      "value": "119",
+      "text": "Check New DCS Document"
+    },
+    {
+      "value": "23",
+      "text": "Check New Information"
+    },
+    {
+      "value": "124",
+      "text": "Check New PCD Case"
+    },
+    {
+      "value": "103",
+      "text": "Check New Police Info"
+    },
+    {
+      "value": "25",
+      "text": "Check Phone Call"
+    },
+    {
+      "value": "30",
+      "text": "Check Pre-release Conditions"
+    },
+    {
+      "value": "126",
+      "text": "Check Resubmitted PCD Case"
+    },
+    {
+      "value": "43",
+      "text": "Check Split Case"
+    },
+    {
+      "value": "96",
+      "text": "Check Unauthorised Charge(s)"
+    },
+    {
+      "value": "35",
+      "text": "Check Video Returned"
+    },
+    {
+      "value": "112",
+      "text": "Check WCU Comm"
+    },
+    {
+      "value": "49",
+      "text": "Check/Re-warn Witnesses"
+    },
+    {
+      "value": "15",
+      "text": "Committal Certification"
+    },
+    {
+      "value": "143",
+      "text": "Common Platform Error"
+    },
+    {
+      "value": "1009",
+      "text": "Communicate Hearing Outcome"
+    },
+    {
+      "value": "40",
+      "text": "Complete Review"
+    },
+    {
+      "value": "58",
+      "text": "Confirm Discontinuance"
+    },
+    {
+      "value": "118",
+      "text": "Confirm VPS/ISB"
+    },
+    {
+      "value": "1017",
+      "text": "Confirm Witness Contact Changes"
+    },
+    {
+      "value": "46",
+      "text": "Confirm Witness Selection"
+    },
+    {
+      "value": "509",
+      "text": "Consider Reactivation Request"
+    },
+    {
+      "value": "76",
+      "text": "Continuous Disclosure"
+    },
+    {
+      "value": "67",
+      "text": "Copy and Send Indictment"
+    },
+    {
+      "value": "61",
+      "text": "Copy Committal Papers"
+    },
+    {
+      "value": "95",
+      "text": "Copy Def PCD Consultation"
+    },
+    {
+      "value": "63",
+      "text": "Copy s51 Papers"
+    },
+    {
+      "value": "62",
+      "text": "Copy Transfer Papers"
+    },
+    {
+      "value": "134",
+      "text": "Court Store Dispatch Error"
+    },
+    {
+      "value": "64",
+      "text": "Create Committal Bundle"
+    },
+    {
+      "value": "66",
+      "text": "Create Crown Court Bundle"
+    },
+    {
+      "value": "65",
+      "text": "Create Transfer Bundle"
+    },
+    {
+      "value": "18",
+      "text": "Crown Court Case Certification"
+    },
+    {
+      "value": "51",
+      "text": "CTL Expiry Imminent"
+    },
+    {
+      "value": "53",
+      "text": "CTL Extension Hg Reqd"
+    },
+    {
+      "value": "513",
+      "text": "DCF Post Sending Review"
+    },
+    {
+      "value": "120",
+      "text": "DCS Dispatch Error"
+    },
+    {
+      "value": "1001",
+      "text": "Defendant Discontinued"
+    },
+    {
+      "value": "81",
+      "text": "De-warn Witnesses"
+    },
+    {
+      "value": "99",
+      "text": "Dispatch Bundle"
+    },
+    {
+      "value": "ed4cd4eb-8083-4348-bf9d-7f94404dc0c9",
+      "text": "Early Advice Manager Triage"
+    },
+    {
+      "value": "108",
+      "text": "Early Guilty Plea Review"
+    },
+    {
+      "value": "102",
+      "text": "Electronic Upgrade File Review"
+    },
+    {
+      "value": "48",
+      "text": "Enter s9 Witnesses for Proof"
+    },
+    {
+      "value": "44",
+      "text": "Enter Witness Selection"
+    },
+    {
+      "value": "84",
+      "text": "Error Message"
+    },
+    {
+      "value": "5",
+      "text": "Finalise Advice"
+    },
+    {
+      "value": "33",
+      "text": "Finalise Case"
+    },
+    {
+      "value": "512",
+      "text": "Finalise DCF PCD"
+    },
+    {
+      "value": "133",
+      "text": "Finalise PCD"
+    },
+    {
+      "value": "20",
+      "text": "Follow Up"
+    },
+    {
+      "value": "139",
+      "text": "Follow up - Rejected Triage"
+    },
+    {
+      "value": "125",
+      "text": "Follow-up - Case Action Plan Item"
+    },
+    {
+      "value": "127",
+      "text": "Further PCD Review"
+    },
+    {
+      "value": "111",
+      "text": "Generate Bundle"
+    },
+    {
+      "value": "1007",
+      "text": "Hearing Updated"
+    },
+    {
+      "value": "135",
+      "text": "Immediate PCD Review"
+    },
+    {
+      "value": "37",
+      "text": "Initial Case Review"
+    },
+    {
+      "value": "75",
+      "text": "Initial Disclosure"
+    },
+    {
+      "value": "89",
+      "text": "Initiate Asset Recovery Enforcement"
+    },
+    {
+      "value": "60",
+      "text": "Lodge Indictment"
+    },
+    {
+      "value": "501",
+      "text": "Make Pre-Charge Decision"
+    },
+    {
+      "value": "602",
+      "text": "Manage Directions"
+    },
+    {
+      "value": "600",
+      "text": "Material Service Error"
+    },
+    {
+      "value": "506",
+      "text": "New Info for Admin"
+    },
+    {
+      "value": "1005",
+      "text": "Offence Added or Changed"
+    },
+    {
+      "value": "77",
+      "text": "Offer Bereaved Family Meeting"
+    },
+    {
+      "value": "128",
+      "text": "PCD Review"
+    },
+    {
+      "value": "1002",
+      "text": "Perform Needs Assessment"
+    },
+    {
+      "value": "32",
+      "text": "Post Hg Actions Required"
+    },
+    {
+      "value": "122",
+      "text": "Post Sending Review"
+    },
+    {
+      "value": "3",
+      "text": "Prepare Advice"
+    },
+    {
+      "value": "56",
+      "text": "Prepare Appeal Brief"
+    },
+    {
+      "value": "72",
+      "text": "Prepare CC Prelim Hg Pack"
+    },
+    {
+      "value": "54",
+      "text": "Prepare CFS Brief"
+    },
+    {
+      "value": "68",
+      "text": "Prepare CFS Bundle"
+    },
+    {
+      "value": "86",
+      "text": "Prepare Charge Schedule"
+    },
+    {
+      "value": "13",
+      "text": "Prepare Committal Documents"
+    },
+    {
+      "value": "82",
+      "text": "Prepare DPP Consent Form"
+    },
+    {
+      "value": "10",
+      "text": "Prepare Draft Indictment"
+    },
+    {
+      "value": "116",
+      "text": "Prepare EGP Documents"
+    },
+    {
+      "value": "59",
+      "text": "Prepare Further Charge Form"
+    },
+    {
+      "value": "83",
+      "text": "Prepare Media Interest Form"
+    },
+    {
+      "value": "87",
+      "text": "Prepare Pre-charge DCV Letter"
+    },
+    {
+      "value": "57",
+      "text": "Prepare Proposed Discont."
+    },
+    {
+      "value": "55",
+      "text": "Prepare Prosecution Advocate Brief"
+    },
+    {
+      "value": "73",
+      "text": "Prepare PSR Package"
+    },
+    {
+      "value": "121",
+      "text": "Prepare PTPH"
+    },
+    {
+      "value": "71",
+      "text": "Prepare Rape Monitoring Form"
+    },
+    {
+      "value": "11",
+      "text": "Prepare s51 Draft Indictment"
+    },
+    {
+      "value": "17",
+      "text": "Prepare s51/Allocation Documents"
+    },
+    {
+      "value": "79",
+      "text": "Prepare s9 Notice"
+    },
+    {
+      "value": "12",
+      "text": "Prepare Transfer Documents"
+    },
+    {
+      "value": "70",
+      "text": "Prepare Victim Letter"
+    },
+    {
+      "value": "138",
+      "text": "Priority PCD Review"
+    },
+    {
+      "value": "140",
+      "text": "Priority Resubmitted PCD Case"
+    },
+    {
+      "value": "8",
+      "text": "Receive Transferred Case"
+    },
+    {
+      "value": "1011",
+      "text": "Record Attendance"
+    },
+    {
+      "value": "52",
+      "text": "Record CTL Extension"
+    },
+    {
+      "value": "29",
+      "text": "Record DPP Consent"
+    },
+    {
+      "value": "31",
+      "text": "Record Hg Outcome"
+    },
+    {
+      "value": "47",
+      "text": "Record PCM Witnesses"
+    },
+    {
+      "value": "14",
+      "text": "Record Unused Service"
+    },
+    {
+      "value": "1",
+      "text": "Register Advice"
+    },
+    {
+      "value": "27",
+      "text": "Register Case"
+    },
+    {
+      "value": "26",
+      "text": "Reminder"
+    },
+    {
+      "value": "93",
+      "text": "Reminder (Asset Recovery)"
+    },
+    {
+      "value": "21",
+      "text": "Request Upgrade File"
+    },
+    {
+      "value": "28",
+      "text": "Retrieve Core Details"
+    },
+    {
+      "value": "604",
+      "text": "Review BCM Information"
+    },
+    {
+      "value": "98",
+      "text": "Review Bundle"
+    },
+    {
+      "value": "504",
+      "text": "Review Case"
+    },
+    {
+      "value": "39",
+      "text": "Review Case Against New Def."
+    },
+    {
+      "value": "142",
+      "text": "Review Defence Statement"
+    },
+    {
+      "value": "511",
+      "text": "Review PCD Appeal"
+    },
+    {
+      "value": "505",
+      "text": "Review Post First Hearing"
+    },
+    {
+      "value": "507",
+      "text": "Review Proposed Discontinuance"
+    },
+    {
+      "value": "24",
+      "text": "Send"
+    },
+    {
+      "value": "80",
+      "text": "Send Unused Witness Letter"
+    },
+    {
+      "value": "69",
+      "text": "Serve Initial Pros Case"
+    },
+    {
+      "value": "74",
+      "text": "Serve Unused Material"
+    },
+    {
+      "value": "41",
+      "text": "Split Case"
+    },
+    {
+      "value": "7",
+      "text": "Transfer Case"
+    },
+    {
+      "value": "16",
+      "text": "Transfer Certification"
+    },
+    {
+      "value": "500",
+      "text": "Triage Case for PCD"
+    },
+    {
+      "value": "100",
+      "text": "Update Bundle"
+    },
+    {
+      "value": "110",
+      "text": "Update Bundle Structure"
+    },
+    {
+      "value": "508",
+      "text": "Updated Police Action"
+    },
+    {
+      "value": "94",
+      "text": "Upgrade File Inadequate, Chase Update"
+    },
+    {
+      "value": "38",
+      "text": "Upgrade File Review"
+    },
+    {
+      "value": "106",
+      "text": "Upgrade PCD Case"
+    },
+    {
+      "value": "1003",
+      "text": "Victim or Witness Added"
+    },
+    {
+      "value": "1004",
+      "text": "Victim or Witness Deletion Request"
+    },
+    {
+      "value": "97",
+      "text": "Victim/Witness Deletion Request"
+    },
+    {
+      "value": "78",
+      "text": "Warn Witnesses"
+    },
+    {
+      "value": "1006",
+      "text": "Witnesses Ready?"
+    },
+    {
+      "value": "1015",
+      "text": "WMS Chaser"
+    }
+  ],
+  "severities": [
+    {
+      "value": 6,
+      "text": "Escalated, Overdue, Due"
+    },
+    {
+      "value": 3,
+      "text": "Due soon"
+    },
+    {
+      "value": 5,
+      "text": "Urgent"
+    }
+  ]
+}

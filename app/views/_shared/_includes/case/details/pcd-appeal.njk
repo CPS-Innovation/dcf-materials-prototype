@@ -1,118 +1,55 @@
 {# _shared/_includes/case/details/pcd-appeal.njk
 
-   PCD (Post-Charge Decision) appeal content for the case overview — see
-   pcd-appeal-claude-code-brief.md. Static mock content for now, keyed by
-   caseId in app/data/pcd-appeal-cases.js (no Prisma model for appeal
-   content yet). Only rendered when pcdAppeal is set (case--details.js).
+   PCD (Post-Charge Decision) appeal summary card for the case overview —
+   sits in the contacts-box column, above Key contacts (see main-tabs.njk).
+   Real Prisma data (PcdAppeal/PcdAppealCharge models), fetched by
+   getPcdAppealForCase (app/helpers/pcdAppeal.js) and reshaped into this
+   same object shape the old app/data/pcd-appeal-cases.js mock used.
+   Only rendered when pcdAppeal is set (case--details.js).
 
-   Built as a partial (not a standalone page) so it can be dropped straight
-   into the Overview tab per the brief — kept self-contained enough that it
-   could later become its own "PCD Appeals" page instead.
+   Kept deliberately concise — Authorised by, Date and time received,
+   Appealed suspect and Reason for appeal only, in both states.
+   "Previous charging details" no longer lives on this
+   card at all: it's shown on cases/pcd-appeal/decision.html, and
+   permanently in the History tab (history-panel.njk) so it can be seen
+   before a PCD review task is even started. Start task is not on this
+   card either: the police appeal is what generates the task in the main
+   task list, so that's where the journey starts.
+
+   Once a decision is submitted (POST /cases/:caseId/pcd-appeal/decision
+   writes the real PcdAppeal/PcdAppealCharge rows), this same card grows
+   in place to add the Decision section — one card throughout, not a
+   second one appended alongside it.
 #}
 
-<div class="app-pcd-appeal">
-
-  <div class="app-pcd-appeal__heading-row">
-    <h2 class="govuk-heading-m govuk-!-margin-bottom-0">PCD appeal</h2>
-    {% if pcdAppeal.taskType == 'Priority PCD Appeal (Red)' %}
-      {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
-    {% else %}
-      {{ govukTag({ text: "Review", classes: "govuk-tag--green" }) }}
-    {% endif %}
+<div class="govuk-summary-card app-pcd-appeal">
+  <div class="govuk-summary-card__title-wrapper">
+    <h2 class="govuk-summary-card__title">
+      PCD police appeal
+      {% if pcdAppeal.taskType == 'Priority PCD Review' %}
+        {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
+      {% else %}
+        {{ govukTag({ text: "Review", classes: "govuk-tag--green" }) }}
+      {% endif %}
+    </h2>
   </div>
 
-  {# ---------------------------------------------------------------------
-     Header / always-visible summary
-     --------------------------------------------------------------------- #}
-  {# {% set headerRows = [
-    { key: { text: "Case URN" }, value: { text: pcdAppeal.urn } },
-    { key: { text: "Custody status" }, value: { text: pcdAppeal.custodyStatus } }
-  ] %}
-
-  {% if pcdAppeal.paceClock %}
-    {% set paceValue %}
-      {{ pcdAppeal.paceClock.expiryDisplay }}
-      {{ govukTag({ text: "Overdue" if pcdAppeal.paceClock.status == 'overdue' else "Due", classes: "govuk-tag--red" if pcdAppeal.paceClock.status == 'overdue' else "govuk-tag--orange" }) }}
-    {% endset %}
-    {% set headerRows = (headerRows.push({ key: { text: "PACE clock expiry" }, value: { html: paceValue } }), headerRows) %}
-  {% endif %}
-
-  {% if pcdAppeal.stl %}
-    {% set headerRows = (headerRows.push({ key: { text: "Statutory time limit" }, value: { text: pcdAppeal.stl.expiryDisplay } }), headerRows) %}
-  {% endif %}
-
-  {% set headerRows = (headerRows.push({ key: { text: "Task" }, value: { text: pcdAppeal.taskType } }), headerRows) %}
-
-  {{ govukSummaryList({
-    classes: "govuk-summary-list--no-border app-summary-list--compact",
-    rows: headerRows
-  }) }}
-
-  {% if not pcdAppeal.dcpDecision %}
-    <a class="govuk-button govuk-!-margin-bottom-6" href="/cases/{{ pcdAppeal.caseId }}/pcd-appeal/decision" role="button">Start task</a>
-  {% endif %} #}
-
-  {# -------------------------------------------------------------
-     Original charging decision (read-only)
-     ------------------------------------------------------------- #}
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-      <h3 class="govuk-heading-m">Original charging decision</h3>
-      {{ govukSummaryList({
-        classes: "govuk-summary-list--no-border app-summary-list--compact",
-        rows: [
-          { key: { text: "Reviewing prosecutor" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
-          { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
-          { key: { text: "Date/time" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay } },
-          { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } },
-          { key: { text: "Reasoning" }, value: { text: pcdAppeal.originalDecision.reasoning } }
-        ]
-      }) }}
-    </div>
-  </div>
-
-  {# -------------------------------------------------------------
-     Appeal details (submitted by police, modelled as structured data)
-     ------------------------------------------------------------- #}
-  <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-      <h3 class="govuk-heading-s">Appeal details</h3>
-      {{ govukSummaryList({
-        classes: "govuk-summary-list--no-border app-summary-list--compact",
-        rows: [
-          {
-            key: { text: "Appealing officer" },
-            value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" }
-          },
-          {
-            key: { text: "Officer in charge" },
-            value: { text: (pcdAppeal.appeal.oic.name + " (" + pcdAppeal.appeal.oic.rank + ", " + pcdAppeal.appeal.oic.number + ")") if pcdAppeal.appeal.oic else "Same as appealing officer" }
-          },
-          { key: { text: "Date/time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay } }
-        ]
-      }) }}
-
-      <h4 class="govuk-heading-s govuk-!-margin-bottom-1">Grounds for appeal</h4>
-      <p class="govuk-body">{{ pcdAppeal.appeal.groundsNarrative }}</p>
-
-      <h4 class="govuk-heading-s govuk-!-margin-bottom-1">Evidence referenced</h4>
-      <ul class="govuk-list govuk-list--bullet">
-        {% for ref in pcdAppeal.appeal.evidenceRefs %}
-          <li>{{ ref }}</li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-
-  {# ---------------------------------------------------------------------
-     DCP decision action
-     --------------------------------------------------------------------- #}
-  <div class="govuk-grid-row">
-    <div id="pcd-appeal-decision" class="govuk-grid-column-two-thirds app-pcd-appeal__decision">
-    <h3 class="govuk-heading-s">DCP decision</h3>
+  <div class="govuk-summary-card__content">
 
     {% if pcdAppeal.dcpDecision %}
 
+      <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Appeal</h3>
+      {{ govukSummaryList({
+        classes: "govuk-summary-list--no-border app-summary-list--compact",
+        rows: [
+          { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
+          { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
+          { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
+          { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
+        ]
+      }) }}
+
+      <h3 class="govuk-heading-s govuk-!-margin-bottom-2">Decision</h3>
       {% set chargeOutcomeRows = [] %}
       {% for outcome in pcdAppeal.dcpDecision.chargeOutcomes %}
         {% set chargeOutcomeRows = (chargeOutcomeRows.push({ key: { text: outcome.code }, value: { text: outcome.outcome } }), chargeOutcomeRows) %}
@@ -123,9 +60,8 @@
         rows: chargeOutcomeRows.concat([
           { key: { text: "Test applied" }, value: { text: pcdAppeal.dcpDecision.testApplied } },
           { key: { text: "Reasoning" }, value: { text: pcdAppeal.dcpDecision.reasoning } },
-          { key: { text: "Bail conditions" }, value: { html: pcdAppeal.dcpDecision.bailConditions | join('<br>') if pcdAppeal.dcpDecision.bailConditions.length else "None" } } if pcdAppeal.dcpDecision.bailConditions,
           { key: { text: "Decided by" }, value: { text: pcdAppeal.dcpDecision.decidedBy } },
-          { key: { text: "Decided on" }, value: { text: pcdAppeal.dcpDecision.decidedDateDisplay } }
+          { key: { text: "Decided on" }, value: { text: pcdAppeal.dcpDecision.decidedDateDisplay | isoDateString | govukDateTime } }
         ])
       }) }}
 
@@ -135,10 +71,17 @@
 
     {% else %}
 
-      {{ govukTag({ text: "Decision pending", classes: "govuk-tag--grey" }) }}
+      {{ govukSummaryList({
+        classes: "govuk-summary-list--no-border app-summary-list--compact",
+        rows: [
+          { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
+          { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
+          { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
+          { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
+        ]
+      }) }}
 
     {% endif %}
-    </div>
-  </div>
 
+  </div>
 </div>

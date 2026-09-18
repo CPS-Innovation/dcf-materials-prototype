@@ -5,7 +5,14 @@ const Pagination = require('../helpers/pagination')
 const { groupTasks } = require('../helpers/taskGrouping')
 const { addTimeLimitDates } = require('../helpers/timeLimit')
 const taskNames = require('../data/task-names')
-const pcdTasks = require('../data/pcd-task-list.json')
+const legacyPcdTasks = require('../data/pcd-task-list.json')
+const { getAppealTaskListRows, getPriorityChargingRows } = require('../helpers/pcdAppeal')
+// Real filter option lists (Areas/Units/Courts/Task types/Unit groups/
+// Severities) sourced from a real CMS filter-data export — see the note in
+// task-list-table.njk / priority-charging-table.njk. Decorative only: these
+// selects aren't wired to real filtering logic, same as before, just
+// populated with real-looking values instead of "Unit 1"/"Unit 2" etc.
+const pcdFilterOptions = require('../data/task-filter-options.json')
 
 function resetFilters(req) {
   _.set(req, 'session.data.taskListFilters.owner', null)
@@ -554,9 +561,17 @@ module.exports = router => {
     let pagination = new Pagination(tasks, req.query.page, pageSize)
     tasks = pagination.getData()
 
-    // PCD appeals task list (Task list tab) — static JSON for now, see
-    // app/data/pcd-task-list.json. Independent of the filtering above;
-    // will be reconnected to Prisma once the template layout is signed off.
+    // Task list tab: real PCD-appeal Task rows (see app/helpers/pcdAppeal.js)
+    // merged with the remaining static JSON rows (t1-t6, unrelated task
+    // types with no case at all — still mocked). Priority charging tab is
+    // 100% PCD-appeal, so it's a full replacement, no JSON file left.
+    // Independent of the real /tasks filtering above.
+    const appealTaskListRows = await getAppealTaskListRows()
+    const pcdTasks = [...appealTaskListRows, ...legacyPcdTasks]
+    const priorityChargingTasks = await getPriorityChargingRows()
+    // NB: this only ever counted pcdTasks, even for Priority charging's own
+    // counters (a pre-existing bug in priority-charging-table.njk, left as
+    // it was) — see the migration plan's "Known pre-existing issues" note.
     const pcdSeverityCounts = _.countBy(pcdTasks, 'severityBucket')
 
     res.render('tasks/index', {
@@ -564,7 +579,9 @@ module.exports = router => {
       pagination,
       totalTasks,
       pcdTasks,
+      priorityChargingTasks,
       pcdSeverityCounts,
+      pcdFilterOptions,
       ownerItems,
       selectedOwnerFilters,
       selectedOwnerItems,

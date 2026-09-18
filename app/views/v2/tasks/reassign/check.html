@@ -1,0 +1,53 @@
+{# tasks/reassign/check.html — Step 4: check answers and commit
+   Commit mutates the mock task record's owner field — see the note in
+   POST /tasks/:taskId/reassign/check (task--reassign.js). #}
+
+{% extends "_shared/layouts/main.html" %}
+
+{% set bodyClasses = "dcf-materials-wide" %}
+{% set navId = 'tasks' %}
+{% set pageName = "Check details and reassign task" %}
+
+{% block beforeContent %}
+  {{ govukBackLink({ text: "Back", href: "javascript:history.back()" }) }}
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <h1 class="govuk-heading-l">{{ pageName }}</h1>
+
+      {{ govukSummaryList({
+        rows: [
+          {
+            key: { text: "Task" },
+            value: { text: task.task + " — " + task.defendants[0] + " (" + task.urn + ")" }
+          },
+          {
+            key: { text: "Current owner" },
+            value: { text: task.owner }
+          },
+          {
+            key: { text: "Reassigning to" },
+            value: { text: (draft.selectedPerson.name + " (" + draft.selectedPerson.role + ")") if draft.selectedPerson else draft.selectedTeam.name + " (" + draft.selectedTeam.unitName + ")" },
+            actions: {
+              items: [{
+                href: "/tasks/" + taskId + "/reassign/" + ("individual" if draft.selectedPerson else "team"),
+                text: "Change",
+                visuallyHiddenText: "who this task is reassigned to"
+              }]
+            }
+          }
+        ]
+      }) }}
+
+      <form method="post" action="/tasks/{{ taskId }}/reassign/check">
+        <div class="govuk-button-group">
+          {{ govukButton({ text: "Reassign task" }) }}
+        </div>
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

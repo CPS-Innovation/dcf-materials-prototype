@@ -1,22 +1,24 @@
-// PCD appeal panel (case overview) — app/views/_shared/_includes/case/details/pcd-appeal.njk
+// PCD appeal summary card (case overview, contacts-box column) —
+// app/views/_shared/_includes/case/details/pcd-appeal.njk
 
 .app-pcd-appeal {
-  margin-bottom: govuk-spacing(6);
-  padding-bottom: govuk-spacing(6);
-  border-bottom: 1px solid $govuk-border-colour;
-}
+  .govuk-summary-card__title {
+    display: flex;
+    align-items: center;
+    gap: govuk-spacing(2);
 
-.app-pcd-appeal__heading-row {
-  display: flex;
-  align-items: center;
-  gap: govuk-spacing(2);
-  margin-bottom: govuk-spacing(4);
-
-  .govuk-tag {
-    margin-top: -4px;
+    .govuk-tag {
+      margin-top: -4px;
+    }
   }
 }
 
-.app-pcd-appeal__decision {
-  margin-top: govuk-spacing(6);
+// PCD appeal decision page heading — app/views/v2/cases/pcd-appeal/decision.html
+.app-pcd-appeal-decision__heading {
+  .govuk-tag {
+    vertical-align: middle;
+    margin-left: govuk-spacing(2);
+    position: relative;
+    top: -3px;
+  }
 }
