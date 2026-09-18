@@ -118,6 +118,29 @@
         ]
       }) }}
 
+      {# ---------------------------------------------------------------
+         Previous review details — placeholder structure only, keys taken
+         from the grey-banded fields in the CMS History > Reviews panel
+         (CleanShot 2026-09-18 at 10.18.57.jpg). No real data source yet —
+         waiting on a sample to check correlation before wiring this up
+         for real, same as the placeholder rows above were before they
+         got real fields.
+         --------------------------------------------------------------- #}
+      <h2 class="govuk-heading-m">Previous review details</h2>
+      {{ govukSummaryList({
+        classes: "govuk-!-margin-bottom-6",
+        rows: [
+          { key: { text: "Case Headline / Code Test" }, value: { text: "-" } },
+          { key: { text: "Evidential Assessment" }, value: { text: "-" } },
+          { key: { text: "Public Interest Assessment" }, value: { text: "-" } },
+          { key: { text: "Allocation" }, value: { text: "-" } },
+          { key: { text: "Disclosure Actions and Issues" }, value: { text: "-" } },
+          { key: { text: "Trial Strategy" }, value: { text: "-" } },
+          { key: { text: "Witness / Victim Information and Actions" }, value: { text: "-" } },
+          { key: { text: "Instructions to Op Delivery / Advocate" }, value: { text: "-" } }
+        ]
+      }) }}
+
     </div>
   </div>
 {% endblock %}

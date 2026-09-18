@@ -19,7 +19,7 @@ async function main() {
       escalationDate: new Date("2026-09-11T22:00:00.000Z"),
       isUrgent: true,
       urgentNote: "PACE clock overdue — appeal requires immediate review.",
-      assignedToUserId: 559 // David Okoye — seeded DCP user (seed-dcp-users.js)
+      assignedToUserId: null // starts unassigned — CMS generates it into a general bucket, a CW/OD/CM reassigns it to a DCP (see reassign-task-redesign-brief.md / DCF structured data new.pdf)
     },
     {
       name: "Review PCD Appeal",
@@ -29,7 +29,7 @@ async function main() {
       escalationDate: new Date("2026-11-23T23:59:59.999Z"),
       isUrgent: false,
       urgentNote: null,
-      assignedToUserId: 558 // Sarah Whitlock — seeded DCP user (seed-dcp-users.js)
+      assignedToUserId: null // starts unassigned, same as above
     }
   ]
 

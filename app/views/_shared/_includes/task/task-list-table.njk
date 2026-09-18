@@ -116,20 +116,6 @@
 
 </div>
 
-{# ---------------------------------------------------------------------
-   Selected filters ("filter sets") — visual only for now
-   --------------------------------------------------------------------- #}
-<ul class="app-task-list__chips">
-  <li class="app-task-list__chip">
-    All (Units)
-    <a class="app-task-list__chip-remove" href="#" aria-label="Remove filter: All (Units)">&times;</a>
-  </li>
-  <li class="app-task-list__chip">
-    {{ pcdTasks[0].owner }}
-    <a class="app-task-list__chip-remove" href="#" aria-label="Remove filter: {{ pcdTasks[0].owner }}">&times;</a>
-  </li>
-</ul>
-
 <div class="govuk-button-group">
   {{ govukButton({
     text: "Search"
@@ -237,11 +223,21 @@
               <div class="app-task-list__detail-actions">
                 <a class="govuk-link govuk-link--no-visited-state" href="#">Open in CMS</a>
                 <div class="app-task-list__detail-actions-group">
-                  <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
                   {% if task.caseId %}
-                    <a class="govuk-button" href="/cases/{{ task.caseId }}/pcd-appeal/decision" role="button">Start task</a>
+                    {# Real PCD appeal task — Start task is a DCP action, only
+                       possible once a Caseworker/Charge Manager has assigned
+                       it. Unassigned tasks get a single "Assign task to DCP"
+                       button instead (same reassign flow, relabelled since
+                       there's nothing to "re"-assign yet). #}
+                    {% if task.owner != 'Unassigned' %}
+                      <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
+                      <a class="govuk-button" href="/cases/{{ task.caseId }}/pcd-appeal/decision" role="button">Start task</a>
+                    {% else %}
+                      <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Assign task to DCP</a>
+                    {% endif %}
                   {% else %}
-                    <button type="button" class="govuk-button">Start task</button>
+                    <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
+                    <button type="button" class="govuk-button" disabled>Start task</button>
                   {% endif %}
                 </div>
               </div>
