@@ -3,7 +3,7 @@
     "dev": "govuk-prototype-kit dev",
     "serve": "govuk-prototype-kit serve",
     "start": "govuk-prototype-kit start",
-    "generate-data": "npx prisma db push --force-reset && npx prisma db seed && node prisma/seed-dcp-users.js && node prisma/seed-pcd-appeal-tasks.js && node prisma/seed-pcd-appeal-content.js && node prisma/seed-pcd-appeal-backfill.js && node prisma/seed-duty-dcp-team.js",
+    "generate-data": "npx prisma db push --force-reset && npx prisma db seed && node prisma/seed-dcp-users.js && node prisma/seed-pcd-appeal-tasks.js && node prisma/seed-pcd-appeal-content.js && node prisma/seed-pcd-appeal-backfill.js && node prisma/seed-duty-dcp-team.js && node prisma/seed-pcd-appeal-demo-mix.js",
     "prisma-studio": "npx prisma studio",
     "heroku-postbuild": "npm run generate-data"
   },
