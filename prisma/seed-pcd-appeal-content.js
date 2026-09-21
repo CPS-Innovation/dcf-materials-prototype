@@ -8,13 +8,18 @@
 // Run once: node prisma/seed-pcd-appeal-content.js
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
+const { getLeadDefendantWithCharges } = require("./lib/pcdAppealSeedHelpers");
 
 async function main() {
   const appeals = [
     {
       caseId: 2001,
       taskName: "Priority PCD Review",
-      originalDecisionByUserId: 54, // David Frost — case 2001's real assigned prosecutor
+      // originalDecisionByUserId and charges resolved below dynamically —
+      // seed.js generates prosecutors/defendants/charges with random fake
+      // data and no fixed RNG seed, so hardcoded ids here wouldn't survive
+      // a fresh reseed (could point at unrelated people/charges, or not
+      // exist at all).
       originalDecisionOutcome: "No charge",
       originalDecisionAt: new Date("2026-09-10T16:45:00.000Z"),
       originalDecisionTest: "Full Code Test",
@@ -24,16 +29,11 @@ async function main() {
       appealingOfficerNumber: "PC 4471",
       groundsNarrative: "Officer submits that a corroborating witness statement was not available to the reviewing lawyer at the time of the charging decision, and that it directly supports the identification evidence already held on the robbery charge.",
       receivedAt: new Date("2026-09-11T09:15:00.000Z"),
-      slaEndsAt: new Date("2026-09-10T22:00:00.000Z"), // matches the seeded Task's dueDate — already past, "Expired"
-      charges: [
-        { chargeId: 48, appealed: true },  // R01 Robbery — real charge on case 2001
-        { chargeId: 82, appealed: false }  // A02 ABH — real charge on case 2001
-      ]
+      slaEndsAt: new Date("2026-09-10T22:00:00.000Z") // matches the seeded Task's dueDate — already past, "Expired"
     },
     {
       caseId: 2002,
       taskName: "Review PCD Appeal",
-      originalDecisionByUserId: 31, // Diana Taylor — case 2002's real assigned prosecutor
       originalDecisionOutcome: "Charge refused",
       originalDecisionAt: new Date("2026-09-08T11:20:00.000Z"),
       originalDecisionTest: "Threshold Test",
@@ -68,10 +68,27 @@ async function main() {
       continue
     }
 
+    // Whoever seed.js happened to assign as this case's prosecutor —
+    // resolved dynamically since that assignment is random/non-deterministic.
+    const caseProsecutor = await prisma.caseProsecutor.findFirst({ where: { caseId: appeal.caseId } })
+
+    // appeal.charges is only set for case 2002, which is deliberately kept
+    // as free text (see note on that entry above). Everywhere else, resolve
+    // the lead defendant's real charges dynamically instead of a hardcoded
+    // chargeId — case 2001's originalDecision.charges needs one appealed
+    // charge plus one non-appealed charge for context, matching the shape
+    // this card has always shown.
+    let chargesToCreate = appeal.charges
+    if (!chargesToCreate) {
+      const leadDefendant = await getLeadDefendantWithCharges(prisma, appeal.caseId)
+      const charges = leadDefendant ? leadDefendant.charges : []
+      chargesToCreate = charges.slice(0, 2).map((charge, i) => ({ chargeId: charge.id, appealed: i === 0 }))
+    }
+
     const created = await prisma.pcdAppeal.create({
       data: {
         taskId: task.id,
-        originalDecisionByUserId: appeal.originalDecisionByUserId,
+        originalDecisionByUserId: caseProsecutor ? caseProsecutor.userId : null,
         originalDecisionOutcome: appeal.originalDecisionOutcome,
         originalDecisionAt: appeal.originalDecisionAt,
         originalDecisionTest: appeal.originalDecisionTest,
@@ -83,7 +100,7 @@ async function main() {
         receivedAt: appeal.receivedAt,
         slaEndsAt: appeal.slaEndsAt,
         charges: {
-          create: appeal.charges.map(c => ({
+          create: chargesToCreate.map(c => ({
             chargeId: c.chargeId || null,
             chargeCode: c.chargeCode || null,
             chargeDescription: c.chargeDescription || null,
