@@ -45,7 +45,7 @@
     <div class="govuk-grid-column-two-thirds">
 
       {{ govukInsetText({
-        text: "You can request the police to make changes by adding a 'Factual Summary Confidential Information Request' action point to your Action Plan."
+        text: "You can ask the police to make changes to this summary by adding a 'Factual Confidential Information Request' action point to your Action plan."
       }) }}
 
       {# Wraps the redactable text and the Continue button together —
@@ -94,9 +94,9 @@
       {% endif %}
 
       <div class="govuk-form-group govuk-!-margin-bottom-2">
-        <label class="govuk-visually-hidden" for="popover-tag-select">Redaction type</label>
+        <label class="govuk-label govuk-label--s" for="popover-tag-select">Select redaction type</label>
         <select class="govuk-select" id="popover-tag-select" name="tag">
-          <option value=""{{ ' selected' if not (modalState and modalState.tag) }}>-- Select redaction type --</option>
+          <option value=""{{ ' selected' if not (modalState and modalState.tag) }}></option>
           {% for item in redactionTypes %}
             <option value="{{ item.value }}"{{ ' selected' if (modalState and modalState.tag == item.value) }}>{{ item.text }}</option>
           {% endfor %}

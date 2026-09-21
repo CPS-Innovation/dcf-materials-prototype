@@ -1,3 +1,4 @@
+// app/assets/javascripts/components/material-redact-popover.js
 (function () {
   function ready (fn) { if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', fn) } else { fn() } }
 
