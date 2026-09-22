@@ -3,19 +3,8 @@
    PCD (Post-Charge Decision) appeal summary card for the case overview —
    sits in the contacts-box column, above Key contacts (see main-tabs.njk).
    Real Prisma data (PcdAppeal/PcdAppealCharge models), fetched by
-   getPcdAppealForCase (app/helpers/pcdAppeal.js) and reshaped into this
-   same object shape the old app/data/pcd-appeal-cases.js mock used.
+   getPcdAppealForCase (app/helpers/pcdAppeal.js) 
    Only rendered when pcdAppeal is set (case--details.js).
-
-   Kept deliberately concise — Authorised by, Date and time received,
-   Date and time decision made, Appealed suspect and Reason for appeal
-   only, in both states.
-   "Previous charging details" no longer lives on this
-   card at all: it's shown on cases/pcd-appeal/decision.html, and
-   permanently in the History tab (history-panel.njk) so it can be seen
-   before a PCD review task is even started. Start task is not on this
-   card either: the police appeal is what generates the task in the main
-   task list, so that's where the journey starts.
 
    Once a decision is submitted (POST /cases/:caseId/pcd-appeal/decision
    writes the real PcdAppeal/PcdAppealCharge rows), this same card grows
