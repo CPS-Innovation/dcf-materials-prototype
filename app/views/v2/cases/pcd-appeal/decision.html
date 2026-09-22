@@ -79,11 +79,9 @@
          (_shared/_includes/case/details/pcd-appeal.njk).
          --------------------------------------------------------------- #}
       <h2 class="govuk-heading-m">
-        PCD police appeal
+        Review PCD Appeal
         {% if pcdAppeal.taskType == 'Priority PCD Review' %}
           {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
-        {% else %}
-          {{ govukTag({ text: "Review", classes: "govuk-tag--green" }) }}
         {% endif %}
       </h2>
       {{ govukSummaryList({

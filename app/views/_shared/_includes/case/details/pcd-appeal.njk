@@ -8,7 +8,8 @@
    Only rendered when pcdAppeal is set (case--details.js).
 
    Kept deliberately concise — Authorised by, Date and time received,
-   Appealed suspect and Reason for appeal only, in both states.
+   Date and time decision made, Appealed suspect and Reason for appeal
+   only, in both states.
    "Previous charging details" no longer lives on this
    card at all: it's shown on cases/pcd-appeal/decision.html, and
    permanently in the History tab (history-panel.njk) so it can be seen
@@ -25,11 +26,9 @@
 <div class="govuk-summary-card app-pcd-appeal">
   <div class="govuk-summary-card__title-wrapper">
     <h2 class="govuk-summary-card__title">
-      PCD police appeal
+      Review PCD Appeal
       {% if pcdAppeal.taskType == 'Priority PCD Review' %}
         {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
-      {% else %}
-        {{ govukTag({ text: "Review", classes: "govuk-tag--green" }) }}
       {% endif %}
     </h2>
   </div>
@@ -44,6 +43,7 @@
         rows: [
           { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
           { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
+          { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
           { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
           { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
         ]
@@ -76,6 +76,7 @@
         rows: [
           { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
           { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
+          { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
           { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
           { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
         ]

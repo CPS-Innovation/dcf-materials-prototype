@@ -2,7 +2,7 @@ const _ = require('lodash')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const documentTypes = require('../data/document-types')
-const { getPcdAppealForCase, getRawTaskWithAppealForCase } = require('../helpers/pcdAppeal')
+const { getPcdAppealForCase, getRawTaskWithAppealForCase, getCaseTaskPanelRows } = require('../helpers/pcdAppeal')
 
 function resetFilters(req) {
   _.set(req, 'session.data.documentListFilters.documentTypes', null)
@@ -147,7 +147,8 @@ module.exports = router => {
     }
 
     const reminderTasks = req.session.data.reminderTasks || []
-    const tasks = [...reminderTasks, ...placeholderTasks]
+    const caseAppealTasks = await getCaseTaskPanelRows(caseId)
+    const tasks = [...caseAppealTasks, ...reminderTasks, ...placeholderTasks]
 
     // successBanner is already read from session, validated and cleared,
     // and exposed as res.locals.successBanner by the global flash

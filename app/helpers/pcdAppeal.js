@@ -290,6 +290,25 @@ async function getTaskForReassign(taskId) {
   return task ? mapTaskCommon(task) : null
 }
 
+// Case details' generic Tasks card (tasks-panel.njk) — same owner/button
+// logic as the two PCD-appeal tables, reshaped into the single-row array
+// that card expects (0 rows if this case has no PCD-appeal task at all).
+async function getCaseTaskPanelRows(caseId) {
+  const task = await getRawTaskWithAppealForCase(caseId)
+  if (!task) return []
+
+  const mapped = mapTaskCommon(task)
+  return [{
+    id: mapped.id,
+    caseId: mapped.caseId,
+    name: mapped.task,
+    dueDate: mapped.dueDateDisplay,
+    status: mapped.severityBucket,
+    owner: mapped.owner,
+    hasWarning: mapped.urgent
+  }]
+}
+
 module.exports = {
   TASK_LIST_APPEAL_NAME,
   PRIORITY_CHARGING_APPEAL_NAME,
@@ -300,5 +319,6 @@ module.exports = {
   getPriorityChargingRows,
   getPcdAppealForCase,
   getRawTaskWithAppealForCase,
-  getTaskForReassign
+  getTaskForReassign,
+  getCaseTaskPanelRows
 }

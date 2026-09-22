@@ -86,9 +86,21 @@
                 {{ task.owner }}
               </td>
               <td class="govuk-table__cell case-task-role">
-                <a class="govuk-link" href="#">
-                  Start task
-                </a>
+                {% if task.caseId %}
+                  {# Real PCD appeal task — same owner-based branching as
+                     task-list-table.njk/priority-charging-table.njk: Start
+                     task is a DCP action, only possible once a Caseworker/
+                     Charge Manager has assigned it. #}
+                  {% if task.owner != 'Unassigned' %}
+                    <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision">Start task</a>
+                  {% else %}
+                    <a class="govuk-link" href="/tasks/{{ task.id }}/reassign">Assign task</a>
+                  {% endif %}
+                {% else %}
+                  <a class="govuk-link" href="#">
+                    Start task
+                  </a>
+                {% endif %}
               </td>
             </tr>
           {% endfor %}
