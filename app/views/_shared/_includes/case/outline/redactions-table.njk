@@ -10,8 +10,7 @@
       <tr class="govuk-table__row">
         <th scope="col" class="govuk-table__header">Text</th>
         <th scope="col" class="govuk-table__header govuk-table__header--numeric">Instances</th>
-        <th scope="col" class="govuk-table__header">Category</th>
-        <th scope="col" class="govuk-table__header">Date</th>
+        <th scope="col" class="govuk-table__header">Redaction type</th>
         <th scope="col" class="govuk-table__header">Action</th>
       </tr>
     </thead>
@@ -21,7 +20,6 @@
           <td class="govuk-table__cell">{{ group.text }}</td>
           <td class="govuk-table__cell govuk-table__cell--numeric">{{ group.instanceCount }}</td>
           <td class="govuk-table__cell">{{ group.tagLabel }}</td>
-          <td class="govuk-table__cell">{{ group.date }}</td>
           <td class="govuk-table__cell">
             <form method="post" action="/cases/{{ _case.id }}/outline/tag/undo" class="dcf-undo-form">
               <input type="hidden" name="_csrf" value="{{ csrfToken }}">

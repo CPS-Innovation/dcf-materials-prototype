@@ -53,20 +53,16 @@
               <dt class="govuk-summary-list__key">Instances</dt>
               <dd class="govuk-summary-list__value">{{ change.instanceCount }}</dd>
             </div>
-            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions">
-              <dt class="govuk-summary-list__key">Redaction</dt>
+            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions{{ '' if change.category == 'Other' else ' dcf-check-list__row--end' }}">
+              <dt class="govuk-summary-list__key">Redaction type</dt>
               <dd class="govuk-summary-list__value">{{ change.category }}</dd>
             </div>
             {% if change.category == 'Other' %}
-              <div class="govuk-summary-list__row govuk-summary-list__row--no-actions">
+              <div class="govuk-summary-list__row govuk-summary-list__row--no-actions dcf-check-list__row--end">
                 <dt class="govuk-summary-list__key">Note</dt>
                 <dd class="govuk-summary-list__value">{{ change.note }}</dd>
               </div>
             {% endif %}
-            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions dcf-check-list__row--end">
-              <dt class="govuk-summary-list__key">Date</dt>
-              <dd class="govuk-summary-list__value">{{ change.date }}</dd>
-            </div>
           {% endfor %}
         </dl>
       {% else %}
@@ -107,7 +103,7 @@
       }) }}
 
       {{ govukInsetText({
-        text: "On commit, the unredacted and unedited original text is saved to the History tab"
+        text: "When you commit these redactions, the unredacted original text will be saved in the History tab."
       }) }}
 
       <form method="post" action="{{ checkFormAction }}">
