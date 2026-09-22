@@ -78,22 +78,26 @@
                 {% endif %}
               </td>
               <td class="govuk-table__cell case-task-role">
-                <strong class="govuk-tag">
-                  {{ task.status }}
-                </strong>
-              </td>  
+                {% if task.caseId and task.owner != 'Unassigned' %}
+                  {{ govukTag({ text: "Assigned" }) }}
+                {% else %}
+                  <strong class="govuk-tag">
+                    {{ task.status }}
+                  </strong>
+                {% endif %}
+              </td>
               <td class="govuk-table__cell case-task-name">
                 {{ task.owner }}
               </td>
               <td class="govuk-table__cell case-task-role">
                 {% if task.caseId %}
-                  {# Real PCD appeal task — same owner-based branching as
-                     task-list-table.njk/priority-charging-table.njk: Start
-                     task is a DCP action, only possible once a Caseworker/
-                     Charge Manager has assigned it. #}
-                  {% if task.owner != 'Unassigned' %}
-                    <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision">Start task</a>
-                  {% else %}
+                  {# Real PCD appeal task, same owner-based branching as
+                     task-list-table.njk/priority-charging-table.njk. This
+                     card only surfaces the assign step — once assigned
+                     (shown as a status tag instead), there's nothing to
+                     link to here (starting the task itself happens from
+                     the main task list, not from this per-case card). #}
+                  {% if task.owner == 'Unassigned' %}
                     <a class="govuk-link" href="/tasks/{{ task.id }}/reassign">Assign task</a>
                   {% endif %}
                 {% else %}
