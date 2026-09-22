@@ -1,0 +1,81 @@
+{# -------------------------------------------------------------------------
+  app/views/_shared/_includes/case/material/action-plan-modal.njk
+
+  Left-hand slide-out tray, shell recycled from notes-modal.njk (same
+  overlay + role="dialog" panel + header/close-button structure, same
+  data-action="close-*" trigger convention) — that shell has nothing
+  notes-specific about it. The content is new: one action-plan-card.njk
+  per action, grouped under "Police initiated actions" as in the as-is
+  design.
+
+  Not yet wired to a JS open/close controller (notes-modal.js's equivalent
+  lives in material-viewer.js) — this is markup/structure only, matching
+  what was asked for. The tray starts hidden and needs its own
+  data-action="open-action-plan"-style trigger + show/hide script wired up
+  separately when this is ready to go live.
+
+  Expected params:
+    - actionPlanItems : array of { type, status, requiredByDisplay,
+                                    category, relatedSuspect,
+                                    relatedMaterial, reasonForUpdate }
+------------------------------------------------------------------------- #}
+
+{% set actionPlanItems = actionPlanItems or [
+  {
+    type: "ROTI",
+    status: "In progress",
+    requiredByDisplay: "Not Scheduled",
+    category: "Category placeholder",
+    relatedSuspect: "Suspect placeholder",
+    relatedMaterial: "Material placeholder",
+    reasonForUpdate: "IP"
+  },
+  {
+    type: "CCTV material",
+    status: "In progress",
+    requiredByDisplay: "Not Scheduled",
+    category: "Category placeholder",
+    relatedSuspect: "Suspect placeholder",
+    relatedMaterial: "Material placeholder",
+    reasonForUpdate: "CIN5 testing"
+  }
+] %}
+
+<div class="dcf-action-plan-modal" id="dcf-action-plan-modal" hidden>
+  <div class="dcf-action-plan-modal__overlay" data-action="close-action-plan"></div>
+
+  <aside
+    class="dcf-action-plan-modal__panel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="dcf-action-plan-modal-title"
+  >
+    <header class="dcf-action-plan-modal__header">
+      <h2 class="govuk-heading-m" id="dcf-action-plan-modal-title">
+        Action plan
+      </h2>
+
+      <button
+        type="button"
+        class="dcf-action-plan-modal__close"
+        data-action="close-action-plan"
+      >
+        <span class="govuk-visually-hidden">Close action plan</span>
+        ✕
+      </button>
+    </header>
+
+    <div class="dcf-action-plan-modal__body">
+      <div class="dcf-action-plan-modal__heading-group">
+        {# <h2 class="govuk-heading-m govuk-!-margin-bottom-1">Actions</h2> #}
+        <h3 class="govuk-heading-s govuk-!-margin-bottom-0">Police initiated actions</h3>
+      </div>
+
+      <div class="dcf-action-plan-modal__cards">
+        {% for action in actionPlanItems %}
+          {% include "_shared/_includes/case/material/action-plan-card.njk" %}
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+</div>

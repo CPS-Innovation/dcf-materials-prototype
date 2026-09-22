@@ -2,7 +2,7 @@
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
 {% set secondaryNavId = 'details' %}
-{% set bodyClasses = "dcf-materials-wide" %}
+{% set bodyClasses = "dcf-materials-wide" %} 
 
 
 
@@ -30,20 +30,26 @@
   </div>
 
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-three-quarters"> 
+    <div class="govuk-grid-column-three-quarters">
       <span class="govuk-caption-m">{{_case.reference}}</span>
       <h1 class="govuk-heading-m">{{defendantsValue}}</h1>
     </div>
-  
+
+    <div class="govuk-grid-column-one-quarter govuk-!-text-align-right">
+      <a class="govuk-link" href="#" data-action="open-action-plan">Case action plan</a>
+    </div>
 
     <div class="govuk-grid-column-full">
       {% include "_shared/_includes/case/details/main-tabs.njk" %}
 
     </div>
   </div>
+
+  {% include "_shared/_includes/case/material/action-plan-modal.njk" %}
 {% endblock %}
 
 {% block pageScripts %}
+<script src="/public/javascripts/components/action-plan-modal.js" defer></script>
 <script>
 (function () {
   // Scroll banner into view after all scripts (including govuk-tabs hash handling) have run

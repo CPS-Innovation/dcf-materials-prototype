@@ -1,0 +1,66 @@
+{# -------------------------------------------------------------------------
+  app/views/_shared/_includes/case/material/action-plan-card.njk
+
+  Expected params (via the `action` loop variable set by
+  action-plan-modal.njk):
+    - type              : string (e.g. "ROTI") — also the card heading
+    - status            : string (e.g. "In progress")
+    - requiredByDisplay : string (e.g. "Not Scheduled")
+    - category          : string
+    - relatedSuspect    : string
+    - relatedMaterial   : string
+    - reasonForUpdate   : string — shown inside "Further details"
+------------------------------------------------------------------------- #}
+
+{% set detailsHtml %}
+  {{ govukSummaryList({
+    classes: "app-summary-list--small-text govuk-!-margin-bottom-0",
+    rows: [
+      { key: { text: "Reason for CPS last update" }, value: { text: action.reasonForUpdate } }
+    ]
+  }) }}
+{% endset %}
+
+<div class="app-action-plan-card">
+  <h3 class="govuk-heading-s">{{ action.type }}</h3>
+
+  <div class="govuk-button-group">
+    {{ govukButton({
+      text: "Complete action",
+      classes: "govuk-!-margin-bottom-0"
+    }) }}
+    {{ govukButton({
+      text: "Withdraw",
+      classes: "govuk-button--secondary govuk-!-margin-bottom-0"
+    }) }}
+  </div>
+
+  <p class="govuk-body">
+    <a class="govuk-link" href="#">Mark message as read</a>
+  </p>
+
+  {{ govukSummaryList({
+    classes: "app-summary-list--small-text",
+    rows: [
+      { key: { text: "Status" }, value: { text: action.status } },
+      {
+        key: { text: "Required by" },
+        value: { text: action.requiredByDisplay },
+        actions: {
+          items: [
+            { href: "#", text: "Change", visuallyHiddenText: "date required by for " + action.type }
+          ]
+        }
+      },
+      { key: { text: "Category" }, value: { text: action.category } },
+      { key: { text: "Related suspect" }, value: { text: action.relatedSuspect } },
+      { key: { text: "Related material" }, value: { text: action.relatedMaterial } }
+    ]
+  }) }}
+
+  {{ govukDetails({
+    summaryText: "Further details",
+    html: detailsHtml | safe
+  }) }}
+
+</div>

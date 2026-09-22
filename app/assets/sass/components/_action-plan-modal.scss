@@ -1,0 +1,105 @@
+/* ======================================================================
+   Action plan tray — right-hand side tray, structurally mirrors
+   _notes-modal.scss (same hidden/is-open toggle, same overlay+panel
+   shape and one-quarter viewport width) but docks right like
+   _redact-modal.scss instead of left.
+   ====================================================================== */
+
+.dcf-action-plan-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: none;
+
+  &.is-open {
+    display: block;
+  }
+}
+
+.dcf-action-plan-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.dcf-action-plan-modal__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  height: 100vh;
+
+  width: 100%;
+  max-width: 25%;
+
+  background: govuk-colour("white");
+  border-left: 1px solid govuk-colour("mid-grey");
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
+
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.dcf-action-plan-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: govuk-spacing(2);
+
+  padding: govuk-spacing(4) govuk-spacing(4) govuk-spacing(2) govuk-spacing(4);
+  border-bottom: 1px solid govuk-colour("mid-grey");
+
+  .govuk-heading-m {
+    margin: 0;
+  }
+}
+
+.dcf-action-plan-modal__close {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.dcf-action-plan-modal__body {
+  padding: govuk-spacing(4);
+  display: flex;
+  flex-direction: column;
+  gap: govuk-spacing(4);
+
+  /* Text at 16px throughout the tray's summary lists (app-summary-list--
+     small-text handles that already) and the "Further details" disclosure,
+     which has its own font-size rule separate from the summary list —
+     same scoped-override pattern _list.scss uses for .app-list. */
+  .govuk-details {
+    @include govuk-font(16);
+  }
+}
+
+/* "Actions" + "Police initiated actions" read as one heading group, not
+   two independently-spaced sections — the body's flex gap above is
+   meant for the space *before the cards*, not between these two
+   headings, so they get their own tight, non-gapped wrapper. */
+.dcf-action-plan-modal__heading-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cards stack with a visible gap between them — each is a plain h3 +
+   content, no card border of its own, so this gap is the only thing
+   visually separating one action from the next, except a divider line
+   is also added between cards (not before the first) below. */
+.dcf-action-plan-modal__cards {
+  display: flex;
+  flex-direction: column;
+  gap: govuk-spacing(4);
+
+  .app-action-plan-card:not(:first-child) {
+    border-top: 1px solid govuk-colour("mid-grey");
+    padding-top: govuk-spacing(4);
+  }
+}
