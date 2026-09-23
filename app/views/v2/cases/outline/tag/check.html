@@ -76,28 +76,43 @@
         rows: [
         {
             key:   { text: "Document type" },
-            value: { text: documentType },
+            value: { text: documentType }
+          },
+          {
+            key:   { text: "CPS area or central casework division" },
+            value: { text: "Mersey - Cheshire" },
             actions: {
               items: [
-                { href: documentTypeChangeHref, text: "Change", visuallyHiddenText: "document type" }
+                { href: "#", text: "Change", visuallyHiddenText: "CPS area or central casework division" }
               ]
             }
           },
           {
-            key:   { text: "CPS area or central casework division" },
-            value: { text: "Mersey - Cheshire" }
-          },
-          {
             key:   { text: "CPS business unit" },
-            value: { text: "Magistrates court" }
+            value: { text: "Magistrates court" },
+            actions: {
+              items: [
+                { href: "#", text: "Change", visuallyHiddenText: "CPS business unit" }
+              ]
+            }
           },
           {
             key:   { text: "Investigative agency" },
-            value: { text: "South Yorkshire Police" }
+            value: { text: "South Yorkshire Police" },
+            actions: {
+              items: [
+                { href: "#", text: "Change", visuallyHiddenText: "investigative agency" }
+              ]
+            }
           },
           {
             key:   { text: "Charge status" },
-            value: { text: "Post-charge" }
+            value: { text: "Post-charge" },
+            actions: {
+              items: [
+                { href: "#", text: "Change", visuallyHiddenText: "charge status" }
+              ]
+            }
           }
         ]
       }) }}
