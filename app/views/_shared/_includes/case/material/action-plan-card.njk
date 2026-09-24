@@ -9,12 +9,15 @@
     - category          : string
     - relatedSuspect    : string
     - relatedMaterial   : string
-    - reasonForUpdate   : string — shown inside "Further details"
+    - reasonForUpdate   : string — can be long free text, so it's shown
+                          inside a details component rather than a summary
+                          list row
 ------------------------------------------------------------------------- #}
 
 {{ govukSummaryList({
   classes: "app-summary-list--small-text",
   card: {
+    classes: "app-action-plan-card",
     title: {
       text: action.type,
       headingLevel: 3
@@ -40,15 +43,13 @@
       },
       { key: { text: "Category" }, value: { text: action.category } },
       { key: { text: "Related suspect" }, value: { text: action.relatedSuspect } },
-      { key: { text: "Related material" }, value: { text: action.relatedMaterial } },
-      {
-        key: { text: "Reason for CPS last update" },
-        value: { text: action.reasonForUpdate },
-        actions: {
-          items: [
-            { href: "#", text: "Mark as read", visuallyHiddenText: "reason for CPS last update for " + action.type }
-          ]
-        }
-      }
+      { key: { text: "Related material" }, value: { text: action.relatedMaterial } }
     ]
   }) }}
+
+  {% call govukDetails({ summaryText: "Reason for CPS last update" }) %}
+    <p class="govuk-body">{{ action.reasonForUpdate }}</p>
+    <p class="govuk-body govuk-!-margin-bottom-0">
+      <a class="govuk-link" href="#">Mark as read<span class="govuk-visually-hidden"> reason for CPS last update for {{ action.type }}</span></a>
+    </p>
+  {% endcall %}

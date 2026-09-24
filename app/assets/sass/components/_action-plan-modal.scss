@@ -97,11 +97,21 @@
   flex-direction: column;
 }
 
-/* Cards stack with a visible gap between them. Each renders as a GOV.UK
-   summary card, which supplies its own border and header, so the flex
-   gap alone is enough to separate one action from the next. */
+/* Each action renders as a GOV.UK summary card followed by its own
+   "Reason for CPS last update" details — both are direct children here,
+   so the flex gap alone would space them as evenly as it spaces one
+   action from the next, losing the sense that the details belongs to
+   the card above it rather than the action below. Zeroing the card's
+   own bottom margin keeps card-to-its-details down to just the flex
+   gap, while the details' own default bottom margin still stacks with
+   that gap before the next card, giving action groups more separation
+   than the pair within a group. */
 .dcf-action-plan-modal__cards {
   display: flex;
   flex-direction: column;
   gap: govuk-spacing(4);
+
+  .app-action-plan-card {
+    margin-bottom: 0;
+  }
 }
