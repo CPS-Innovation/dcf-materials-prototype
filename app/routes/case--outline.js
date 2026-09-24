@@ -12,7 +12,7 @@ const editReasonTags = require('../data/edit-reason-tags.js')
 const ALL_TAGS = redactionTypes.concat(editReasonTags)
 const EDIT_REASON_TAG_VALUES = editReasonTags.map(t => t.value)
 const documentTypes = require('../data/redaction-document-types.js')
-const DEFAULT_DOCUMENT_TYPE = 'mg-5'
+const DEFAULT_DOCUMENT_TYPE = 'Factual summary'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 

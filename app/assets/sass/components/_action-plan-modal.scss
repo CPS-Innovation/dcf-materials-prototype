@@ -78,6 +78,14 @@
   .govuk-details {
     @include govuk-font(16);
   }
+
+  /* Summary card action links (Complete action / Withdraw) at 16px too,
+     but govuk-font() would reset their weight to regular — use
+     govuk-font-size() instead so they stay bold like the rest of the
+     summary card's actions. */
+  .app-action-plan-card__actions {
+    @include govuk-font-size($size: 16);
+  }
 }
 
 /* "Actions" + "Police initiated actions" read as one heading group, not
@@ -89,17 +97,11 @@
   flex-direction: column;
 }
 
-/* Cards stack with a visible gap between them — each is a plain h3 +
-   content, no card border of its own, so this gap is the only thing
-   visually separating one action from the next, except a divider line
-   is also added between cards (not before the first) below. */
+/* Cards stack with a visible gap between them. Each renders as a GOV.UK
+   summary card, which supplies its own border and header, so the flex
+   gap alone is enough to separate one action from the next. */
 .dcf-action-plan-modal__cards {
   display: flex;
   flex-direction: column;
   gap: govuk-spacing(4);
-
-  .app-action-plan-card:not(:first-child) {
-    border-top: 1px solid govuk-colour("mid-grey");
-    padding-top: govuk-spacing(4);
-  }
 }

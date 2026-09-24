@@ -3,7 +3,7 @@
 
   Expected params (via the `action` loop variable set by
   action-plan-modal.njk):
-    - type              : string (e.g. "ROTI") — also the card heading
+    - type              : string (e.g. "ROTI") — also the card title
     - status            : string (e.g. "In progress")
     - requiredByDisplay : string (e.g. "Not Scheduled")
     - category          : string
@@ -12,36 +12,22 @@
     - reasonForUpdate   : string — shown inside "Further details"
 ------------------------------------------------------------------------- #}
 
-{% set detailsHtml %}
-  {{ govukSummaryList({
-    classes: "app-summary-list--small-text govuk-!-margin-bottom-0",
-    rows: [
-      { key: { text: "Reason for CPS last update" }, value: { text: action.reasonForUpdate } }
-    ]
-  }) }}
-{% endset %}
-
-<div class="app-action-plan-card">
-  <h3 class="govuk-heading-s">{{ action.type }}</h3>
-
-  <div class="govuk-button-group">
-    {{ govukButton({
-      text: "Complete action",
-      classes: "govuk-!-margin-bottom-0"
-    }) }}
-    {{ govukButton({
-      text: "Withdraw",
-      classes: "govuk-button--secondary govuk-!-margin-bottom-0"
-    }) }}
-  </div>
-
-  <p class="govuk-body">
-    <a class="govuk-link" href="#">Mark message as read</a>
-  </p>
-
-  {{ govukSummaryList({
-    classes: "app-summary-list--small-text",
-    rows: [
+{{ govukSummaryList({
+  classes: "app-summary-list--small-text",
+  card: {
+    title: {
+      text: action.type,
+      headingLevel: 3
+    },
+    actions: {
+      classes: "app-action-plan-card__actions",
+      items: [
+        { href: "#", text: "Complete action", visuallyHiddenText: action.type },
+        { href: "#", text: "Withdraw", visuallyHiddenText: action.type }
+      ]
+    }
+  },
+  rows: [
       { key: { text: "Status" }, value: { text: action.status } },
       {
         key: { text: "Required by" },
@@ -54,13 +40,15 @@
       },
       { key: { text: "Category" }, value: { text: action.category } },
       { key: { text: "Related suspect" }, value: { text: action.relatedSuspect } },
-      { key: { text: "Related material" }, value: { text: action.relatedMaterial } }
+      { key: { text: "Related material" }, value: { text: action.relatedMaterial } },
+      {
+        key: { text: "Reason for CPS last update" },
+        value: { text: action.reasonForUpdate },
+        actions: {
+          items: [
+            { href: "#", text: "Mark as read", visuallyHiddenText: "reason for CPS last update for " + action.type }
+          ]
+        }
+      }
     ]
   }) }}
-
-  {{ govukDetails({
-    summaryText: "Further details",
-    html: detailsHtml | safe
-  }) }}
-
-</div>
