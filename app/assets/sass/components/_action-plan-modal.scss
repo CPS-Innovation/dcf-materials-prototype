@@ -77,6 +77,14 @@
      same scoped-override pattern _list.scss uses for .app-list. */
   .govuk-details {
     @include govuk-font(16);
+
+    // govuk-font(16) above only reaches elements that don't set their own
+    // font-size — .govuk-body (used for the reason text and "Mark as
+    // read" link's parent) does, so it needs its own override to actually
+    // end up at 16px rather than its default 19px.
+    .govuk-details__text .govuk-body {
+      @include govuk-font-size($size: 16);
+    }
   }
 
   /* Summary card action links (Complete action / Withdraw) at 16px too,
@@ -86,6 +94,77 @@
   .app-action-plan-card__actions {
     @include govuk-font-size($size: 16);
   }
+
+  /* action-plan-card.njk's "Reason for CPS last update" row value: styled
+     as a plain "Show more" link rather than a chevron disclosure, since
+     the marker (plus the padding/left-border reserved to align with it)
+     read as a nested box and felt cramped in the row's narrow value
+     column. Still a real <details> underneath — keyboard and screen
+     reader support come for free — just visually stripped back. */
+  .app-action-plan-reason-details {
+    .govuk-details__summary {
+      padding-left: 0;
+
+      &::before {
+        display: none;
+      }
+    }
+
+    .govuk-details__text {
+      padding-left: 0;
+      border-left: none;
+    }
+  }
+}
+
+/* action-plan-list.njk's variant of the card header: h3 + its two action
+   links on one line, no card border/background. Unlike the card variant,
+   the details here lives inside the same <section> as the heading and
+   list, so there's only one gap to manage (between sections) rather than
+   a tighter one within a group and a looser one between groups.
+
+   Every heading gets a border-top (including the first, separating it
+   from "Police initiated actions" above) to open its action's block.
+   Only the *last* action's details gets a border-bottom, to close the
+   block off at the very end of the list — earlier actions don't need
+   one, since the next action's own border-top already provides that
+   separation; adding both would double up. See the .app-action-plan-
+   list--last modifier (set from loop.last in the template) below. */
+.app-action-plan-list__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: govuk-spacing(2);
+  padding-top: govuk-spacing(4);
+  margin-bottom: 3px;
+  border-top: 1px solid govuk-colour("mid-grey");
+
+  // .govuk-summary-list__actions-list is reused here for its "|"-divider
+  // styling, but it also sets width: 100% for its usual home inside a
+  // summary list's actions cell — full width here stretches the list past
+  // its content and defeats justify-content's ability to pin it right.
+  .govuk-summary-list__actions-list {
+    width: auto;
+  }
+}
+
+// The summary list's own default bottom margin (govuk-responsive-margin(6),
+// ~30px) is sized for sitting above unrelated content below it. Here it
+// sits directly above this action's own "Reason for CPS last update"
+// details, so it's removed entirely — the gap between the two is owned
+// solely by .govuk-details' margin-top below, rather than splitting it
+// across two rules.
+.app-action-plan-list .govuk-summary-list {
+  margin-bottom: 0;
+}
+
+.app-action-plan-list .govuk-details {
+  margin-top: govuk-spacing(3);
+}
+
+.app-action-plan-list--last .govuk-details {
+  padding-bottom: govuk-spacing(4);
+  border-bottom: 1px solid govuk-colour("mid-grey");
 }
 
 /* "Actions" + "Police initiated actions" read as one heading group, not
