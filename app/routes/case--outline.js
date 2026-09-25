@@ -14,6 +14,46 @@ const EDIT_REASON_TAG_VALUES = editReasonTags.map(t => t.value)
 const documentTypes = require('../data/redaction-document-types.js')
 const DEFAULT_DOCUMENT_TYPE = 'Factual summary'
 
+// The v7 redact/check/document-type journey originally only ever worked
+// against the factual summary. Extending it to a second card (Arrest
+// details) generalised the session/commit plumbing to key off one of
+// these rather than hardcoding factualSummary column names throughout —
+// see outlineEdit.field, set when a v7 session is lazily started, and
+// getRedactableField() below. Document type is deliberately NOT part of
+// this config — every card's redaction still shares the one universal
+// document type answer (DEFAULT_DOCUMENT_TYPE), regardless of which field
+// triggered the journey. Only v7 (the live MVP flow) and its /check and
+// /document-type screens are generalised this way; v1-v6 and the v2/v3/v4
+// tag variants remain factual-summary-only exploratory/legacy paths.
+const REDACTABLE_FIELDS = {
+  'factual-summary': {
+    column: 'factualSummary',
+    originalColumn: 'factualSummaryOriginal',
+    resetSnapshotColumn: 'factualSummaryResetSnapshot',
+    editedAtColumn: 'factualSummaryEditedAt',
+    redactedAtColumn: 'factualSummaryRedactedAt',
+    versionModel: 'factualSummaryVersion',
+    activityLogTitle: 'Factual summary edited',
+    redactCaption: 'Redact summary of circumstances on offence(s)',
+    successBannerText: 'Summary of circumstances of offence(s) redacted and redaction log saved.'
+  },
+  'arrest-details': {
+    column: 'arrestDetails',
+    originalColumn: 'arrestDetailsOriginal',
+    resetSnapshotColumn: 'arrestDetailsResetSnapshot',
+    editedAtColumn: 'arrestDetailsEditedAt',
+    redactedAtColumn: 'arrestDetailsRedactedAt',
+    versionModel: 'arrestDetailsVersion',
+    activityLogTitle: 'Arrest details edited',
+    redactCaption: 'Redact arrest details',
+    successBannerText: 'Arrest details redacted and redaction log saved.'
+  }
+}
+
+function getRedactableField (field) {
+  return REDACTABLE_FIELDS[field] || REDACTABLE_FIELDS['factual-summary']
+}
+
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 function todayGovukDate () {
@@ -160,18 +200,25 @@ function splitIntoParagraphs (parts) {
 const TAG_VARIANTS = ['v2', 'v3', 'v4', 'v7']
 const CHECK_VARIANTS = [null, 'v2', 'v3', 'v4', 'v7']
 
+// factual-summary keeps the original, unprefixed URLs exactly as they
+// were before Arrest details existed; any other field gets its slug
+// inserted as an extra path segment (see the arrest-details routes below).
+function fieldPathPrefix (field) {
+  return (field && field !== 'factual-summary') ? `${field}/` : ''
+}
+
 // Builds the tag-screen URL for a given variant, falling back to the
 // default screen if the variant isn't recognised.
-function tagPath (caseId, variant) {
+function tagPath (caseId, variant, field) {
   return TAG_VARIANTS.includes(variant)
-    ? `/cases/${caseId}/outline/tag/${variant}`
+    ? `/cases/${caseId}/outline/tag/${fieldPathPrefix(field)}${variant}`
     : `/cases/${caseId}/outline/tag`
 }
 
 // Builds the check-screen URL for a given variant, mirroring tagPath.
-function checkPath (caseId, variant) {
+function checkPath (caseId, variant, field) {
   return TAG_VARIANTS.includes(variant)
-    ? `/cases/${caseId}/outline/tag/${variant}/check`
+    ? `/cases/${caseId}/outline/tag/${fieldPathPrefix(field)}${variant}/check`
     : `/cases/${caseId}/outline/tag/check`
 }
 
@@ -641,15 +688,16 @@ function buildCheckViewData (outlineEdit, caseId, variant) {
 
   const documentTypeValue = outlineEdit.documentType || DEFAULT_DOCUMENT_TYPE
   const documentTypeEntry = documentTypes.find(t => t.value === documentTypeValue)
-  const checkFormAction = checkPath(caseId, variant)
+  const checkFormAction = checkPath(caseId, variant, outlineEdit.field)
 
   return {
     changes: groupedChanges,
     variant,
-    backHref: tagPath(caseId, variant),
+    backHref: tagPath(caseId, variant, outlineEdit.field),
     checkFormAction,
     documentType: documentTypeEntry ? documentTypeEntry.text : documentTypeValue,
-    documentTypeChangeHref: `/cases/${caseId}/outline/tag/document-type?returnTo=${encodeURIComponent(checkFormAction)}`
+    documentTypeChangeHref: `/cases/${caseId}/outline/tag/document-type?returnTo=${encodeURIComponent(checkFormAction)}`,
+    redactCaption: getRedactableField(outlineEdit.field).redactCaption
   }
 }
 
@@ -722,12 +770,12 @@ function resolveEditBaselineText (req, _case) {
 // nothing has frozen it yet), or undefined if it's already frozen, so
 // callers can spread it into a Prisma update without touching the field
 // at all once it's set.
-async function captureOriginalIfUnset (caseId) {
+async function captureOriginalIfUnset (caseId, fieldConfig) {
   const existing = await prisma.case.findUnique({
     where: { id: caseId },
-    select: { factualSummary: true, factualSummaryOriginal: true }
+    select: { [fieldConfig.column]: true, [fieldConfig.originalColumn]: true }
   })
-  return existing.factualSummaryOriginal ? undefined : existing.factualSummary
+  return existing[fieldConfig.originalColumn] ? undefined : existing[fieldConfig.column]
 }
 
 // Same "frozen on first change" idea as captureOriginalIfUnset, but for
@@ -737,12 +785,12 @@ async function captureOriginalIfUnset (caseId) {
 // anywhere except the footer's testing reset, so it can't affect what's
 // displayed; it only guarantees reset always has something to restore
 // factualSummary from, regardless of which flow(s) touched the case.
-async function captureResetSnapshotIfUnset (caseId) {
+async function captureResetSnapshotIfUnset (caseId, fieldConfig) {
   const existing = await prisma.case.findUnique({
     where: { id: caseId },
-    select: { factualSummary: true, factualSummaryResetSnapshot: true }
+    select: { [fieldConfig.column]: true, [fieldConfig.resetSnapshotColumn]: true }
   })
-  return existing.factualSummaryResetSnapshot ? undefined : existing.factualSummary
+  return existing[fieldConfig.resetSnapshotColumn] ? undefined : existing[fieldConfig.column]
 }
 
 // Unlike captureOriginalIfUnset/captureResetSnapshotIfUnset (each frozen
@@ -753,22 +801,31 @@ async function captureResetSnapshotIfUnset (caseId) {
 // tab shows (see history-panel.njk), not just "the original". Must be
 // called before the Prisma update that changes factualSummary, so it
 // captures the pre-change text.
-async function recordFactualSummaryVersion (caseId, action) {
+async function recordFieldVersion (caseId, action, fieldConfig, userId) {
   const existing = await prisma.case.findUnique({
     where: { id: caseId },
-    select: { factualSummary: true }
+    select: { [fieldConfig.column]: true }
   })
 
-  await prisma.factualSummaryVersion.create({
+  // Only the redact commit path (below) passes a userId — the older
+  // edit-diff journeys (v3/v5/v6) don't have one in scope and weren't
+  // asked to grow it, so their version rows just get a null userName.
+  const user = userId
+    ? await prisma.user.findUnique({ where: { id: userId }, select: { firstName: true, lastName: true } })
+    : null
+
+  await prisma[fieldConfig.versionModel].create({
     data: {
       caseId,
-      text: existing.factualSummary || '',
-      action
+      text: existing[fieldConfig.column] || '',
+      action,
+      userName: user ? `${user.firstName} ${user.lastName}` : null
     }
   })
 }
 
 async function commitOutlineEdit (outlineEdit, caseId, userId) {
+  const fieldConfig = getRedactableField(outlineEdit.field)
   const tags = outlineEdit.tags || {}
   const removed = outlineEdit.removed || {}
   const { changes } = getChangesAndParts(outlineEdit)
@@ -781,23 +838,23 @@ async function commitOutlineEdit (outlineEdit, caseId, userId) {
       tag: tags[change.id].tag
     }))
 
-  const originalToSet = await captureOriginalIfUnset(caseId)
-  const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId)
-  await recordFactualSummaryVersion(caseId, 'redacted')
+  const originalToSet = await captureOriginalIfUnset(caseId, fieldConfig)
+  const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId, fieldConfig)
+  await recordFieldVersion(caseId, 'redacted', fieldConfig, userId)
 
   await prisma.case.update({
     where: { id: caseId },
     data: {
       // Bakes any tagged spans' "[Redacted <type>]" labels directly into
-      // factualSummary (not just a separate HTML snapshot) — same
-      // plain-text form the edit textarea already prefills with, via
-      // resolveEditBaselineText — so factualSummary is unconditionally
-      // "the latest version" including this redaction, no matter what
-      // happens to it afterward.
-      factualSummary: buildRedactedPlainText(outlineEdit),
-      factualSummaryRedactedAt: new Date(),
-      ...(originalToSet !== undefined && { factualSummaryOriginal: originalToSet }),
-      ...(resetSnapshotToSet !== undefined && { factualSummaryResetSnapshot: resetSnapshotToSet })
+      // the field (not just a separate HTML snapshot) — same plain-text
+      // form the edit textarea already prefills with, via
+      // resolveEditBaselineText — so it's unconditionally "the latest
+      // version" including this redaction, no matter what happens to it
+      // afterward.
+      [fieldConfig.column]: buildRedactedPlainText(outlineEdit),
+      [fieldConfig.redactedAtColumn]: new Date(),
+      ...(originalToSet !== undefined && { [fieldConfig.originalColumn]: originalToSet }),
+      ...(resetSnapshotToSet !== undefined && { [fieldConfig.resetSnapshotColumn]: resetSnapshotToSet })
     }
   })
 
@@ -811,7 +868,7 @@ async function commitOutlineEdit (outlineEdit, caseId, userId) {
         model: 'Case',
         recordId: caseId,
         action: 'UPDATE',
-        title: 'Factual summary edited',
+        title: fieldConfig.activityLogTitle,
         meta: {
           removed: change.removedText,
           added: change.addedText,
@@ -930,9 +987,10 @@ module.exports = router => {
     let returnTo = `/cases/${caseId}/details#factual-summary`
 
     if (outlineEdit && action === 'accept') {
-      const originalToSet = await captureOriginalIfUnset(caseId)
-      const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId)
-      await recordFactualSummaryVersion(caseId, 'edited')
+      const fieldConfig = REDACTABLE_FIELDS['factual-summary']
+      const originalToSet = await captureOriginalIfUnset(caseId, fieldConfig)
+      const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId, fieldConfig)
+      await recordFieldVersion(caseId, 'edited', fieldConfig)
 
       await prisma.case.update({
         where: { id: caseId },
@@ -978,9 +1036,10 @@ module.exports = router => {
   // /outline/edit/success) is out of this flow for now.
   router.post('/cases/:caseId/outline/edit/v5', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
-    const originalToSet = await captureOriginalIfUnset(caseId)
-    const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId)
-    await recordFactualSummaryVersion(caseId, 'edited')
+    const fieldConfig = REDACTABLE_FIELDS['factual-summary']
+    const originalToSet = await captureOriginalIfUnset(caseId, fieldConfig)
+    const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId, fieldConfig)
+    await recordFieldVersion(caseId, 'edited', fieldConfig)
 
     await prisma.case.update({
       where: { id: caseId },
@@ -1021,8 +1080,9 @@ module.exports = router => {
   // the "real" baseline freeze.
   router.post('/cases/:caseId/outline/edit/v6', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
-    const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId)
-    await recordFactualSummaryVersion(caseId, 'edited')
+    const fieldConfig = REDACTABLE_FIELDS['factual-summary']
+    const resetSnapshotToSet = await captureResetSnapshotIfUnset(caseId, fieldConfig)
+    await recordFieldVersion(caseId, 'edited', fieldConfig)
 
     await prisma.case.update({
       where: { id: caseId },
@@ -1149,6 +1209,7 @@ module.exports = router => {
     if (!outlineEdit || outlineEdit.mode !== 'select') {
       outlineEdit = {
         mode: 'select',
+        field: 'factual-summary',
         before: _case.factualSummary || '',
         after: _case.factualSummary || '',
         selections: [],
@@ -1163,6 +1224,38 @@ module.exports = router => {
     const editReturnTo = req.query.returnTo || ''
 
     res.render('v2/cases/outline/tag/index-v7', { _case, ...buildTagViewData(outlineEdit, editIds, editReturnTo) })
+  })
+
+  // Arrest details' redact flow — same v7 MVP mechanics (lazy select-mode
+  // session, buildTagViewData, shared /check + /document-type screens) as
+  // the factual summary journey above, just keyed to a different
+  // REDACTABLE_FIELDS entry and its own near-duplicate page shell
+  // (index-v7-arrest-details.html — caption/heading/popover form action
+  // differ, everything else is the same shared partials/JS as v7).
+  router.get('/cases/:caseId/outline/tag/arrest-details/v7', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    let outlineEdit = req.session.data.outlineEdit
+
+    const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
+
+    if (!outlineEdit || outlineEdit.mode !== 'select') {
+      outlineEdit = {
+        mode: 'select',
+        field: 'arrest-details',
+        before: _case.arrestDetails || '',
+        after: _case.arrestDetails || '',
+        selections: [],
+        tags: {}
+      }
+      req.session.data.outlineEdit = outlineEdit
+    }
+
+    const editIds = req.query.changeId
+      ? String(req.query.changeId).split(',').filter(Boolean)
+      : null
+    const editReturnTo = req.query.returnTo || ''
+
+    res.render('v2/cases/outline/tag/index-v7-arrest-details', { _case, ...buildTagViewData(outlineEdit, editIds, editReturnTo) })
   })
 
   // v4 skips the edit textarea entirely — "Redact" on the case details page
@@ -1228,6 +1321,8 @@ module.exports = router => {
         return res.redirect(`/cases/${caseId}/outline/edit`)
       }
 
+      const successBannerText = getRedactableField(outlineEdit.field).successBannerText
+
       await commitOutlineEdit(outlineEdit, caseId, userId)
 
       delete req.session.data.outlineEdit
@@ -1237,7 +1332,7 @@ module.exports = router => {
       // read once and cleared by the details page's GET handler via
       // success-banner-safe.njk, already included on that page.
       req.session.data.successBanner = {
-        text: 'Summary of circumstances of offence(s) redacted and redaction log saved.',
+        text: successBannerText,
         body: 'Any changes made have been sent to the police.'
       }
 
@@ -1247,49 +1342,95 @@ module.exports = router => {
     })
   })
 
+  // Arrest details' check screen — same handlers as the loop above, just
+  // registered under its own path segment (see tagPath/checkPath's
+  // fieldPathPrefix) since CHECK_VARIANTS only covers the unprefixed
+  // factual-summary URLs. outlineEdit.field (set when the arrest-details
+  // v7 session starts) is what actually drives commitOutlineEdit/
+  // buildCheckViewData's behaviour — this route's only job is making the
+  // URL shape match.
+  router.get('/cases/:caseId/outline/tag/arrest-details/v7/check', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const outlineEdit = req.session.data.outlineEdit
+
+    if (!outlineEdit) {
+      return res.redirect(`/cases/${caseId}/outline/edit`)
+    }
+
+    const _case = await prisma.case.findUnique({ where: { id: caseId }, include: { defendants: true } })
+
+    res.render('v2/cases/outline/tag/check', { _case, ...buildCheckViewData(outlineEdit, caseId, 'v7') })
+  })
+
+  router.post('/cases/:caseId/outline/tag/arrest-details/v7/check', async (req, res) => {
+    const caseId = parseInt(req.params.caseId)
+    const outlineEdit = req.session.data.outlineEdit
+    const userId = req.session.data.user.id
+
+    if (!outlineEdit) {
+      return res.redirect(`/cases/${caseId}/outline/edit`)
+    }
+
+    const successBannerText = getRedactableField(outlineEdit.field).successBannerText
+
+    await commitOutlineEdit(outlineEdit, caseId, userId)
+
+    delete req.session.data.outlineEdit
+
+    req.session.data.successBanner = {
+      text: successBannerText,
+      body: 'Any changes made have been sent to the police.'
+    }
+
+    req.session.save(() => res.redirect(`/cases/${caseId}/details#case-outline`))
+  })
+
   // Prototype-testing only: undoes both a committed redaction and an
   // edit-confirm in one go, so the same case can be run through either (or
   // both) journeys again — neither has a production equivalent, since the
   // real process only ever does each once per case; this exists purely so
   // testers can reset and repeat freely, jumping between the two flows
   // without needing to know which one they last left the case in. Restores
-  // factualSummary from factualSummaryResetSnapshot — frozen on every
-  // commit path including v6, so reset always has something to restore
-  // from even when factualSummaryOriginal was deliberately left unset
-  // (falls back to factualSummaryOriginal for cases edited before
-  // factualSummaryResetSnapshot existed). Clears both, clears
-  // factualSummaryRedacted, and deletes the "Factual summary edited"
-  // activity log entries a redaction commit writes. Linked from the
-  // footer, shown whenever a case is in view.
+  // each REDACTABLE_FIELDS entry from its resetSnapshot column — frozen on
+  // every commit path including v6, so reset always has something to
+  // restore from even when the "original" column was deliberately left
+  // unset (falls back to that original column for cases edited before
+  // resetSnapshot existed). Clears both, clears the *Redacted column, and
+  // deletes that field's edit activity log entries + version history rows.
+  // Runs for every card (factual summary AND arrest details), not just
+  // whichever one the last test happened to touch. Linked from the footer,
+  // shown whenever a case is in view.
   router.post('/cases/:caseId/outline/reset-redact-and-edit', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
 
-    const existing = await prisma.case.findUnique({
-      where: { id: caseId },
-      select: { factualSummaryOriginal: true, factualSummaryResetSnapshot: true }
-    })
+    for (const fieldConfig of Object.values(REDACTABLE_FIELDS)) {
+      const existing = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { [fieldConfig.originalColumn]: true, [fieldConfig.resetSnapshotColumn]: true }
+      })
 
-    const restoreTo = existing.factualSummaryResetSnapshot || existing.factualSummaryOriginal
+      const restoreTo = existing[fieldConfig.resetSnapshotColumn] || existing[fieldConfig.originalColumn]
 
-    await prisma.case.update({
-      where: { id: caseId },
-      data: {
-        ...(restoreTo && { factualSummary: restoreTo }),
-        factualSummaryOriginal: null,
-        factualSummaryResetSnapshot: null,
-        factualSummaryRedacted: null,
-        factualSummaryEditedAt: null,
-        factualSummaryRedactedAt: null
-      }
-    })
+      await prisma.case.update({
+        where: { id: caseId },
+        data: {
+          ...(restoreTo && { [fieldConfig.column]: restoreTo }),
+          [fieldConfig.originalColumn]: null,
+          [fieldConfig.resetSnapshotColumn]: null,
+          [`${fieldConfig.column}Redacted`]: null,
+          [fieldConfig.editedAtColumn]: null,
+          [fieldConfig.redactedAtColumn]: null
+        }
+      })
 
-    await prisma.activityLog.deleteMany({
-      where: { caseId, model: 'Case', title: 'Factual summary edited' }
-    })
+      await prisma.activityLog.deleteMany({
+        where: { caseId, model: 'Case', title: fieldConfig.activityLogTitle }
+      })
 
-    // Same reset as everything else above — otherwise stale versions from
-    // a previous test run would linger on the History tab after a reset.
-    await prisma.factualSummaryVersion.deleteMany({ where: { caseId } })
+      // Same reset as everything else above — otherwise stale versions from
+      // a previous test run would linger on the History tab after a reset.
+      await prisma[fieldConfig.versionModel].deleteMany({ where: { caseId } })
+    }
 
     delete req.session.data.outlineEdit
 
@@ -1314,7 +1455,8 @@ module.exports = router => {
       _case,
       documentTypes,
       selectedDocumentType: outlineEdit.documentType || DEFAULT_DOCUMENT_TYPE,
-      returnTo
+      returnTo,
+      redactCaption: getRedactableField(outlineEdit.field).redactCaption
     })
   })
 
@@ -1345,8 +1487,11 @@ module.exports = router => {
   // /v4/select (looped, like CHECK_VARIANTS.forEach elsewhere) since the
   // logic itself has never been variant-specific — only the redirect
   // targets need to know which variant they're for.
-  ;['v2', 'v3', 'v4', 'v7'].forEach(variant => {
-    router.post(`/cases/:caseId/outline/tag/${variant}/select`, (req, res) => {
+  // Extracted to a named function (rather than left inline in the loop
+  // below) so the same logic can also be registered for arrest-details'
+  // own /select path — see the explicit registration after the loop.
+  function handleTagSelect (variant) {
+    return (req, res) => {
       const caseId = parseInt(req.params.caseId)
       const outlineEdit = req.session.data.outlineEdit
 
@@ -1375,7 +1520,7 @@ module.exports = router => {
           scope: scope || 'single',
           returnTo
         }
-        return req.session.save(() => res.redirect(tagPath(caseId, variant)))
+        return req.session.save(() => res.redirect(tagPath(caseId, variant, outlineEdit.field)))
       }
 
       if (tag) {
@@ -1439,9 +1584,15 @@ module.exports = router => {
         }
       }
 
-      req.session.save(() => res.redirect(returnTo || tagPath(caseId, variant)))
-    })
+      req.session.save(() => res.redirect(returnTo || tagPath(caseId, variant, outlineEdit.field)))
+    }
+  }
+
+  ;['v2', 'v3', 'v4', 'v7'].forEach(variant => {
+    router.post(`/cases/:caseId/outline/tag/${variant}/select`, handleTagSelect(variant))
   })
+
+  router.post('/cases/:caseId/outline/tag/arrest-details/v7/select', handleTagSelect('v7'))
 
   router.get('/cases/:caseId/outline/tag/v4/:changeId', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
@@ -1551,7 +1702,7 @@ module.exports = router => {
     }
 
     const variant = req.body.variant
-    let redirectPath = req.body.returnTo || tagPath(caseId, variant)
+    let redirectPath = req.body.returnTo || tagPath(caseId, variant, outlineEdit.field)
 
     // v3/v7 require at least one redaction before check.html is reachable
     // (see POST /outline/tag below) — but Remove reopened via check.html's
@@ -1574,7 +1725,7 @@ module.exports = router => {
 
     if (requiresAtLeastOne && !hasAnyLeft && wasHeadingToCheck) {
       outlineEdit.noRedactionsError = true
-      redirectPath = tagPath(caseId, variant)
+      redirectPath = tagPath(caseId, variant, outlineEdit.field)
     }
 
     req.session.save(() => res.redirect(redirectPath))
@@ -1597,10 +1748,10 @@ module.exports = router => {
     // variants, not touched here.
     if ((req.body.variant === 'v3' || req.body.variant === 'v7') && !(outlineEdit.tags && Object.keys(outlineEdit.tags).length)) {
       outlineEdit.noRedactionsError = true
-      return req.session.save(() => res.redirect(tagPath(caseId, req.body.variant)))
+      return req.session.save(() => res.redirect(tagPath(caseId, req.body.variant, outlineEdit.field)))
     }
 
-    res.redirect(checkPath(caseId, req.body.variant))
+    res.redirect(checkPath(caseId, req.body.variant, outlineEdit.field))
   })
 
   router.get('/cases/:caseId/outline/redaction-log', async (req, res) => {

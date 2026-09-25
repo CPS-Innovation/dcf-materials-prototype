@@ -152,6 +152,14 @@ model Case {
   // factualSummaryOriginal by the footer's testing reset.
   factualSummaryEditedAt      DateTime?
   factualSummaryRedactedAt    DateTime?
+  // Arrest details card mirrors factualSummary's redaction/edit/history
+  // fields exactly — see the comments above for what each one is for.
+  arrestDetails               String?
+  arrestDetailsRedacted       String?
+  arrestDetailsOriginal       String?
+  arrestDetailsResetSnapshot  String?
+  arrestDetailsEditedAt       DateTime?
+  arrestDetailsRedactedAt     DateTime?
   unitId                      Int
   unit                        Unit                    @relation(fields: [unitId], references: [id])
   defendants                  Defendant[]             @relation("CaseDefendants")
@@ -175,6 +183,8 @@ model Case {
   // overwrote it. Together they build the full version-by-version timeline
   // shown on History, not just "the original".
   factualSummaryVersions      FactualSummaryVersion[]
+  // Same idea as factualSummaryVersions, for the Arrest details card.
+  arrestDetailsVersions       ArrestDetailsVersion[]
 }
 
 model FactualSummaryVersion {
@@ -183,6 +193,22 @@ model FactualSummaryVersion {
   case      Case     @relation(fields: [caseId], references: [id])
   text      String
   action    String // 'redacted' | 'edited'
+  // Snapshotted as text, not a User relation, so History still shows the
+  // right name even if that user is later renamed/removed. Null on rows
+  // recorded without a userId in scope (the older edit-diff journeys).
+  userName  String?
+  createdAt DateTime @default(now())
+}
+
+model ArrestDetailsVersion {
+  id        Int      @id @default(autoincrement())
+  caseId    Int
+  case      Case     @relation(fields: [caseId], references: [id])
+  text      String
+  action    String // 'redacted' | 'edited'
+  // See FactualSummaryVersion.userName for why this is a text snapshot,
+  // not a User relation.
+  userName  String?
   createdAt DateTime @default(now())
 }
 

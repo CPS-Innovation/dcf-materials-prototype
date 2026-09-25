@@ -89,6 +89,9 @@ module.exports = router => {
         },
         factualSummaryVersions: {
           orderBy: { createdAt: 'desc' }
+        },
+        arrestDetailsVersions: {
+          orderBy: { createdAt: 'desc' }
         }
       }
     })
@@ -250,6 +253,9 @@ module.exports = router => {
           }
         },
         factualSummaryVersions: {
+          orderBy: { createdAt: 'desc' }
+        },
+        arrestDetailsVersions: {
           orderBy: { createdAt: 'desc' }
         }
       }
