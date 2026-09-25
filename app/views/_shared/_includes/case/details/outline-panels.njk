@@ -139,10 +139,20 @@
 <p class="govuk-body">92. How would you describe your behaviour? – I was angry. But was more angry at the officer that had battered me last time</p>
 {% endset %}
 
+{# The "Redact" action below is illustrative only — unlike Summary of
+   circumstances/Arrest details, it isn't wired to a real redact journey
+   (no interviewSummary* columns/session support), per the ask to show
+   the pattern reads across three cards without needing a third field
+   plumbed in. #}
 {{ govukSummaryList({
   card: {
     title: {
       html: 'Interview summary'
+    },
+    actions: {
+      items: [
+        { text: "Redact", href: "#", visuallyHiddenText: "interview summary" }
+      ]
     }
   },
   rows: [
