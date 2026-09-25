@@ -1,0 +1,61 @@
+{# -------------------------------------------------------------------------
+  app/views/_shared/_includes/case/material/action-plan-card.njk
+
+  Expected params (via the `action` loop variable set by
+  action-plan-modal.njk):
+    - type              : string (e.g. "ROTI") — also the card title
+    - status            : string (e.g. "In progress")
+    - requiredByDisplay : string (e.g. "Not Scheduled")
+    - category          : string
+    - relatedSuspect    : string
+    - relatedMaterial   : string
+    - reasonForUpdate   : string — can be long free text, so its row value
+                          is a collapsed details ("Show more") rather than
+                          the text shown outright
+------------------------------------------------------------------------- #}
+
+{% set reasonForUpdateHtml %}
+  {% call govukDetails({ summaryText: "Show reason", classes: "app-action-plan-reason-details" }) %}
+    <p class="govuk-body">{{ action.reasonForUpdate }}</p>
+    <p class="govuk-body govuk-!-margin-bottom-0">
+      <a class="govuk-link" href="#">Mark as read<span class="govuk-visually-hidden"> reason for CPS last update for {{ action.type }}</span></a>
+    </p>
+  {% endcall %}
+{% endset %}
+
+{{ govukSummaryList({
+  classes: "app-summary-list--small-text",
+  card: {
+    classes: "app-action-plan-card",
+    title: {
+      text: action.type,
+      headingLevel: 3
+    },
+    actions: {
+      classes: "app-action-plan-card__actions",
+      items: [
+        { href: "#", text: "Complete action", visuallyHiddenText: action.type },
+        { href: "#", text: "Withdraw", visuallyHiddenText: action.type }
+      ]
+    }
+  },
+  rows: [
+      { key: { text: "Status" }, value: { text: action.status } },
+      {
+        key: { text: "Required by" },
+        value: { text: action.requiredByDisplay },
+        actions: {
+          items: [
+            { href: "#", text: "Change", visuallyHiddenText: "date required by for " + action.type }
+          ]
+        }
+      },
+      { key: { text: "Category" }, value: { text: action.category } },
+      { key: { text: "Related suspect" }, value: { text: action.relatedSuspect } },
+      { key: { text: "Related material" }, value: { text: action.relatedMaterial } },
+      {
+        key: { text: "Reason for CPS last update" },
+        value: { html: reasonForUpdateHtml }
+      }
+    ]
+  }) }}

@@ -44,13 +44,15 @@
         {{ pcdAppeal.urn }} - {{ pcdAppeal.suspects | join(', ') }}
       </h1>
 
-      <p class="govuk-body">
-        <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ pcdAppeal.caseId }}/reviews/{{ taskId }}">Go to Case review</a>
-      </p>
+      <div class="govuk-inset-text">
+        <p class="govuk-body">
+          <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ pcdAppeal.caseId }}/reviews/{{ taskId }}">Go to Case review and review the decision</a>
+        </p>                                                                                   
+      </div>
 
-      <p class="govuk-body">
+      {# <p class="govuk-body">
         <a class="govuk-link govuk-link--no-visited-state" href="/cases/{{ pcdAppeal.caseId }}/details">Case overview (not part of live design)</a>
-      </p>
+      </p> #}
 
       
      
@@ -122,20 +124,29 @@
          (CleanShot 2026-09-18 at 10.18.57.jpg). No real data source yet —
          waiting on a sample to check correlation before wiring this up
          for real, same as the placeholder rows above were before they
-         got real fields.
+         got real fields. Values below are illustrative example content
+         only (not a real case record), extrapolated from published CPS
+         guidance (Full Code Test, Director's Guidance on Charging, MG6
+         disclosure schedules) so this reads as plausible review content
+         rather than a bare "-" for every row.
          --------------------------------------------------------------- #}
       <h2 class="govuk-heading-m">Previous review details</h2>
+       <div class="govuk-inset-text">
+        <p class="govuk-body">
+          The content below is illustrative and only an example of what might be included in a review.
+        </p>                                                                                   
+      </div>
       {{ govukSummaryList({
         classes: "govuk-!-margin-bottom-6",
         rows: [
-          { key: { text: "Case Headline / Code Test" }, value: { text: "-" } },
-          { key: { text: "Evidential Assessment" }, value: { text: "-" } },
-          { key: { text: "Public Interest Assessment" }, value: { text: "-" } },
-          { key: { text: "Allocation" }, value: { text: "-" } },
-          { key: { text: "Disclosure Actions and Issues" }, value: { text: "-" } },
-          { key: { text: "Trial Strategy" }, value: { text: "-" } },
-          { key: { text: "Witness / Victim Information and Actions" }, value: { text: "-" } },
-          { key: { text: "Instructions to Op Delivery / Advocate" }, value: { text: "-" } }
+          { key: { text: "Case Headline / Code Test" }, value: { text: "Full Code Test passed — realistic prospect of conviction and prosecution required in the public interest" } },
+          { key: { text: "Evidential Assessment" }, value: { text: "Evidence is reliable and credible; no material issues identified that would undermine a realistic prospect of conviction" } },
+          { key: { text: "Public Interest Assessment" }, value: { text: "Public interest factors in favour of prosecution (seriousness of offence, harm to victim) outweigh those against" } },
+          { key: { text: "Allocation" }, value: { text: "Indictable/either-way offence — referred to and retained by a Crown Prosecutor for charging decision, per the Director's Guidance on Charging" } },
+          { key: { text: "Disclosure Actions and Issues" }, value: { text: "MG6C/MG6D schedules received from police; no disclosure issues identified at this review" } },
+          { key: { text: "Trial Strategy" }, value: { text: "Case suitable for early resolution; key lines of evidence and any admissibility issues to be kept under continuing review" } },
+          { key: { text: "Witness / Victim Information and Actions" }, value: { text: "Victim Personal Statement taken; special measures eligibility to be assessed if witness is vulnerable or intimidated" } },
+          { key: { text: "Instructions to Op Delivery / Advocate" }, value: { text: "Trial advocate to be briefed on charges and disclosure position; no further instructions outstanding at this stage" } }
         ]
       }) }}
 

@@ -1,0 +1,66 @@
+{# -------------------------------------------------------------------------
+  app/views/_shared/_includes/case/material/action-plan-list.njk
+
+  Plain-summary-list variant of action-plan-card.njk — same content and
+  row actions, but no GOV.UK summary card (no border/grey header). The
+  heading + its two action links, the summary list, and the "Reason for
+  CPS last update" details are wrapped in a <section aria-labelledby="...">
+  so the details is semantically grouped with its action, not just
+  visually close to it — solves with real markup what the card variant
+  only solves with CSS proximity.
+
+  Expected params (via the `action` loop variable set by
+  action-plan-modal.njk, and `loop` for the heading id):
+    - type              : string (e.g. "ROTI") — also the section heading
+    - status            : string (e.g. "In progress")
+    - requiredByDisplay : string (e.g. "Not Scheduled")
+    - category          : string
+    - relatedSuspect    : string
+    - relatedMaterial   : string
+    - reasonForUpdate   : string — can be long free text, so it's shown
+                          inside a details component rather than a summary
+                          list row
+------------------------------------------------------------------------- #}
+
+{% set actionPlanListHeadingId = "action-plan-list-heading-" + loop.index|string %}
+
+<section class="app-action-plan-list{{ ' app-action-plan-list--last' if loop.last }}" aria-labelledby="{{ actionPlanListHeadingId }}">
+  <div class="app-action-plan-list__heading">
+    <h3 class="govuk-heading-s" id="{{ actionPlanListHeadingId }}">{{ action.type }}</h3>
+
+    <ul class="govuk-summary-list__actions-list">
+      <li class="govuk-summary-list__actions-list-item">
+        <a class="govuk-link" href="#">Complete action<span class="govuk-visually-hidden"> {{ action.type }}</span></a>
+      </li>
+      <li class="govuk-summary-list__actions-list-item">
+        <a class="govuk-link" href="#">Withdraw<span class="govuk-visually-hidden"> {{ action.type }}</span></a>
+      </li>
+    </ul>
+  </div>
+
+  {{ govukSummaryList({
+    classes: "app-summary-list--small-text",
+    rows: [
+      { key: { text: "Status" }, value: { text: action.status } },
+      {
+        key: { text: "Required by" },
+        value: { text: action.requiredByDisplay },
+        actions: {
+          items: [
+            { href: "#", text: "Change", visuallyHiddenText: "date required by for " + action.type }
+          ]
+        }
+      },
+      { key: { text: "Category" }, value: { text: action.category } },
+      { key: { text: "Related suspect" }, value: { text: action.relatedSuspect } },
+      { key: { text: "Related material" }, value: { text: action.relatedMaterial } }
+    ]
+  }) }}
+
+  {% call govukDetails({ summaryText: "Reason for CPS last update" }) %}
+    <p class="govuk-body">{{ action.reasonForUpdate }}</p>
+    <p class="govuk-body govuk-!-margin-bottom-0">
+      <a class="govuk-link" href="#">Mark as read<span class="govuk-visually-hidden"> reason for CPS last update for {{ action.type }}</span></a>
+    </p>
+  {% endcall %}
+</section>

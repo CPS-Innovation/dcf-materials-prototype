@@ -35,6 +35,21 @@
           </button>
         </form>
       </li>
+      <li class="govuk-footer__inline-list-item">
+        {# Unconditional — the per-case "Reset PCD appeal decision" button
+           further down only appears on case 2001/2002's own details page,
+           but the assigned/unassigned demo mix it also restores spans 10
+           cases and both /tasks tables, which have no _case at all. This
+           is reachable from anywhere so a facilitator doesn't have to
+           navigate to one specific case first. #}
+        <form method="post" action="/pcd-appeal/reset-assignments" class="dcf-undo-form">
+          <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+          <input type="hidden" name="returnTo" value="{{ path }}">
+          <button type="submit" class="govuk-footer__link dcf-footer-reset-button">
+            Reset PCD appeal task assignments (testing)
+          </button>
+        </form>
+      </li>
       {# <li class="govuk-footer__inline-list-item">
         <a class="govuk-footer__link" href="/clear-data?returnUrl={{path}}">
           Clear data
