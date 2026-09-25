@@ -1,0 +1,140 @@
+{# app/views/v2/cases/outline/tag/index-v7-arrest-details
+
+   Arrest details' redact flow — identical to index-v7.html (same v7 MVP
+   mechanics: lazy select-mode session, buildTagViewData, redact-paragraphs
+   /redactions-table/toggle-original-text partials, redact-popover.js),
+   just pointed at a different field. Kept as a near-duplicate file rather
+   than parameterising index-v7.html itself, matching this app's existing
+   convention for these top-level tag screens (see index-v7.html's own
+   header comment re: v3 vs v7) — only the caption, heading and the
+   popover's form action actually differ from index-v7.html. #}
+
+{% extends "_shared/layouts/main.html" %}
+{% set navId = 'cases' %}
+{% set secondaryNavId = 'details' %}
+{% set bodyClasses = "dcf-materials-wide" %}
+
+{% block content %}
+  {% include "_shared/_includes/case/dcf-navigation.njk" %}
+
+  {{ govukBackLink({ text: "Back", href: "/cases/" + _case.id + "/details#case-outline" }) }}
+
+  {% if hasNoRedactionsError %}
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: [{ text: "You must redact the text before you continue" }],
+          classes: "dcf-tag-error-summary"
+        }) }}
+      </div>
+    </div>
+  {% endif %}
+
+  <span class="govuk-caption-m">{{ _case.reference }} - Redact arrest details</span>
+  <h1 class="govuk-heading-l">Redact arrest details</h1>
+
+
+
+
+  {% include "_shared/_includes/case/outline/toggle-original-text.njk" %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      {{ govukInsetText({
+        text: "You can ask the police to make changes to this summary by adding a 'Factual Confidential Information Request' action point to your Action plan."
+      }) }}
+
+      {# Wraps the redactable text and the Continue button together —
+         govuk-form-group--error's red left border marks the whole area
+         that needs attention, not a single input (there isn't one to
+         point an error message at, since this is a free drag-selection
+         over running text, not a form field). #}
+      <div class="govuk-form-group{{ ' govuk-form-group--error' if hasNoRedactionsError }}">
+        {% if hasNoRedactionsError %}
+          <p class="govuk-error-message">
+            <span class="govuk-visually-hidden">Error:</span> You must redact the text before you continue
+          </p>
+        {% endif %}
+
+        {% include "_shared/_includes/case/outline/redact-paragraphs.njk" %}
+
+        {% set variant = 'v7' %}
+        {% include "_shared/_includes/case/outline/redactions-table.njk" %}
+      </div>
+
+    </div>
+  </div>
+
+  {# Redact popover — appears anchored at the end of a drag-selection (or,
+     when arriving via check.html's "Change" link / clicking an existing
+     highlight, anchored to that existing <mark>), positioned by JS via
+     top/left. Single redaction at a time only — no bulk matching, so
+     there's nothing here to step through or apply across the document. #}
+  <div class="dcf-redact-popover{{ ' is-open' if modalState }}" id="dcf-redact-popover"{{ ' hidden' if not modalState }}>
+    <form method="post" action="/cases/{{ _case.id }}/outline/tag/arrest-details/v7/select" id="popover-form">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+      <input type="hidden" name="changeId" id="popover-change-id-field" value="{{ modalState.changeId if modalState else '' }}">
+      <input type="hidden" name="start" id="popover-start-field" value="{{ modalState.start if modalState else '' }}">
+      <input type="hidden" name="end" id="popover-end-field" value="{{ modalState.end if modalState else '' }}">
+      <input type="hidden" name="paragraphIndex" id="popover-paragraph-field" value="{{ modalState.paragraphIndex if modalState else '' }}">
+      <input type="hidden" name="text" id="popover-text-field" value="{{ modalState.text if modalState else '' }}">
+      <input type="hidden" name="returnTo" id="popover-return-to-field" value="{{ modalState.returnTo if modalState else '' }}">
+      <input type="hidden" name="variant" value="v7">
+
+      {% if errorSummary.length %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: errorSummary,
+          classes: "dcf-redact-popover__error-summary"
+        }) }}
+      {% endif %}
+
+      <div class="govuk-form-group govuk-!-margin-bottom-2">
+        <label class="govuk-label govuk-label--s" for="popover-tag-select">Select redaction type</label>
+        <select class="govuk-select" id="popover-tag-select" name="tag">
+          <option value=""{{ ' selected' if not (modalState and modalState.tag) }}></option>
+          {% for item in redactionTypes %}
+            <option value="{{ item.value }}"{{ ' selected' if (modalState and modalState.tag == item.value) }}>{{ item.text }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {# Only "Other" needs a note — a plain <select> has no built-in
+         conditional-reveal like govukRadios does, so this is shown/hidden
+         by redact-popover.js instead (updateNoteVisibility). #}
+      {% set noteErrorMessage = { text: "Enter a note" } if (modalState and modalState.hasError) else null %}
+      <div id="popover-note-group"{{ '' if (modalState and modalState.tag == 'other') else ' hidden' }}>
+        {{ govukTextarea({
+          id: "redact-note",
+          name: "note",
+          value: (modalState.note if modalState else ''),
+          label: { text: "Add note", classes: "govuk-label--s" },
+          errorMessage: noteErrorMessage,
+          classes: "govuk-!-margin-bottom-2"
+        }) }}
+      </div>
+
+      <div id="popover-initial-actions"{{ ' hidden' if (modalState and modalState.changeId) }}>
+        <button type="submit" name="scope" value="single" class="govuk-button govuk-!-margin-bottom-3" id="popover-redact-button" disabled>Redact this text</button>
+        {# Not wired up yet — a plain copy-to-clipboard shortcut for users who
+           want the text for their own workflow rather than to redact it.
+           Always enabled: it doesn't depend on a redaction type being
+           selected. A regular <a> for now since it's inert. #}
+        <a href="#" class="govuk-body govuk-link" id="popover-copy-text-button">Copy text</a>
+      </div>
+
+      <div class="govuk-button-group" id="popover-edit-actions"{{ ' hidden' if not (modalState and modalState.changeId) }}>
+        <button type="submit" name="scope" value="single" class="govuk-button" id="popover-continue-button" disabled>Continue</button>
+        <button type="submit" formaction="/cases/{{ _case.id }}/outline/tag/undo" formnovalidate class="govuk-button govuk-button--warning" id="popover-remove-button">Remove</button>
+        <a class="govuk-link" href="{{ modalState.returnTo if modalState else '' }}" id="popover-cancel-link">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+
+{% block pageScripts %}
+  <script src="/public/javascripts/utils/redact-text-offsets.js" defer></script>
+  <script src="/public/javascripts/components/redact-popover.js" defer></script>
+{% endblock %}

@@ -68,8 +68,9 @@
            card gives the current version, applied here to each past one
            too, so redactions stay discoverable at a glance. #}
         {% set actionLabel = "Redacted on " if version.action == 'redacted' else "Edited on " %}
+        {% set byLabel = " by " + version.userName if version.action == 'redacted' and version.userName else "" %}
         {% set versionRows = (versionRows.push({
-          key: { text: actionLabel + (version.createdAt | govukDate) },
+          key: { text: actionLabel + (version.createdAt | govukDate) + byLabel },
           value: { html: version.text | redactionEditDisplay | safe }
         }), versionRows) %}
       {% endfor %}
@@ -81,6 +82,36 @@
           }
         },
         rows: versionRows
+      }) }}
+
+    </div>
+  </div>
+{% endif %}
+
+{# Mirrors the Summary of circumstances block above exactly, for Arrest
+   details' own version history (arrestDetailsVersions — see
+   recordFieldVersion in case--outline.js). #}
+{% if _case.arrestDetailsVersions and _case.arrestDetailsVersions.length %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      {% set arrestVersionRows = [] %}
+      {% for version in _case.arrestDetailsVersions %}
+        {% set actionLabel = "Redacted on " if version.action == 'redacted' else "Edited on " %}
+        {% set byLabel = " by " + version.userName if version.action == 'redacted' and version.userName else "" %}
+        {% set arrestVersionRows = (arrestVersionRows.push({
+          key: { text: actionLabel + (version.createdAt | govukDate) + byLabel },
+          value: { html: version.text | redactionEditDisplay | safe }
+        }), arrestVersionRows) %}
+      {% endfor %}
+
+      {{ govukSummaryList({
+        card: {
+          title: {
+            html: 'Arrest details (previous versions)'
+          }
+        },
+        rows: arrestVersionRows
       }) }}
 
     </div>
