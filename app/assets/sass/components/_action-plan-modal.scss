@@ -126,18 +126,18 @@
 }
 
 /* action-plan-list.njk's variant of the card header: h3 + its two action
-   links on one line, no card border/background. Unlike the card variant,
-   the details here lives inside the same <section> as the heading and
-   list, so there's only one gap to manage (between sections) rather than
-   a tighter one within a group and a looser one between groups.
+   links on one line, no card border/background. "Reason for CPS last
+   update" is now a normal row in the summary list below (see
+   action-plan-card.njk's identical row), so — unlike when it lived in a
+   separate trailing <details> — there's no extra block after the list to
+   manage spacing/closing-borders for: every .govuk-summary-list__row
+   already draws its own bottom border by default, including the last
+   one, so the list closes itself off with no extra rules needed here.
 
-   Every heading gets a border-top (including the first, separating it
-   from "Police initiated actions" above) to open its action's block.
-   Only the *last* action's details gets a border-bottom, to close the
-   block off at the very end of the list — earlier actions don't need
-   one, since the next action's own border-top already provides that
-   separation; adding both would double up. See the .app-action-plan-
-   list--last modifier (set from loop.last in the template) below. */
+   Every heading still gets a border-top (including the first, separating
+   it from "Police initiated actions" above) to open its action's block —
+   the next action's border-top is what visually closes off the previous
+   one's summary list. */
 .app-action-plan-list__heading {
   display: flex;
   align-items: baseline;
@@ -154,25 +154,6 @@
   .govuk-summary-list__actions-list {
     width: auto;
   }
-}
-
-// The summary list's own default bottom margin (govuk-responsive-margin(6),
-// ~30px) is sized for sitting above unrelated content below it. Here it
-// sits directly above this action's own "Reason for CPS last update"
-// details, so it's removed entirely — the gap between the two is owned
-// solely by .govuk-details' margin-top below, rather than splitting it
-// across two rules.
-.app-action-plan-list .govuk-summary-list {
-  margin-bottom: 0;
-}
-
-.app-action-plan-list .govuk-details {
-  margin-top: govuk-spacing(3);
-}
-
-.app-action-plan-list--last .govuk-details {
-  padding-bottom: govuk-spacing(4);
-  border-bottom: 1px solid govuk-colour("mid-grey");
 }
 
 /* "Actions" + "Police initiated actions" read as one heading group, not
