@@ -28,7 +28,10 @@
                           achievable natively)
 ------------------------------------------------------------------------- #}
 
-{% set actionPlanListHeadingId = "action-plan-list-heading-" + loop.index|string %}
+{# actionPlanSection (set by action-plan-modal.njk before each of its three
+   {% for %} loops) keeps this id unique across sections — loop.index alone
+   would restart at 1 in every section's own loop and collide. #}
+{% set actionPlanListHeadingId = "action-plan-list-heading-" + (actionPlanSection or "default") + "-" + loop.index|string %}
 
 {% set reasonForUpdateHtml %}
   <p class="govuk-body app-action-plan-reason-preview govuk-!-margin-bottom-0 js-action-plan-reason">{{ action.reasonForUpdate }}</p>
@@ -61,6 +64,15 @@
           ]
         }
       },
+      {
+        key: { text: "Chaser task" },
+        value: { text: action.dateChaserSent },
+        actions: {
+          items: [
+            { href: "#", text: "Mark as complete", visuallyHiddenText: "chaser task for " + action.type }
+          ]
+        }
+      },
       { key: { text: "Category" }, value: { text: action.category } },
       { key: { text: "Related suspect" }, value: { text: action.relatedSuspect } },
       { key: { text: "Related material" }, value: { text: action.relatedMaterial } },
@@ -70,15 +82,6 @@
         actions: {
           items: [
             { href: "#", text: "Mark as read", visuallyHiddenText: "reason for CPS last update for " + action.type }
-          ]
-        }
-      },
-      {
-        key: { text: "Chaser task" },
-        value: { text: action.dateChaserSent },
-        actions: {
-          items: [
-            { href: "#", text: "Mark as complete", visuallyHiddenText: "chaser task for " + action.type }
           ]
         }
       }

@@ -53,6 +53,15 @@
           ]
         }
       },
+      {
+        key: { text: "Chaser task" },
+        value: { text: action.dateChaserSent },
+        actions: {
+          items: [
+            { href: "#", text: "Mark as complete", visuallyHiddenText: "chaser task for " + action.type }
+          ]
+        }
+      },
       { key: { text: "Category" }, value: { text: action.category } },
       { key: { text: "Related suspect" }, value: { text: action.relatedSuspect } },
       { key: { text: "Related material" }, value: { text: action.relatedMaterial } },
@@ -62,15 +71,6 @@
         actions: {
           items: [
             { href: "#", text: "Mark as read", visuallyHiddenText: "reason for CPS last update for " + action.type }
-          ]
-        }
-      },
-      {
-        key: { text: "Chaser task" },
-        value: { text: action.dateChaserSent },
-        actions: {
-          items: [
-            { href: "#", text: "Mark as complete", visuallyHiddenText: "chaser task for " + action.type }
           ]
         }
       }

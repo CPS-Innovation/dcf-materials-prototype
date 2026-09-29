@@ -4,9 +4,10 @@
   Left-hand slide-out tray, shell recycled from notes-modal.njk (same
   overlay + role="dialog" panel + header/close-button structure, same
   data-action="close-*" trigger convention) — that shell has nothing
-  notes-specific about it. The content is new: one action-plan-card.njk
-  per action, grouped under "Police initiated actions" as in the as-is
-  design.
+  notes-specific about it. The content is one action-plan-card.njk (or
+  action-plan-list.njk — see the toggle below) per action, grouped under
+  three headings: "Police initiated actions", "Triage and pre-charge
+  actions" and "Post-charge actions".
 
   Not yet wired to a JS open/close controller (notes-modal.js's equivalent
   lives in material-viewer.js) — this is markup/structure only, matching
@@ -14,10 +15,20 @@
   data-action="open-action-plan"-style trigger + show/hide script wired up
   separately when this is ready to go live.
 
+  All three sections currently reuse the same card/row actions (Complete
+  action/Withdraw, Change, Mark as complete, Mark as read) as skeleton
+  placeholders — Triage/pre-charge's and Post-charge's real actions are
+  still to be specified and will replace these once confirmed. Post-charge's
+  three cards are titled "ROTI" as placeholders too, pending real names.
+
   Expected params:
-    - actionPlanItems : array of { type, status, requiredByDisplay,
-                                    category, relatedSuspect,
-                                    relatedMaterial, reasonForUpdate }
+    - actionPlanItems       : array of { type, status, requiredByDisplay,
+                                          dateChaserSent, category,
+                                          relatedSuspect, relatedMaterial,
+                                          reasonForUpdate } — "Police
+                                          initiated actions"
+    - triagePreChargeItems  : same shape — "Triage and pre-charge actions"
+    - postChargeItems       : same shape — "Post-charge actions"
 ------------------------------------------------------------------------- #}
 
 {% set actionPlanItems = actionPlanItems or [
@@ -25,21 +36,87 @@
     type: "ROTI",
     status: "In progress",
     requiredByDisplay: "Not Scheduled",
+    dateChaserSent: "15 September 2026",
     category: "Category placeholder",
     relatedSuspect: "Suspect placeholder",
     relatedMaterial: "Material placeholder",
-    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days.",
-    dateChaserSent: "15 September 2026"
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
   },
   {
     type: "ROTI",
     status: "In progress",
     requiredByDisplay: "Not Scheduled",
+    dateChaserSent: "15 September 2026",
     category: "Category placeholder",
     relatedSuspect: "Suspect placeholder",
     relatedMaterial: "Material placeholder",
-    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days.",
-    dateChaserSent: "15 September 2026"
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
+  }
+] %}
+
+{% set triagePreChargeItems = triagePreChargeItems or [
+  {
+    type: "Unused and sensitive material",
+    status: "In progress",
+    requiredByDisplay: "Not Scheduled",
+    dateChaserSent: "15 September 2026",
+    category: "Category placeholder",
+    relatedSuspect: "Suspect placeholder",
+    relatedMaterial: "Material placeholder",
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
+  },
+  {
+    type: "Forensic evidence",
+    status: "In progress",
+    requiredByDisplay: "Not Scheduled",
+    dateChaserSent: "15 September 2026",
+    category: "Category placeholder",
+    relatedSuspect: "Suspect placeholder",
+    relatedMaterial: "Material placeholder",
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
+  },
+  {
+    type: "CCTV material",
+    status: "In progress",
+    requiredByDisplay: "Not Scheduled",
+    dateChaserSent: "15 September 2026",
+    category: "Category placeholder",
+    relatedSuspect: "Suspect placeholder",
+    relatedMaterial: "Material placeholder",
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
+  }
+] %}
+
+{% set postChargeItems = postChargeItems or [
+  {
+    type: "ROTI",
+    status: "In progress",
+    requiredByDisplay: "Not Scheduled",
+    dateChaserSent: "15 September 2026",
+    category: "Category placeholder",
+    relatedSuspect: "Suspect placeholder",
+    relatedMaterial: "Material placeholder",
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
+  },
+  {
+    type: "ROTI",
+    status: "In progress",
+    requiredByDisplay: "Not Scheduled",
+    dateChaserSent: "15 September 2026",
+    category: "Category placeholder",
+    relatedSuspect: "Suspect placeholder",
+    relatedMaterial: "Material placeholder",
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
+  },
+  {
+    type: "ROTI",
+    status: "In progress",
+    requiredByDisplay: "Not Scheduled",
+    dateChaserSent: "15 September 2026",
+    category: "Category placeholder",
+    relatedSuspect: "Suspect placeholder",
+    relatedMaterial: "Material placeholder",
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
   }
 ] %}
 
@@ -74,7 +151,32 @@
       </div>
 
       <div class="dcf-action-plan-modal__cards">
+        {% set actionPlanSection = "police-initiated" %}
         {% for action in actionPlanItems %}
+          {% include "_shared/_includes/case/material/action-plan-card.njk" %}
+          {# {% include "_shared/_includes/case/material/action-plan-list.njk" %} #}
+        {% endfor %}
+      </div>
+
+      <div class="dcf-action-plan-modal__heading-group">
+        <h3 class="govuk-heading-s govuk-!-margin-bottom-0">Triage and pre-charge actions</h3>
+      </div>
+
+      <div class="dcf-action-plan-modal__cards">
+        {% set actionPlanSection = "triage-pre-charge" %}
+        {% for action in triagePreChargeItems %}
+          {% include "_shared/_includes/case/material/action-plan-card.njk" %}
+          {# {% include "_shared/_includes/case/material/action-plan-list.njk" %} #}
+        {% endfor %}
+      </div>
+
+      <div class="dcf-action-plan-modal__heading-group">
+        <h3 class="govuk-heading-s govuk-!-margin-bottom-0">Post-charge actions</h3>
+      </div>
+
+      <div class="dcf-action-plan-modal__cards">
+        {% set actionPlanSection = "post-charge" %}
+        {% for action in postChargeItems %}
           {% include "_shared/_includes/case/material/action-plan-card.njk" %}
           {# {% include "_shared/_includes/case/material/action-plan-list.njk" %} #}
         {% endfor %}
