@@ -10,7 +10,11 @@
   Expected params (via the `action` loop variable set by
   action-plan-modal.njk, and `loop` for the heading id):
     - type              : string (e.g. "ROTI") — also the section heading
-    - status            : string (e.g. "In progress")
+    - status            : string (e.g. "In progress") — also drives which
+                          header actions render (Draft/Not sent/Completed
+                          each get their own; everything else falls back
+                          to Complete action/Withdraw) — see the
+                          cardActionItems block below
     - requiredByDisplay : string (e.g. "Not Scheduled")
     - category          : string
     - relatedSuspect    : string
@@ -37,17 +41,41 @@
   <p class="govuk-body app-action-plan-reason-preview govuk-!-margin-bottom-0 js-action-plan-reason">{{ action.reasonForUpdate }}</p>
 {% endset %}
 
+{# Header actions are driven entirely by action.status — see the identical
+   block in action-plan-card.njk for the reasoning (status tag states
+   diagram, CPS-only transitions). Kept as a duplicate block rather than a
+   shared include, matching this app's existing near-duplicate-variant
+   pattern (e.g. index-v7.html vs index-v3.html). #}
+{% if action.status == "Draft" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Edit draft", visuallyHiddenText: action.type },
+    { href: "#", text: "Delete draft", visuallyHiddenText: action.type }
+  ] %}
+{% elif action.status == "Not sent" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Send to police", visuallyHiddenText: action.type }
+  ] %}
+{% elif action.status == "Completed" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Re-open", visuallyHiddenText: action.type }
+  ] %}
+{% else %}
+  {% set cardActionItems = [
+    { href: "#", text: "Complete action", visuallyHiddenText: action.type },
+    { href: "#", text: "Withdraw", visuallyHiddenText: action.type }
+  ] %}
+{% endif %}
+
 <section class="app-action-plan-list" aria-labelledby="{{ actionPlanListHeadingId }}">
   <div class="app-action-plan-list__heading">
     <h3 class="govuk-heading-s" id="{{ actionPlanListHeadingId }}">{{ action.type }}</h3>
 
     <ul class="govuk-summary-list__actions-list">
-      <li class="govuk-summary-list__actions-list-item">
-        <a class="govuk-link" href="#">Complete action<span class="govuk-visually-hidden"> {{ action.type }}</span></a>
-      </li>
-      <li class="govuk-summary-list__actions-list-item">
-        <a class="govuk-link" href="#">Withdraw<span class="govuk-visually-hidden"> {{ action.type }}</span></a>
-      </li>
+      {% for item in cardActionItems %}
+        <li class="govuk-summary-list__actions-list-item">
+          <a class="govuk-link" href="{{ item.href }}">{{ item.text }}<span class="govuk-visually-hidden"> {{ item.visuallyHiddenText }}</span></a>
+        </li>
+      {% endfor %}
     </ul>
   </div>
 

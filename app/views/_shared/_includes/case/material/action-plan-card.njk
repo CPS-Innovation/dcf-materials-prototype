@@ -4,7 +4,11 @@
   Expected params (via the `action` loop variable set by
   action-plan-modal.njk):
     - type              : string (e.g. "ROTI") — also the card title
-    - status            : string (e.g. "In progress")
+    - status            : string (e.g. "In progress") — also drives which
+                          card-level actions render (Draft/Not sent/
+                          Completed each get their own; everything else
+                          falls back to Complete action/Withdraw) — see
+                          the cardActionItems block below
     - requiredByDisplay : string (e.g. "Not Scheduled")
     - category          : string
     - relatedSuspect    : string
@@ -26,6 +30,32 @@
   <p class="govuk-body app-action-plan-reason-preview govuk-!-margin-bottom-0 js-action-plan-reason">{{ action.reasonForUpdate }}</p>
 {% endset %}
 
+{# Card-level actions are driven entirely by action.status, per the
+   "Status tag states" diagram — a status only gets a button here when CPS
+   (not just Police) is a valid actor for one of its outgoing transitions.
+   Not type-specific: any card in a given status gets the same actions.
+   Withdrawn/Abandoned/Re-opened aren't specified yet, so they fall back
+   to the New/In progress treatment below pending guidance. #}
+{% if action.status == "Draft" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Edit draft", visuallyHiddenText: action.type },
+    { href: "#", text: "Delete draft", visuallyHiddenText: action.type }
+  ] %}
+{% elif action.status == "Not sent" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Send to police", visuallyHiddenText: action.type }
+  ] %}
+{% elif action.status == "Completed" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Re-open", visuallyHiddenText: action.type }
+  ] %}
+{% else %}
+  {% set cardActionItems = [
+    { href: "#", text: "Complete action", visuallyHiddenText: action.type },
+    { href: "#", text: "Withdraw", visuallyHiddenText: action.type }
+  ] %}
+{% endif %}
+
 {{ govukSummaryList({
   classes: "app-summary-list--small-text",
   card: {
@@ -36,10 +66,7 @@
     },
     actions: {
       classes: "app-action-plan-card__actions",
-      items: [
-        { href: "#", text: "Complete action", visuallyHiddenText: action.type },
-        { href: "#", text: "Withdraw", visuallyHiddenText: action.type }
-      ]
+      items: cardActionItems
     }
   },
   rows: [
