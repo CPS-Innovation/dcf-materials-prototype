@@ -9,6 +9,7 @@
     - category          : string
     - relatedSuspect    : string
     - relatedMaterial   : string
+    - dateChaserSent    : string (e.g. "15 September 2026")
     - reasonForUpdate   : string — can be long free text. js-action-plan-
                           reason (see action-plan-modal.js) truncates it
                           client-side to "first 3 words… Show more" and
@@ -61,6 +62,15 @@
         actions: {
           items: [
             { href: "#", text: "Mark as read", visuallyHiddenText: "reason for CPS last update for " + action.type }
+          ]
+        }
+      },
+      {
+        key: { text: "Chaser task" },
+        value: { text: action.dateChaserSent },
+        actions: {
+          items: [
+            { href: "#", text: "Mark as complete", visuallyHiddenText: "chaser task for " + action.type }
           ]
         }
       }

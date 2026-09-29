@@ -28,7 +28,8 @@
     category: "Category placeholder",
     relatedSuspect: "Suspect placeholder",
     relatedMaterial: "Material placeholder",
-    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days.",
+    dateChaserSent: "15 September 2026"
   },
   {
     type: "ROTI",
@@ -37,7 +38,8 @@
     category: "Category placeholder",
     relatedSuspect: "Suspect placeholder",
     relatedMaterial: "Material placeholder",
-    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days."
+    reasonForUpdate: "Investigating officer requested more time to complete this action due to a backlog of outstanding submissions. CPS has extended the required-by date and will review progress again in 14 days.",
+    dateChaserSent: "15 September 2026"
   }
 ] %}
 
@@ -73,8 +75,8 @@
 
       <div class="dcf-action-plan-modal__cards">
         {% for action in actionPlanItems %}
-          {# {% include "_shared/_includes/case/material/action-plan-card.njk" %} #}
-          {% include "_shared/_includes/case/material/action-plan-list.njk" %}
+          {% include "_shared/_includes/case/material/action-plan-card.njk" %}
+          {# {% include "_shared/_includes/case/material/action-plan-list.njk" %} #}
         {% endfor %}
       </div>
     </div>
