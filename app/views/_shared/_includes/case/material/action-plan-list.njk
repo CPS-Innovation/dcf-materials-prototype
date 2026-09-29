@@ -69,7 +69,11 @@
         value: { text: action.dateChaserSent },
         actions: {
           items: [
-            { href: "#", text: "Mark as complete", visuallyHiddenText: "chaser task for " + action.type }
+            {
+              href: "#",
+              text: "Change" if action.dateChaserSent == "Not Scheduled" else "Mark as complete",
+              visuallyHiddenText: ("date chaser sent for " if action.dateChaserSent == "Not Scheduled" else "chaser task for ") + action.type
+            }
           ]
         }
       },
