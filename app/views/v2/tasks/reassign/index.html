@@ -1,5 +1,4 @@
-{# tasks/reassign/index.html — Step 1: choose recipient type
-   See reassign-task-redesign-brief.md #}
+{# tasks/reassign/index.html  #}
 
 {% extends "_shared/layouts/main.html" %}
 
@@ -33,8 +32,9 @@
           },
           errorMessage: { text: error } if error,
           items: [
-            { value: "individual", text: "To an individual" },
-            { value: "team", text: "To a team" }
+            { value: "me", text: "To me", checked: recipientType == "me" },
+            { value: "individual", text: "To someone else", checked: recipientType == "individual" },
+            { value: "team", text: "To a team", checked: recipientType == "team" }
           ]
         }) }}
         

@@ -36,7 +36,11 @@ module.exports = router => {
     const error = req.session.data.reassignError
     delete req.session.data.reassignError
 
-    res.render('tasks/reassign/index', { task, taskId: req.params.taskId, error })
+    // Pre-selects the previous choice when "Change" on the check page
+    // sends someone back here, rather than always starting from blank.
+    const recipientType = _.get(req, 'session.data.reassign.recipientType')
+
+    res.render('tasks/reassign/index', { task, taskId: req.params.taskId, error, recipientType })
   })
 
   router.post('/tasks/:taskId/reassign', async (req, res) => {
@@ -51,9 +55,24 @@ module.exports = router => {
     }
 
     req.session.data.reassign = { taskId, recipientType }
-    res.redirect(recipientType === 'individual'
-      ? `/tasks/${taskId}/reassign/individual`
-      : `/tasks/${taskId}/reassign/team`)
+
+    if (recipientType === 'me') {
+      // No search needed — the system already knows who "me" is. Same
+      // selectedPerson shape as /reassign/individual/select/:personId,
+      // so /reassign/check's guard and commit step both just work.
+      const me = req.session.data.user
+      _.set(req, 'session.data.reassign.selectedPerson', {
+        id: me.id,
+        name: `${me.firstName} ${me.lastName}`,
+        role: me.role
+      })
+      _.set(req, 'session.data.reassign.selectedTeam', null)
+      return res.redirect(`/tasks/${taskId}/reassign/check`)
+    }
+
+    res.redirect(recipientType === 'team'
+      ? `/tasks/${taskId}/reassign/team`
+      : `/tasks/${taskId}/reassign/individual`)
   })
 
   // ── Step 2a: search for an individual ──────────────────────────────
