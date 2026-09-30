@@ -290,6 +290,72 @@ async function getTaskForReassign(taskId) {
   return task ? mapTaskCommon(task) : null
 }
 
+// Case details' generic Tasks card (tasks-panel.njk) — same owner/button
+// logic as the two PCD-appeal tables, reshaped into the single-row array
+// that card expects (0 rows if this case has no PCD-appeal task at all).
+async function getCaseTaskPanelRows(caseId) {
+  const task = await getRawTaskWithAppealForCase(caseId)
+  if (!task) return []
+
+  const mapped = mapTaskCommon(task)
+  return [{
+    id: mapped.id,
+    caseId: mapped.caseId,
+    name: mapped.task,
+    dueDate: mapped.dueDateDisplay,
+    status: mapped.severityBucket,
+    owner: mapped.owner,
+    hasWarning: mapped.urgent
+  }]
+}
+
+// Restores the deliberate assigned/unassigned demo mix across both tables
+// (see prisma/seed-pcd-appeal-demo-mix.js, which this mirrors exactly so
+// the two stay in sync) — reassigning a task in a test session mutates
+// this same shared, global data, so a later session picks up wherever the
+// last one left off unless something puts it back. Called from the
+// footer's "Reset PCD appeal decision (testing)" button so a facilitator
+// can restore a clean starting point between participants without
+// redeploying.
+async function resetAppealAssignmentMix() {
+  const sarah = await prisma.user.findUnique({ where: { email: 'sarah.whitlock@cps.gov.uk' } })
+  const david = await prisma.user.findUnique({ where: { email: 'david.okoye@cps.gov.uk' } })
+  const dutyDcp = await prisma.team.findFirst({ where: { name: 'Duty DCP' } })
+
+  if (!sarah || !david || !dutyDcp) return
+
+  const assignments = [
+    // Task list (Review PCD Appeal) — 1 assigned, 1 left unassigned (case 14)
+    { caseId: 2002, taskName: TASK_LIST_APPEAL_NAME, assignedToUserId: sarah.id },
+    // Priority charging (Priority PCD Review) — 4 assigned, 4 left unassigned (cases 2, 4, 6, 8)
+    { caseId: 2001, taskName: PRIORITY_CHARGING_APPEAL_NAME, assignedToUserId: david.id },
+    { caseId: 3, taskName: PRIORITY_CHARGING_APPEAL_NAME, assignedToUserId: sarah.id },
+    { caseId: 5, taskName: PRIORITY_CHARGING_APPEAL_NAME, assignedToUserId: david.id },
+    { caseId: 7, taskName: PRIORITY_CHARGING_APPEAL_NAME, assignedToTeamId: dutyDcp.id }
+  ]
+
+  // Every real appeal task not listed above (14, 2, 4, 6, 8) goes back to
+  // unassigned — otherwise a task a participant assigned that ISN'T one of
+  // the five deliberately-assigned rows above would stay assigned forever.
+  await prisma.task.updateMany({
+    where: { name: { in: [TASK_LIST_APPEAL_NAME, PRIORITY_CHARGING_APPEAL_NAME] } },
+    data: { assignedToUserId: null, assignedToTeamId: null }
+  })
+
+  for (const a of assignments) {
+    const task = await prisma.task.findFirst({ where: { caseId: a.caseId, name: a.taskName } })
+    if (!task) continue
+
+    await prisma.task.update({
+      where: { id: task.id },
+      data: {
+        assignedToUserId: a.assignedToUserId || null,
+        assignedToTeamId: a.assignedToTeamId || null
+      }
+    })
+  }
+}
+
 module.exports = {
   TASK_LIST_APPEAL_NAME,
   PRIORITY_CHARGING_APPEAL_NAME,
@@ -298,7 +364,9 @@ module.exports = {
   formatOwnerInitials,
   getAppealTaskListRows,
   getPriorityChargingRows,
+  resetAppealAssignmentMix,
   getPcdAppealForCase,
   getRawTaskWithAppealForCase,
-  getTaskForReassign
+  getTaskForReassign,
+  getCaseTaskPanelRows
 }

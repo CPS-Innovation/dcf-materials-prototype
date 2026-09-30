@@ -25,13 +25,6 @@ async function findTaskById(taskId) {
   return pcdTasks.find(t => t.id === taskId) || null
 }
 
-async function getTaskUnitId(task) {
-  const caseId = task.caseId || task.overviewCaseId
-  if (!caseId) return null
-  const _case = await prisma.case.findUnique({ where: { id: caseId }, select: { unitId: true } })
-  return _case ? _case.unitId : null
-}
-
 module.exports = router => {
 
   // ── Step 1: choose recipient type ──────────────────────────────────
@@ -77,7 +70,7 @@ module.exports = router => {
     const unitItems = units.map(u => ({ value: String(u.id), text: u.name }))
 
     search = search || _.get(req, 'session.data.reassign.search', {})
-    const defaultUnitId = search.unit || String(await getTaskUnitId(task) || '')
+    const defaultUnitId = search.unit || ''
 
     let results = null
     if (search.searched && !error) {
@@ -156,7 +149,7 @@ module.exports = router => {
     const unitItems = units.map(u => ({ value: String(u.id), text: u.name }))
 
     search = search || _.get(req, 'session.data.reassign.teamSearch', {})
-    const defaultUnitId = search.unit || String(await getTaskUnitId(task) || '')
+    const defaultUnitId = search.unit || ''
 
     let results = null
     if (search.searched) {

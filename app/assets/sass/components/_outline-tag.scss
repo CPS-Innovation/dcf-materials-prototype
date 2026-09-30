@@ -192,10 +192,10 @@
   text-align: right;
 }
 
-// Check screen (shared by all 4 variants): each change renders as four
-// summary-list rows (Text/Instances/Category/Date), or five when the
-// category is "Other" (an extra Note row), with no dividers between them —
-// only the last row of each change (marked with --end) keeps a border.
+// Check screen (shared by all 4 variants): each change renders as three
+// summary-list rows (Text/Instances/Category), or four when the category
+// is "Other" (an extra Note row), with no dividers between them — only the
+// last row of each change (marked with --end) keeps a border.
 .dcf-check-list .govuk-summary-list__row {
   border-bottom: none;
 }

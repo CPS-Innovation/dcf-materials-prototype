@@ -1,15 +1,13 @@
-{# app/views/v2/cases/outline/tag/index-v7
+{# app/views/v2/cases/outline/tag/index-v7-arrest-details
 
-   MVP redact flow — single redaction at a time. Identical to index-v3.html
-   except the popover has no "Find matching text"/View previous/View
-   next/Redact all/Copy text — that bulk-matching functionality was too
-   much dev effort for MVP and has gone to the backlog for post-MVP work.
-   v3 itself is kept as-is (unlinked from the live summary card) as a
-   reference for that fuller design; this is deliberately a near-duplicate
-   rather than a shared partial, so v3 stays untouched. redact-popover.js
-   is unchanged too — every bit of the removed functionality is already
-   guarded behind "if this element exists" checks there, so simply not
-   rendering the markup is enough. #}
+   Arrest details' redact flow — identical to index-v7.html (same v7 MVP
+   mechanics: lazy select-mode session, buildTagViewData, redact-paragraphs
+   /redactions-table/toggle-original-text partials, redact-popover.js),
+   just pointed at a different field. Kept as a near-duplicate file rather
+   than parameterising index-v7.html itself, matching this app's existing
+   convention for these top-level tag screens (see index-v7.html's own
+   header comment re: v3 vs v7) — only the caption, heading and the
+   popover's form action actually differ from index-v7.html. #}
 
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -33,8 +31,8 @@
     </div>
   {% endif %}
 
-  <span class="govuk-caption-m">{{ _case.reference }} - Redact summary of circumstances on offence(s)</span>
-  <h1 class="govuk-heading-l">Redact summary of circumstances</h1>
+  <span class="govuk-caption-m">{{ _case.reference }} - Redact arrest details</span>
+  <h1 class="govuk-heading-l">Redact arrest details</h1>
 
 
 
@@ -75,7 +73,7 @@
      top/left. Single redaction at a time only — no bulk matching, so
      there's nothing here to step through or apply across the document. #}
   <div class="dcf-redact-popover{{ ' is-open' if modalState }}" id="dcf-redact-popover"{{ ' hidden' if not modalState }}>
-    <form method="post" action="/cases/{{ _case.id }}/outline/tag/v7/select" id="popover-form">
+    <form method="post" action="/cases/{{ _case.id }}/outline/tag/arrest-details/v7/select" id="popover-form">
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
       <input type="hidden" name="changeId" id="popover-change-id-field" value="{{ modalState.changeId if modalState else '' }}">
       <input type="hidden" name="start" id="popover-start-field" value="{{ modalState.start if modalState else '' }}">

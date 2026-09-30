@@ -1,0 +1,122 @@
+{# -------------------------------------------------------------------------
+  app/views/_shared/_includes/case/material/action-plan-list.njk
+
+  Plain-summary-list variant of action-plan-card.njk — same content and
+  row actions, but no GOV.UK summary card (no border/grey header). The
+  heading + its two action links and the summary list are wrapped in a
+  <section aria-labelledby="..."> so the whole action reads as one
+  semantic group, not just a visually-adjacent heading + list.
+
+  Expected params (via the `action` loop variable set by
+  action-plan-modal.njk, and `loop` for the heading id):
+    - type              : string (e.g. "ROTI") — also the section heading
+    - status            : string (e.g. "In progress") — also drives which
+                          header actions render (Draft/Not sent/Completed
+                          each get their own; everything else falls back
+                          to Complete action/Withdraw) — see the
+                          cardActionItems block below
+    - requiredByDisplay : string (e.g. "Not Scheduled")
+    - category          : string
+    - relatedSuspect    : string
+    - relatedMaterial   : string
+    - dateChaserSent    : string (e.g. "15 September 2026")
+    - reasonForUpdate   : string — can be long free text. js-action-plan-
+                          reason (see action-plan-modal.js) truncates it
+                          client-side to "first 3 words… Show more" and
+                          expands in place to the full text with "Show
+                          less" trailing it, in the same paragraph — see
+                          App.TextExpander (text-expander.js) for why this
+                          needed JS rather than a <details> component
+                          (summary always renders before its content,
+                          so a toggle that trails the full text isn't
+                          achievable natively)
+------------------------------------------------------------------------- #}
+
+{# actionPlanSection (set by action-plan-modal.njk before each of its three
+   {% for %} loops) keeps this id unique across sections — loop.index alone
+   would restart at 1 in every section's own loop and collide. #}
+{% set actionPlanListHeadingId = "action-plan-list-heading-" + (actionPlanSection or "default") + "-" + loop.index|string %}
+
+{% set reasonForUpdateHtml %}
+  <p class="govuk-body app-action-plan-reason-preview govuk-!-margin-bottom-0 js-action-plan-reason">{{ action.reasonForUpdate }}</p>
+{% endset %}
+
+{# Header actions are driven entirely by action.status — see the identical
+   block in action-plan-card.njk for the reasoning (status tag states
+   diagram, CPS-only transitions). Kept as a duplicate block rather than a
+   shared include, matching this app's existing near-duplicate-variant
+   pattern (e.g. index-v7.html vs index-v3.html). #}
+{% if action.status == "Draft" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Edit draft", visuallyHiddenText: action.type },
+    { href: "#", text: "Delete draft", visuallyHiddenText: action.type }
+  ] %}
+{% elif action.status == "Not sent" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Send to police", visuallyHiddenText: action.type }
+  ] %}
+{% elif action.status == "Completed" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Re-open", visuallyHiddenText: action.type }
+  ] %}
+{% else %}
+  {% set cardActionItems = [
+    { href: "#", text: "Complete action", visuallyHiddenText: action.type },
+    { href: "#", text: "Withdraw", visuallyHiddenText: action.type }
+  ] %}
+{% endif %}
+
+<section class="app-action-plan-list" aria-labelledby="{{ actionPlanListHeadingId }}">
+  <div class="app-action-plan-list__heading">
+    <h3 class="govuk-heading-s" id="{{ actionPlanListHeadingId }}">{{ action.type }}</h3>
+
+    <ul class="govuk-summary-list__actions-list">
+      {% for item in cardActionItems %}
+        <li class="govuk-summary-list__actions-list-item">
+          <a class="govuk-link" href="{{ item.href }}">{{ item.text }}<span class="govuk-visually-hidden"> {{ item.visuallyHiddenText }}</span></a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {{ govukSummaryList({
+    classes: "app-summary-list--small-text",
+    rows: [
+      { key: { text: "Status" }, value: { text: action.status } },
+      {
+        key: { text: "Required by" },
+        value: { text: action.requiredByDisplay },
+        actions: {
+          items: [
+            { href: "#", text: "Change", visuallyHiddenText: "date required by for " + action.type }
+          ]
+        }
+      },
+      {
+        key: { text: "Chaser task" },
+        value: { text: action.dateChaserSent },
+        actions: {
+          items: [
+            {
+              href: "#",
+              text: "Change" if action.dateChaserSent == "Not Scheduled" else "Mark as complete",
+              visuallyHiddenText: ("date chaser sent for " if action.dateChaserSent == "Not Scheduled" else "chaser task for ") + action.type
+            }
+          ]
+        }
+      },
+      { key: { text: "Category" }, value: { text: action.category } },
+      { key: { text: "Related suspect" }, value: { text: action.relatedSuspect } },
+      { key: { text: "Related material" }, value: { text: action.relatedMaterial } },
+      {
+        key: { text: "Reason for CPS last update" },
+        value: { html: reasonForUpdateHtml },
+        actions: {
+          items: [
+            { href: "#", text: "Mark as read", visuallyHiddenText: "reason for CPS last update for " + action.type }
+          ]
+        }
+      }
+    ]
+  }) }}
+</section>

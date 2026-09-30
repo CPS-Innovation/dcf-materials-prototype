@@ -2,7 +2,7 @@ const _ = require('lodash')
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 const documentTypes = require('../data/document-types')
-const { getPcdAppealForCase, getRawTaskWithAppealForCase } = require('../helpers/pcdAppeal')
+const { getPcdAppealForCase, getRawTaskWithAppealForCase, getCaseTaskPanelRows, resetAppealAssignmentMix } = require('../helpers/pcdAppeal')
 
 function resetFilters(req) {
   _.set(req, 'session.data.documentListFilters.documentTypes', null)
@@ -89,6 +89,9 @@ module.exports = router => {
         },
         factualSummaryVersions: {
           orderBy: { createdAt: 'desc' }
+        },
+        arrestDetailsVersions: {
+          orderBy: { createdAt: 'desc' }
         }
       }
     })
@@ -147,7 +150,8 @@ module.exports = router => {
     }
 
     const reminderTasks = req.session.data.reminderTasks || []
-    const tasks = [...reminderTasks, ...placeholderTasks]
+    const caseAppealTasks = await getCaseTaskPanelRows(caseId)
+    const tasks = [...caseAppealTasks, ...reminderTasks, ...placeholderTasks]
 
     // successBanner is already read from session, validated and cleared,
     // and exposed as res.locals.successBanner by the global flash
@@ -249,6 +253,9 @@ module.exports = router => {
           }
         },
         factualSummaryVersions: {
+          orderBy: { createdAt: 'desc' }
+        },
+        arrestDetailsVersions: {
           orderBy: { createdAt: 'desc' }
         }
       }
@@ -426,7 +433,12 @@ module.exports = router => {
 
   // Reset the PCD appeal demo back to its pending state (footer testing
   // link) — undoes the write from the decision check route above, same
-  // idea as "Reset Redact and Edit" further down this file.
+  // idea as "Reset Redact and Edit" further down this file. Also restores
+  // the assigned/unassigned demo mix across BOTH tables (see
+  // resetAppealAssignmentMix), since reassigning a task in one test
+  // session mutates the same shared, global data every later session
+  // reads — this is the one button facilitators have to put it back
+  // between participants without redeploying.
   router.post('/cases/:caseId/pcd-appeal/reset', async (req, res) => {
     const caseId = parseInt(req.params.caseId)
     const task = await getRawTaskWithAppealForCase(caseId)
@@ -447,8 +459,23 @@ module.exports = router => {
       })
     }
 
+    await resetAppealAssignmentMix()
+
     delete req.session.data.pcdAppealDecisionDraft
     res.redirect(req.body.returnTo || `/cases/${caseId}/details#overview`)
+  })
+
+  // Same assignment-mix reset as above, but not scoped to a single case's
+  // page — the mix spans 10 cases (2, 3, 4, 5, 6, 7, 8, 14, 2001, 2002),
+  // and the two tables that show it (/tasks?v=v2) have no _case at all, so
+  // the per-case button above (footer.njk, gated to _case.id 2001/2002)
+  // is invisible from everywhere a facilitator would actually notice
+  // drifted assignments. This unconditional route/button is reachable from
+  // any page, matching "Reset material notes/status" and "Reset no victim
+  // demo" just above it in the footer.
+  router.post('/pcd-appeal/reset-assignments', async (req, res) => {
+    await resetAppealAssignmentMix()
+    res.redirect(req.body.returnTo || '/tasks?v=v2')
   })
 
 }

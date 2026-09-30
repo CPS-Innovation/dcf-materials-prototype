@@ -6,6 +6,7 @@ const firstNames = require("../app/data/first-names.js");
 const lastNames = require("../app/data/last-names.js");
 const types = require("../app/data/types.js");
 const factualSummaryFixture = require("../app/data/factual-summary-fixture.js");
+const arrestDetailsFixture = require("../app/data/arrest-details-fixture.js");
 const taskNames = require("../app/data/task-names.js");
 const documentTypes = require("../app/data/document-types.js");
 const specialisms = require("../app/data/specialisms.js");
@@ -409,7 +410,8 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
         unitId: unit.id,
         // keep "Not started"
         reportStatus: null,
-        factualSummary: factualSummaryFixture
+        factualSummary: factualSummaryFixture,
+        arrestDetails: arrestDetailsFixture
       },
       create: {
         reference: caseReference,
@@ -419,6 +421,7 @@ async function seedShowcaseIndictmentCase(prisma, opts = {}) {
         // keep "Not started"
         reportStatus: null,
         factualSummary: factualSummaryFixture,
+        arrestDetails: arrestDetailsFixture,
 
         location: {
           create: {
@@ -653,12 +656,13 @@ async function seedNoVictimDemoCase(prisma, opts = {}) {
 
     const demoCase = await tx.case.upsert({
       where: { reference: caseReference },
-      update: { unitId: unit.id, factualSummary: factualSummaryFixture },
+      update: { unitId: unit.id, factualSummary: factualSummaryFixture, arrestDetails: arrestDetailsFixture },
       create: {
         reference: caseReference,
         type: 'First hearing',
         complexity: 'Level 1',
         factualSummary: factualSummaryFixture,
+        arrestDetails: arrestDetailsFixture,
         unit: { connect: { id: unit.id } },
         defendants: { connect: [{ id: defendant.id }] }
       }
@@ -1403,6 +1407,7 @@ await seedNoVictimDemoCase(prisma, {
         type: faker.helpers.arrayElement(types),
         complexity: faker.helpers.arrayElement(complexities),
         factualSummary: factualSummaryFixture,
+        arrestDetails: arrestDetailsFixture,
         unit: { connect: { id: caseUnitId } },
         defendants: { connect: assignedDefendants.map((d) => ({ id: d.id })) },
         victims: { connect: assignedVictims.map((v) => ({ id: v.id })) },
