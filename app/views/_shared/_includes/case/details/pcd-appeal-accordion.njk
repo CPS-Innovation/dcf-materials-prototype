@@ -1,0 +1,102 @@
+{# _shared/_includes/case/details/pcd-appeal-accordion.njk
+
+   Accordion variant of pcd-appeal.njk — same slot in main-tabs.njk's
+   contacts-box (swap the include there; only one of the two should be
+   live at a time). Same pcdAppeal data source (see pcdAppeal.njk's
+   header comment). Occupies the card's slot directly rather than being
+   nested inside a govuk-summary-card — GOV.UK's accordion is its own
+   component, not a decoration to bolt onto another one.
+
+   Three sections, driven by what decision.html (the standalone DCP
+   decision page) already shows in full: this accordion exists so the
+   overview page can surface that same depth of content without leaving
+   it. The "Decision" section pcd-appeal.njk conditionally adds once
+   pcdAppeal.dcpDecision is set has no equivalent here — dcpDecisionAt is
+   never populated by seed data, and the route that would ever set it is
+   orphaned (see decision.html's header comment), so that branch is dead
+   in practice and isn't carried over. "Review PCD Appeal"'s rows match
+   pcd-appeal.njk's current card exactly (not decision.html's slightly
+   drifted version of the same heading).
+#}
+
+{% from "govuk/components/accordion/macro.njk" import govukAccordion %}
+
+{% set pcdAppealReviewHtml %}
+  {{ govukSummaryList({
+    classes: "govuk-summary-list--no-border app-summary-list--compact",
+    rows: [
+      { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
+      { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
+      { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
+      { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
+      { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
+    ]
+  }) }}
+{% endset %}
+
+{% set previousChargingDetailsHtml %}
+  {{ govukSummaryList({
+    classes: "govuk-summary-list--no-border app-summary-list--compact",
+    rows: [
+      { key: { text: "Date decision requested" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDate } },
+      { key: { text: "Decision made by" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
+      { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
+      { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
+      { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } },
+      { key: { text: "Investigation stage" }, value: { text: pcdAppeal.investigationStage } },
+      { key: { text: "Action plan" }, value: { text: pcdAppeal.actionPlan } },
+      { key: { text: "Suspect name" }, value: { text: pcdAppeal.suspects | join(', ') } },
+      { key: { text: "Reason for decision" }, value: { text: pcdAppeal.originalDecision.reasoning } },
+      { key: { text: "Specified charges" }, value: { text: pcdAppeal.specifiedCharges } },
+      { key: { text: "PCD principal offence category" }, value: { text: pcdAppeal.pcdPrincipalOffenceCategory } }
+    ]
+  }) }}
+{% endset %}
+
+{% set previousReviewDetailsHtml %}
+  {{ govukInsetText({
+    text: "The content below is illustrative and only an example of what might be included in a review."
+  }) }}
+  {{ govukSummaryList({
+    classes: "govuk-summary-list--no-border app-summary-list--compact",
+    rows: [
+      { key: { text: "Case Headline / Code Test" }, value: { text: "Full Code Test passed — realistic prospect of conviction and prosecution required in the public interest" } },
+      { key: { text: "Evidential Assessment" }, value: { text: "Evidence is reliable and credible; no material issues identified that would undermine a realistic prospect of conviction" } },
+      { key: { text: "Public Interest Assessment" }, value: { text: "Public interest factors in favour of prosecution (seriousness of offence, harm to victim) outweigh those against" } },
+      { key: { text: "Allocation" }, value: { text: "Indictable/either-way offence — referred to and retained by a Crown Prosecutor for charging decision, per the Director's Guidance on Charging" } },
+      { key: { text: "Disclosure Actions and Issues" }, value: { text: "MG6C/MG6D schedules received from police; no disclosure issues identified at this review" } },
+      { key: { text: "Trial Strategy" }, value: { text: "Case suitable for early resolution; key lines of evidence and any admissibility issues to be kept under continuing review" } },
+      { key: { text: "Witness / Victim Information and Actions" }, value: { text: "Victim Personal Statement taken; special measures eligibility to be assessed if witness is vulnerable or intimidated" } },
+      { key: { text: "Instructions to Op Delivery / Advocate" }, value: { text: "Trial advocate to be briefed on charges and disclosure position; no further instructions outstanding at this stage" } }
+    ]
+  }) }}
+{% endset %}
+
+<hr class="govuk-section-break govuk-section-break--visible">
+<h3 class="govuk-heading-m border-top govuk-!-margin-top-3">
+  PCD appeal
+  {% if pcdAppeal.taskType == 'Priority PCD Review' %}
+    {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
+  {% endif %}
+</h3>
+
+{# Statutory time limit — shown here rather than inside a section, same
+   reasoning as decision.html's identical row: it drives how urgently
+   this needs acting on, it isn't case history, so it shouldn't be
+   something you only see after opening an accordion section. #}
+{% if pcdAppeal.stl %}
+  <p class="govuk-body govuk-!-margin-bottom-3">
+    Statutory time limit: <strong>{{ pcdAppeal.stl.expiryDisplay | isoDateString | govukDateTime }}</strong>
+  </p>
+{% endif %}
+
+{{ govukAccordion({
+  id: "pcd-appeal-accordion",
+  classes: "app-pcd-appeal",
+  headingLevel: 4,
+  items: [
+    { heading: { text: "Review PCD Appeal" }, content: { html: pcdAppealReviewHtml } },
+    { heading: { text: "Previous charging details" }, content: { html: previousChargingDetailsHtml } },
+    { heading: { text: "Previous review details" }, content: { html: previousReviewDetailsHtml } }
+  ]
+}) }}

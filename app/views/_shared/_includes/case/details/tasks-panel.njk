@@ -78,7 +78,7 @@
                 {% endif %}
               </td>
               <td class="govuk-table__cell case-task-role">
-                {% if task.caseId and task.owner != 'Unassigned' %}
+                {% if task.caseId and task.owner != 'MCgen' %}
                   {{ govukTag({ text: "Assigned" }) }}
                 {% else %}
                   <strong class="govuk-tag">
@@ -92,15 +92,17 @@
               <td class="govuk-table__cell case-task-role">
                 {% if task.caseId %}
                   {# Real PCD appeal task, same owner-based branching as
-                     task-list-table.njk/priority-charging-table.njk. This
-                     card only surfaces the assign step — once assigned
-                     (shown as a status tag instead), there's nothing to
-                     link to here (starting the task itself happens from
-                     the main task list, not from this per-case card). #}
-                  {% if task.owner == 'Unassigned' %}
+                     task-list-table.njk/priority-charging-table.njk. Once
+                     assigned, "Start task" goes to the same PCD appeal
+                     decision page those tables' expand panels link to. #}
+                  {% if task.owner == 'MCgen' %}
                     <a class="govuk-link" href="/tasks/{{ task.id }}/reassign">Assign task</a>
+                  {% else %}
+                    <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision">Start task</a>
                   {% endif %}
-                {% else %}
+                {% elif task.status != 'Done' %}
+                  {# Placeholder tasks only — a completed task has nothing
+                     left to start. #}
                   <a class="govuk-link" href="#">
                     Start task
                   </a>

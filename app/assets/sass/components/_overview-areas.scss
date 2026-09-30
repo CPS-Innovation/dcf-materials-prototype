@@ -25,6 +25,23 @@
   gap: 1.5rem;
 }
 
+/* Right-hand column wrapper for tasks-box + monitoring-box — its own
+   independent flex stack, gap matching .case-grid's at each breakpoint.
+   Needed so the two columns are genuinely independent: previously
+   contacts-box used grid-row: span 2 to line up against tasks-box/
+   monitoring-box as if they were a column, but a shared auto-sized grid
+   track means growing contacts-box (e.g. opening an accordion section)
+   redistributes height across the rows tasks-box/monitoring-box sit in,
+   visibly shifting monitoring-box for a reason that has nothing to do
+   with its own content. Wrapping them removes that coupling entirely —
+   contacts-box growing only changes the overall row height, never the
+   relative position of tasks-box/monitoring-box to each other. */
+.case-grid__column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 /* Outer grey panels for placeholders */
 // .contacts-box,
 // .tasks-box,
@@ -61,11 +78,6 @@
     /* no min-height here */
   }
 
-  .contacts-box {
-    grid-row: span 2;   /* stretch down to align with two rows on the right */
-    /* let the card’s content define height */
-  }
-
   .tasks-box,
   .monitoring-box {
     /* no extra min-height on desktop */
@@ -75,7 +87,8 @@
 
 /* ===== Desktop and up (>= 48.0625em ~ 769px) ===== */
 @media (min-width: 48.0625em) {
-  .case-grid {
+  .case-grid,
+  .case-grid__column {
     gap: 1.75rem;       /* spacing only, no forced height */
   }
 
@@ -89,7 +102,8 @@
 
 /* ===== Widescreen (>= 64.0625em ~ 1025px) ===== */
 @media (min-width: 64.0625em) {
-  .case-grid {
+  .case-grid,
+  .case-grid__column {
     gap: 2rem;
   }
 }
