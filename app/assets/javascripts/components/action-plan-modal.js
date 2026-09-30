@@ -59,4 +59,19 @@
       closeModal()
     }
   })
+
+  // "Reason for CPS last update" rows (action-plan-card.njk) truncate to
+  // "first 3 words… Show more" and expand in place to the full text with
+  // "Show less" trailing it — see text-expander.js for why this needed a
+  // real toggle rather than <details>. The tray starts hidden, not
+  // removed from the DOM, so this can run immediately rather than
+  // waiting for the tray to open.
+  if (window.jQuery && window.App && window.App.TextExpander) {
+    modal.querySelectorAll('.js-action-plan-reason').forEach(function (el) {
+      new window.App.TextExpander({
+        container: window.jQuery(el),
+        maxWords: 3
+      })
+    })
+  }
 })()

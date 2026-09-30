@@ -48,6 +48,17 @@
 {% endblock %}
 
 {% block pageScripts %}
+{# This block replaces (doesn't extend) main.html's default pageScripts,
+   so both the `App` global it defines and text-expander.js need their
+   own copies here too — action-plan-modal.js uses App.TextExpander for
+   the action plan's "Reason for CPS last update" rows and would
+   otherwise find `App` undefined. Not calling super() deliberately, to
+   avoid also pulling in filter-toggle-button.js/list-filter.js/
+   button-menu.js, which this page doesn't use. #}
+<script>
+  var App = {}
+</script>
+<script src="/public/javascripts/components/text-expander.js"></script>
 <script src="/public/javascripts/components/action-plan-modal.js" defer></script>
 <script>
 (function () {

@@ -4,24 +4,57 @@
   Expected params (via the `action` loop variable set by
   action-plan-modal.njk):
     - type              : string (e.g. "ROTI") — also the card title
-    - status            : string (e.g. "In progress")
+    - status            : string (e.g. "In progress") — also drives which
+                          card-level actions render (Draft/Not sent/
+                          Completed each get their own; everything else
+                          falls back to Complete action/Withdraw) — see
+                          the cardActionItems block below
     - requiredByDisplay : string (e.g. "Not Scheduled")
     - category          : string
     - relatedSuspect    : string
     - relatedMaterial   : string
-    - reasonForUpdate   : string — can be long free text, so its row value
-                          is a collapsed details ("Show more") rather than
-                          the text shown outright
+    - dateChaserSent    : string (e.g. "15 September 2026")
+    - reasonForUpdate   : string — can be long free text. js-action-plan-
+                          reason (see action-plan-modal.js) truncates it
+                          client-side to "first 3 words… Show more" and
+                          expands in place to the full text with "Show
+                          less" trailing it, in the same paragraph — see
+                          App.TextExpander (text-expander.js) for why this
+                          needed JS rather than a <details> component
+                          (summary always renders before its content,
+                          so a toggle that trails the full text isn't
+                          achievable natively)
 ------------------------------------------------------------------------- #}
 
 {% set reasonForUpdateHtml %}
-  {% call govukDetails({ summaryText: "Show reason", classes: "app-action-plan-reason-details" }) %}
-    <p class="govuk-body">{{ action.reasonForUpdate }}</p>
-    <p class="govuk-body govuk-!-margin-bottom-0">
-      <a class="govuk-link" href="#">Mark as read<span class="govuk-visually-hidden"> reason for CPS last update for {{ action.type }}</span></a>
-    </p>
-  {% endcall %}
+  <p class="govuk-body app-action-plan-reason-preview govuk-!-margin-bottom-0 js-action-plan-reason">{{ action.reasonForUpdate }}</p>
 {% endset %}
+
+{# Card-level actions are driven entirely by action.status, per the
+   "Status tag states" diagram — a status only gets a button here when CPS
+   (not just Police) is a valid actor for one of its outgoing transitions.
+   Not type-specific: any card in a given status gets the same actions.
+   Withdrawn/Abandoned/Re-opened aren't specified yet, so they fall back
+   to the New/In progress treatment below pending guidance. #}
+{% if action.status == "Draft" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Edit draft", visuallyHiddenText: action.type },
+    { href: "#", text: "Delete draft", visuallyHiddenText: action.type }
+  ] %}
+{% elif action.status == "Not sent" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Send to police", visuallyHiddenText: action.type }
+  ] %}
+{% elif action.status == "Completed" %}
+  {% set cardActionItems = [
+    { href: "#", text: "Re-open", visuallyHiddenText: action.type }
+  ] %}
+{% else %}
+  {% set cardActionItems = [
+    { href: "#", text: "Complete action", visuallyHiddenText: action.type },
+    { href: "#", text: "Withdraw", visuallyHiddenText: action.type }
+  ] %}
+{% endif %}
 
 {{ govukSummaryList({
   classes: "app-summary-list--small-text",
@@ -33,10 +66,7 @@
     },
     actions: {
       classes: "app-action-plan-card__actions",
-      items: [
-        { href: "#", text: "Complete action", visuallyHiddenText: action.type },
-        { href: "#", text: "Withdraw", visuallyHiddenText: action.type }
-      ]
+      items: cardActionItems
     }
   },
   rows: [
@@ -50,12 +80,30 @@
           ]
         }
       },
+      {
+        key: { text: "Chaser task" },
+        value: { text: action.dateChaserSent },
+        actions: {
+          items: [
+            {
+              href: "#",
+              text: "Change" if action.dateChaserSent == "Not Scheduled" else "Mark as complete",
+              visuallyHiddenText: ("date chaser sent for " if action.dateChaserSent == "Not Scheduled" else "chaser task for ") + action.type
+            }
+          ]
+        }
+      },
       { key: { text: "Category" }, value: { text: action.category } },
       { key: { text: "Related suspect" }, value: { text: action.relatedSuspect } },
       { key: { text: "Related material" }, value: { text: action.relatedMaterial } },
       {
         key: { text: "Reason for CPS last update" },
-        value: { html: reasonForUpdateHtml }
+        value: { html: reasonForUpdateHtml },
+        actions: {
+          items: [
+            { href: "#", text: "Mark as read", visuallyHiddenText: "reason for CPS last update for " + action.type }
+          ]
+        }
       }
     ]
   }) }}

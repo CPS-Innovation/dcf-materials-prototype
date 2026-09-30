@@ -95,41 +95,49 @@
     @include govuk-font-size($size: 16);
   }
 
-  /* action-plan-card.njk's "Reason for CPS last update" row value: styled
-     as a plain "Show more" link rather than a chevron disclosure, since
-     the marker (plus the padding/left-border reserved to align with it)
-     read as a nested box and felt cramped in the row's narrow value
-     column. Still a real <details> underneath — keyboard and screen
-     reader support come for free — just visually stripped back. */
-  .app-action-plan-reason-details {
-    .govuk-details__summary {
-      padding-left: 0;
+  /* action-plan-card.njk's "Reason for CPS last update" row value:
+     App.TextExpander (text-expander.js) truncates it to "first 3 words…"
+     and appends a toggle button — a <details> component can't do this,
+     since its <summary> always renders before the disclosed content, and
+     "Show less" needs to trail the full text instead. .govuk-body sets
+     its own explicit 19px directly on the paragraph regardless of
+     ancestors, so it needs its own override to land on 16px like the
+     rest of this card's text. */
+  .app-action-plan-reason-preview {
+    @include govuk-font-size($size: 16);
+  }
 
-      &::before {
-        display: none;
-      }
-    }
-
-    .govuk-details__text {
-      padding-left: 0;
-      border-left: none;
-    }
+  // text-expander.js's generic toggle button — styled here (rather than
+  // in a shared stylesheet) so it looks like a GOV.UK link only within
+  // this card, without affecting its other use on the static "Show more"
+  // design-reference page. font: inherit rather than an explicit size,
+  // so it picks up .app-action-plan-reason-preview's 16px above instead
+  // of needing its own override.
+  .app-truncate__link {
+    @include govuk-link-common;
+    @include govuk-link-style-no-visited-state;
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    cursor: pointer;
   }
 }
 
 /* action-plan-list.njk's variant of the card header: h3 + its two action
-   links on one line, no card border/background. Unlike the card variant,
-   the details here lives inside the same <section> as the heading and
-   list, so there's only one gap to manage (between sections) rather than
-   a tighter one within a group and a looser one between groups.
+   links on one line, no card border/background. "Reason for CPS last
+   update" is now a normal row in the summary list below (see
+   action-plan-card.njk's identical row), so — unlike when it lived in a
+   separate trailing <details> — there's no extra block after the list to
+   manage spacing/closing-borders for: every .govuk-summary-list__row
+   already draws its own bottom border by default, including the last
+   one, so the list closes itself off with no extra rules needed here.
 
-   Every heading gets a border-top (including the first, separating it
-   from "Police initiated actions" above) to open its action's block.
-   Only the *last* action's details gets a border-bottom, to close the
-   block off at the very end of the list — earlier actions don't need
-   one, since the next action's own border-top already provides that
-   separation; adding both would double up. See the .app-action-plan-
-   list--last modifier (set from loop.last in the template) below. */
+   Every heading still gets a border-top (including the first, separating
+   it from "Police initiated actions" above) to open its action's block —
+   the next action's border-top is what visually closes off the previous
+   one's summary list. */
 .app-action-plan-list__heading {
   display: flex;
   align-items: baseline;
@@ -146,25 +154,6 @@
   .govuk-summary-list__actions-list {
     width: auto;
   }
-}
-
-// The summary list's own default bottom margin (govuk-responsive-margin(6),
-// ~30px) is sized for sitting above unrelated content below it. Here it
-// sits directly above this action's own "Reason for CPS last update"
-// details, so it's removed entirely — the gap between the two is owned
-// solely by .govuk-details' margin-top below, rather than splitting it
-// across two rules.
-.app-action-plan-list .govuk-summary-list {
-  margin-bottom: 0;
-}
-
-.app-action-plan-list .govuk-details {
-  margin-top: govuk-spacing(3);
-}
-
-.app-action-plan-list--last .govuk-details {
-  padding-bottom: govuk-spacing(4);
-  border-bottom: 1px solid govuk-colour("mid-grey");
 }
 
 /* "Actions" + "Police initiated actions" read as one heading group, not
