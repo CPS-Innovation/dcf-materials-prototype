@@ -135,7 +135,7 @@
 {# ---------------------------------------------------------------------
    Quick-filter tabs (severity buckets) + result count
    --------------------------------------------------------------------- #}
-{% set severityBuckets = ["Due Soon", "Due", "Overdue", "Escalated"] %}
+{% set severityBuckets = ["Due Soon", "Due", "Overdue", "To do"] %}
 <div class="app-task-list__quick-filters">
   <div class="app-task-list__counters">
     {% for bucket in severityBuckets %}
@@ -230,11 +230,11 @@
                        team" button instead (same reassign flow, relabelled
                        since there's nothing to "re"-assign yet, and the
                        flow can send it to either). #}
-                    {% if task.owner != 'Unassigned' %}
+                    {% if task.owner != 'MCgen' %}
                       <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
                       <a class="govuk-button" href="/cases/{{ task.caseId }}/pcd-appeal/decision" role="button">Start task</a>
                     {% else %}
-                      <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Assign to DCP or team</a>
+                      <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Assign PCD appeal task</a>
                     {% endif %}
                   {% else %}
                     <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>

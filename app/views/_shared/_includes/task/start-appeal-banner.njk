@@ -1,0 +1,128 @@
+{# _shared/_includes/task/start-appeal-banner.njk
+
+   "Notification banner" variant of cases/pcd-appeal/decision.html's main
+   content — see start-appeal-inset-text.njk for the alternate version
+   (same content, inset text instead of a banner, positioned just before
+   the button rather than up top). Swap the include in decision.html to
+   compare (same toggle convention as action-plan-card.njk/
+   action-plan-list.njk).
+
+   The real forward journey (an appeals case review, reference: DCF
+   Police Appeals v3.1 mockup, owned by another team) isn't built in this
+   prototype — this page's old "Go to Case review" link was the only
+   bridge to it. That's not enough on its own: a reviewer needs to know
+   the case has been reactivated and that this task can only be
+   completed by carrying out that review, not just be handed a link.
+   The notification banner says so explicitly, at the top of the page
+   per GOV.UK's own convention for where notification banners belong,
+   with "Continue to review case" moved to a proper button at the bottom
+   of the page instead of a paragraph link at the top.
+#}
+
+{{ govukNotificationBanner({
+  html: '<h3 class="govuk-notification-banner__heading">This case has been reactivated</h3><p class="govuk-body">This task can only be completed by carrying out an appeals case review.</p>'
+}) }}
+
+<span class="govuk-caption-l">{{ pageName }}</span>
+<h1 class="govuk-heading-l app-pcd-appeal-decision__heading">
+  {{ pcdAppeal.urn }} - {{ pcdAppeal.suspects | join(', ') }}
+</h1>
+
+
+{# ---------------------------------------------------------------
+   Urgency — statutory time limit. Shown up top because it drives
+   how quickly this decision needs to be made; it's not case
+   history, so it doesn't belong inside the sections below. PACE
+   clock expiry was removed from here — the appeal type tag on the
+   summary list below (Priority/Review) already signals urgency.
+   --------------------------------------------------------------- #}
+{% if pcdAppeal.stl %}
+  {{ govukSummaryList({
+    classes: "govuk-summary-list--no-border app-summary-list--compact govuk-!-margin-bottom-6",
+    rows: [
+      { key: { text: "Statutory time limit" }, value: { text: pcdAppeal.stl.expiryDisplay | isoDateString | govukDateTime } }
+    ]
+  }) }}
+{% endif %}
+
+{# ---------------------------------------------------------------
+   Appeal details — shown first: this is the newest information
+   (the police appeal is what generated this task), ahead of the
+   original charging decision it's appealing against. Heading and
+   rows mirror the case overview's summary card
+   (_shared/_includes/case/details/pcd-appeal-accordion.njk).
+   --------------------------------------------------------------- #}
+<h2 class="govuk-heading-m">
+  Review PCD Appeal
+  {% if pcdAppeal.taskType == 'Priority PCD Review' %}
+    {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
+  {% endif %}
+</h2>
+{{ govukSummaryList({
+  classes: "govuk-!-margin-bottom-6",
+  rows: [
+    { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
+    { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
+    { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
+    { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
+  ]
+}) }}
+
+{# ---------------------------------------------------------------
+   Previous charging details — same rows as the History tab's
+   "Previous charging decision" card (history-panel.njk).
+   --------------------------------------------------------------- #}
+<h2 class="govuk-heading-m">Previous charging details</h2>
+{{ govukSummaryList({
+  classes: "govuk-!-margin-bottom-6",
+  rows: [
+    { key: { text: "Date decision requested" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDate } },
+    { key: { text: "Decision made by" }, value: { text: pcdAppeal.originalDecision.prosecutor } },
+    { key: { text: "Decision" }, value: { text: pcdAppeal.originalDecision.decision } },
+    { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
+    { key: { text: "Test applied" }, value: { text: pcdAppeal.originalDecision.test } },
+    { key: { text: "Investigation stage" }, value: { text: pcdAppeal.investigationStage } },
+    { key: { text: "Action plan" }, value: { text: pcdAppeal.actionPlan } },
+    { key: { text: "Suspect name" }, value: { text: pcdAppeal.suspects | join(', ') } },
+    { key: { text: "Reason for decision" }, value: { text: pcdAppeal.originalDecision.reasoning } },
+    { key: { text: "Specified charges" }, value: { text: pcdAppeal.specifiedCharges } },
+    { key: { text: "PCD principal offence category" }, value: { text: pcdAppeal.pcdPrincipalOffenceCategory } }
+  ]
+}) }}
+
+{# ---------------------------------------------------------------
+   Previous review details — placeholder structure only, keys taken
+   from the grey-banded fields in the CMS History > Reviews panel
+   (CleanShot 2026-09-18 at 10.18.57.jpg). No real data source yet —
+   waiting on a sample to check correlation before wiring this up
+   for real, same as the placeholder rows above were before they
+   got real fields. Values below are illustrative example content
+   only (not a real case record), extrapolated from published CPS
+   guidance (Full Code Test, Director's Guidance on Charging, MG6
+   disclosure schedules) so this reads as plausible review content
+   rather than a bare "-" for every row.
+   --------------------------------------------------------------- #}
+<h2 class="govuk-heading-m">Previous review details</h2>
+<div class="govuk-inset-text">
+  <p class="govuk-body">
+    The content below is illustrative and only an example of what might be included in a review.
+  </p>
+</div>
+{{ govukSummaryList({
+  classes: "govuk-!-margin-bottom-6",
+  rows: [
+    { key: { text: "Case Headline / Code Test" }, value: { text: "Full Code Test passed — realistic prospect of conviction and prosecution required in the public interest" } },
+    { key: { text: "Evidential Assessment" }, value: { text: "Evidence is reliable and credible; no material issues identified that would undermine a realistic prospect of conviction" } },
+    { key: { text: "Public Interest Assessment" }, value: { text: "Public interest factors in favour of prosecution (seriousness of offence, harm to victim) outweigh those against" } },
+    { key: { text: "Allocation" }, value: { text: "Indictable/either-way offence — referred to and retained by a Crown Prosecutor for charging decision, per the Director's Guidance on Charging" } },
+    { key: { text: "Disclosure Actions and Issues" }, value: { text: "MG6C/MG6D schedules received from police; no disclosure issues identified at this review" } },
+    { key: { text: "Trial Strategy" }, value: { text: "Case suitable for early resolution; key lines of evidence and any admissibility issues to be kept under continuing review" } },
+    { key: { text: "Witness / Victim Information and Actions" }, value: { text: "Victim Personal Statement taken; special measures eligibility to be assessed if witness is vulnerable or intimidated" } },
+    { key: { text: "Instructions to Op Delivery / Advocate" }, value: { text: "Trial advocate to be briefed on charges and disclosure position; no further instructions outstanding at this stage" } }
+  ]
+}) }}
+
+{{ govukButton({
+  text: "Continue to case review",
+  href: "/cases/" + pcdAppeal.caseId + "/reviews/" + taskId
+}) }}

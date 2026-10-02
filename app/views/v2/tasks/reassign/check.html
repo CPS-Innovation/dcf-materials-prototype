@@ -18,6 +18,11 @@
 
       <h1 class="govuk-heading-l">{{ pageName }}</h1>
 
+      {# "Change" goes back to the type-selection step, not straight into
+         a search screen — "me" has no search screen of its own to return
+         to, and this also lets someone switch type (e.g. team to
+         individual) instead of being stuck re-searching within whichever
+         type they picked first. #}
       {{ govukSummaryList({
         rows: [
           {
@@ -33,7 +38,7 @@
             value: { text: (draft.selectedPerson.name + " (" + draft.selectedPerson.role + ")") if draft.selectedPerson else draft.selectedTeam.name + " (" + draft.selectedTeam.unitName + ")" },
             actions: {
               items: [{
-                href: "/tasks/" + taskId + "/reassign/" + ("individual" if draft.selectedPerson else "team"),
+                href: "/tasks/" + taskId + "/reassign",
                 text: "Change",
                 visuallyHiddenText: "who this task is reassigned to"
               }]

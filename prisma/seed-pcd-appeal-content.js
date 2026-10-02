@@ -27,7 +27,10 @@ async function main() {
       appealingOfficerName: "Rachel Kirby",
       appealingOfficerRank: "Police Constable",
       appealingOfficerNumber: "PC 4471",
-      groundsNarrative: "Officer submits that a corroborating witness statement was not available to the reviewing lawyer at the time of the charging decision, and that it directly supports the identification evidence already held on the robbery charge.",
+      // ~3x the original single-sentence length (repeated with minor
+      // connector variation), so this card has a genuinely verbose example
+      // to illustrate long "Reason for appeal" text in the accordion.
+      groundsNarrative: "Officer submits that a corroborating witness statement was not available to the reviewing lawyer at the time of the charging decision, and that it directly supports the identification evidence already held on the robbery charge. Officer further submits that this same witness statement was not available to the reviewing lawyer at the time of the charging decision, and that it directly supports the identification evidence already held on the robbery charge. Officer also submits that the corroborating witness statement was not available to the reviewing lawyer at the time of the charging decision, and that it directly supports the identification evidence already held on the robbery charge.",
       receivedAt: new Date("2026-09-11T09:15:00.000Z"),
       slaEndsAt: new Date("2026-09-10T22:00:00.000Z") // matches the seeded Task's dueDate — already past, "Expired"
     },

@@ -66,7 +66,7 @@ function formatOwnerInitials(task) {
   if (task.assignedToTeam) {
     return task.assignedToTeam.name.slice(0, 2).toUpperCase()
   }
-  return 'Unassigned' // matches the real CMS's literal ownerInitials value for an unassigned task
+  return 'MCgen' // matches the real CMS's literal ownerInitials value for an unassigned task
 }
 
 function getMonitoringCodes(task) {
@@ -198,7 +198,7 @@ function mapSeverityToBucket(severity) {
     'Not due yet': 'Due',
     'Due soon': 'Due Soon',
     'Overdue': 'Overdue',
-    'Critically overdue': 'Escalated'
+    'Critically overdue': 'To do'
   }
   return map[severity] || null
 }
