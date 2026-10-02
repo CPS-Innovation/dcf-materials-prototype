@@ -33,11 +33,11 @@ Drawn directly from the research, not assumed:
 
 ### Where user and business needs conflict
 
-The clearest tension in the research: the business wants clean, trustworthy performance data, but the mechanism that would produce it — requiring a fresh charging decision every time an NFA'd case is reactivated — burdens the user with paperwork for cases where nothing substantively changed. That's a genuine trade-off CPS needs to decide on deliberately. It is **not resolved** by anything in this prototype (see [Open questions](#6-open-questions-and-whats-next)).
+The clearest tension in the research: the business wants clean, trustworthy performance data, but the mechanism that would produce it — requiring a fresh charging decision every time an NFA'd case is reactivated — burdens the user with paperwork for cases where nothing substantively changed. That's a genuine trade-off CPS needs to decide on deliberately. It is **not resolved** by anything in this prototype (see [Open questions](#9-open-questions-and-whats-next)).
 
 ## 4. Research summary
 
-Semi-structured interviews with 9 participants: 4 Charging Managers (including CPSD) and 5 DCPs. Full source data and synthesis are kept alongside this document (see [Sources](#7-sources)).
+Semi-structured interviews with 9 participants: 4 Charging Managers (including CPSD) and 5 DCPs. Full source data and synthesis are kept alongside this document (see [Sources](#8-sources)).
 
 Headline risks the research raised, in the participants' own terms:
 
@@ -47,7 +47,7 @@ Headline risks the research raised, in the participants' own terms:
 4. **Role-based controls** are undefined — who can reject an appeal, and once lodged, can one be refused at all.
 5. **Adoption value is context-dependent** — high-volume, contentious areas (like CPSD) stand to benefit far more than specialised units with already-proactive police communication.
 
-A separate finding, specific to urgent/custody-clock appeals (not CPSD-specific — see the [persona caveat](#7-sources)): these appeals are rare but self-contained and always get a full re-examination, so triage-and-reject behaviour doesn't apply to them the way it does to routine appeals.
+A separate finding, specific to urgent/custody-clock appeals (not CPSD-specific — see the [persona caveat](#8-sources)): these appeals are rare but self-contained and always get a full re-examination, so triage-and-reject behaviour doesn't apply to them the way it does to routine appeals.
 
 Usability testing of the existing click-through prototype (separate from the interviews above) found:
 
@@ -92,7 +92,7 @@ Each entry: what we proposed, why, what we considered instead, and what changed 
 
 Only one is included live at a time; the other is commented out in the same file, so either can be reviewed without rebuilding it. This matches a pattern already used elsewhere in this prototype for presenting two live alternatives side by side rather than deleting exploratory work.
 
-**Status:** neither has been user-tested yet — see [Open questions](#6-open-questions-and-whats-next).
+**Status:** neither has been user-tested yet — see [Open questions](#9-open-questions-and-whats-next).
 
 ### 5.4 Reassign flow: adding "to me"
 
@@ -111,7 +111,65 @@ Separately from the research above, a reference mock-up of a later design iterat
 
 Both were traced to a single shared source function each (`formatOwnerInitials`, `mapSeverityToBucket`) and fixed there, so the change applied consistently everywhere those values appear.
 
-## 6. What cannot easily be seen
+## 6. Checking the design against the to-be process
+
+In October 2026 we received a rough draft of the to-be process as two swimlane diagrams: **PCD Appeals – Area** (OD and DCP lanes, red and non-red cases) and **PCD Appeals CPSD – Red Case Only** (Charging Manager and DCP lanes). It's a draft, not a final process, but it's the first time we could check the prototype against the intended operating model rather than against research alone.
+
+### 6.1 The process, in brief
+
+**Intake (OD / Charging Manager):** email received from police → review email → add email to case in CMS → create comm task. Then:
+
+- **Area:** red case? Yes → assign to Duty DCP. No → review DCP capacity and assign.
+- **CPSD:** update the shift lead Teams channel with the appeal info.
+
+**Review (DCP):** CPSD only: pick up case and confirm in the Teams channel. Then, for both: email inspector → review evidence, material, appeal and PCD → call with inspector if needed → **appeal upheld?**
+
+- **Upheld:** reactivate case in CMS → complete PCD review → complete charging actions → allocate to lawyer.
+- **Not upheld, and not a refusal to ratify or emergency charge:** complete ad hoc review → send outcome email to police via CMS.
+- **Refusal to ratify or emergency charge:** a separate sub-process, not yet defined.
+
+All paths then: provide feedback to PCD lawyer → update appeal log.
+
+(The diagrams label the decision "Upload Police Appeal?". We're reading this as "upheld", which fits both outgoing branches; to be confirmed.)
+
+### 6.2 Where the process supports the design
+
+- **The two flows only differ at intake.** From "Email Inspector" onwards the DCP lane is identical for Area and CPSD. That supports one appeal task with different routing at the front, and tempers the claim in section 2 that the three groups are "genuinely different operating patterns": in this process, the difference is in who triages and assigns, not in the review.
+- **Assignment maps onto the reassign flow (5.4).** Assign to Duty DCP is "To a team" (the prototype already seeds a duty DCP team). Review DCP capacity and assign is "To someone else". CPSD's "pick up case and confirm in Teams" is "To me", which gives process evidence for a shortcut that open question 8 notes came from us, not the research.
+- **"Review evidence, material, appeal and PCD" is what the accordion (5.1) supports:** previous charging details, previous review details and the appeal itself.
+- **The upheld path is the journey 5.3 bridges into.**
+
+### 6.3 Where the process and the design disagree
+
+**When the case is reactivated.** In the prototype, the intent is that the case is reactivated when the DCP clicks "Start task", and the 5.3 message ("This case has been reactivated") reflects that. (There's no reactivation logic in the prototype itself; it's carried by the message only.) In the process, reactivation happens later, and only on the upheld path. Reactivating on start means:
+
+1. **Every appeal reactivates the case, including ones that aren't upheld.** That brings back the performance-data tension in section 3. In the process, appeals that aren't upheld go to an ad hoc review without reactivation, which looks like how the process avoids requiring a fresh charging decision when nothing has changed.
+2. **The 5.3 message is incomplete.** "This task can only be completed by carrying out an appeals case review" doesn't fit the not-upheld path, which ends in an ad hoc review and an outcome email. This is the same problem as research risk 1 (task completion logic doesn't fit appeals that are rejected rather than reviewed).
+
+There may be a good reason to reactivate on start, for example if the case must be active in CMS for the DCP to see the evidence and material they need to decide. If so, it should be recorded here as a deliberate break from the process. If reactivating on start is confirmed, the message could cover both outcomes, for example: "This case has been reactivated. Complete an appeals case review if the appeal is upheld, or an ad hoc review if it is not." No change has been made yet.
+
+**No reject-at-intake step.** Neither diagram has a decision coming out of "Review email". Either intake rejection (out of time, no real content) happens inside that box, or rejecting an appeal belongs to the DCP. This bears directly on open questions 1 and 2.
+
+### 6.4 What the process doesn't show
+
+- **Time.** No 14-day statutory deadline, reminders, or escalation if an appeal isn't picked up. CPSD's Teams pickup step carries the same "unactioned appeal" risk the research found.
+- **Who decides a case is red.** "Red case?" is a judgement by the OD or Charging Manager. We need to know whether the prototype's Priority tag records that decision or should come from data such as custody status.
+- **The refusal to ratify / emergency charge sub-process**, which needs defining before that path can be designed.
+
+### 6.5 The offline steps, and how they could be filled
+
+Most of the process still happens outside CMS. Possible future directions, not yet designed:
+
+| Offline step now | Possible future |
+|---|---|
+| Email from police → review → add to CMS → create comm task (four manual steps) | Structured police submission, or email matched to the case by URN, creating the task automatically. Removes the "plumbing" in user need 3. |
+| CPSD Teams channel post and pickup | A duty team queue in the task list, claimed with "To me" in a way everyone can see. Also closes the gap where nobody picks it up, which a Teams channel can't. |
+| Review DCP capacity | Open-task counts per DCP shown at the point of assigning (business need: even workload). |
+| Email or call the inspector | Police contacts on the task, including the secondary contact in open question 4, plus a quick note of the call outcome. |
+| Provide feedback to PCD lawyer | Structured feedback captured when the task is completed and sent to the original lawyer. |
+| Update appeal log | Built from task data (dates, outcome, route taken) instead of kept by hand. This is the trend and quality reporting in open question 5. |
+
+## 7. What cannot easily be seen
 
 Per the Design History guidance, states that don't show up in a single screenshot:
 
@@ -120,16 +178,17 @@ Per the Design History guidance, states that don't show up in a single screensho
 - **Not every task row is backed by the same data.** Most PCD-appeal task rows are real database records; a handful of older demo rows in the main task list are still static placeholder JSON with no real case behind them. They look identical in the UI, but behave differently under the hood (e.g. what "Start task" and "Reassign" actually write to).
 - **"Previous review details" is illustrative, not live.** The content shown there is plausible example text extrapolated from published CPS guidance, not a real data source — flagged in the template itself, but not obvious from the rendered page alone.
 
-## 7. Sources
+## 8. Sources
 
 - User research: 9 participants (P1, P3, P4, P7 — Charging Managers, including one CPSD-specific; P2, P5, P8, P9 — DCPs). Structured notes and raw quotes held alongside the research data export.
 - Usability testing of the earlier click-through prototype: findings summarised in section 4 above.
+- To-be process: draft swimlane diagrams "PCD Appeals – Area" and "PCD Appeals CPSD – Red Case Only", received October 2026. Compared against the prototype in section 6.
 - Reference mock-up: a later-iteration design of the forward "appeals case review" flow, owned by a separate team — used to check terminology and get a general sense of the shape of the journey this prototype currently stops short of, not as a source of UX findings.
 - A fuller synthesis of the research against tangible next steps (this document's section 2–4 content, plus a longer prioritised list) exists as a separate working document; ask the author for the current copy if it isn't linked here yet.
 
 **A caveat worth repeating:** no participant in the research is tagged as specifically working urgent/custody-clock appeals *and* CPSD. The "urgent appeals behave differently" finding (section 4) and the "CPSD is high-volume with inconsistent detail" finding come from two different participants. Treat conclusions that combine the two as a reasonable synthesis, not a direct finding, until validated with someone who actually does both.
 
-## 8. Open questions and what's next
+## 9. Open questions and what's next
 
 In rough priority order, based on how load-bearing each gap is:
 
@@ -141,3 +200,6 @@ In rough priority order, based on how load-bearing each gap is:
 6. **Habit-formation risk (section 4, finding 2) has no mitigation yet.** The bridging message in 5.3 reduces confusion at one specific point, but doesn't address the underlying risk that staff won't form the habit of checking a task list at all.
 7. **The two bridging-message variants (5.3) haven't been tested with real users.** Pick a direction once they have been, rather than leaving both live indefinitely.
 8. **The "To me" reassign shortcut (5.4) was our own extension, not a direct research finding.** Worth validating that it's actually used, and that skipping search for a self-assignment doesn't surprise anyone.
+9. **When should the case be reactivated?** The prototype intends reactivation on "Start task"; the to-be process reactivates only once an appeal is upheld (6.3). Confirm with the process owner whether reactivating on start is intended, or a CMS constraint (e.g. needing an active case to view material). If an appeal isn't upheld, does the case get deactivated again, and does that affect performance data?
+10. **The 5.3 message doesn't cover the not-upheld path.** Once question 9 is answered, update the message so it covers both the appeals case review and the ad hoc review outcomes.
+11. **To confirm on the to-be process (6.1, 6.4):** that "Upload Police Appeal?" means "upheld"; whether appeals can be rejected at intake, and by whom; who decides a case is red; what the refusal to ratify / emergency charge sub-process involves; and what form the appeal log takes and who uses it.
