@@ -1,7 +1,8 @@
 {# cases/reviews/show.html — same page chrome as show.html (nav,
    secondary nav, h1, caption), new main content matching
-   ~/Desktop/landing-incomplete-review.jpg: a case-owner/charges panel
-   alongside current-tasks and review-history panels. #}
+   ~/Desktop/app rev x.jpg: a defendant/lawyers panel alongside
+   reviews and review-history panels. Reviewing lawyer and history
+   row come from task.pcdAppeal (the original charging decision). #}
 
 {% extends "_shared/layouts/main.html" %}
 {% set navId = 'cases' %}
@@ -27,29 +28,37 @@
     {% endif %}
   {% endset %}
 
+  {% set defendant = task.case.defendants[0] %}
+  {% set originalLawyer = task.pcdAppeal.originalDecisionByUser if task.pcdAppeal else null %}
+
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-one-third">
       <div style="background: #1d70b8; color: #ffffff; padding: 20px;">
-        <h2 class="govuk-heading-m" style="color: #ffffff;">Proposed charges</h2>
 
-        {% for charge in task.case.defendants[0].charges %}
-          <p class="govuk-body" style="color: #ffffff;">
-            {{ charge.description }} {{ charge.offenceDate | isoDateString | govukDateTime }}.<br>
-            Offence code: {{ charge.chargeCode }}
-          </p>
-        {% endfor %}
+        <h2 class="govuk-heading-m govuk-!-margin-bottom-1" style="color: #ffffff;">PCD Reviewing lawyer</h2>
+        <p class="govuk-body" style="color: #ffffff;">
+          {% if originalLawyer %}{{ originalLawyer.lastName }}, {{ originalLawyer.firstName }}{% else %}Not recorded{% endif %}
+        </p>
 
-        <h2 class="govuk-heading-m" style="color: #ffffff;">Case owner</h2>
-        <p class="govuk-body" style="color: #ffffff;">{{ ownerValue | trim }}</p>
+        <h2 class="govuk-heading-m govuk-!-margin-bottom-1" style="color: #ffffff;">PCD Police Appeal lawyer</h2>
+        <p class="govuk-body" style="color: #ffffff;">
+          {% if task.assignedToUser %}{{ task.assignedToUser.lastName }}, {{ task.assignedToUser.firstName }}{% else %}{{ ownerValue | trim }}{% endif %}
+        </p>
       </div>
     </div>
 
     <div class="govuk-grid-column-two-thirds">
       <div style="border: 1px solid #b1b4b6; margin-bottom: 20px;">
         <div style="background: #f3f2f1; padding: 15px 20px;">
-          <h2 class="govuk-heading-s govuk-!-margin-bottom-0">Current tasks</h2>
+          <h2 class="govuk-heading-s govuk-!-margin-bottom-0">Reviews</h2>
         </div>
         <div style="padding: 0 20px 20px;">
+          {# Button isn't wired up yet — href is a placeholder. #}
+          {% set startButton = govukButton({
+            text: "Start PCD appeal review",
+            href: "#",
+            classes: "govuk-!-margin-bottom-0"
+          }) %}
           {{ govukTable({
             head: [
               { text: "Task" },
@@ -58,9 +67,9 @@
             ],
             rows: [
               [
-                { text: task.name },
+                { html: "<strong>" + task.name + "</strong>" },
                 { html: task.dueDate | isoDateString | govukDateTime },
-                { html: "<a class=\"govuk-link\" href=\"#\">Start review</a>" }
+                { html: startButton }
               ]
             ]
           }) }}
@@ -71,9 +80,29 @@
         <div style="background: #f3f2f1; padding: 15px 20px;">
           <h2 class="govuk-heading-s govuk-!-margin-bottom-0">Review history</h2>
         </div>
-        <div style="padding: 20px;">
-          <p class="govuk-body govuk-!-margin-bottom-0">No previous reviews</p>
-        </div>
+        {% if task.pcdAppeal %}
+          <div style="padding: 0 20px 20px;">
+            {# Link isn't wired up yet — href is a placeholder. #}
+            {{ govukTable({
+              head: [
+                { text: "Task" },
+                { text: "Prosecutor" },
+                { text: "Completed date" }
+              ],
+              rows: [
+                [
+                  { html: "<a class=\"govuk-link\" href=\"#\">28 day PCD review (opens in a new tab)</a>" },
+                  { text: (originalLawyer.lastName + ", " + originalLawyer.firstName) if originalLawyer else "Not recorded" },
+                  { html: task.pcdAppeal.originalDecisionAt | isoDateString | govukDateTime }
+                ]
+              ]
+            }) }}
+          </div>
+        {% else %}
+          <div style="padding: 20px;">
+            <p class="govuk-body govuk-!-margin-bottom-0">No previous reviews</p>
+          </div>
+        {% endif %}
       </div>
     </div>
   </div>

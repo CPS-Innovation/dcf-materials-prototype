@@ -64,6 +64,11 @@ async function getTaskDetail(caseId, taskId) {
         orderBy: {
           createdAt: 'desc'
         }
+      },
+      pcdAppeal: {
+        include: {
+          originalDecisionByUser: true
+        }
       }
     }
   })
