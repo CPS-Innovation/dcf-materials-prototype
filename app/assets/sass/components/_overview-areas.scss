@@ -25,17 +25,10 @@
   gap: 1.5rem;
 }
 
-/* Right-hand column wrapper for tasks-box + monitoring-box — its own
+/* Left-hand column wrapper for contacts-box + monitoring-box — its own
    independent flex stack, gap matching .case-grid's at each breakpoint.
-   Needed so the two columns are genuinely independent: previously
-   contacts-box used grid-row: span 2 to line up against tasks-box/
-   monitoring-box as if they were a column, but a shared auto-sized grid
-   track means growing contacts-box (e.g. opening an accordion section)
-   redistributes height across the rows tasks-box/monitoring-box sit in,
-   visibly shifting monitoring-box for a reason that has nothing to do
-   with its own content. Wrapping them removes that coupling entirely —
-   contacts-box growing only changes the overall row height, never the
-   relative position of tasks-box/monitoring-box to each other. */
+   Keeps the two columns independent, so a change in height on one side
+   (e.g. a growing tasks list) never shifts the boxes on the other. */
 .case-grid__column {
   display: flex;
   flex-direction: column;
@@ -73,7 +66,7 @@
 /* ===== Tablet and up (>= 40.0625em ~ 641px) ===== */
 @media (min-width: 40.0625em) {
   .case-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); /* contacts + monitoring 40%, tasks 60% — minmax(0, …) so wide content can't push the split off 40/60 */
     grid-auto-rows: auto; /* rows shrink-wrap to content */
     /* no min-height here */
   }
@@ -164,11 +157,6 @@
   padding-bottom: 8px;
 }
 
-/* Task name column */
-.case-task-name {
-  width: 50%;
-}
-
 /* Due date column (space for warning icon) */
 .case-task-due {
   white-space: nowrap;
@@ -189,6 +177,30 @@
 /* Role column */
 .case-task-role {
   white-space: nowrap;
+}
+
+/* Row-level actions: View details | Reassign task | Start task.
+   Kept inline on one line, divided by a thin rule (as in GOV.UK
+   summary list actions); the other columns wrap instead. */
+.case-task-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.case-task-actions__item {
+  white-space: nowrap;
+  margin-right: 10px;
+  padding-right: 10px;
+  border-right: 1px solid #b1b4b6;
+}
+
+.case-task-actions__item:last-child {
+  margin-right: 0;
+  padding-right: 0;
+  border-right: 0;
 }
 
 /* Arrow cell on the right */

@@ -38,24 +38,20 @@
       {% endif %}
     {% endif %}
 
-    {# 3-column area #}
+    {# Two columns: Key contacts + Monitoring codes stacked (40%), Tasks (60%) #}
     <div class="case-grid">
-      <div class="contacts-box">
-        {% if pcdAppeal %}
-          {# {% include "_shared/_includes/case/details/pcd-appeal.njk" %} #}
-          {% include "_shared/_includes/case/details/pcd-appeal-accordion.njk" %}
-        {% endif %}
-        {% include "_shared/_includes/case/details/contacts-panel.njk" %}
-      </div>
-
       <div class="case-grid__column">
-        <div class="tasks-box">
-          {% include "_shared/_includes/case/details/tasks-panel.njk" %}
+        <div class="contacts-box">
+          {% include "_shared/_includes/case/details/contacts-panel.njk" %}
         </div>
 
         <div class="monitoring-box">
           {% include "_shared/_includes/case/details/monitoring-panel.njk" %}
         </div>
+      </div>
+
+      <div class="tasks-box">
+        {% include "_shared/_includes/case/details/tasks-panel.njk" %}
       </div>
     </div>
   </div>

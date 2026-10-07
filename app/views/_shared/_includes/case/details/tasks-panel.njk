@@ -57,10 +57,7 @@
               Owner
             </th>
             <th scope="col" class="govuk-table__header">
-              Action
-            </th>
-            <th scope="col" class="govuk-table__header govuk-table__header--numeric govuk-visually-hidden">
-              Go to task
+              Actions
             </th>
           </tr>
         </thead>
@@ -68,7 +65,13 @@
           {% for task in tasks %}
             <tr class="govuk-table__row">
               <td class="govuk-table__cell case-task-name">
-                {{ task.name }}
+                {# Read-only view of the appeal; Start task (below) opens
+                   the same page with the button to case review #}
+                {% if task.caseId %}
+                  <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision?mode=view">{{ task.name }}</a>
+                {% else %}
+                  {{ task.name }}
+                {% endif %}
               </td>
               <td class="govuk-table__cell case-task-due">
                 {{ task.dueDate }}
@@ -89,24 +92,26 @@
               <td class="govuk-table__cell case-task-name">
                 {{ task.owner }}
               </td>
-              <td class="govuk-table__cell case-task-role">
-                {% if task.caseId %}
-                  {# Real PCD appeal task, same owner-based branching as
-                     task-list-table.njk/priority-charging-table.njk. Once
-                     assigned, "Start task" goes to the same PCD appeal
-                     decision page those tables' expand panels link to. #}
-                  {% if task.owner == 'MCgen' %}
-                    <a class="govuk-link" href="/tasks/{{ task.id }}/reassign">Assign task</a>
-                  {% else %}
-                    <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision">Start task</a>
+              <td class="govuk-table__cell">
+                {# Reassign and Start on every row, regardless of owner or
+                   status, for now; View on the PCD appeal row only. Real
+                   PCD appeal tasks (task.caseId) link to their real pages;
+                   placeholder tasks link to "#". #}
+                <ul class="case-task-actions">
+                  <li class="case-task-actions__item">
+                    <a class="govuk-link" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision' if task.caseId else '#' }}">Start<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
+                  </li>
+                  <li class="case-task-actions__item">
+                    <a class="govuk-link" href="{{ '/tasks/' + task.id + '/reassign' if task.caseId else '#' }}">Reassign<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
+                  </li>
+                  {# View is PCD appeal only, so it goes last: Reassign and
+                     Start then line up on every row #}
+                  {% if task.caseId %}
+                    <li class="case-task-actions__item">
+                      <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision?mode=view">View<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
+                    </li>
                   {% endif %}
-                {% elif task.status != 'Done' %}
-                  {# Placeholder tasks only — a completed task has nothing
-                     left to start. #}
-                  <a class="govuk-link" href="#">
-                    Start task
-                  </a>
-                {% endif %}
+                </ul>
               </td>
             </tr>
           {% endfor %}

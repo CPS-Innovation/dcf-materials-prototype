@@ -122,7 +122,10 @@
   ]
 }) }}
 
+{# Hidden in the read-only (view) version of the page #}
+{% if not readOnly %}
 {{ govukButton({
   text: "Continue to case review",
   href: "/cases/" + pcdAppeal.caseId + "/reviews/" + taskId
 }) }}
+{% endif %}

@@ -353,6 +353,9 @@ module.exports = router => {
     res.render('cases/pcd-appeal/decision', {
       pcdAppeal,
       taskId,
+      // ?mode=view — read-only version (task name link on the case
+      // overview Tasks card): same page, no onward button to case review
+      readOnly: req.query.mode === 'view',
       draft: req.session.data.pcdAppealDecisionDraft || {}
     })
   })
