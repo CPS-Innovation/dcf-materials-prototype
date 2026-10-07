@@ -1,3 +1,5 @@
+// app/assets/javascripts/components/task-list-expand.js
+
 // Toggles the per-row "More"/"Less" detail panel on the PCD task list table.
 // Built as a plain sibling <tr> (not a MOJ component) so it can hold the
 // full-width shaded detail panel the design calls for. Known limitation:

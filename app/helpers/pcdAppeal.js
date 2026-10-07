@@ -172,9 +172,11 @@ function mapTaskToPriorityChargingRow(task) {
   }
 }
 
+// Task list shows Green and Red (priority) appeals together, as in prod —
+// Red ones also keep their own Priority charging tab (getPriorityChargingRows).
 async function getAppealTaskListRows() {
   const tasks = await prisma.task.findMany({
-    where: { name: TASK_LIST_APPEAL_NAME, completedDate: null },
+    where: { name: { in: [TASK_LIST_APPEAL_NAME, PRIORITY_CHARGING_APPEAL_NAME] }, completedDate: null },
     include: TASK_INCLUDE,
     orderBy: { id: 'asc' }
   })
