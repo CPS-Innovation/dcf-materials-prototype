@@ -65,19 +65,21 @@
 
 {# ---------- Case Outline ---------- #}
 {% set caseOutlineHtml %}
-  <h3 class="govuk-heading-m">Case outline</h3>
+  {# <h3 class="govuk-heading-m">Case outline</h3> #}
   {% include "_shared/_includes/case/details/outline-panels.njk" %}
 {% endset -%}
 
 {# ---------- Defendants ---------- #}
 {% set defendantsHtml %}
-  <h3 class="govuk-heading-m">Defendants</h3>
+  {# <h3 class="govuk-heading-m">Defendants</h3> #}
   {% include "_shared/_includes/case/details/defendants.njk" %}
 {% endset -%}
 
 
 {# ---------- Witnesses ---------- #}
-{% set witnessesHtml  %}<h3 class="govuk-heading-m">Witnesses</h3>{% endset -%}
+{% set witnessesHtml %}
+  {# <h3 class="govuk-heading-m">Witnesses</h3> #}
+{% endset -%}
 
 
 {# contacts - Re-use the same contacts panel as Overview, but full width #}
@@ -94,7 +96,7 @@
    previously shown on the Outline tab's Confidential Information to
    Prosecutor section, which was misleading and the wrong placement. #}
 {% set historyHtml %}
-  <h3 class="govuk-heading-m">History</h3>
+  {# <h3 class="govuk-heading-m">History</h3> #}
   {% include "_shared/_includes/case/details/history-panel.njk" %}
 {% endset -%}
 

@@ -1,5 +1,4 @@
-{#  #}
-
+{# app/views/_shared/_includes/case/details/defendants.njk #}
 
 {# Plea enum → display label #}
 {% set pleaLabels = {
@@ -29,11 +28,9 @@
         label: "Defendant sub navigation",
         items: [
           { text: "Charges",                href: "#", active: true },
-          { text: "Defendant Details",       href: "#" },
-          { text: "Bail & Remand",           href: "#" },
-          { text: "Candidate Court Orders",  href: "#" },
-          { text: "Offences TIC",            href: "#" },
-          { text: "Associated Cases",        href: "#" }
+          { text: "Defendant details",       href: "#" },
+          { text: "Bail and remand",           href: "#" },
+          { text: "Candidate court orders",  href: "#" }
         ]
       }) }}
 
