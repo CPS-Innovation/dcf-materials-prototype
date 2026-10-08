@@ -20,7 +20,7 @@
 #}
 
 {{ govukNotificationBanner({
-  html: '<h3 class="govuk-notification-banner__heading">This case has been reactivated</h3><p class="govuk-body">Complete the case review again to finalise the appeal.</p>'
+  html: '<h3 class="govuk-notification-banner__heading">This case has been reactivated</h3><p class="govuk-body">Complete the case review to finalise the appeal.</p>'
 }) }}
 
 <span class="govuk-caption-l">{{ pageName }}</span>
@@ -103,11 +103,16 @@
    rather than a bare "-" for every row.
    --------------------------------------------------------------- #}
 <h2 class="govuk-heading-m">Previous review details</h2>
-<div class="govuk-inset-text">
+{# <div class="govuk-inset-text">
   <p class="govuk-body">
     The content below is illustrative and only an example of what might be included in a review.
   </p>
-</div>
+</div> #}
+{{ govukWarningText({
+  text: "The content below is illustrative and only an example of what might be included in a review.",
+  iconFallbackText: "Warning"
+}) }}
+
 {{ govukSummaryList({
   classes: "govuk-!-margin-bottom-6",
   rows: [
