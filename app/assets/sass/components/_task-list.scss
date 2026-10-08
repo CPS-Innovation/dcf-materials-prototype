@@ -84,6 +84,14 @@
   background-color: govuk-colour("white");
   padding: govuk-spacing(4);
   white-space: normal;
+
+  // The detail cell spans every column, so under table-layout: auto its
+  // content would otherwise feed into the column widths and shift them
+  // each time a row is expanded. Containing the inline size makes the
+  // content fit the existing columns instead of resizing them.
+  > * {
+    contain: inline-size;
+  }
 }
 
 .app-task-list__detail-actions {
@@ -123,6 +131,9 @@
   background: none;
   border: none;
   padding: 0;
+  // Same width for "Show" and "Hide" so the Actions column doesn't nudge
+  min-width: 3em;
+  text-align: left;
   cursor: pointer;
   color: $govuk-link-colour;
   text-decoration: underline;

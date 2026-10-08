@@ -42,7 +42,7 @@
    --------------------------------------------------------------- #}
 <h2 class="govuk-heading-m">
   Review PCD Appeal
-  {% if pcdAppeal.taskType == 'Priority PCD Review' %}
+  {% if pcdAppeal.taskType == 'Review priority PCD appeal' %}
     {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
   {% endif %}
 </h2>
@@ -114,7 +114,10 @@
   html: '<p class="govuk-body govuk-!-font-weight-bold govuk-!-margin-bottom-2">This case has been reactivated</p><p class="govuk-body govuk-!-margin-bottom-0">This task can only be completed by carrying out an appeals case review.</p>'
 }) }}
 
+{# Hidden in the read-only (view) version of the page #}
+{% if not readOnly %}
 {{ govukButton({
   text: "Continue to case review",
   href: "/cases/" + pcdAppeal.caseId + "/reviews/" + taskId
 }) }}
+{% endif %}

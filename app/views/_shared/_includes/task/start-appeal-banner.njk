@@ -20,7 +20,7 @@
 #}
 
 {{ govukNotificationBanner({
-  html: '<h3 class="govuk-notification-banner__heading">This case has been reactivated</h3><p class="govuk-body">This task can only be completed by carrying out an appeals case review.</p>'
+  html: '<h3 class="govuk-notification-banner__heading">This case has been reactivated</h3><p class="govuk-body">Complete the case review to finalise the appeal.</p>'
 }) }}
 
 <span class="govuk-caption-l">{{ pageName }}</span>
@@ -53,10 +53,10 @@
    (_shared/_includes/case/details/pcd-appeal-accordion.njk).
    --------------------------------------------------------------- #}
 <h2 class="govuk-heading-m">
-  Review PCD Appeal
-  {% if pcdAppeal.taskType == 'Priority PCD Review' %}
+  {# {% if pcdAppeal.taskType == 'Review priority PCD appeal' %}
     {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
-  {% endif %}
+  {% endif %} #}
+  PCD appeal details
 </h2>
 {{ govukSummaryList({
   classes: "govuk-!-margin-bottom-6",
@@ -103,11 +103,16 @@
    rather than a bare "-" for every row.
    --------------------------------------------------------------- #}
 <h2 class="govuk-heading-m">Previous review details</h2>
-<div class="govuk-inset-text">
+{# <div class="govuk-inset-text">
   <p class="govuk-body">
     The content below is illustrative and only an example of what might be included in a review.
   </p>
-</div>
+</div> #}
+{{ govukWarningText({
+  text: "The content below is illustrative and only an example of what might be included in a review.",
+  iconFallbackText: "Warning"
+}) }}
+
 {{ govukSummaryList({
   classes: "govuk-!-margin-bottom-6",
   rows: [
@@ -122,7 +127,10 @@
   ]
 }) }}
 
+{# Hidden in the read-only (view) version of the page #}
+{% if not readOnly %}
 {{ govukButton({
   text: "Continue to case review",
   href: "/cases/" + pcdAppeal.caseId + "/reviews/" + taskId
 }) }}
+{% endif %}

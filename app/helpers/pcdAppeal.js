@@ -14,8 +14,8 @@ const { getTaskSeverity } = require('./taskState')
 
 // Real task type names (confirmed against a real CMS TaskTypes export) —
 // "PCD Appeal (Red/Green)" was our own invented naming, corrected here.
-const TASK_LIST_APPEAL_NAME = 'Review PCD Appeal'
-const PRIORITY_CHARGING_APPEAL_NAME = 'Priority PCD Review'
+const TASK_LIST_APPEAL_NAME = 'Review PCD appeal'
+const PRIORITY_CHARGING_APPEAL_NAME = 'Review priority PCD appeal'
 
 const TASK_INCLUDE = {
   case: {
@@ -172,9 +172,11 @@ function mapTaskToPriorityChargingRow(task) {
   }
 }
 
+// Task list shows Green and Red (priority) appeals together, as in prod —
+// Red ones also keep their own Priority charging tab (getPriorityChargingRows).
 async function getAppealTaskListRows() {
   const tasks = await prisma.task.findMany({
-    where: { name: TASK_LIST_APPEAL_NAME, completedDate: null },
+    where: { name: { in: [TASK_LIST_APPEAL_NAME, PRIORITY_CHARGING_APPEAL_NAME] }, completedDate: null },
     include: TASK_INCLUDE,
     orderBy: { id: 'asc' }
   })
@@ -325,18 +327,21 @@ async function resetAppealAssignmentMix() {
   if (!sarah || !david || !dutyDcp) return
 
   const assignments = [
-    // Task list (Review PCD Appeal) — 1 assigned, 1 left unassigned (case 14)
+    // Task list (Review PCD appeal) — 4 assigned, 4 left unassigned (cases 14, 10, 12, 15)
     { caseId: 2002, taskName: TASK_LIST_APPEAL_NAME, assignedToUserId: sarah.id },
-    // Priority charging (Priority PCD Review) — 4 assigned, 4 left unassigned (cases 2, 4, 6, 8)
+    { caseId: 9, taskName: TASK_LIST_APPEAL_NAME, assignedToUserId: sarah.id },
+    { caseId: 11, taskName: TASK_LIST_APPEAL_NAME, assignedToUserId: david.id },
+    { caseId: 13, taskName: TASK_LIST_APPEAL_NAME, assignedToTeamId: dutyDcp.id },
+    // Priority charging (Review priority PCD appeal) — 4 assigned, 4 left unassigned (cases 2, 4, 6, 8)
     { caseId: 2001, taskName: PRIORITY_CHARGING_APPEAL_NAME, assignedToUserId: david.id },
     { caseId: 3, taskName: PRIORITY_CHARGING_APPEAL_NAME, assignedToUserId: sarah.id },
     { caseId: 5, taskName: PRIORITY_CHARGING_APPEAL_NAME, assignedToUserId: david.id },
     { caseId: 7, taskName: PRIORITY_CHARGING_APPEAL_NAME, assignedToTeamId: dutyDcp.id }
   ]
 
-  // Every real appeal task not listed above (14, 2, 4, 6, 8) goes back to
+  // Every real appeal task not listed above (14, 10, 12, 15, 2, 4, 6, 8) goes back to
   // unassigned — otherwise a task a participant assigned that ISN'T one of
-  // the five deliberately-assigned rows above would stay assigned forever.
+  // the deliberately-assigned rows above would stay assigned forever.
   await prisma.task.updateMany({
     where: { name: { in: [TASK_LIST_APPEAL_NAME, PRIORITY_CHARGING_APPEAL_NAME] } },
     data: { assignedToUserId: null, assignedToTeamId: null }

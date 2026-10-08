@@ -1,6 +1,6 @@
 {# _shared/_includes/case/details/pcd-appeal.njk
 
-   PCD (Post-Charge Decision) appeal summary card for the case overview —
+   PCD (pre-charge decision) appeal summary card for the case overview —
    sits in the contacts-box column, above Key contacts (see main-tabs.njk).
    Real Prisma data (PcdAppeal/PcdAppealCharge models), fetched by
    getPcdAppealForCase (app/helpers/pcdAppeal.js) 
@@ -16,7 +16,7 @@
   <div class="govuk-summary-card__title-wrapper">
     <h2 class="govuk-summary-card__title">
       Review PCD Appeal
-      {% if pcdAppeal.taskType == 'Priority PCD Review' %}
+      {% if pcdAppeal.taskType == 'Review priority PCD appeal' %}
         {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
       {% endif %}
     </h2>

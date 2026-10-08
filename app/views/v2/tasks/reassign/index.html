@@ -32,9 +32,8 @@
           },
           errorMessage: { text: error } if error,
           items: [
-            { value: "me", text: "To me", checked: recipientType == "me" },
-            { value: "individual", text: "To someone else", checked: recipientType == "individual" },
-            { value: "team", text: "To a team", checked: recipientType == "team" }
+            { value: "individual", text: "To an individual", checked: recipientType == "individual" },
+            { value: "team", text: "To a work assignment team", checked: recipientType == "team" }
           ]
         }) }}
         

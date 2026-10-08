@@ -166,7 +166,7 @@
           <th class="govuk-table__header" scope="col" aria-sort="none">Due date</th>
           <th class="govuk-table__header" scope="col">Notes</th>
           <th class="govuk-table__header" scope="col">Saved</th>
-          <th class="govuk-table__header" scope="col">Details</th>
+          <th class="govuk-table__header" scope="col">Actions</th>
         </tr>
       </thead>
       <tbody class="govuk-table__body">
@@ -223,23 +223,14 @@
               <div class="app-task-list__detail-actions">
                 <a class="govuk-link govuk-link--no-visited-state" href="#">Open in CMS</a>
                 <div class="app-task-list__detail-actions-group">
-                  {% if task.caseId %}
-                    {# Real PCD appeal task — Start task is a DCP action, only
-                       possible once a Caseworker/Charge Manager has assigned
-                       it. Unassigned tasks get a single "Assign to DCP or
-                       team" button instead (same reassign flow, relabelled
-                       since there's nothing to "re"-assign yet, and the
-                       flow can send it to either). #}
-                    {% if task.owner != 'MCgen' %}
-                      <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
-                      <a class="govuk-button" href="/cases/{{ task.caseId }}/pcd-appeal/decision" role="button">Start task</a>
-                    {% else %}
-                      <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Assign PCD appeal task</a>
-                    {% endif %}
-                  {% else %}
-                    <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
-                    <button type="button" class="govuk-button" >Start task</button>
-                  {% endif %}
+                  {# Same three actions on every row, regardless of owner.
+                     "View appeal details" opens the PCD appeal page
+                     read-only (?mode=view, no button to case review);
+                     "Start task" opens it with that button. Rows with no
+                     real case behind them (static JSON) link to "#". #}
+                  <a class="govuk-button" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision?from=tasks' if task.caseId else '#' }}" role="button">Start task</a>
+                  <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
+                  <a class="govuk-button govuk-button--secondary" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision?mode=view&from=tasks' if task.caseId else '#' }}" role="button">View appeal details</a>
                 </div>
               </div>
 

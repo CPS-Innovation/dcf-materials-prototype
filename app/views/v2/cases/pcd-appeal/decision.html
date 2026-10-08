@@ -33,12 +33,23 @@
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
-{% set pageName = "PCD appeal decision" %}
+{# Caption is the official task name: "Review PCD appeal" or "Review priority PCD appeal" #}
+{% set pageName = pcdAppeal.taskType %}
 
 {% block beforeContent %}
+  {# Back returns to wherever the user came from (?from= on the link in):
+     a task list tab, or the case overview. The #fragment opens the right
+     tab. Anything else falls back to the Task list tab. #}
+  {% if from == "overview" %}
+    {% set backHref = "/cases/" + pcdAppeal.caseId + "/details#overview" %}
+  {% elif from == "priority-charging" %}
+    {% set backHref = "/tasks?v=v2#priority-charging" %}
+  {% else %}
+    {% set backHref = "/tasks?v=v2#tasks" %}
+  {% endif %}
   {{ govukBackLink({
     text: "Back",
-    href: "/tasks?v=v2"
+    href: backHref
   }) }}
 {% endblock %}
 

@@ -2,7 +2,7 @@
 
 **Status:** living document — edit as the work continues.
 **Last updated:** October 2026.
-**Covers:** moving PCD (Post-Charge Decision) appeal handling from an email-only process into a task-based CMS flow — research, prototype decisions, and open questions.
+**Covers:** moving PCD (pre-charge decision) appeal handling from an email-only process into a task-based CMS flow — research, prototype decisions, and open questions.
 
 This document exists so anyone picking up this work later — a new designer, a developer, a stakeholder — can follow how we got here without having to ask around. It includes the work that's still unresolved, not just what shipped.
 
@@ -180,8 +180,9 @@ Per the Design History guidance, states that don't show up in a single screensho
 
 ## 8. Sources
 
-- User research: 9 participants (P1, P3, P4, P7 — Charging Managers, including one CPSD-specific; P2, P5, P8, P9 — DCPs). Structured notes and raw quotes held alongside the research data export.
+- User research: 9 participants (P1, P3, P4, P6 — Charging Managers, including one CPSD-specific (P4); P2, P5, P7, P8, P9 — DCPs, including one RASSO-specific (P8)). Structured notes and raw quotes held alongside the research data export.
 - Usability testing of the earlier click-through prototype: findings summarised in section 4 above.
+- User research report: "PCD Appeals DCF – User research insights" (slide deck, completed October 2026). Source for the next steps in section 10; slide numbers are given where a step comes from a specific slide.
 - To-be process: draft swimlane diagrams "PCD Appeals – Area" and "PCD Appeals CPSD – Red Case Only", received October 2026. Compared against the prototype in section 6.
 - Reference mock-up: a later-iteration design of the forward "appeals case review" flow, owned by a separate team — used to check terminology and get a general sense of the shape of the journey this prototype currently stops short of, not as a source of UX findings.
 - A fuller synthesis of the research against tangible next steps (this document's section 2–4 content, plus a longer prioritised list) exists as a separate working document; ask the author for the current copy if it isn't linked here yet.
@@ -203,3 +204,43 @@ In rough priority order, based on how load-bearing each gap is:
 9. **When should the case be reactivated?** The prototype intends reactivation on "Start task"; the to-be process reactivates only once an appeal is upheld (6.3). Confirm with the process owner whether reactivating on start is intended, or a CMS constraint (e.g. needing an active case to view material). If an appeal isn't upheld, does the case get deactivated again, and does that affect performance data?
 10. **The 5.3 message doesn't cover the not-upheld path.** Once question 9 is answered, update the message so it covers both the appeals case review and the ad hoc review outcomes.
 11. **To confirm on the to-be process (6.1, 6.4):** that "Upload Police Appeal?" means "upheld"; whether appeals can be rejected at intake, and by whom; who decides a case is red; what the refusal to ratify / emergency charge sub-process involves; and what form the appeal log takes and who uses it.
+
+## 10. Next steps
+
+The user research report (October 2026) concluded that the prototype journey "tested well overall", with further work needed on how tasks are introduced and on awareness of case reactivation. These next steps come from that report. Where a step overlaps with an open question in section 9, we say so rather than repeat it.
+
+### 10.1 Changes we can make to the prototype now
+
+Each of these is small, directly evidenced, and doesn't depend on an unresolved decision.
+
+1. **Make the way into an appeal obvious from the task list.** Participants tried checkboxes and URNs before finding the right control, and asked whether "Show" should say "action" instead (P6, slide 14). The "Show" toggle is still in `task-list-table.njk` and `priority-charging-table.njk`. Try an action label such as "Review appeal", and make actions look different from information.
+2. **Show when the original decision was sent.** Charging Managers check an appeal is in time before assigning it: *"On this page I'd like to see when the decision was sent so I can check its in time."* (P1, slide 15). Show it next to the statutory time limit added in 5.1.
+3. **Put the officer's contact details on the appeal overview.** *"If it was a really urgent appeal, I'd ring them."* (P4, slide 15). This is the first part of open question 4; the secondary contact can follow.
+4. **Keep appeal reasoning free-form, but keep its paragraph breaks.** Participants didn't want a structured form (*"anything more prescriptive might prevent the police from telling us the real reasons"*, P8), but found long unbroken text hard to read (P7, slides 15 and 17). Check that line breaks in the police submission survive into the page.
+5. **Change "Specified charges" to "Proposed charges".** For a refusal to charge, nothing has been charged (P6, slide 17). The label appears in `pcd-appeal-accordion.njk`, `start-appeal-banner.njk`, `start-appeal-inset-text.njk` and `history-panel.njk`. Check whether "Specified charges" is still right in the history panel, which also shows cases that were charged.
+6. **Link to statements and exhibits from the appeal page.** DCPs want the police objections, the original lawyer's review and the evidence in front of them together (P7, slides 17 and 18).
+
+### 10.2 Things to test
+
+7. **Test the "Continue to review case" button (5.3).** Two participants couldn't find the old link into case review (P2, P6, slide 17), which is what 5.3 responds to. We haven't checked that the button fixes it. Test it alongside open question 7 (banner or inset text).
+8. **Test the reactivation message with DCPs.** The research found DCPs risk treating the appeal as a standalone task without realising a new charging decision must be logged (slide 18). That supports the message in 5.3, but its wording depends on open questions 9 and 10.
+
+### 10.3 Records to update in this document
+
+9. **"To me" is now backed by research.** Open question 8 says the shortcut was our own extension. The report found CPSD DCPs need to "assign to myself" from a shared pool rather than wait to be assigned (slide 16). Update 5.4 and open question 8 to say so. What's left to check is whether everyone else can see who has picked an appeal up, which a Teams channel does today.
+10. **Check assignment wording for CPSD.** "Assign to a DCP" assumes someone assigns appeals to individuals, which isn't how CPSD works (slide 14). The reassign options in 5.4 already cover a team pool; check that other labels on the way in don't assume one model.
+
+### 10.4 Decisions needed before we can design
+
+11. **Rejecting an appeal at intake.** Participants asked for a way to reject an appeal straight away if it's out of time or comes from someone below inspector level (P6, slides 17 and 19). They also asked how to request more information without reactivating the case. This is open questions 1 and 2: who can reject, on what grounds, and does a rejection still need a formal response to police?
+12. **Which response timeframe we design to.** The report refers to a 14-day window for police to appeal (slide 2) and to "10-day response timeframes" for CPS (slide 19). Confirm both before showing deadlines on the task.
+13. **Routing outside office hours.** Appeals arriving after 5pm or late on a Friday lead to disputes over whether the area or CPSD should handle them (P4, P5, slide 13). Agree routing and escalation rules so a red appeal can't sit unassigned overnight.
+
+### 10.5 Beyond this prototype
+
+These came up in the research but need work outside this prototype, or outside this team.
+
+14. **Notifications and mobile access for DCPs.** DCPs move between custody suites and courts: *"I'm not necessarily always stuck at my computer."* (P5, slides 10 and 12). Notifications are the most direct answer to the habit-forming risk in open question 6. At CPSD's volume of 15 to 20 appeals a week (slide 13), they'll need to avoid notification fatigue.
+15. **Messages back to police.** Charging teams currently email acknowledgements by hand (P1, slide 19). Acknowledgement and outcome messages could be sent from the task, which also replaces the "Send outcome email via CMS" step in 6.5.
+16. **A system-generated appeals log.** Each area keeps its own spreadsheet (slides 6 and 19). A log built from task data (received, assigned, completed, outcome) would replace it and give the reporting in open question 5. The report treats this as out of scope for the current journey.
+17. **Police submitting appeals directly.** In the future (DCF) journey, police will submit appeals from their own system rather than by email (slide 7). That removes the four manual intake steps in 6.5, and is the point at which inspector-level authorisation and in-time checks could happen automatically.
