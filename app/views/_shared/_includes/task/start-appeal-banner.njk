@@ -53,10 +53,10 @@
    (_shared/_includes/case/details/pcd-appeal-accordion.njk).
    --------------------------------------------------------------- #}
 <h2 class="govuk-heading-m">
-  Review PCD Appeal
-  {% if pcdAppeal.taskType == 'Review priority PCD appeal' %}
+  {# {% if pcdAppeal.taskType == 'Review priority PCD appeal' %}
     {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
-  {% endif %}
+  {% endif %} #}
+  PCD appeal details
 </h2>
 {{ govukSummaryList({
   classes: "govuk-!-margin-bottom-6",

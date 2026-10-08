@@ -68,7 +68,7 @@
                 {# Read-only view of the appeal; Start task (below) opens
                    the same page with the button to case review #}
                 {% if task.caseId %}
-                  <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision?mode=view">{{ task.name }}</a>
+                  <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision?mode=view&from=overview">{{ task.name }}</a>
                 {% else %}
                   {{ task.name }}
                 {% endif %}
@@ -99,7 +99,7 @@
                    placeholder tasks link to "#". #}
                 <ul class="case-task-actions">
                   <li class="case-task-actions__item">
-                    <a class="govuk-link" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision' if task.caseId else '#' }}">Start<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
+                    <a class="govuk-link" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision?from=overview' if task.caseId else '#' }}">Start<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
                   </li>
                   <li class="case-task-actions__item">
                     <a class="govuk-link" href="{{ '/tasks/' + task.id + '/reassign' if task.caseId else '#' }}">Reassign<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
@@ -108,7 +108,7 @@
                      Start then line up on every row #}
                   {% if task.caseId %}
                     <li class="case-task-actions__item">
-                      <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision?mode=view">View<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
+                      <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision?mode=view&from=overview">View<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
                     </li>
                   {% endif %}
                 </ul>

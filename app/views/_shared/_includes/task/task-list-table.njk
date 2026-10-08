@@ -228,9 +228,9 @@
                      read-only (?mode=view, no button to case review);
                      "Start task" opens it with that button. Rows with no
                      real case behind them (static JSON) link to "#". #}
-                  <a class="govuk-button" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision' if task.caseId else '#' }}" role="button">Start task</a>
+                  <a class="govuk-button" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision?from=tasks' if task.caseId else '#' }}" role="button">Start task</a>
                   <a class="govuk-button govuk-button--secondary" href="/tasks/{{ task.id }}/reassign" role="button">Reassign task</a>
-                  <a class="govuk-button govuk-button--secondary" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision?mode=view' if task.caseId else '#' }}" role="button">View appeal details</a>
+                  <a class="govuk-button govuk-button--secondary" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision?mode=view&from=tasks' if task.caseId else '#' }}" role="button">View appeal details</a>
                 </div>
               </div>
 
