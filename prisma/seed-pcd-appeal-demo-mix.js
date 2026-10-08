@@ -26,13 +26,17 @@ async function main() {
   }
 
   const assignments = [
-    // Task list (Review PCD Appeal) — 1 assigned, 1 left unassigned (case 14)
-    { caseId: 2002, taskName: "Review PCD Appeal", assignedToUserId: sarah.id },
-    // Priority charging (Priority PCD Review) — 4 assigned, 4 left unassigned (cases 2, 4, 6, 8)
-    { caseId: 2001, taskName: "Priority PCD Review", assignedToUserId: david.id },
-    { caseId: 3, taskName: "Priority PCD Review", assignedToUserId: sarah.id },
-    { caseId: 5, taskName: "Priority PCD Review", assignedToUserId: david.id },
-    { caseId: 7, taskName: "Priority PCD Review", assignedToTeamId: dutyDcp.id }
+    // Task list (Review PCD appeal) — 4 assigned, 4 left unassigned (cases 14, 10, 12, 15)
+    { caseId: 2002, taskName: "Review PCD appeal", assignedToUserId: sarah.id },
+    // Added by seed-pcd-appeal-green-spread.js
+    { caseId: 9, taskName: "Review PCD appeal", assignedToUserId: sarah.id },
+    { caseId: 11, taskName: "Review PCD appeal", assignedToUserId: david.id },
+    { caseId: 13, taskName: "Review PCD appeal", assignedToTeamId: dutyDcp.id },
+    // Priority charging (Review priority PCD appeal) — 4 assigned, 4 left unassigned (cases 2, 4, 6, 8)
+    { caseId: 2001, taskName: "Review priority PCD appeal", assignedToUserId: david.id },
+    { caseId: 3, taskName: "Review priority PCD appeal", assignedToUserId: sarah.id },
+    { caseId: 5, taskName: "Review priority PCD appeal", assignedToUserId: david.id },
+    { caseId: 7, taskName: "Review priority PCD appeal", assignedToTeamId: dutyDcp.id }
   ];
 
   for (const a of assignments) {

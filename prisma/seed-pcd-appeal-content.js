@@ -1,6 +1,6 @@
 // Additive-only script — adds the PcdAppeal + PcdAppealCharge rows for the
 // two Task rows that already exist (seed-pcd-appeal-tasks.js): case 2001
-// ("Priority PCD Review") and case 2002 ("Review PCD Appeal"). Carries over
+// ("Review priority PCD appeal") and case 2002 ("Review PCD appeal"). Carries over
 // today's app/data/pcd-appeal-cases.js narrative text verbatim so these two
 // already-working demo cards keep their exact content, just from a real
 // table now instead of a static mock.
@@ -14,7 +14,7 @@ async function main() {
   const appeals = [
     {
       caseId: 2001,
-      taskName: "Priority PCD Review",
+      taskName: "Review priority PCD appeal",
       // originalDecisionByUserId and charges resolved below dynamically —
       // seed.js generates prosecutors/defendants/charges with random fake
       // data and no fixed RNG seed, so hardcoded ids here wouldn't survive
@@ -36,7 +36,7 @@ async function main() {
     },
     {
       caseId: 2002,
-      taskName: "Review PCD Appeal",
+      taskName: "Review PCD appeal",
       originalDecisionOutcome: "Charge refused",
       originalDecisionAt: new Date("2026-09-08T11:20:00.000Z"),
       originalDecisionTest: "Threshold Test",

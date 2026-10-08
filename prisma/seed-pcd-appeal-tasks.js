@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 async function main() {
   const tasks = [
     {
-      name: "Priority PCD Review",
+      name: "Review priority PCD appeal",
       caseId: 2001,
       reminderDate: new Date("2026-09-09T22:00:00.000Z"),
       dueDate: new Date("2026-09-10T22:00:00.000Z"), // PACE clock expiry — pcd-appeal-cases.js caseId 2001
@@ -22,7 +22,7 @@ async function main() {
       assignedToUserId: null // starts unassigned — CMS generates it into a general bucket, a CW/OD/CM reassigns it to a DCP (see reassign-task-redesign-brief.md / DCF structured data new.pdf)
     },
     {
-      name: "Review PCD Appeal",
+      name: "Review PCD appeal",
       caseId: 2002,
       reminderDate: new Date("2026-11-15T23:59:59.999Z"),
       dueDate: new Date("2026-11-20T23:59:59.999Z"), // Statutory time limit — pcd-appeal-cases.js caseId 2002

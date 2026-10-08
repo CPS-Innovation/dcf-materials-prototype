@@ -17,14 +17,14 @@ async function main() {
   const rows = [
     // Priority charging (Red) rows — pc2 through pc8
     {
-      caseId: 2, taskName: "Priority PCD Review", isUrgent: true, assignedToUserId: null, // starts unassigned
+      caseId: 2, taskName: "Review priority PCD appeal", isUrgent: true, assignedToUserId: null, // starts unassigned
       dueDate: new Date("2026-09-22T14:41:00.000Z"), slaEndsAt: new Date("2026-09-18T14:41:00.000Z"),
       officer: { name: "Jordan Blake", rank: "Police Constable", number: "PC 5102" },
       grounds: "Officer submits that new CCTV footage was not available to the reviewing lawyer at the time of the charging decision and supports the identification evidence already held.",
       decision: { outcome: "No charge", test: "Full Code Test", reasoning: "Insufficient evidence at this stage to provide a realistic prospect of conviction." }
     },
     {
-      caseId: 3, taskName: "Priority PCD Review", isUrgent: false, assignedToUserId: null, // starts unassigned
+      caseId: 3, taskName: "Review priority PCD appeal", isUrgent: false, assignedToUserId: null, // starts unassigned
       dueDate: new Date("2026-09-23T14:41:00.000Z"), slaEndsAt: new Date("2026-09-16T14:41:00.000Z"),
       previouslyUrgent: true, // demo row for the "Was urgent" tag
       officer: { name: "Morgan Reid", rank: "Police Constable", number: "PC 5211" },
@@ -32,35 +32,35 @@ async function main() {
       decision: { outcome: "No charge", test: "Full Code Test", reasoning: "Insufficient evidence at this stage to provide a realistic prospect of conviction." }
     },
     {
-      caseId: 4, taskName: "Priority PCD Review", isUrgent: false, assignedToUserId: null, // starts unassigned
+      caseId: 4, taskName: "Review priority PCD appeal", isUrgent: false, assignedToUserId: null, // starts unassigned
       dueDate: new Date("2026-09-24T16:06:00.000Z"), slaEndsAt: new Date("2026-09-17T16:06:00.000Z"),
       officer: { name: "Sam Ellery", rank: "Detective Constable", number: "DC 5309" },
       grounds: "Officer submits that forensic evidence obtained after charge satisfies the Threshold Test for the burglary charge.",
       decision: { outcome: "Charge refused", test: "Threshold Test", reasoning: "Evidence available at this stage does not meet the Threshold Test." }
     },
     {
-      caseId: 5, taskName: "Priority PCD Review", isUrgent: false, assignedToUserId: null, // starts unassigned
+      caseId: 5, taskName: "Review priority PCD appeal", isUrgent: false, assignedToUserId: null, // starts unassigned
       dueDate: new Date("2026-09-25T13:38:00.000Z"), slaEndsAt: new Date("2026-09-18T13:38:00.000Z"),
       officer: { name: "Casey Marlowe", rank: "Police Constable", number: "PC 5417" },
       grounds: "Officer submits that a corroborating witness statement was not available to the reviewing lawyer at the time of the charging decision.",
       decision: { outcome: "No charge", test: "Full Code Test", reasoning: "Insufficient evidence at this stage to provide a realistic prospect of conviction." }
     },
     {
-      caseId: 6, taskName: "Priority PCD Review", isUrgent: true, assignedToUserId: null, // starts unassigned
+      caseId: 6, taskName: "Review priority PCD appeal", isUrgent: true, assignedToUserId: null, // starts unassigned
       dueDate: new Date("2026-09-21T12:27:00.000Z"), slaEndsAt: new Date("2026-09-17T12:27:00.000Z"),
       officer: { name: "Riley Fenwick", rank: "Detective Constable", number: "DC 5528" },
       grounds: "Officer submits that identification evidence obtained after charge satisfies the Full Code Test for the robbery charge.",
       decision: { outcome: "No charge", test: "Full Code Test", reasoning: "Insufficient evidence at this stage to provide a realistic prospect of conviction." }
     },
     {
-      caseId: 7, taskName: "Priority PCD Review", isUrgent: true, assignedToUserId: null, // starts unassigned
+      caseId: 7, taskName: "Review priority PCD appeal", isUrgent: true, assignedToUserId: null, // starts unassigned
       dueDate: new Date("2026-09-22T15:53:00.000Z"), slaEndsAt: new Date("2026-09-16T15:53:00.000Z"),
       officer: { name: "Harper Dunn", rank: "Police Constable", number: "PC 5636" },
       grounds: "Officer submits that a forensic report obtained after charge satisfies the Threshold Test for the burglary charge.",
       decision: { outcome: "Charge refused", test: "Threshold Test", reasoning: "Evidence available at this stage does not meet the Threshold Test." }
     },
     {
-      caseId: 8, taskName: "Priority PCD Review", isUrgent: false, assignedToUserId: null, // starts unassigned
+      caseId: 8, taskName: "Review priority PCD appeal", isUrgent: false, assignedToUserId: null, // starts unassigned
       dueDate: new Date("2026-09-20T09:15:00.000Z"), slaEndsAt: new Date("2026-09-13T09:15:00.000Z"),
       officer: { name: "Quinn Ashby", rank: "Police Constable", number: "PC 5744" },
       grounds: "Officer submits that a corroborating witness statement was not available to the reviewing lawyer at the time of the charging decision.",
@@ -68,7 +68,7 @@ async function main() {
     },
     // Task list (Green) row — t8
     {
-      caseId: 14, taskName: "Review PCD Appeal", isUrgent: false, assignedToUserId: null, // starts unassigned
+      caseId: 14, taskName: "Review PCD appeal", isUrgent: false, assignedToUserId: null, // starts unassigned
       dueDate: new Date("2026-09-15T23:59:59.000Z"), slaEndsAt: null,
       officer: { name: "Drew Callahan", rank: "Police Constable", number: "PC 5852" },
       grounds: "Officer submits that a forensic report obtained after charge satisfies the Threshold Test for the possession with intent to supply charge.",

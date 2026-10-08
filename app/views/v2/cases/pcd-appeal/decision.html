@@ -33,7 +33,8 @@
 
 {% set bodyClasses = "dcf-materials-wide" %}
 {% set navId = 'cases' %}
-{% set pageName = "PCD appeal decision" %}
+{# Caption is the official task name: "Review PCD appeal" or "Review priority PCD appeal" #}
+{% set pageName = pcdAppeal.taskType %}
 
 {% block beforeContent %}
   {{ govukBackLink({
