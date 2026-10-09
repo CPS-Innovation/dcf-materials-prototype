@@ -61,6 +61,19 @@
 <script src="/public/javascripts/components/text-expander.js"></script>
 <script src="/public/javascripts/components/action-plan-modal.js" defer></script>
 <script>
+  // Any .js-text-expander on the page (e.g. the PCD appeal card's
+  // "Reason for appeal") — word count and link text come from its data
+  // attributes, so they can be changed in the template.
+  document.querySelectorAll('.js-text-expander').forEach(function (el) {
+    new App.TextExpander({
+      container: window.jQuery(el),
+      maxWords: parseInt(el.dataset.maxWords, 10) || undefined,
+      moreText: el.dataset.moreText,
+      lessText: el.dataset.lessText
+    })
+  })
+</script>
+<script>
 (function () {
   // Scroll banner into view after all scripts (including govuk-tabs hash handling) have run
   window.addEventListener('load', function () {

@@ -264,7 +264,7 @@ module.exports = router => {
     const dueDate = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`
 
     const reminderTasks = req.session.data.reminderTasks || []
-    reminderTasks.unshift({ name: title, dueDate, status: 'New', owner: 'Jimmy Bobbins', hasWarning: false })
+    reminderTasks.unshift({ name: title, dueDate, status: 'New', owner: 'Jimmy Bobbins' })
     req.session.data.reminderTasks = reminderTasks
 
     const victimName = charge?.victim
