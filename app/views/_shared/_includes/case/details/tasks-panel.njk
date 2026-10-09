@@ -6,22 +6,19 @@
     name: "Retrieve core details",
     dueDate: "24 April 2026",
     status: "Done",
-    owner: "Joe Bloggs",
-    hasWarning: false
+    owner: "Joe Bloggs"
   },
   {
     name: "Prepare victim letter",
     dueDate: "15 March 2026",
     status: "Done",
-    owner: "Anni Arryuokay",
-    hasWarning: false
+    owner: "Anni Arryuokay"
   },
   {
     name: "Request upgrade file",
     dueDate: "06 Feb 2026",
     status: "Done",
-    owner: "Frank Bobbins",
-    hasWarning: false
+    owner: "Frank Bobbins"
   }
 ] %}
 
@@ -68,17 +65,13 @@
                 {# Read-only view of the appeal; Start task (below) opens
                    the same page with the button to case review #}
                 {% if task.caseId %}
-                  <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision?mode=view&from=overview">{{ task.name }}</a>
+                  {{ task.name }}
                 {% else %}
                   {{ task.name }}
                 {% endif %}
               </td>
               <td class="govuk-table__cell case-task-due">
                 {{ task.dueDate }}
-                {% if task.hasWarning %}
-                  <span class="case-task-warning-icon" aria-hidden="true"></span>
-                  <span class="govuk-visually-hidden">Due soon</span>
-                {% endif %}
               </td>
               <td class="govuk-table__cell case-task-role">
                 {% if task.caseId and task.owner != 'MCgen' %}
@@ -99,18 +92,9 @@
                    placeholder tasks link to "#". #}
                 <ul class="case-task-actions">
                   <li class="case-task-actions__item">
-                    <a class="govuk-link" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision?from=overview' if task.caseId else '#' }}">Start<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
+                    <a class="govuk-link" href="{{ '/cases/' + task.caseId + '/pcd-appeal/decision?from=overview' if task.caseId else '#' }}">Start task<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
                   </li>
-                  <li class="case-task-actions__item">
-                    <a class="govuk-link" href="{{ '/tasks/' + task.id + '/reassign' if task.caseId else '#' }}">Reassign<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
-                  </li>
-                  {# View is PCD appeal only, so it goes last: Reassign and
-                     Start then line up on every row #}
-                  {% if task.caseId %}
-                    <li class="case-task-actions__item">
-                      <a class="govuk-link" href="/cases/{{ task.caseId }}/pcd-appeal/decision?mode=view&from=overview">View<span class="govuk-visually-hidden"> {{ task.name }}</span></a>
-                    </li>
-                  {% endif %}
+
                 </ul>
               </td>
             </tr>

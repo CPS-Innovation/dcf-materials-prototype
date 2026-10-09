@@ -306,8 +306,7 @@ async function getCaseTaskPanelRows(caseId) {
     name: mapped.task,
     dueDate: mapped.dueDateDisplay,
     status: mapped.severityBucket,
-    owner: mapped.owner,
-    hasWarning: mapped.urgent
+    owner: mapped.owner
   }]
 }
 

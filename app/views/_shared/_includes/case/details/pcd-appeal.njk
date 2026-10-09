@@ -12,14 +12,27 @@
    second one appended alongside it.
 #}
 
+{# Reason for appeal: truncated to the first 35 words with a "See more"
+   toggle that expands it in place ("See less" collapses it again). Same
+   App.TextExpander as the action plan's "Reason for CPS last update" —
+   word count and link text are set by the data attributes here, and
+   cases/details/index.html starts it. Without JS, the full text shows. #}
+{% set reasonForAppealHtml %}
+  <p class="govuk-body govuk-!-margin-bottom-0 js-text-expander" data-max-words="35" data-more-text="See more" data-less-text="See less">{{ pcdAppeal.appeal.groundsNarrative }}</p>
+{% endset %}
+
 <div class="govuk-summary-card app-pcd-appeal">
   <div class="govuk-summary-card__title-wrapper">
     <h2 class="govuk-summary-card__title">
-      Review PCD Appeal
-      {% if pcdAppeal.taskType == 'Review priority PCD appeal' %}
-        {{ govukTag({ text: "Priority", classes: "govuk-tag--red" }) }}
-      {% endif %}
+      {{ pcdAppeal.taskType }}
     </h2>
+    {# Opens the read-only appeal page (no button to case review); Back
+       returns to the case overview #}
+    <ul class="govuk-summary-card__actions">
+      <li class="govuk-summary-card__action">
+        <a class="govuk-link" href="/cases/{{ pcdAppeal.caseId }}/pcd-appeal/decision?mode=view&from=overview">View appeal details<span class="govuk-visually-hidden"> for {{ pcdAppeal.urn }}</span></a>
+      </li>
+    </ul>
   </div>
 
   <div class="govuk-summary-card__content">
@@ -31,10 +44,10 @@
         classes: "govuk-summary-list--no-border app-summary-list--compact",
         rows: [
           { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
-          { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
-          { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
+          { key: { text: "Date appeal received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
+          { key: { text: "Date charging decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
           { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
-          { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
+          { key: { text: "Reason for appeal" }, value: { html: reasonForAppealHtml } }
         ]
       }) }}
 
@@ -64,10 +77,10 @@
         classes: "govuk-summary-list--no-border app-summary-list--compact",
         rows: [
           { key: { text: "Authorised by" }, value: { text: pcdAppeal.appeal.appealingOfficer.name + " (" + pcdAppeal.appeal.appealingOfficer.rank + ", " + pcdAppeal.appeal.appealingOfficer.number + ")" } },
-          { key: { text: "Date and time received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
-          { key: { text: "Date and time decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
+          { key: { text: "Date appeal received" }, value: { text: pcdAppeal.appeal.receivedDateDisplay | isoDateString | govukDateTime } },
+          { key: { text: "Date charging decision made" }, value: { text: pcdAppeal.originalDecision.decisionDateDisplay | isoDateString | govukDateTime } },
           { key: { text: "Appealed suspect" }, value: { text: pcdAppeal.suspects | join(', ') } },
-          { key: { text: "Reason for appeal" }, value: { text: pcdAppeal.appeal.groundsNarrative } }
+          { key: { text: "Reason for appeal" }, value: { html: reasonForAppealHtml } }
         ]
       }) }}
 

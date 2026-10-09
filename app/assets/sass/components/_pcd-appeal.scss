@@ -11,6 +11,19 @@
       margin-top: -4px;
     }
   }
+
+  // text-expander.js's "See more"/"See less" toggle — same link styling
+  // as the action plan card's (see _action-plan-modal.scss)
+  .app-truncate__link {
+    @include govuk-link-common;
+    @include govuk-link-style-no-visited-state;
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    cursor: pointer;
+  }
 }
 
 // PCD appeal decision page heading — app/views/v2/cases/pcd-appeal/decision.html
